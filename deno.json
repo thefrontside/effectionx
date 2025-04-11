@@ -1,7 +1,7 @@
 {
   "imports": {
-    "bdd": "jsr:@std/testing/bdd",
-    "expect": "jsr:@std/expect"
+    "bdd": "jsr:@std/testing@1/bdd",
+    "expect": "jsr:@std/expect@1"
   },
   "compilerOptions": {
     "lib": [
@@ -24,6 +24,7 @@
     "./deno-deploy",
     "./jsonl-store",
     "./fx",
+    "./raf",
     "./task-buffer",
     "./test-adapter",
     "./tinyexec",

@@ -1,0 +1,9 @@
+{
+  "name": "@effectionx/raf",
+  "version": "1.0.0-alpha.0",
+  "exports": "./mod.ts",
+  "license": "MIT",
+  "imports": {
+    "effection": "npm:effection@3.4.0"
+  }
+}

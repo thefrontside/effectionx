@@ -1,6 +1,6 @@
 import { describe, it } from "@effectionx/bdd";
+import { Err, Ok, each, sleep, spawn, until } from "effection";
 import { expect } from "expect";
-import { each, Err, Ok, sleep, spawn, until } from "effection";
 
 import { parallel } from "./parallel.ts";
 
@@ -101,7 +101,6 @@ describe("parallel()", () => {
       yield* sleep(15);
       two.resolve(2);
     });
-
     const results = yield* parallel([one, () => until(two.promise)]);
     expect(yield* results).toEqual([Ok(1), Ok(2)]);
   });

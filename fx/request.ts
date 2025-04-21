@@ -9,6 +9,6 @@ export function* request(
   return response;
 }
 
-export function json(response: Response): Operation<unknown> {
-  return until(response.json());
+export function* json(response: Response): Operation<unknown> {
+  return yield* until(response.json());
 }

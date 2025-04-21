@@ -1,12 +1,12 @@
 import { beforeEach, describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
 
-import { call, ensure, withResolvers } from "effection";
 import {
-  createServer,
   type IncomingMessage,
   type ServerResponse,
+  createServer,
 } from "node:http";
+import { call, ensure, withResolvers } from "effection";
 import { json, request } from "./request.ts";
 
 // Ensure to run tests with --allow-net permission

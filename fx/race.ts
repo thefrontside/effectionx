@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
-import type { Callable, Operation, Task } from "effection";
-import { action, call, resource, spawn } from "effection";
+import type { Operation, Task } from "effection";
+import { resource, spawn, withResolvers } from "effection";
 
-interface OpMap<T = unknown> {
-  [key: string]: Callable<T>;
+interface OpMap<T = unknown, TArgs extends unknown[] = []> {
+  [key: string]: (...args: TArgs) => Operation<T>;
 }
 
 export function raceMap<T>(opMap: OpMap): Operation<
@@ -16,21 +16,29 @@ export function raceMap<T>(opMap: OpMap): Operation<
   return resource(function* Race(provide) {
     const keys = Object.keys(opMap);
     const taskMap: { [key: string]: Task<unknown> } = {};
-    const resultMap: { [key: keyof OpMap]: OpMap[keyof OpMap] } = {};
+    const resultMap: { [key: keyof OpMap]: ReturnType<OpMap[keyof OpMap]> } =
+      {};
 
-    const winner = yield* action<Task<unknown>>(function* (resolve) {
-      for (let i = 0; i < keys.length; i += 1) {
-        const key = keys[i];
-        yield* spawn(function* () {
-          const task = yield* spawn(function* () {
-            yield* call(opMap[key] as any);
+    function* start() {
+      const resolvers = withResolvers();
+
+      yield* spawn(function* () {
+        for (let i = 0; i < keys.length; i += 1) {
+          const key = keys[i];
+          yield* spawn(function* () {
+            const task = yield* spawn(opMap[key]);
+            taskMap[key] = task;
+            (resultMap[key] as any) = yield* task;
+            resolvers.resolve(task);
           });
-          taskMap[key] = task;
-          (resultMap as any)[key] = yield* task;
-          resolve(task);
-        });
-      }
-    });
+        }
+        yield* resolvers.operation;
+      });
+
+      return yield* resolvers.operation;
+    }
+
+    const winner = yield* start();
 
     for (let i = 0; i < keys.length; i += 1) {
       const key = keys[i];

@@ -1,6 +1,6 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
-import { each, Err, Ok, sleep, spawn } from "effection";
+import { each, Err, Ok, sleep, spawn, until } from "effection";
 
 import { parallel } from "./parallel.ts";
 
@@ -101,7 +101,8 @@ describe("parallel()", () => {
       yield* sleep(15);
       two.resolve(2);
     });
-    const results = yield* parallel([one, () => two.promise]);
+
+    const results = yield* parallel([one, () => until(two.promise)]);
     expect(yield* results).toEqual([Ok(1), Ok(2)]);
   });
 
@@ -112,7 +113,7 @@ describe("parallel()", () => {
 
     function* genFn() {
       try {
-        const results = yield* parallel([() => one.promise, () => two.promise]);
+        const results = yield* parallel([() => until(one.promise), () => until(two.promise)]);
         actual = yield* results;
       } catch (_) {
         actual = [Err(new Error("should not get hit"))];

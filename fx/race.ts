@@ -22,18 +22,15 @@ export function raceMap<T>(opMap: OpMap): Operation<
     function* start() {
       const resolvers = withResolvers();
 
-      yield* spawn(function* () {
-        for (let i = 0; i < keys.length; i += 1) {
-          const key = keys[i];
-          yield* spawn(function* () {
-            const task = yield* spawn(opMap[key]);
-            taskMap[key] = task;
-            (resultMap[key] as any) = yield* task;
-            resolvers.resolve(task);
-          });
-        }
-        yield* resolvers.operation;
-      });
+      for (let i = 0; i < keys.length; i += 1) {
+        const key = keys[i];
+        yield* spawn(function* () {
+          const task = yield* spawn(opMap[key]);
+          taskMap[key] = task;
+          (resultMap[key] as any) = yield* task;
+          resolvers.resolve(task);
+        });
+      }
 
       return yield* resolvers.operation;
     }

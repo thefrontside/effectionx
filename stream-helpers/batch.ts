@@ -33,6 +33,7 @@ export function batch(options: RequireAtLeastOne<BatchOptions>) {
                   count++;
                   if (count >= (options.maxSize ?? Infinity)) {
                     full.resolve();
+                    break;
                   }
                 }
               });

@@ -42,4 +42,5 @@ describe("batch", () => {
       expect(next.value).toEqual([4, 5, 6]);
     });
   });
+
 });

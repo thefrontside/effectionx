@@ -20,15 +20,14 @@ export function batch(options: RequireAtLeastOne<BatchOptions>) {
         return {
           next() {
             return scoped(function* () {
-              let next = yield* subscription.next();
               const full = withResolvers<void>();
 
-              const batch: T[] = [next.value];
+              const batch: T[] = [];
 
               yield* spawn(function* () {
-                let count = 1;
+                let count = 0;
                 while (true) {
-                  next = yield* subscription.next();
+                  let next = yield* subscription.next();
                   batch.push(next.value);
                   count++;
                   if (count >= (options.maxSize ?? Infinity)) {

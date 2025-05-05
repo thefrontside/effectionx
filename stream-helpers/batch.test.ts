@@ -63,7 +63,7 @@ describe("batch", () => {
       ]);
     });
   });
-  
+
   it("maxSize wins within maxTime", async () => {
     await run(function* () {
       const faucet = yield* createFaucet<number>({ open: true });

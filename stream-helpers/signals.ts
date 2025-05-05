@@ -1,9 +1,9 @@
 import {
   createSignal,
+  each,
   type Operation,
   resource,
   type Stream,
-  each
 } from "effection";
 import { List } from "immutable";
 
@@ -100,10 +100,10 @@ export function createBoolean(initial: boolean = false) {
         set(value) {
           if (value !== ref.current) {
             ref.current = value;
-    
+
             signal.send(ref.current);
           }
-    
+
           return ref.current;
         },
         valueOf() {

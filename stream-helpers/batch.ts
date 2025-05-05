@@ -1,10 +1,17 @@
-import { spawn, race, scoped, sleep, type Stream, withResolvers } from "effection";
+import {
+  race,
+  scoped,
+  sleep,
+  spawn,
+  type Stream,
+  withResolvers,
+} from "effection";
 
 type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
-    Pick<T, Exclude<keyof T, Keys>> 
-    & {
-        [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>
-    }[Keys]
+  & Pick<T, Exclude<keyof T, Keys>>
+  & {
+    [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>;
+  }[Keys];
 
 export interface BatchOptions {
   maxTime: number;

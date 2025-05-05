@@ -6,6 +6,6 @@
   },
   "exports": "./mod.ts",
   "tasks": {
-    "test":  "deno run -A jsr:@effectionx/watch deno test"
+    "test": "deno run -A jsr:@effectionx/watch deno test"
   }
 }

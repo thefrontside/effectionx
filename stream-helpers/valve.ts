@@ -1,5 +1,5 @@
-import { type Operation, spawn, scoped, type Stream } from "effection";
-import { createListState } from "./microstates.ts";
+import { type Operation, scoped, spawn, type Stream } from "effection";
+import { createArraySignal } from "./signals.ts";
 
 export interface ValveOptions {
   openAt: number;
@@ -14,47 +14,33 @@ export function valve(options: ValveOptions) {
       *[Symbol.iterator]() {
         const subscription = yield* stream;
 
-        const buffer = yield* createListState<T>([]);
+        const buffer = yield* createArraySignal<T>([]);
         let open = true;
 
         yield* spawn(function* () {
           while (true) {
             let next = yield* subscription.next();
-            buffer.push(next.value);
-            if (open && buffer.size >= options.closeAt) {
+            console.log({ open, buffer: buffer.length });
+            if (open && (buffer.length + 1) > options.closeAt) {
               yield* options.close();
               open = false;
-            } else if (!open && buffer.size <= options.openAt) {
+            } else if (!open && (buffer.length + 1) <= options.openAt) {
               yield* options.open();
               open = true;
             }
+            buffer.push(next.value);
           }
         });
 
         return {
           next() {
             return scoped(function* () {
-              if (buffer.size > 0) {
-                let value = buffer.first() as T;
-                buffer.shift();
-                return {
-                  done: false,
-                  value,
-                };
-              }
-
-              const subscription = yield* buffer;
-              while (true) {
-                let next = yield* subscription.next();
-                if (next.value && next.value.size > 0) {
-                  let value = buffer.first() as T;
-                  buffer.shift();
-                  return {
-                    done: false,
-                    value,
-                  };
-                }
-              }
+              const value = yield* buffer.shift();
+              console.log({ action: "pulled", buffer: buffer.length, value });
+              return {
+                done: false,
+                value,
+              };
             });
           },
         };

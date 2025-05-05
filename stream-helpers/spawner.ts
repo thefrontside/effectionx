@@ -1,10 +1,10 @@
 import {
-  type Stream,
+  Err,
+  Ok,
   type Operation,
   type Result,
   scoped,
-  Err,
-  Ok,
+  type Stream,
 } from "effection";
 
 interface SpawnerOptions {

@@ -4,7 +4,7 @@ import { Stream } from "effection";
 // function createTaskPipe<T, R>(source: Stream<T, never>) {
 //   return pipe(
 //     source,
-//     batch({ 
+//     batch({
 //       maxSize: 50,
 //       maxTime: 30_000
 //     }),
@@ -12,10 +12,10 @@ import { Stream } from "effection";
 //       closeAt: 5,
 //       openAt: 2,
 //       open() {
-  
+
 //       },
 //       close() {
-  
+
 //       }
 //     }),
 //     spawner<T, R>({

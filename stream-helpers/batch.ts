@@ -18,6 +18,13 @@ export interface BatchOptions {
   maxSize: number;
 }
 
+/**
+ * Batch a stream by time or size.
+ *
+ * @param options - The options for the batch.
+ * @param options.maxTime - The maximum time to wait for a batch.
+ * @param options.maxSize - The maximum size of a batch.
+ */
 export function batch(
   options: RequireAtLeastOne<BatchOptions>,
 ): <T>(stream: Stream<T, never>) => Stream<T[], never> {

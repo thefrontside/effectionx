@@ -75,9 +75,10 @@ await run(function* () {
 });
 ```
 
-### Composing stream helpers 
+### Composing stream helpers
 
-You can use a simple `pipe()` to compose a series of stream helpers together. In this example, we use one from [remeda](https://remedajs.com/docs/#pipe), 
+You can use a simple `pipe()` to compose a series of stream helpers together. In
+this example, we use one from [remeda](https://remedajs.com/docs/#pipe),
 
 ```typescript
 import { valve } from "@effectionx/stream-helpers";

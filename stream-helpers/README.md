@@ -75,15 +75,15 @@ await run(function* () {
 });
 ```
 
-### Pipe
+### Composing stream helpers 
 
-The `pipe` operation allows composing multiple stream transformations together.
+You can use a simple `pipe()` to compose a series of stream helpers together. In this example, we use one from `ramda`, 
 
 ```typescript
 import { valve } from "@effectionx/stream-helpers";
 import { each, run } from "effection";
 // any standard pipe function should work
-import { pipe } from "remeda";
+import { pipe } from "ramda";
 
 await run(function* () {
   const valveStream = valve({

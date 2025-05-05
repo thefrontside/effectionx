@@ -1,5 +1,5 @@
 import { createSignal, type Operation, resource, type Stream } from "effection";
-import { createBoolean } from "./boolean.ts";
+import { createBoolean, is } from "../signals.ts";
 
 export interface Faucet<T> extends Stream<T, never> {
   pour(items: Iterable<T>): Operation<void>;
@@ -24,7 +24,7 @@ export function createFaucet<T>(options: FaucetOptions): Operation<Faucet<T>> {
           ? yield* itemsOrOp()
           : itemsOrOp;
         for (let i of items) {
-          yield* open.is(true);
+          yield* is(open, (open) => open === true);
           signal.send(i);
         }
       },

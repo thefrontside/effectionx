@@ -11,7 +11,13 @@ interface ValueStream<T> extends Stream<T, void> {
   valueOf(): T;
 }
 
-interface ArraySignal<T> extends ValueStream<T[]> {
+interface Settable<T> {
+  set(value: T): T;
+}
+
+export interface SettableValue<T> extends Settable<T>, ValueStream<T> {}
+
+interface ArraySignal<T> extends SettableValue<T[]> {
   push(item: T): number;
   shift(): Operation<T>;
   valueOf(): T[];
@@ -29,6 +35,11 @@ export function createArraySignal<T>(
 
     const array: ArraySignal<T> = {
       [Symbol.iterator]: signal[Symbol.iterator],
+      set(value) {
+        ref.current = List.of<T>(...value);
+        signal.send(ref.current.toArray());
+        return ref.current.toArray();
+      },
       push(item) {
         ref.current = ref.current.push(item);
         signal.send(ref.current.toArray());
@@ -72,4 +83,35 @@ export function* is<T>(
     }
     yield* each.next();
   }
+}
+
+export interface BooleanSignal extends SettableValue<boolean> {
+}
+
+export function createBoolean(initial: boolean = false) {
+  return resource<BooleanSignal>(function* (provide) {
+    const signal = createSignal<boolean, void>();
+
+    const ref = { current: initial };
+
+    try {
+      yield* provide({
+        [Symbol.iterator]: signal[Symbol.iterator],
+        set(value) {
+          if (value !== ref.current) {
+            ref.current = value;
+    
+            signal.send(ref.current);
+          }
+    
+          return ref.current;
+        },
+        valueOf() {
+          return ref.current;
+        },
+      });
+    } finally {
+      signal.close();
+    }
+  });
 }

@@ -86,21 +86,11 @@ import { each, run } from "effection";
 import { pipe } from "ramda";
 
 await run(function* () {
-  const valveStream = valve({
-    closeAt: 5,
-    open,
-    close,
-    openAt: 2,
-  });
-
-  // Create a batch processor that batches by size 3
-  const batchStream = batch({ maxSize: 3 });
-
-  // Compose the streams using pipe
-  const composedStream = pipe(
-    sourceStream,
-    valveStream,
-    batchStream,
+  // Compose stream helpers using pipe
+  const stream = pipe(
+    source,
+    valve({ open, close, openAt: 2, closeAt: 5 }),
+    batch({ maxSize: 3 }),
   );
 
   for (const value of yield* each(stream)) {

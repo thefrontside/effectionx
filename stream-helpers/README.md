@@ -77,13 +77,13 @@ await run(function* () {
 
 ### Composing stream helpers 
 
-You can use a simple `pipe()` to compose a series of stream helpers together. In this example, we use one from `ramda`, 
+You can use a simple `pipe()` to compose a series of stream helpers together. In this example, we use one from [remeda](https://remedajs.com/docs/#pipe), 
 
 ```typescript
 import { valve } from "@effectionx/stream-helpers";
 import { each, run } from "effection";
 // any standard pipe function should work
-import { pipe } from "ramda";
+import { pipe } from "remeda";
 
 await run(function* () {
   // Compose stream helpers using pipe

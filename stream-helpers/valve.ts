@@ -20,8 +20,7 @@ export function valve(options: ValveOptions) {
         yield* spawn(function* () {
           while (true) {
             let next = yield* subscription.next();
-            console.log({ open, buffer: buffer.length });
-            if (open && (buffer.length + 1) > options.closeAt) {
+            if (open && (buffer.length + 1) >= options.closeAt) {
               yield* options.close();
               open = false;
             } else if (!open && (buffer.length + 1) <= options.openAt) {
@@ -36,7 +35,10 @@ export function valve(options: ValveOptions) {
           next() {
             return scoped(function* () {
               const value = yield* buffer.shift();
-              console.log({ action: "pulled", buffer: buffer.length, value });
+              if (!open && buffer.length <= options.openAt) {
+                yield* options.open();
+                open = true;
+              }
               return {
                 done: false,
                 value,

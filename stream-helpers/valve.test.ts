@@ -8,15 +8,17 @@ import { createFaucet } from "./test-helpers/faucet.ts";
 import { createArraySignal, is } from "./signals.ts";
 
 describe("valve", () => {
-  it("closes the valve when reached closeAt", async () => {
-    const close = spy(function* () {
-      console.log("closing");
-    });
-    const open = spy(function* () {
-      console.log("opening");
-    });
+  it("closes and opens the valve", async () => {
     await run(function* () {
       const faucet = yield* createFaucet<number>({ open: true });
+
+      const close = spy(function* () {
+        faucet.close();
+      });
+
+      const open = spy(function* () {
+        faucet.open();
+      });
 
       const stream = valve({
         closeAt: 5,
@@ -34,7 +36,7 @@ describe("valve", () => {
           yield* each.next();
         }
       });
-
+      
       yield* faucet.pour([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
       yield* is(values, (values) => values.length === 10);
@@ -42,7 +44,7 @@ describe("valve", () => {
       expect(values.valueOf()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
       assertSpyCalls(close, 1);
-      assertSpyCalls(open, 0);
+      assertSpyCalls(open, 1);
     });
   });
 });

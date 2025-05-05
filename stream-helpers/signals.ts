@@ -1,13 +1,17 @@
 import {
   createSignal,
-  each,
   type Operation,
   resource,
   type Stream,
+  each
 } from "effection";
 import { List } from "immutable";
 
-interface ArraySignal<T> extends Stream<T[], void> {
+interface ValueStream<T> extends Stream<T, void> {
+  valueOf(): T;
+}
+
+interface ArraySignal<T> extends ValueStream<T[]> {
   push(item: T): number;
   shift(): Operation<T>;
   valueOf(): T[];
@@ -54,14 +58,16 @@ export function createArraySignal<T>(
 }
 
 export function* is<T>(
-  array: ArraySignal<T>,
-  predicate: (item: T[]) => boolean,
+  array: ValueStream<T>,
+  predicate: (item: T) => boolean,
 ) {
-  if (predicate(array.valueOf())) {
+  const result = predicate(array.valueOf());
+  if (result) {
     return;
   }
   for (const value of yield* each(array)) {
-    if (predicate(value)) {
+    const result = predicate(value);
+    if (result) {
       return;
     }
     yield* each.next();

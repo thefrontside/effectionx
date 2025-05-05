@@ -7,7 +7,7 @@
   },
   "exports": {
     ".": "./mod.ts",
-    "./test-helpers/*": "./test-helpers.ts"
+    "./test-helpers": "./test-helpers.ts"
   },
   "tasks": {
     "test": "deno run -A jsr:@effectionx/watch deno test"

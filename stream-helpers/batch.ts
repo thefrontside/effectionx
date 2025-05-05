@@ -18,7 +18,9 @@ export interface BatchOptions {
   maxSize: number;
 }
 
-export function batch(options: RequireAtLeastOne<BatchOptions>) {
+export function batch(
+  options: RequireAtLeastOne<BatchOptions>,
+): <T>(stream: Stream<T, never>) => Stream<T[], never> {
   return function <T>(stream: Stream<T, never>): Stream<T[], never> {
     return {
       *[Symbol.iterator]() {

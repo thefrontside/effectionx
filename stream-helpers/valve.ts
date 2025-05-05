@@ -8,7 +8,9 @@ export interface ValveOptions {
   close(): Operation<void>;
 }
 
-export function valve(options: ValveOptions) {
+export function valve(
+  options: ValveOptions,
+): <T>(stream: Stream<T, never>) => Stream<T, never> {
   return function <T>(stream: Stream<T, never>): Stream<T, never> {
     return {
       *[Symbol.iterator]() {

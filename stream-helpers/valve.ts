@@ -25,9 +25,6 @@ export function valve(
             if (open && (buffer.length + 1) >= options.closeAt) {
               yield* options.close();
               open = false;
-            } else if (!open && (buffer.length + 1) <= options.openAt) {
-              yield* options.open();
-              open = true;
             }
             buffer.push(next.value);
           }

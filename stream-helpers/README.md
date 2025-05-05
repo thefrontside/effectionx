@@ -19,7 +19,7 @@ import { each, run } from "effection";
 await run(function* () {
   const stream = batch({ maxSize: 3 })(sourceStream);
 
-  for (const batch of yield* each(stream)) {
+  for (const items of yield* each(stream)) {
     console.log(batch); // [1, 2, 3], [4, 5, 6], ...
   }
 });

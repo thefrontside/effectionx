@@ -112,15 +112,51 @@ await run(function* () {
 });
 ```
 
-## Use Cases
+## Testing Streams
 
-### Batch Operation
+The library includes testing utilities to help you test your stream processing
+code. These are available in `@effectionx/stream-helpers/test-helpers` export.
 
-- Grouping API requests to reduce network overhead
-- Buffering database operations for bulk inserts
+### Faucet
 
-### Valve Operation
+The `createFaucet` function creates a stream that can be used to test the
+behavior of streams that use backpressure. It's particularly useful in tests
+where you need a controllable source stream.
 
-- Implementing backpressure in data pipelines
-- Controlling memory usage in high-throughput systems
-- Rate limiting stream processing
+```typescript
+import { createFaucet } from "@effectionx/stream-helpers/test-helpers";
+import { each, run, spawn } from "effection";
+
+await run(function* () {
+  const faucet = yield* createFaucet({ open: true });
+
+  // Remember to spawn the stream subscription before sending items to the stream
+  yield* spawn(function* () {
+    for (let i of yield* each(faucet)) {
+      console.log(i);
+      yield* each.next();
+    }
+  });
+
+  // Pass an array of items to send items to the stream one at a time synchronously
+  yield* faucet.pour([1, 2, 3]);
+
+  // Pass an operation to control the rate at which items are sent to the stream
+  yield* faucet.pour(function* (send) {
+    send(4);
+    yield* sleep(10);
+    send(5);
+    yield* sleep(10);
+    send(6);
+  });
+
+  // You can close the faucet to stop items from being sent
+  faucet.close();
+
+  // And open it again when needed
+  faucet.open();
+});
+```
+
+Items sent to the faucet stream while it's closed are not buffered, in other
+words, they'll be dropped.

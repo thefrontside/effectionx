@@ -19,11 +19,14 @@ export interface BatchOptions {
 }
 
 /**
- * Batch a stream by time or size.
+ * Creates batches of items from the source stream. The batches can be created either by
+ * specifying a maximum time or a maximum size. If both are specified, the batch will be
+ * created when either condition is met.
  *
  * @param options - The options for the batch.
  * @param options.maxTime - The maximum time to wait for a batch.
  * @param options.maxSize - The maximum size of a batch.
+ * @returns A stream of arrays of items from the source stream.
  */
 export function batch(
   options: RequireAtLeastOne<BatchOptions>,

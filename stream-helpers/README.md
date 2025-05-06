@@ -8,8 +8,10 @@ controlled stream processing.
 
 ### Batch
 
-The `batch` operation groups stream items into batches based on size and/or time
-constraints.
+The `batch` helper is useful when you want to convert individual items passing
+through the stream into arrays of items. The batches can be created either by
+specifying a maximum time or a maximum size. If both are specified, the batch
+will be created when either condition is met.
 
 ```typescript
 import { batch } from "@effectionx/stream-helpers";
@@ -21,6 +23,7 @@ await run(function* () {
 
   for (const items of yield* each(stream)) {
     console.log(batch); // [1, 2, 3], [4, 5, 6], ...
+    yield* each.next();
   }
 });
 
@@ -50,7 +53,12 @@ await run(function* () {
 
 ### Valve
 
-The `valve` operation controls stream flow based on buffer size thresholds.
+Allows to apply backpressure to the source stream to prevent overwhelming the
+downstream consumer. This is useful with any stream that generates items faster
+than the consumer can consume them. It was originally designed for use with
+Kafka where the producer can cause the service to run out of memory when the
+producer produces many faster than the consumer to process the messages. It can
+be used as a buffer for any infinite stream.
 
 ```typescript
 import { valve } from "@effectionx/stream-helpers";
@@ -58,13 +66,16 @@ import { each, run } from "effection";
 
 await run(function* () {
   const stream = valve({
-    openAt: 2, // Open valve when buffer size <= 2
-    closeAt: 5, // Close valve when buffer size >= 5
-    open() {
-      console.log("Valve opened");
+    // buffer size threshold when close operation will invoked
+    closeAt: 1000,
+    *close() {
+      // pause the source stream
     },
-    close() {
-      console.log("Valve closed");
+
+    // buffer size threshold when open operation will be invoked
+    openAt: 100,
+    *open() {
+      // resume the source stream
     },
   })(sourceStream);
 
@@ -90,8 +101,8 @@ await run(function* () {
   // Compose stream helpers using pipe
   const stream = pipe(
     source,
-    valve({ open, close, openAt: 2, closeAt: 5 }),
-    batch({ maxSize: 3 }),
+    valve({ open, close, openAt: 100, closeAt: 100 }),
+    batch({ maxSize: 50 }),
   );
 
   for (const value of yield* each(stream)) {
@@ -107,15 +118,9 @@ await run(function* () {
 
 - Grouping API requests to reduce network overhead
 - Buffering database operations for bulk inserts
-- Collecting metrics before processing
 
 ### Valve Operation
 
 - Implementing backpressure in data pipelines
 - Controlling memory usage in high-throughput systems
 - Rate limiting stream processing
-
-## Composing with Pipe
-
-Stream operations can be composed using the `pipe` function from libraries like
-`remeda`:

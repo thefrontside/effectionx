@@ -9,12 +9,6 @@ export interface ValveOptions {
 }
 
 /**
- * Allows to apply backpressure to the source of the stream. This is useful when the
- * source generates items faster than the consumer can consume them and the source
- * provides a way to pause and resume the stream. It was originally designed for use
- * with Kafka where the producer can overwhelm the consumer with messages causing the
- * consumer to run out of memory.
- *
  * This function buffers incoming items, if the upstream is producing faster than the downstream
  * can consume, the buffer will grow. If the buffer size exceeds the `closeAt` threshold, the
  * `close` operation will be called which is expected to pause the upstream. The buffer will

@@ -4,7 +4,42 @@ A collection of type-safe stream helpers built on top of
 [Effection](https://github.com/thefrontside/effection) for efficient and
 controlled stream processing.
 
-## Features
+## Included Helpers
+
+### Filter
+
+The `filter` helper allows you to selectively pass items through the stream
+based on a predicate function.
+
+```typescript
+import { filter } from "@effectionx/stream-helpers";
+import { each, run } from "effection";
+
+// Example: Synchronous filtering
+await run(function* () {
+  const stream = filter(function* (x: number) {
+    return x > 5;
+  })(sourceStream);
+
+  for (const value of yield* each(stream)) {
+    console.log(value); // Only values > 5
+    yield* each.next();
+  }
+});
+
+// Example: Asynchronous filtering
+await run(function* () {
+  const stream = filter(function* (x: number) {
+    yield* sleep(100); // Simulate async operation
+    return x % 2 === 0; // Keep only even numbers
+  })(sourceStream);
+
+  for (const value of yield* each(stream)) {
+    console.log(value); // Only even numbers
+    yield* each.next();
+  }
+});
+```
 
 ### Map
 
@@ -114,7 +149,7 @@ You can use a simple `pipe()` to compose a series of stream helpers together. In
 this example, we use one from [remeda](https://remedajs.com/docs/#pipe),
 
 ```typescript
-import { valve } from "@effectionx/stream-helpers";
+import { batch, filter, map, valve } from "@effectionx/stream-helpers";
 import { each, run } from "effection";
 // any standard pipe function should work
 import { pipe } from "remeda";
@@ -124,6 +159,12 @@ await run(function* () {
   const stream = pipe(
     source,
     valve({ open, close, openAt: 100, closeAt: 100 }),
+    filter(function* (x) {
+      return x > 0;
+    }),
+    map(function* (x) {
+      return x * 20;
+    }),
     batch({ maxSize: 50 }),
   );
 
@@ -150,7 +191,7 @@ import { createFaucet } from "@effectionx/stream-helpers/test-helpers";
 import { each, run, spawn } from "effection";
 
 await run(function* () {
-  const faucet = yield* createFaucet({ open: true });
+  const faucet = yield* createFaucet<number>({ open: true });
 
   // Remember to spawn the stream subscription before sending items to the stream
   yield* spawn(function* () {
@@ -165,11 +206,12 @@ await run(function* () {
 
   // Pass an operation to control the rate at which items are sent to the stream
   yield* faucet.pour(function* (send) {
-    send(4);
     yield* sleep(10);
     send(5);
-    yield* sleep(10);
+    yield* sleep(30);
     send(6);
+    yield* sleep(10);
+    send(7);
   });
 
   // You can close the faucet to stop items from being sent

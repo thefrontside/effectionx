@@ -50,4 +50,4 @@ describe("map", () => {
       expect(next.value).toEqual(2);
     });
   });
-}); 
+});

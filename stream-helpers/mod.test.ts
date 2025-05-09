@@ -41,7 +41,9 @@ describe("batch, valve and map composition", () => {
       const composedStream = pipe(
         faucet,
         valveStream,
-        map(function*(x) { return x * 2 }),
+        map(function* (x) {
+          return x * 2;
+        }),
         batchStream,
       );
 

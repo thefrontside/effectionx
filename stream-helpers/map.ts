@@ -2,7 +2,7 @@ import { type Operation, scoped, type Stream } from "effection";
 
 /**
  * Transforms each item in the stream using the provided function.
- * 
+ *
  * @param fn - The function to transform each item
  * @returns A stream transformer that applies the function to each item
  */
@@ -32,5 +32,4 @@ export function map<A, B>(
       },
     };
   };
-} 
-
+}

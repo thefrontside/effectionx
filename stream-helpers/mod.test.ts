@@ -6,11 +6,12 @@ import { expect } from "jsr:@std/expect@^1";
 import { assertSpyCalls, spy } from "jsr:@std/testing@^1/mock";
 
 import { batch } from "./batch.ts";
+import { map } from "./map.ts";
 import { valve } from "./valve.ts";
 import { createFaucet } from "./test-helpers/faucet.ts";
 import { createArraySignal, is } from "./signals.ts";
 
-describe("batch and valve composition", () => {
+describe("batch, valve and map composition", () => {
   it("should process data through both batch and valve", async () => {
     await run(function* () {
       // Create a faucet as our data source
@@ -40,6 +41,7 @@ describe("batch and valve composition", () => {
       const composedStream = pipe(
         faucet,
         valveStream,
+        map(function*(x) { return x * 2 }),
         batchStream,
       );
 
@@ -66,7 +68,7 @@ describe("batch and valve composition", () => {
 
       // Verify the results
       const flatResults = results.valueOf().flat();
-      expect(flatResults).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+      expect(flatResults).toEqual([2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
 
       // Verify the valve operations were called
       assertSpyCalls(close, 1);

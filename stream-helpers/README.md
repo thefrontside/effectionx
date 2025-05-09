@@ -6,6 +6,24 @@ controlled stream processing.
 
 ## Features
 
+### Map
+
+The `map` helper transforms each item in a stream using a provided function. This is useful for data transformation operations where you need to process each item individually.
+
+```typescript
+ import { map } from "@effectionx/stream-helpers";
+ import { run, each } from "effection";
+ 
+ await run(function* () {
+   const stream = map(function* (x: number) { return x * 2 })(sourceStream);
+   
+   for (const value of yield* each(stream)) {
+     console.log(value); // Each value is doubled
+     yield* each.next();
+   }
+ });
+```
+
 ### Batch
 
 The `batch` helper is useful when you want to convert individual items passing

@@ -8,33 +8,33 @@ controlled stream processing.
 
 ### Filter
 
-The `filter` helper allows you to selectively pass items through the stream
-based on a predicate function.
+The `filter` helper narrows a stream by only passing through items that match a
+predicate.
 
 ```typescript
 import { filter } from "@effectionx/stream-helpers";
-import { each, run } from "effection";
+import { each } from "effection";
 
 // Example: Synchronous filtering
-await run(function* () {
-  const stream = filter(function* (x: number) {
-    return x > 5;
-  })(sourceStream);
+function* syncExample(source: Stream<number, unknown>) {	
 
-  for (const value of yield* each(stream)) {
+  const gt5 = filter<number>(function* (x) { return x > 5 });
+
+  for (const value of yield* each(gt5(stream)) {
     console.log(value); // Only values > 5
     yield* each.next();
   }
-});
+};
 
 // Example: Asynchronous filtering
-await run(function* () {
-  const stream = filter(function* (x: number) {
+function* asyncExample(source: Stream<number, unknown>) {
+
+  const evensOf = filter<number>(function* (x) {
     yield* sleep(100); // Simulate async operation
     return x % 2 === 0; // Keep only even numbers
-  })(sourceStream);
+  }) 
 
-  for (const value of yield* each(stream)) {
+  for (const value of yield* each(evensOf(stream))) {
     console.log(value); // Only even numbers
     yield* each.next();
   }
@@ -49,18 +49,18 @@ item individually.
 
 ```typescript
 import { map } from "@effectionx/stream-helpers";
-import { each, run } from "effection";
+import { each } from "effection";
 
-await run(function* () {
-  const stream = map(function* (x: number) {
+function* example(stream: Stream<number, unknown>) {
+  const double = map<number>(function* (x) {
     return x * 2;
-  })(sourceStream);
+  });
 
-  for (const value of yield* each(stream)) {
+  for (const value of yield* each(double(stream))) {
     console.log(value); // Each value is doubled
     yield* each.next();
   }
-});
+}
 ```
 
 ### Batch
@@ -72,20 +72,20 @@ will be created when either condition is met.
 
 ```typescript
 import { batch } from "@effectionx/stream-helpers";
-import { each, run } from "effection";
+import { each } from "effection";
 
 // Example: Batch by size
-await run(function* () {
-  const stream = batch({ maxSize: 3 })(sourceStream);
+function* exampleBySize(stream: Stream<number, unknown>) {
+  const byThree = batch({ maxSize: 3});
 
-  for (const items of yield* each(stream)) {
+  for (const items of yield* each(byThree(stream))) {
     console.log(batch); // [1, 2, 3], [4, 5, 6], ...
     yield* each.next();
   }
-});
+};
 
 // Example: Batch by time
-await run(function* () {
+function* exampleByTime(stream: Stream<number, unknown>) {
   const stream = batch({ maxTime: 1000 })(sourceStream);
 
   for (const batch of yield* each(stream)) {
@@ -95,13 +95,14 @@ await run(function* () {
 });
 
 // Example: Combined batching
-await run(function* () {
-  const stream = batch({
+function* exampleCombined(stream: Stream<number, unknown>) {
+
+  const batched = batch({
     maxSize: 5,
     maxTime: 1000,
-  })(sourceStream);
+  });
 
-  for (const batch of yield* each(stream)) {
+  for (const batch of yield* each(batched(stream))) {
     console.log(batch); // Up to 5 items within 1 second
     yield* each.next();
   }
@@ -119,10 +120,10 @@ be used as a buffer for any infinite stream.
 
 ```typescript
 import { valve } from "@effectionx/stream-helpers";
-import { each, run } from "effection";
+import { each } from "effection";
 
-await run(function* () {
-  const stream = valve({
+function* example() {
+  const regulated = valve({
     // buffer size threshold when close operation will invoked
     closeAt: 1000,
     *close() {
@@ -134,13 +135,13 @@ await run(function* () {
     *open() {
       // resume the source stream
     },
-  })(sourceStream);
+  });
 
-  for (const value of yield* each(stream)) {
+  for (const value of yield* each(regulated(stream))) {
     console.log(value);
     yield* each.next();
   }
-});
+}
 ```
 
 ### Composing stream helpers
@@ -150,11 +151,11 @@ this example, we use one from [remeda](https://remedajs.com/docs/#pipe),
 
 ```typescript
 import { batch, filter, map, valve } from "@effectionx/stream-helpers";
-import { each, run } from "effection";
+import { each } from "effection";
 // any standard pipe function should work
 import { pipe } from "remeda";
 
-await run(function* () {
+function* example(source: Stream<number, unknown>) {
   // Compose stream helpers using pipe
   const stream = pipe(
     source,
@@ -172,7 +173,7 @@ await run(function* () {
     console.log(value);
     yield* each.next();
   }
-});
+}
 ```
 
 ## Testing Streams

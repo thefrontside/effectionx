@@ -1,4 +1,4 @@
-import { race, type Stream, scoped, spawn, withResolvers, sleep, type Operation } from "effection";
+import { each, race, scoped, sleep, spawn, type Stream } from "effection";
 import { createArraySignal, is } from "./signals.ts";
 
 type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
@@ -28,54 +28,53 @@ export function batch(
   return function <T>(stream: Stream<T, never>): Stream<T[], never> {
     return {
       *[Symbol.iterator]() {
-        const subscription = yield* stream;
+        let batch = yield* createArraySignal<T>([]);
+
+        yield* spawn(function* () {
+          for (let item of yield* each(stream)) {
+            batch.push(item);
+            if (options.maxSize && batch.length >= options.maxSize) {
+              // wait until it's drained
+              yield* is(batch, (batch) => batch.length === 0);
+            }
+            yield* each.next();
+          }
+        });
+
+        function drain() {
+          let value = batch.valueOf();
+          batch.set([]);
+          return value;
+        }
 
         return {
           next: () =>
             scoped(function* () {
-              let batch = yield* createArraySignal<T>([]);
-              let { resolve, operation: filled } = withResolvers<void>();
-              
-              // pump the subscription into the batch
-              yield* spawn(function* () {
-                let next = yield* subscription.next();
-                while (!next.done) {
-                  batch.push(next.value);
-                  if (options.maxSize && batch.length >= options.maxSize) {
-                    resolve();
-                    break;
-                  }
-                  next = yield* subscription.next();
-                }
-              });
-    
               yield* is(batch, (batch) => batch.length >= 1);
 
               if (options.maxTime) {
-                yield* race([filled, sleep(options.maxTime)]);
+                if (options.maxSize) {
+                  yield* race([
+                    is(batch, (batch) => batch.length === options.maxSize),
+                    sleep(options.maxTime),
+                  ]);
+                } else {
+                  yield* sleep(options.maxTime);
+                }
 
-                return { done: false, value: batch.valueOf() };
+                return { done: false, value: drain() };
               }
-              
+
               if (options.maxSize) {
-                yield* filled;
-                return { done: false, value: batch.valueOf() };
+                yield* is(batch, (batch) => batch.length === options.maxSize);
+
+                return { done: false, value: drain() };
               }
 
-              return { done: false, value: batch.valueOf() };
+              throw new Error("should not happen");
             }),
         };
-      }
-    }
-  }
-}
-
-function first<T, TClose>(
-  stream: Stream<T, TClose>,
-): Operation<T | undefined> {
-  return scoped(function*() {
-    let subscription = yield* stream;
-    let next = yield* subscription.next();
-    return next.done ? undefined : next.value;
-  });
+      },
+    };
+  };
 }

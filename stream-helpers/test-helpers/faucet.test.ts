@@ -71,11 +71,11 @@ describe("createFaucet", () => {
       // Pour using a generator function
       yield* spawn(function* () {
         yield* faucet.pour(function* (send) {
-          send(1);
+          yield* send(1);
           yield* sleep(10);
-          send(2);
+          yield* send(2);
           yield* sleep(10);
-          send(3);
+          yield* send(3);
         });
       });
 
@@ -101,23 +101,19 @@ describe("createFaucet", () => {
       // Start pouring with a generator
       yield* spawn(function* () {
         yield* faucet.pour(function* (send) {
-          send(1);
+          yield* send(1);
           yield* sleep(10);
-          send(2);
+          yield* send(2);
           yield* sleep(10);
+          // Close the faucet
+          faucet.close();
           // This should not be sent because we'll close the faucet
-          send(3);
+          yield* send(3);
         });
       });
 
       // Wait for the first item
-      yield* sleep(15);
-
-      // Close the faucet
-      faucet.close();
-
-      // Wait to ensure no more items are processed
-      yield* sleep(20);
+      yield* sleep(50);
 
       expect(results.valueOf()).toEqual([1, 2]);
     });

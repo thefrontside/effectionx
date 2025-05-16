@@ -1,6 +1,6 @@
 import { pipe } from "npm:remeda@2.21.3";
 
-import { each, run, sleep, spawn } from "effection";
+import { each, run, sleep, spawn, withResolvers } from "effection";
 import { describe, it } from "jsr:@std/testing@^1/bdd";
 import { expect } from "jsr:@std/expect@^1";
 import { assertSpyCalls, spy } from "jsr:@std/testing@^1/mock";
@@ -9,7 +9,7 @@ import { batch } from "./batch.ts";
 import { map } from "./map.ts";
 import { valve } from "./valve.ts";
 import { createFaucet } from "./test-helpers/faucet.ts";
-import { createArraySignal, is } from "./signals.ts";
+import { createTracker } from "./tracker.ts";
 
 describe("batch, valve and map composition", () => {
   it("should process data through both batch and valve", async () => {
@@ -17,67 +17,88 @@ describe("batch, valve and map composition", () => {
       // Create a faucet as our data source
       const faucet = yield* createFaucet<number>({ open: true });
 
+      const tracker = yield* createTracker();
+
       // Create spies for valve operations
       const close = spy(function* () {
+        console.log("closing");
         faucet.close();
       });
 
       const open = spy(function* () {
+        console.log("opening");
         faucet.open();
       });
-
-      // Create a valve that closes at 5 and reopens at 2
-      const valveStream = valve({
-        closeAt: 5,
-        open,
-        close,
-        openAt: 2,
-      });
-
-      // Create a batch processor that batches by size 3
-      const batchStream = batch({ maxSize: 3 });
 
       // Compose the streams using pipe
       const composedStream = pipe(
         faucet,
-        valveStream,
-        map(function* (x) {
-          return x * 2;
+        tracker.passthrough(),
+        valve({
+          closeAt: 5,
+          open,
+          close,
+          openAt: 2,
         }),
-        batchStream,
+        map(function* (x) {
+          yield* sleep(10);
+          return { id: x, value: x * 2 };
+        }),
+        batch({ maxSize: 3, maxTime: 20 }),
       );
 
-      // Collect the results
-      const results = yield* createArraySignal<number[]>([]);
+      let { resolve, operation } = withResolvers<void>();
+      let results: { id: number; value: number }[][] = [];
 
       // Process the stream
       yield* spawn(function* () {
-        for (const batch of yield* each(composedStream)) {
-          results.push(batch);
+        let count = 0;
+        for (const items of yield* each(composedStream)) {
+          tracker.markMany(items.map((x) => x.id));
+          results.push(items);
+          console.log("consumed", { count, items });
+          count = count + items.length;
           yield* sleep(1);
+          if (count >= 10) {
+            resolve();
+          }
           yield* each.next();
         }
       });
 
       // Pour data into the faucet
-      yield* faucet.pour([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-
-      // Wait until all data is processed
-      yield* is(results, (values) => {
-        const totalItems = values.flat().length;
-        return totalItems === 10;
+      yield* faucet.pour(function* (send) {
+        for (let number of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+          yield* send(number);
+          console.log("sent", number);  
+          yield* sleep(1);
+        }
       });
 
+      yield* tracker;
+      yield* operation;
+
       // Verify the results
-      const flatResults = results.valueOf().flat();
-      expect(flatResults).toEqual([2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
+      const flatResults = results.flat();
+      expect(flatResults).toEqual([
+        { id: 1, value: 2 },
+        { id: 2, value: 4 },
+        { id: 3, value: 6 },
+        { id: 4, value: 8 },
+        { id: 5, value: 10 },
+        { id: 6, value: 12 },
+        { id: 7, value: 14 },
+        { id: 8, value: 16 },
+        { id: 9, value: 18 },
+        { id: 10, value: 20 },
+      ]);
 
       // Verify the valve operations were called
       assertSpyCalls(close, 1);
       assertSpyCalls(open, 1);
 
       // Verify the batching worked correctly
-      const batchSizes = results.valueOf().map((batch) => batch.length);
+      const batchSizes = results.map((batch) => batch.length);
       expect(batchSizes.every((size) => size <= 3)).toBe(true);
     });
   });

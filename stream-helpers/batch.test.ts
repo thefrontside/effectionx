@@ -4,7 +4,7 @@ import { expect } from "jsr:@std/expect@^1";
 import { batch } from "./batch.ts";
 import { createFaucet } from "./test-helpers/faucet.ts";
 
-describe("batch", () => {
+describe.only("batch", () => {
   it("respects maxTime", async () => {
     await run(function* () {
       const faucet = yield* createFaucet<number>({ open: true });

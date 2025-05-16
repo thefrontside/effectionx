@@ -35,22 +35,22 @@ export function valve(
         yield* spawn(function* () {
           while (true) {
             let next = yield* subscription.next();
-            if (open && (buffer.length + 1) >= options.closeAt) {
+            buffer.push(next.value);
+            if (open && buffer.length >= options.closeAt) {
               yield* options.close();
               open = false;
             }
-            buffer.push(next.value);
           }
         });
 
         return {
           next() {
             return scoped(function* () {
-              const value = yield* buffer.shift();
               if (!open && buffer.length <= options.openAt) {
                 yield* options.open();
                 open = true;
               }
+              const value = yield* buffer.shift();
               return {
                 done: false,
                 value,

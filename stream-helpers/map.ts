@@ -1,4 +1,4 @@
-import { type Operation, scoped, type Stream } from "effection";
+import type { Operation, Stream } from "effection";
 
 /**
  * Transforms each item in the stream using the provided function.
@@ -15,18 +15,16 @@ export function map<A, B>(
         const subscription = yield* stream;
 
         return {
-          next() {
-            return scoped(function* () {
-              const next = yield* subscription.next();
-              if (next.done) {
-                return next;
-              }
+          *next() {
+            const next = yield* subscription.next();
+            if (next.done) {
+              return next;
+            }
 
-              return {
-                done: false,
-                value: yield* fn(next.value),
-              };
-            });
+            return {
+              done: false,
+              value: yield* fn(next.value),
+            };
           },
         };
       },

@@ -22,8 +22,8 @@ import { type Operation, scoped, type Stream } from "effection";
  */
 export function filter<T>(
   predicate: (value: T) => Operation<boolean>,
-): (stream: Stream<T, never>) => Stream<T, never> {
-  return function (stream: Stream<T, never>): Stream<T, never> {
+): <TDone>(stream: Stream<T, TDone>) => Stream<T, TDone> {
+  return function (stream) {
     return {
       *[Symbol.iterator]() {
         const subscription = yield* stream;

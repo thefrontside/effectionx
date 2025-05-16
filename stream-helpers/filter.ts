@@ -29,21 +29,19 @@ export function filter<T>(
         const subscription = yield* stream;
 
         return {
-          next() {
-            return scoped(function* () {
-              while (true) {
-                const next = yield* subscription.next();
-                if (next.done) {
-                  return next;
-                }
-                if (yield* predicate(next.value)) {
-                  return {
-                    done: false,
-                    value: next.value,
-                  };
-                }
+          *next() {
+            while (true) {
+              const next = yield* subscription.next();
+              if (next.done) {
+                return next;
               }
-            });
+              if (yield* predicate(next.value)) {
+                return {
+                  done: false,
+                  value: next.value,
+                };
+              }
+            }
           },
         };
       },

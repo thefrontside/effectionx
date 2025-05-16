@@ -5,6 +5,7 @@ interface Tracker extends Operation<void> {
   passthrough(): <T>(stream: Stream<T, never>) => Stream<T, never>;
   markOne(item: unknown): void;
   markMany(items: Iterable<unknown>): void;
+  count: number
 }
 
 /**
@@ -13,7 +14,7 @@ interface Tracker extends Operation<void> {
 export function createTracker(): Operation<Tracker> {
   return resource(function* (provide) {
     const tracked = yield* createSetSignal();
-
+    let count = 0;
     yield* provide({
       *[Symbol.iterator]() {
         yield* is(tracked, (set) => set.size === 0);
@@ -29,6 +30,7 @@ export function createTracker(): Operation<Tracker> {
                   return scoped(function* () {
                     const next = yield* subscription.next();
                     tracked.add(next.value);
+                    count++;
                     return next;
                   });
                 },
@@ -36,6 +38,9 @@ export function createTracker(): Operation<Tracker> {
             },
           };
         };
+      },
+      get count() {
+        return count;
       },
       markOne(item) {
         tracked.delete(item);

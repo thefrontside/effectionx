@@ -1,13 +1,5 @@
-import {
-call,
-  race,
-  scoped,
-  sleep,
-  spawn,
-  type Stream,
-  withResolvers,
-  each,
-} from "effection";
+import { race, type Stream, scoped, spawn, withResolvers, sleep, type Operation } from "effection";
+import { createArraySignal, is } from "./signals.ts";
 
 type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
   & Pick<T, Exclude<keyof T, Keys>>
@@ -39,78 +31,51 @@ export function batch(
         const subscription = yield* stream;
 
         return {
-          *next() {
-            const start = Date.now();
-            const batch: T[] = [];
-            let next = yield* subscription.next();
-            
-            while (true) {
-              batch.push(next.value);
-
-              if (options.maxTime && (Date.now() - start) >= options.maxTime) {
-                return {
-                  done: false,
-                  value: batch
+          next: () =>
+            scoped(function* () {
+              let batch = yield* createArraySignal<T>([]);
+              let { resolve, operation: filled } = withResolvers<void>();
+              
+              // pump the subscription into the batch
+              yield* spawn(function* () {
+                let next = yield* subscription.next();
+                while (!next.done) {
+                  batch.push(next.value);
+                  if (options.maxSize && batch.length >= options.maxSize) {
+                    resolve();
+                    break;
+                  }
+                  next = yield* subscription.next();
                 }
+              });
+    
+              yield* is(batch, (batch) => batch.length >= 1);
+
+              if (options.maxTime) {
+                yield* race([filled, sleep(options.maxTime)]);
+
+                return { done: false, value: batch.valueOf() };
               }
-              if (options.maxSize && batch.length >= options.maxSize) {
-                return {
-                  done: false,
-                  value: batch
-                }
+              
+              if (options.maxSize) {
+                yield* filled;
+                return { done: false, value: batch.valueOf() };
               }
 
-              next = yield* subscription.next();
-            }
-          },
+              return { done: false, value: batch.valueOf() };
+            }),
         };
-      },
-    };
-  };
+      }
+    }
+  }
 }
 
-// return scoped(function* () {
-              // const one = withResolvers<T[]>();
-              // const full = withResolvers<T[]>();
-
-              // const batch: T[] = [];
-
-              // yield* spawn(function* () {
-              //   let count = 0;
-              //   while (true) {
-              //     let next = yield* subscription.next();
-              //     console.log({ next });
-              //     batch.push(next.value);
-              //     one.resolve(batch);
-              //     // console.log({ value: next.value, batch });
-              //     count++;
-              //     if (count >= (options.maxSize ?? Infinity)) {
-              //       full.resolve(batch);
-              //       break;
-              //     }
-              //   }
-              // });
-
-              // if (options.maxTime) {
-              //   const result = yield* race([call(function*() {
-              //     if (options.maxTime) {
-              //       yield* sleep(options.maxTime);
-              //     }
-              //     yield* one.operation
-              //     return batch;
-              //   }), full.operation]);
-              //   // console.log({ maxTime: options.maxTime, result });
-              //   return {
-              //     done: false,
-              //     value: result,
-              //   }
-              // }
-
-              // const result = yield* full.operation;
-              // console.log({ maxTime: options.maxTime, result });
-
-              // return {
-              //   done: false,
-              //   value: result,
-              // }
-            // });
+function first<T, TClose>(
+  stream: Stream<T, TClose>,
+): Operation<T | undefined> {
+  return scoped(function*() {
+    let subscription = yield* stream;
+    let next = yield* subscription.next();
+    return next.done ? undefined : next.value;
+  });
+}

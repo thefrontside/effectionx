@@ -21,12 +21,10 @@ describe("batch, valve and map composition", () => {
 
       // Create spies for valve operations
       const close = spy(function* () {
-        console.log("closing");
         faucet.close();
       });
 
       const open = spy(function* () {
-        console.log("opening");
         faucet.open();
       });
 
@@ -38,7 +36,7 @@ describe("batch, valve and map composition", () => {
           closeAt: 5,
           open,
           close,
-          openAt: 2,
+          openAt: 0,
         }),
         map(function* (x) {
           yield* sleep(10);
@@ -56,8 +54,8 @@ describe("batch, valve and map composition", () => {
         for (const items of yield* each(composedStream)) {
           tracker.markMany(items.map((x) => x.id));
           results.push(items);
-          console.log("consumed", { count, items });
           count = count + items.length;
+          // console.log("consumed", { count, items });
           yield* sleep(1);
           if (count >= 10) {
             resolve();
@@ -70,7 +68,6 @@ describe("batch, valve and map composition", () => {
       yield* faucet.pour(function* (send) {
         for (let number of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
           yield* send(number);
-          console.log("sent", number);  
           yield* sleep(1);
         }
       });

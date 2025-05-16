@@ -55,7 +55,6 @@ describe("batch, valve and map composition", () => {
           tracker.markMany(items.map((x) => x.id));
           results.push(items);
           count = count + items.length;
-          // console.log("consumed", { count, items });
           yield* sleep(1);
           if (count >= 10) {
             resolve();

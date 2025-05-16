@@ -1,7 +1,6 @@
 import {
   createSignal,
   type Operation,
-  race,
   resource,
   type Stream,
 } from "effection";
@@ -21,7 +20,7 @@ export interface Faucet<T> extends Stream<T, never> {
    * @param op - The generator function to pour items to the stream.
    */
   pour(
-    op: (send: (item: T) => void) => Operation<void>,
+    op: (send: (item: T) => Operation<void>) => Operation<void>,
   ): Operation<void>;
   /**
    * Open the stream to allow items to be sent to the stream.
@@ -96,17 +95,14 @@ export function createFaucet<T>(options: FaucetOptions): Operation<Faucet<T>> {
       *pour(items) {
         if (Array.isArray(items)) {
           for (let i of items) {
-            yield* is(open, (open) => open === true);
+            yield* is(open, (open) => open);
             signal.send(i);
           }
         } else {
-          while (true) {
-            yield* is(open, (open) => open === true);
-            yield* race([
-              items(signal.send),
-              is(open, (open) => open === false),
-            ]);
-          }
+          yield* items(function* (item) {
+            yield* is(open, (open) => open);
+            signal.send(item);
+          });
         }
       },
       close() {

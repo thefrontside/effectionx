@@ -5,7 +5,7 @@ import {
   resource,
   type Stream,
 } from "effection";
-import { List } from "immutable";
+import { List, Set } from "immutable";
 
 interface ValueStream<T> extends Stream<T, void> {
   valueOf(): T;
@@ -108,6 +108,55 @@ export function createBoolean(initial: boolean = false) {
         },
         valueOf() {
           return ref.current;
+        },
+      });
+    } finally {
+      signal.close();
+    }
+  });
+}
+
+interface SetSignal<T> extends SettableValue<Set<T>> {
+  add(item: T): Set<T>;
+  delete(item: T): boolean;
+  difference(items: Iterable<T>): Set<T>;
+  valueOf(): Set<T>;
+}
+
+export function createSetSignal<T>(initial: Array<T> = []) {
+  return resource<SetSignal<T>>(function* (provide) {
+    const signal = createSignal<Set<T>, void>();
+
+    const ref = { current: Set.of<T>(...initial) };
+
+    try {
+      yield* provide({
+        [Symbol.iterator]: signal[Symbol.iterator],
+        set(value) {
+          ref.current = Set.of<T>(...value);
+          signal.send(ref.current.toSet());
+          return ref.current;
+        },
+        add(item) {
+          ref.current = ref.current.add(item);
+          signal.send(ref.current.toSet());
+          return ref.current.toSet();
+        },
+        difference(items) {
+          ref.current = ref.current.subtract(items);
+          signal.send(ref.current.toSet());
+          return ref.current.toSet();
+        },
+        delete(item) {
+          if (ref.current.has(item)) {  
+            ref.current = ref.current.delete(item);
+            signal.send(ref.current.toSet());
+            return true;
+          }
+          return false;
+        },
+        valueOf() {
+          return ref.current.toSet();
         },
       });
     } finally {

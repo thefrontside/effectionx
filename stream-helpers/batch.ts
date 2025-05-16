@@ -1,10 +1,12 @@
 import {
+call,
   race,
   scoped,
   sleep,
   spawn,
   type Stream,
   withResolvers,
+  each,
 } from "effection";
 
 type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
@@ -37,35 +39,78 @@ export function batch(
         const subscription = yield* stream;
 
         return {
-          next() {
-            return scoped(function* () {
-              const full = withResolvers<void>();
+          *next() {
+            const start = Date.now();
+            const batch: T[] = [];
+            let next = yield* subscription.next();
+            
+            while (true) {
+              batch.push(next.value);
 
-              const batch: T[] = [];
-
-              yield* spawn(function* () {
-                let count = 0;
-                while (true) {
-                  let next = yield* subscription.next();
-                  batch.push(next.value);
-                  count++;
-                  if (count >= (options.maxSize ?? Infinity)) {
-                    full.resolve();
-                    break;
-                  }
+              if (options.maxTime && (Date.now() - start) >= options.maxTime) {
+                return {
+                  done: false,
+                  value: batch
                 }
-              });
+              }
+              if (options.maxSize && batch.length >= options.maxSize) {
+                return {
+                  done: false,
+                  value: batch
+                }
+              }
 
-              yield* race([sleep(options.maxTime ?? Infinity), full.operation]);
-
-              return {
-                done: false,
-                value: batch,
-              };
-            });
+              next = yield* subscription.next();
+            }
           },
         };
       },
     };
   };
 }
+
+// return scoped(function* () {
+              // const one = withResolvers<T[]>();
+              // const full = withResolvers<T[]>();
+
+              // const batch: T[] = [];
+
+              // yield* spawn(function* () {
+              //   let count = 0;
+              //   while (true) {
+              //     let next = yield* subscription.next();
+              //     console.log({ next });
+              //     batch.push(next.value);
+              //     one.resolve(batch);
+              //     // console.log({ value: next.value, batch });
+              //     count++;
+              //     if (count >= (options.maxSize ?? Infinity)) {
+              //       full.resolve(batch);
+              //       break;
+              //     }
+              //   }
+              // });
+
+              // if (options.maxTime) {
+              //   const result = yield* race([call(function*() {
+              //     if (options.maxTime) {
+              //       yield* sleep(options.maxTime);
+              //     }
+              //     yield* one.operation
+              //     return batch;
+              //   }), full.operation]);
+              //   // console.log({ maxTime: options.maxTime, result });
+              //   return {
+              //     done: false,
+              //     value: result,
+              //   }
+              // }
+
+              // const result = yield* full.operation;
+              // console.log({ maxTime: options.maxTime, result });
+
+              // return {
+              //   done: false,
+              //   value: result,
+              // }
+            // });

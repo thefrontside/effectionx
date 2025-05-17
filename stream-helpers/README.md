@@ -183,16 +183,16 @@ code. These are available in `@effectionx/stream-helpers/test-helpers` export.
 
 ### Faucet
 
-The `createFaucet` function creates a stream that can be used to test the
-behavior of streams that use backpressure. It's particularly useful in tests
-where you need a controllable source stream.
+The `useFaucet` function creates a stream that can be used to test the behavior
+of streams that use backpressure. It's particularly useful in tests where you
+need a controllable source stream.
 
 ```typescript
-import { createFaucet } from "@effectionx/stream-helpers/test-helpers";
+import { useFaucet } from "@effectionx/stream-helpers/test-helpers";
 import { each, run, spawn } from "effection";
 
 await run(function* () {
-  const faucet = yield* createFaucet<number>({ open: true });
+  const faucet = yield* useFaucet<number>({ open: true });
 
   // Remember to spawn the stream subscription before sending items to the stream
   yield* spawn(function* () {

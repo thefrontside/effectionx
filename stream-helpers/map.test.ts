@@ -2,12 +2,12 @@ import { run, sleep } from "effection";
 import { describe, it } from "jsr:@std/testing@^1/bdd";
 import { expect } from "jsr:@std/expect@^1";
 import { map } from "./map.ts";
-import { createFaucet } from "./test-helpers/faucet.ts";
+import { useFaucet } from "./test-helpers/faucet.ts";
 
 describe("map", () => {
   it("handles operation transformations", async () => {
     await run(function* () {
-      const faucet = yield* createFaucet<number>({ open: true });
+      const faucet = yield* useFaucet<number>({ open: true });
       const stream = map(function* (x: number) {
         yield* sleep(10);
         return x * 2;
@@ -30,7 +30,7 @@ describe("map", () => {
 
   it("preserves stream order", async () => {
     await run(function* () {
-      const faucet = yield* createFaucet<number>({ open: true });
+      const faucet = yield* useFaucet<number>({ open: true });
       const stream = map(function* (x: number) {
         yield* sleep(x * 10); // Longer sleep for larger numbers
         return x;

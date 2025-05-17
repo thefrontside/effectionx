@@ -4,13 +4,13 @@ import { assertSpyCalls, spy } from "jsr:@std/testing@^1/mock";
 
 import { expect } from "jsr:@std/expect@^1";
 import { valve } from "./valve.ts";
-import { createFaucet } from "./test-helpers/faucet.ts";
+import { useFaucet } from "./test-helpers/faucet.ts";
 import { createArraySignal, is } from "./signals.ts";
 
 describe("valve", () => {
   it("closes and opens the valve", async () => {
     await run(function* () {
-      const faucet = yield* createFaucet<number>({ open: true });
+      const faucet = yield* useFaucet<number>({ open: true });
 
       const close = spy(function* () {
         faucet.close();

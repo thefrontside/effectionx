@@ -1,11 +1,11 @@
-import { type Operation, resource, scoped, type Stream } from "effection";
+import { type Operation, resource, type Stream } from "effection";
 import { createSetSignal, is } from "./signals.ts";
 
 interface Tracker extends Operation<void> {
   passthrough(): <T>(stream: Stream<T, never>) => Stream<T, never>;
   markOne(item: unknown): void;
   markMany(items: Iterable<unknown>): void;
-  count: number
+  count: number;
 }
 
 /**
@@ -15,6 +15,7 @@ export function createTracker(): Operation<Tracker> {
   return resource(function* (provide) {
     const tracked = yield* createSetSignal();
     let count = 0;
+
     yield* provide({
       *[Symbol.iterator]() {
         yield* is(tracked, (set) => set.size === 0);
@@ -26,13 +27,11 @@ export function createTracker(): Operation<Tracker> {
               const subscription = yield* stream;
 
               return {
-                next() {
-                  return scoped(function* () {
-                    const next = yield* subscription.next();
-                    tracked.add(next.value);
-                    count++;
-                    return next;
-                  });
+                *next() {
+                  const next = yield* subscription.next();
+                  tracked.add(next.value);
+                  count++;
+                  return next;
                 },
               };
             },

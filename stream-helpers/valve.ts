@@ -1,4 +1,4 @@
-import { each, type Operation, scoped, spawn, type Stream } from "effection";
+import { each, type Operation, spawn, type Stream } from "effection";
 import { createArraySignal } from "./signals.ts";
 
 export interface ValveOptions {
@@ -42,18 +42,16 @@ export function valve(
         });
 
         return {
-          next() {
-            return scoped(function* () {
-              if (!open && buffer.length <= options.openAt) {
-                yield* options.open();
-                open = true;
-              }
-              const value = yield* buffer.shift();
-              return {
-                done: false,
-                value,
-              };
-            });
+          *next() {
+            if (!open && buffer.length <= options.openAt) {
+              yield* options.open();
+              open = true;
+            }
+            const value = yield* buffer.shift();
+            return {
+              done: false,
+              value,
+            };
           },
         };
       },

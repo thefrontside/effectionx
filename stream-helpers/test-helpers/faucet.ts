@@ -1,8 +1,8 @@
-import { createSignal, type Operation, resource, type Stream } from "effection";
+import { createSignal, type Operation, type Stream } from "effection";
 import { createBoolean, is } from "../signals.ts";
 
 /**
- * Interface of the stream returned by `createFaucet`.
+ * Interface of the stream returned by `useFaucet`.
  */
 export interface Faucet<T> extends Stream<T, never> {
   /**
@@ -47,11 +47,11 @@ export interface FaucetOptions {
  * to send items to the stream.
  *
  * ```typescript
- * import { createFaucet } from "@effectionx/stream-helpers/test-helpers";
+ * import { useFaucet } from "@effectionx/stream-helpers/test-helpers";
  * import { run, each, spawn } from "effection";
  *
  * await run(function* () {
- *   const faucet = yield* createFaucet({ open: true });
+ *   const faucet = yield* useFaucet({ open: true });
  *
  *   // Remember to spawn the stream subscription before sending items to the stream
  *   yield* spawn(function* () {
@@ -80,7 +80,7 @@ export interface FaucetOptions {
  * @param options.open - Whether the faucet is open.
  * @returns stream of items coming from the faucet
  */
-export function* createFaucet<T>(options: FaucetOptions): Operation<Faucet<T>> {
+export function* useFaucet<T>(options: FaucetOptions): Operation<Faucet<T>> {
   let signal = createSignal<T, never>();
   let open = yield* createBoolean(options.open);
 

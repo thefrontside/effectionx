@@ -18,9 +18,9 @@ import { each } from "effection";
 // Example: Synchronous filtering
 function* syncExample(source: Stream<number, unknown>) {	
 
-  const gt5 = filter<number>(function* (x) { return x > 5 });
+  const gt5 = filter<number>(function* (x) { return x > 5 })(stream);
 
-  for (const value of yield* each(gt5(stream)) {
+  for (const value of yield* each(gt5)) {
     console.log(value); // Only values > 5
     yield* each.next();
   }
@@ -32,9 +32,9 @@ function* asyncExample(source: Stream<number, unknown>) {
   const evensOf = filter<number>(function* (x) {
     yield* sleep(100); // Simulate async operation
     return x % 2 === 0; // Keep only even numbers
-  }) 
+  })(stream);
 
-  for (const value of yield* each(evensOf(stream))) {
+  for (const value of yield* each(evensOf)) {
     console.log(value); // Only even numbers
     yield* each.next();
   }
@@ -54,9 +54,9 @@ import { each } from "effection";
 function* example(stream: Stream<number, unknown>) {
   const double = map<number>(function* (x) {
     return x * 2;
-  });
+  })(stream);
 
-  for (const value of yield* each(double(stream))) {
+  for (const value of yield* each(double)) {
     console.log(value); // Each value is doubled
     yield* each.next();
   }
@@ -76,9 +76,9 @@ import { each } from "effection";
 
 // Example: Batch by size
 function* exampleBySize(stream: Stream<number, unknown>) {
-  const byThree = batch({ maxSize: 3});
+  const byThree = batch({ maxSize: 3})(stream);
 
-  for (const items of yield* each(byThree(stream))) {
+  for (const items of yield* each(byThree)) {
     console.log(batch); // [1, 2, 3], [4, 5, 6], ...
     yield* each.next();
   }
@@ -100,9 +100,9 @@ function* exampleCombined(stream: Stream<number, unknown>) {
   const batched = batch({
     maxSize: 5,
     maxTime: 1000,
-  });
+  })(stream);
 
-  for (const batch of yield* each(batched(stream))) {
+  for (const batch of yield* each(batched)) {
     console.log(batch); // Up to 5 items within 1 second
     yield* each.next();
   }
@@ -135,9 +135,9 @@ function* example() {
     *open() {
       // resume the source stream
     },
-  });
+  })(stream);
 
-  for (const value of yield* each(regulated(stream))) {
+  for (const value of yield* each(regulated)) {
     console.log(value);
     yield* each.next();
   }

@@ -1,0 +1,15 @@
+{
+  "name": "@effectionx/stream-helpers",
+  "version": "0.1.0",
+  "imports": {
+    "effection": "jsr:@effection/effection@^3",
+    "immutable": "npm:immutable@^5"
+  },
+  "exports": {
+    ".": "./mod.ts",
+    "./test-helpers": "./test-helpers.ts"
+  },
+  "tasks": {
+    "test": "deno run -A jsr:@effectionx/watch deno test"
+  }
+}

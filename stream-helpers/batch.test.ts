@@ -8,7 +8,7 @@ describe("batch", () => {
   it("respects maxTime", async () => {
     await run(function* () {
       const faucet = yield* useFaucet<number>({ open: true });
-      const stream = batch({ maxTime: 5 })(faucet);
+      const stream = batch({ maxTime: 5,  })(faucet);
 
       const subscription = yield* stream;
 

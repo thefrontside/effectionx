@@ -1,4 +1,4 @@
-import { type Operation, scoped, type Stream } from "effection";
+import type { Operation, Stream } from "effection";
 
 /**
  * Filters items from the stream based on a predicate function.

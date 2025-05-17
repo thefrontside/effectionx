@@ -8,14 +8,14 @@ import { assertSpyCalls, spy } from "jsr:@std/testing@^1/mock";
 import { batch } from "./batch.ts";
 import { map } from "./map.ts";
 import { valve } from "./valve.ts";
-import { createFaucet } from "./test-helpers/faucet.ts";
+import { useFaucet } from "./test-helpers/faucet.ts";
 import { createTracker } from "./tracker.ts";
 
 describe("batch, valve and map composition", () => {
   it("should process data through both batch and valve", async () => {
     await run(function* () {
       // Create a faucet as our data source
-      const faucet = yield* createFaucet<number>({ open: true });
+      const faucet = yield* useFaucet<number>({ open: true });
 
       const tracker = yield* createTracker();
 

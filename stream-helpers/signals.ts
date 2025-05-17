@@ -148,7 +148,7 @@ export function createSetSignal<T>(initial: Array<T> = []) {
           return ref.current.toSet();
         },
         delete(item) {
-          if (ref.current.has(item)) {  
+          if (ref.current.has(item)) {
             ref.current = ref.current.delete(item);
             signal.send(ref.current.toSet());
             return true;

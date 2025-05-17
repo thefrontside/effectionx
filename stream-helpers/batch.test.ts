@@ -2,17 +2,17 @@ import { each, run, sleep, spawn, withResolvers } from "effection";
 import { describe, it } from "jsr:@std/testing@^1/bdd";
 import { expect } from "jsr:@std/expect@^1";
 import { batch } from "./batch.ts";
-import { createFaucet } from "./test-helpers/faucet.ts";
+import { useFaucet } from "./test-helpers/faucet.ts";
 
 describe("batch", () => {
   it("respects maxTime", async () => {
     await run(function* () {
-      const faucet = yield* createFaucet<number>({ open: true });
+      const faucet = yield* useFaucet<number>({ open: true });
       const stream = batch({ maxTime: 5 })(faucet);
 
       const subscription = yield* stream;
 
-      yield* faucet.pour(function*(send) {
+      yield* faucet.pour(function* (send) {
         yield* sleep(1);
         yield* send(1);
         yield* sleep(1);
@@ -31,7 +31,7 @@ describe("batch", () => {
 
   it("respects maxSize", async () => {
     await run(function* () {
-      const faucet = yield* createFaucet<number>({ open: true });
+      const faucet = yield* useFaucet<number>({ open: true });
       const stream = batch({ maxSize: 3 })(faucet);
 
       const subscription = yield* stream;
@@ -48,7 +48,7 @@ describe("batch", () => {
 
   it("maxTime wins", async () => {
     await run(function* () {
-      const faucet = yield* createFaucet<number>({ open: true });
+      const faucet = yield* useFaucet<number>({ open: true });
       const stream = batch({ maxSize: 8, maxTime: 10 })(faucet);
       const finished = withResolvers<void>();
 
@@ -64,12 +64,12 @@ describe("batch", () => {
         }
       });
 
-      yield* faucet.pour(function*(send) {
+      yield* faucet.pour(function* (send) {
         for (let i = 1; i <= 10; i++) {
           yield* send(i);
           yield* sleep(3);
         }
-      })
+      });
 
       yield* finished.operation;
 
@@ -86,7 +86,7 @@ describe("batch", () => {
 
   it("maxSize wins within maxTime", async () => {
     await run(function* () {
-      const faucet = yield* createFaucet<number>({ open: true });
+      const faucet = yield* useFaucet<number>({ open: true });
       const stream = batch({ maxSize: 5, maxTime: 3 })(faucet);
 
       const batches: number[][] = [];

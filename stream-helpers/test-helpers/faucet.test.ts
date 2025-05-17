@@ -1,14 +1,14 @@
-import { createFaucet } from "./faucet.ts";
+import { useFaucet } from "./faucet.ts";
 import { createArraySignal, is } from "../signals.ts";
 
 import { describe, it } from "jsr:@std/testing@^1/bdd";
 import { expect } from "jsr:@std/expect@^1";
 import { each, race, run, sleep, spawn } from "effection";
 
-describe("createFaucet", () => {
+describe("useFaucet", () => {
   it("creates a faucet that can pour items", async () => {
     await run(function* () {
-      const faucet = yield* createFaucet<number>({ open: true });
+      const faucet = yield* useFaucet<number>({ open: true });
       const results = yield* createArraySignal<number>([]);
 
       // Spawn a subscription to the faucet
@@ -31,7 +31,7 @@ describe("createFaucet", () => {
 
   it("respects the open state", async () => {
     await run(function* () {
-      const faucet = yield* createFaucet<number>({ open: false });
+      const faucet = yield* useFaucet<number>({ open: false });
       const results = yield* createArraySignal<number>([]);
 
       // Spawn a subscription to the faucet
@@ -57,7 +57,7 @@ describe("createFaucet", () => {
 
   it("supports pouring with an operation", async () => {
     await run(function* () {
-      const faucet = yield* createFaucet<number>({ open: true });
+      const faucet = yield* useFaucet<number>({ open: true });
       const results = yield* createArraySignal<number>([]);
 
       // Spawn a subscription to the faucet
@@ -87,7 +87,7 @@ describe("createFaucet", () => {
 
   it("stops pouring when closed", async () => {
     await run(function* () {
-      const faucet = yield* createFaucet<number>({ open: true });
+      const faucet = yield* useFaucet<number>({ open: true });
       const results = yield* createArraySignal<number>([]);
 
       // Spawn a subscription to the faucet

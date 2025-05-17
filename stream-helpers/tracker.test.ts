@@ -2,7 +2,7 @@ import { each, run, sleep, spawn, withResolvers } from "effection";
 import { describe, it } from "jsr:@std/testing@^1/bdd";
 import { expect } from "jsr:@std/expect@^1";
 import { createTracker } from "./tracker.ts";
-import { createFaucet } from "./test-helpers/faucet.ts";
+import { useFaucet } from "./test-helpers/faucet.ts";
 import { pipe } from "npm:remeda@2.21.3";
 import { map } from "./map.ts";
 import { batch } from "./batch.ts";
@@ -12,7 +12,7 @@ describe("tracker", () => {
     await run(function* () {
       const { operation, resolve } = withResolvers<void>();
       const tracker = yield* createTracker();
-      const faucet = yield* createFaucet<number>({ open: true });
+      const faucet = yield* useFaucet<number>({ open: true });
 
       const stream = pipe(
         faucet,
@@ -59,7 +59,7 @@ describe("tracker", () => {
       const { operation, resolve } = withResolvers<void>();
 
       const tracker = yield* createTracker();
-      const faucet = yield* createFaucet<number>({ open: true });
+      const faucet = yield* useFaucet<number>({ open: true });
       const stream = pipe(
         faucet,
         tracker.passthrough(),
@@ -86,7 +86,7 @@ describe("tracker", () => {
           yield* each.next();
         }
       });
-      
+
       yield* faucet.pour(function* (send) {
         yield* send(1);
         yield* sleep(10);
@@ -108,9 +108,9 @@ describe("tracker", () => {
       });
 
       yield* operation;
-      yield* tracker; 
+      yield* tracker;
 
       expect(received).toEqual([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
     });
-  }); 
+  });
 });

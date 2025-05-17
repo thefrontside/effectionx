@@ -5,10 +5,10 @@ import { batch } from "./batch.ts";
 import { useFaucet } from "./test-helpers/faucet.ts";
 
 describe("batch", () => {
-  it("respects maxTime", async () => {
+  it("creates a batch when maxTime expires", async () => {
     await run(function* () {
       const faucet = yield* useFaucet<number>({ open: true });
-      const stream = batch({ maxTime: 5,  })(faucet);
+      const stream = batch({ maxTime: 5 })(faucet);
 
       const subscription = yield* stream;
 
@@ -29,7 +29,7 @@ describe("batch", () => {
     });
   });
 
-  it("respects maxSize", async () => {
+  it("creates a batch by maxSize when maxTime is not set", async () => {
     await run(function* () {
       const faucet = yield* useFaucet<number>({ open: true });
       const stream = batch({ maxSize: 3 })(faucet);
@@ -46,7 +46,8 @@ describe("batch", () => {
     });
   });
 
-  it("maxTime wins", async () => {
+  it("creates a batch within maxTime when maxSize is never reached", async () => {
+    expect.assertions(1);
     await run(function* () {
       const faucet = yield* useFaucet<number>({ open: true });
       const stream = batch({ maxSize: 8, maxTime: 10 })(faucet);
@@ -73,8 +74,6 @@ describe("batch", () => {
 
       yield* finished.operation;
 
-      expect(batches.flat()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-
       expect(batches).toEqual([
         [1, 2, 3],
         [4, 5, 6],
@@ -84,7 +83,7 @@ describe("batch", () => {
     });
   });
 
-  it("maxSize wins within maxTime", async () => {
+  it("creates a batch within maxSize in maxTime window", async () => {
     await run(function* () {
       const faucet = yield* useFaucet<number>({ open: true });
       const stream = batch({ maxSize: 5, maxTime: 3 })(faucet);

@@ -1,4 +1,4 @@
-import { each, race, scoped, sleep, spawn, type Stream } from "effection";
+import { each, race, sleep, spawn, type Stream } from "effection";
 import { createArraySignal, is } from "./signals.ts";
 
 type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
@@ -48,23 +48,22 @@ export function batch(
         }
 
         return {
-          next: () =>
-            scoped(function* () {
-              yield* is(batch, (batch) => batch.length >= 1);
+          *next() {
+            yield* is(batch, (batch) => batch.length >= 1);
 
-              if (options.maxTime && options.maxSize) {
-                yield* race([
-                  is(batch, (batch) => batch.length === options.maxSize),
-                  sleep(options.maxTime),
-                ]);
-              } else if (options.maxTime) {
-                yield* sleep(options.maxTime);
-              } else if (options.maxSize) {
-                yield* is(batch, (batch) => batch.length === options.maxSize);
-              }
+            if (options.maxTime && options.maxSize) {
+              yield* race([
+                is(batch, (batch) => batch.length === options.maxSize),
+                sleep(options.maxTime),
+              ]);
+            } else if (options.maxTime) {
+              yield* sleep(options.maxTime);
+            } else if (options.maxSize) {
+              yield* is(batch, (batch) => batch.length === options.maxSize);
+            }
 
-              return { done: false, value: drain() };
-            }),
+            return { done: false, value: drain() };
+          },
         };
       },
     };

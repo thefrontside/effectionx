@@ -1,4 +1,4 @@
-import { type Operation, scoped, spawn, type Stream } from "effection";
+import { each, type Operation, scoped, spawn, type Stream } from "effection";
 import { createArraySignal } from "./signals.ts";
 
 export interface ValveOptions {
@@ -27,19 +27,17 @@ export function valve(
   return function <T>(stream: Stream<T, never>): Stream<T, never> {
     return {
       *[Symbol.iterator]() {
-        const subscription = yield* stream;
-
         const buffer = yield* createArraySignal<T>([]);
         let open = true;
 
         yield* spawn(function* () {
-          while (true) {
-            let next = yield* subscription.next();
-            buffer.push(next.value);
+          for (const item of yield* each(stream)) {
+            buffer.push(item);
             if (open && buffer.length >= options.closeAt) {
               yield* options.close();
               open = false;
             }
+            yield* each.next();
           }
         });
 

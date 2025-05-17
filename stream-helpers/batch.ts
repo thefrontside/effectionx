@@ -8,8 +8,8 @@ type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
   }[Keys];
 
 export interface BatchOptions {
-  maxTime: number;
-  maxSize: number;
+  readonly maxTime: number;
+  readonly maxSize: number;
 }
 
 /**
@@ -52,26 +52,18 @@ export function batch(
             scoped(function* () {
               yield* is(batch, (batch) => batch.length >= 1);
 
-              if (options.maxTime) {
-                if (options.maxSize) {
-                  yield* race([
-                    is(batch, (batch) => batch.length === options.maxSize),
-                    sleep(options.maxTime),
-                  ]);
-                } else {
-                  yield* sleep(options.maxTime);
-                }
-
-                return { done: false, value: drain() };
-              }
-
-              if (options.maxSize) {
+              if (options.maxTime && options.maxSize) {
+                yield* race([
+                  is(batch, (batch) => batch.length === options.maxSize),
+                  sleep(options.maxTime),
+                ]);
+              } else if (options.maxTime) {
+                yield* sleep(options.maxTime);
+              } else if (options.maxSize) {
                 yield* is(batch, (batch) => batch.length === options.maxSize);
-
-                return { done: false, value: drain() };
               }
 
-              throw new Error("should not happen");
+              return { done: false, value: drain() };
             }),
         };
       },

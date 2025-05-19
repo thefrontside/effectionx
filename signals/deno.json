@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "imports": {
     "effection": "jsr:@effection/effection@^3",
-    "immutable": "npm:immutable@^5"
+    "immutable": "npm:immutable@^5",
+    "@std/testing": "jsr:@std/testing@^1",
+    "expect": "jsr:@std/expect@^1"
   },
   "license": "MIT",
   "exports": {

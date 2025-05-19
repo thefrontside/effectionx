@@ -1,7 +1,7 @@
 import { type Operation, resource, type Stream } from "effection";
 import { createSetSignal, is } from "./signals.ts";
 
-interface Tracker extends Operation<void> {
+export interface Tracker extends Operation<void> {
   /**
    * Returns a stream helper that doesn't modify the items passing through the stream,
    * but will capture a reference to the item. Call the `markOne` or `markMany` methods

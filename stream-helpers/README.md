@@ -165,9 +165,9 @@ const source = signal(0);
 const tracker = yield* createTracker();
 
 // create  passthrough stream helper
-const stream = tracker.passthrough();
+const track = tracker.passthrough();
 
-for (const value of yield* each(stream(source))) {
+for (const value of yield* each(track(source))) {
   // mark items 
   tracker.markOne(value);
   yield* each.next();

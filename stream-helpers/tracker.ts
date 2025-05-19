@@ -2,19 +2,45 @@ import { type Operation, resource, type Stream } from "effection";
 import { createSetSignal, is } from "./signals.ts";
 
 interface Tracker extends Operation<void> {
+  /**
+   * Returns a stream helper that doesn't modify the items passing through the stream,
+   * but will capture a reference to the item. Call the `markOne` or `markMany` methods
+   * with the item to indicate that it has exited the stream.
+   */
   passthrough(): <T>(stream: Stream<T, never>) => Stream<T, never>;
+  /**
+   * Call this method with an item that has passed through the stream to indicate that it has exited the stream.
+   */
   markOne(item: unknown): void;
+  /**
+   * Call this method with an iterable of items that have passed through the stream to indicate that they have exited the stream.
+   */
   markMany(items: Iterable<unknown>): void;
-  count: number;
 }
 
 /**
- * Creates a tracker that can be used to track items passing through a stream.
+ * Creates a tracker that can be used to verify that all items that entered the stream
+ * eventually exit the stream. This is helpful when you want to ensure that all items
+ * were processed before terminating the operation that created the stream.
+ *
+ * @example
+ * ```typescript
+ * import { each, signal } from "effection";
+ *
+ * const source = signal(0);
+ *
+ * const tracker = yield* createTracker();
+ * const stream = tracker.passthrough()(source);
+ *
+ * for (const value of yield* each(stream)) {
+ *   tracker.markOne(value);
+ *   yield* each.next();
+ * }
+ * ```
  */
 export function createTracker(): Operation<Tracker> {
   return resource(function* (provide) {
     const tracked = yield* createSetSignal();
-    let count = 0;
 
     yield* provide({
       *[Symbol.iterator]() {
@@ -30,16 +56,12 @@ export function createTracker(): Operation<Tracker> {
                 *next() {
                   const next = yield* subscription.next();
                   tracked.add(next.value);
-                  count++;
                   return next;
                 },
               };
             },
           };
         };
-      },
-      get count() {
-        return count;
       },
       markOne(item) {
         tracked.delete(item);

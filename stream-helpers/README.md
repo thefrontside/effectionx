@@ -147,11 +147,13 @@ function* example() {
 ### Passthrough Tracker
 
 Passthrough Tracker stream helper provides a way to know if all items that
-passed through the stream have been handled. This is especially helpful when
-you want to ensure that all items were processed before completing an operation.
+passed through the stream have been handled. This is especially helpful when you
+want to ensure that all items were processed before completing an operation.
 
-It's different from other stream helpers because you must first call `createTracker` function which retuns an object. The actual helper is on the `passthrough` method 
-which you can call and chain as you would with other helpers.
+It's different from other stream helpers because you must first call
+`createTracker` function which retuns an object. The actual helper is on the
+`passthrough` method which you can call and chain as you would with other
+helpers.
 
 ```typescript
 import { each, signal } from "effection";

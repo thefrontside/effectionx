@@ -1,10 +1,18 @@
 import { describe, it } from "bdd";
 import { expect } from "expect";
-import { each, Err, Ok, run, sleep, spawn } from "npm:effection@3.0.3";
+import {
+  each,
+  Err,
+  Ok,
+  run,
+  sleep,
+  spawn,
+  until,
+} from "npm:effection@4.0.0-alpha.8";
 
 import { parallel } from "./parallel.ts";
 
-import type { Operation, Result } from "npm:effection@3.0.3";
+import type { Operation, Result } from "npm:effection@4.0.0-alpha.8";
 
 const test = describe("parallel()");
 
@@ -130,7 +138,7 @@ it(test, "should resolve all async items", async () => {
       yield* sleep(15);
       two.resolve(2);
     });
-    const results = yield* parallel([one, () => two.promise]);
+    const results = yield* parallel([one, () => until(two.promise)]);
     return yield* results;
   });
 
@@ -144,7 +152,10 @@ it(test, "should stop all operations when there is an error", async () => {
 
   function* genFn() {
     try {
-      const results = yield* parallel([() => one.promise, () => two.promise]);
+      const results = yield* parallel([
+        () => until(one.promise),
+        () => until(two.promise),
+      ]);
       actual = yield* results;
     } catch (_) {
       actual = [Err(new Error("should not get hit"))];

@@ -1,5 +1,5 @@
-import type { Callable, Operation, Result } from "npm:effection@3.0.3";
-import { call, Err, Ok } from "npm:effection@3.0.3";
+import type { Operation, Result } from "npm:effection@4.0.0-alpha.8";
+import { call, Err, Ok } from "npm:effection@4.0.0-alpha.8";
 
 /**
  * The goal of `safe` is to wrap Operations to prevent them from raising
@@ -23,10 +23,11 @@ function isError(error: unknown): error is Error {
   return error instanceof Error;
 }
 
-export function* safe<T>(operator: Callable<T>): Operation<Result<T>> {
+export function* safe<T, TArgs extends unknown[] = []>(
+  operator: (...args: TArgs) => Operation<T>,
+): Operation<Result<T>> {
   try {
-    // deno-lint-ignore no-explicit-any
-    const value = yield* call<T>(operator as any);
+    const value = yield* call(operator);
     return Ok(value);
   } catch (error) {
     return Err(isError(error) ? error : new Error(String(error)));

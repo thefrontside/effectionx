@@ -1,6 +1,6 @@
 import { describe, it } from "bdd";
 import { expect } from "expect";
-import { run } from "npm:effection@3.0.3";
+import { run } from "npm:effection@4.0.0-alpha.8";
 
 import { json, request } from "./request.ts";
 

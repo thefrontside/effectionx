@@ -23,6 +23,10 @@ export function createArraySignal<T>(
     const array: ArraySignal<T> = {
       [Symbol.iterator]: signal[Symbol.iterator],
       set(value) {
+        if (ref.current.equals(List.of<T>(...value))) {
+          return ref.current.toArray();
+        }
+
         ref.current = List.of<T>(...value);
         signal.send(ref.current.toArray());
         return ref.current.toArray();

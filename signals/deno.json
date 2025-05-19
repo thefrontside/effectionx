@@ -1,15 +1,13 @@
 {
-  "name": "@effectionx/stream-helpers",
+  "name": "@effectionx/signals",
   "version": "0.1.0",
   "imports": {
     "effection": "jsr:@effection/effection@^3",
-    "immutable": "npm:immutable@^5",
-    "@effectionx/signals": "jsr:@effectionx/signals@^0.1.0"
+    "immutable": "npm:immutable@^5"
   },
   "license": "MIT",
   "exports": {
-    ".": "./mod.ts",
-    "./test-helpers": "./test-helpers.ts"
+    ".": "./mod.ts"
   },
   "tasks": {
     "test": "deno run -A jsr:@effectionx/watch deno test"

@@ -1,11 +1,13 @@
 import { each, run, sleep, spawn, withResolvers } from "effection";
-import { describe, it } from "jsr:@std/testing@^1/bdd";
 import { expect } from "jsr:@std/expect@^1";
-import { createTracker } from "./tracker.ts";
-import { useFaucet } from "./test-helpers/faucet.ts";
+import { describe, it } from "jsr:@std/testing@^1/bdd";
 import { pipe } from "npm:remeda@2.21.3";
-import { map } from "./map.ts";
+
 import { batch } from "./batch.ts";
+import { map } from "./map.ts";
+import { useFaucet } from "./test-helpers/faucet.ts";
+import { createTracker } from "./tracker.ts";
+
 describe("tracker", () => {
   it("waits for all items to be processed", async () => {
     expect.assertions(1);

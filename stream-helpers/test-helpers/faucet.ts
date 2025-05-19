@@ -1,5 +1,5 @@
 import { createSignal, type Operation, type Stream } from "effection";
-import { createBoolean, is } from "../signals.ts";
+import { createBoolean, is } from "@effectionx/signals";
 
 /**
  * Interface of the stream returned by `useFaucet`.

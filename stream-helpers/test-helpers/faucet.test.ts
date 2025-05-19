@@ -1,5 +1,5 @@
 import { useFaucet } from "./faucet.ts";
-import { createArraySignal, is } from "../signals.ts";
+import { createArraySignal, is } from "@effectionx/signals";
 
 import { describe, it } from "jsr:@std/testing@^1/bdd";
 import { expect } from "jsr:@std/expect@^1";

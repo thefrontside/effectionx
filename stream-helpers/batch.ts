@@ -1,5 +1,5 @@
 import { each, race, sleep, spawn, type Stream } from "effection";
-import { createArraySignal, is } from "./signals.ts";
+import { createArraySignal, is } from "@effectionx/signals";
 
 type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
   & Pick<T, Exclude<keyof T, Keys>>

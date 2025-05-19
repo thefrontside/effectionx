@@ -6,10 +6,10 @@ import type { Operation, Stream } from "effection";
  * @param fn - The function to transform each item
  * @returns A stream transformer that applies the function to each item
  */
-export function map<A, B, TClose = never>(
+export function map<A, B>(
   fn: (value: A) => Operation<B>,
-): (stream: Stream<A, TClose>) => Stream<B, TClose> {
-  return function (stream: Stream<A, TClose>): Stream<B, TClose> {
+): <TClose>(stream: Stream<A, TClose>) => Stream<B, TClose> {
+  return function (stream) {
     return {
       *[Symbol.iterator]() {
         const subscription = yield* stream;

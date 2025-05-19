@@ -18,9 +18,9 @@ import { each } from "effection";
 // Example: Synchronous filtering
 function* syncExample(source: Stream<number, unknown>) {	
 
-  const gt5 = filter<number>(function* (x) { return x > 5 })(stream);
+  const gt5 = filter<number>(function* (x) { return x > 5 });
 
-  for (const value of yield* each(gt5)) {
+  for (const value of yield* each(gt5(stream))) {
     console.log(value); // Only values > 5
     yield* each.next();
   }
@@ -32,9 +32,9 @@ function* asyncExample(source: Stream<number, unknown>) {
   const evensOf = filter<number>(function* (x) {
     yield* sleep(100); // Simulate async operation
     return x % 2 === 0; // Keep only even numbers
-  })(stream);
+  });
 
-  for (const value of yield* each(evensOf)) {
+  for (const value of yield* each(evensOf(stream))) {
     console.log(value); // Only even numbers
     yield* each.next();
   }
@@ -54,9 +54,9 @@ import { each } from "effection";
 function* example(stream: Stream<number, unknown>) {
   const double = map<number>(function* (x) {
     return x * 2;
-  })(stream);
+  });
 
-  for (const value of yield* each(double)) {
+  for (const value of yield* each(double(stream))) {
     console.log(value); // Each value is doubled
     yield* each.next();
   }
@@ -76,9 +76,9 @@ import { each } from "effection";
 
 // Example: Batch by size
 function* exampleBySize(stream: Stream<number, unknown>) {
-  const byThree = batch({ maxSize: 3})(stream);
+  const byThree = batch({ maxSize: 3});
 
-  for (const items of yield* each(byThree)) {
+  for (const items of yield* each(byThree(stream))) {
     console.log(batch); // [1, 2, 3], [4, 5, 6], ...
     yield* each.next();
   }
@@ -100,9 +100,9 @@ function* exampleCombined(stream: Stream<number, unknown>) {
   const batched = batch({
     maxSize: 5,
     maxTime: 1000,
-  })(stream);
+  });
 
-  for (const batch of yield* each(batched)) {
+  for (const batch of yield* each(batched(stream))) {
     console.log(batch); // Up to 5 items within 1 second
     yield* each.next();
   }
@@ -142,6 +142,37 @@ function* example() {
     yield* each.next();
   }
 }
+```
+
+### Passthrough Tracker
+
+Passthrough Tracker stream helper provides a way to know if all items that
+passed through the stream have been handled. This is especially helpful when
+you want to ensure that all items were processed before completing an operation.
+
+It's different from other stream helpers because you must first call `createTracker` function which retuns an object. The actual helper is on the `passthrough` method 
+which you can call and chain as you would with other helpers.
+
+```typescript
+import { each, signal } from "effection";
+import { createTracker } from "@ffectionx/stream-helpers"
+
+const source = signal(0);
+
+// create the tracker
+const tracker = yield* createTracker();
+
+// create  passthrough stream helper
+const stream = tracker.passthrough();
+
+for (const value of yield* each(stream(source))) {
+  // mark items 
+  tracker.markOne(value);
+  yield* each.next();
+}
+
+// will resolve when all items that passed through the stream were seen
+yield* tracker;
 ```
 
 ### Composing stream helpers

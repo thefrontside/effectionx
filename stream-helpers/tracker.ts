@@ -22,21 +22,6 @@ export interface Tracker extends Operation<void> {
  * Creates a tracker that can be used to verify that all items that entered the stream
  * eventually exit the stream. This is helpful when you want to ensure that all items
  * were processed before terminating the operation that created the stream.
- *
- * @example
- * ```typescript
- * import { each, signal } from "effection";
- *
- * const source = signal(0);
- *
- * const tracker = yield* createTracker();
- * const stream = tracker.passthrough()(source);
- *
- * for (const value of yield* each(stream)) {
- *   tracker.markOne(value);
- *   yield* each.next();
- * }
- * ```
  */
 export function createTracker(): Operation<Tracker> {
   return resource(function* (provide) {

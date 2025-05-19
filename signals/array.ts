@@ -4,13 +4,47 @@ import { List } from "immutable";
 import { is } from "./helpers.ts";
 import type { SettableValue } from "./types.ts";
 
+/**
+ * Interface for return value of {@link createArraySignal}.
+ */
 interface ArraySignal<T> extends SettableValue<T[]> {
+  /**
+   * Pushes a new value onto the end of the array.
+   *
+   * @param item - The value to push onto the array.
+   * @returns The new length of the array.
+   */
   push(item: T): number;
+  /**
+   * Removes the first value from the array and returns it.
+   * If the array is empty, the operation will block until a value is available.
+   *
+   * @returns The first value from the array.
+   */
   shift(): Operation<T>;
+  /**
+   * Returns the current value of the array.
+   *
+   * @returns The current value of the array.
+   */
   valueOf(): T[];
+  /**
+   * Returns the length of the array.
+   *
+   * @returns The length of the array.
+   */
   get length(): number;
 }
 
+/**
+ * A signal for an immutable array value. The stream emits the
+ * current value of the array and new values when the array is updated. The array
+ * is immutable and cannot be changed. Instead, the value is replaced with a new
+ * value.
+ *
+ * @param initial - The initial value of the signal.
+ * @returns A stream of immutable array values.
+ */
 export function createArraySignal<T>(
   initial: Iterable<T>,
 ): Operation<ArraySignal<T>> {

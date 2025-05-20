@@ -24,6 +24,7 @@
     "./deno-deploy",
     "./jsonl-store",
     "./fx",
+    "./microstates",
     "./raf",
     "./task-buffer",
     "./test-adapter",

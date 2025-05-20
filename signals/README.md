@@ -72,9 +72,7 @@ stream helpers.
 
 ### is
 
-`is` helper is useful when you want to wait for a signal to enter a specific state.
-Some of the common use cases are waiting for an array to reach a given length or for a boolean signal to become true or false. This helper takes a predicate that it
-will evaluate for every value.
+`is` helper returns an operation that completes when the value of the stream matches the predicate. It's useful when you want to wait for a signal to enter a specific state. Some of the common use cases are waiting for an array to reach a given length or for a boolean signal to become true or false.
 
 ```ts
 import { run, spawn } from 'effection';

@@ -1,5 +1,5 @@
 import { createSignal, type Operation, type Stream } from "effection";
-import { createBoolean, is } from "@effectionx/signals";
+import { createBooleanSignal, is } from "@effectionx/signals";
 
 /**
  * Interface of the stream returned by `useFaucet`.
@@ -82,7 +82,7 @@ export interface FaucetOptions {
  */
 export function* useFaucet<T>(options: FaucetOptions): Operation<Faucet<T>> {
   let signal = createSignal<T, never>();
-  let open = yield* createBoolean(options.open);
+  let open = yield* createBooleanSignal(options.open);
 
   return {
     [Symbol.iterator]: signal[Symbol.iterator],

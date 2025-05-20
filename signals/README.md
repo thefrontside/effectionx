@@ -4,27 +4,56 @@ Collection of immutable state containers for primitive data types.
 
 ## About
 
-These signals are designed using [unidirectional data flow](https://en.wikipedia.org/wiki/Unidirectional_data_flow) pattern in Effection operations. As with tools like Redux, the state in the data container is immutable. A new value will be sent 
-to the stream on every state change.
+These signals are designed using
+[unidirectional data flow](https://en.wikipedia.org/wiki/Unidirectional_data_flow)
+pattern in Effection operations. As with tools like Redux, the state in the data
+container is immutable. A new value will be sent to the stream on every state
+change.
 
 ## Boolean Signal
 
+The Boolean Signal provides a stream for a boolean value. You can set the value
+which will cause the new value to be sent to the stream.
 
+```ts
+import { each, run, spawn } from "effection";
+import { createBooleanSignal } from "@effectionx/signals";
+
+await run(function* () {
+  const boolean = yield* createBooleanSignal(true);
+
+  yield* spawn(function* () {
+    for (const update of yield* each(boolean)) {
+      console.log(update);
+      yield* each.next();
+    }
+  });
+
+  boolean.set(false); // this will send false to the stream
+  boolean.set(true); // this will send true to the stream
+  boolean.set(true); // this won't send anything since the value hasn't changed
+});
+```
+
+For an example of Boolean Signal in action, checkout the
+[faucet](https://github.com/thefrontside/effectionx/blob/main/stream-helpers/test-helpers/faucet.ts)
 
 ## Array Signal
 
-The Array Signal provides a stream for the value of the array. The value is considered immutable - you shouldn't modify the value that comes through the stream, instead invoke methods on the signal to cause a new value to be sent. 
+The Array Signal provides a stream for the value of the array. The value is
+considered immutable - you shouldn't modify the value that comes through the
+stream, instead invoke methods on the signal to cause a new value to be sent.
 
 ```ts
-import { run, spawn, each } from "effection";
+import { each, run, spawn } from "effection";
 import { createArraySignal } from "@effectionx/signals";
 
-await run(function*() {
+await run(function* () {
   const array = yield* createArraySignal<number>([]);
 
-  yield* spawn(function*() {
+  yield* spawn(function* () {
     for (const update of yield* each(array)) {
-      console.log(update)
+      console.log(update);
       yield* each.next();
     }
   });
@@ -33,3 +62,8 @@ await run(function*() {
 });
 ```
 
+For an example of Array Signl, checkout the
+[valve](https://github.com/thefrontside/effectionx/blob/main/stream-helpers/valve.ts)
+and
+[batch](https://github.com/thefrontside/effectionx/blob/main/stream-helpers/batch.ts)
+stream helpers.

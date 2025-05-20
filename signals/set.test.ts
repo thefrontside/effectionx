@@ -34,18 +34,18 @@ describe("createSetSignal", () => {
       await run(function* () {
         const set = yield* createSetSignal<number>([1, 2, 3]);  
 
-        const updates = [];
+        const updates: number[][] = [];
 
         yield* spawn(function* () {
           for (const update of yield* each(set)) {
-            updates.push(update);
+            updates.push(update.toArray());
             yield* each.next();
           }
         });
 
         set.set(Set.of(1, 2, 3));
 
-        expect(set.valueOf().toArray()).toEqual([]);
+        expect(updates).toEqual([]);
       });
     });
   }); 

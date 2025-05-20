@@ -65,8 +65,8 @@ export function createArraySignal<T>(
         signal.send(ref.current.toArray());
         return ref.current.toArray();
       },
-      push(item) {
-        ref.current = ref.current.push(item);
+      push(...args: T[]) {
+        ref.current = ref.current.push(...args);
         signal.send(ref.current.toArray());
         return ref.current.size;
       },

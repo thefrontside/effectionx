@@ -2,7 +2,7 @@
 
 Collection of immutable state containers for primitive data types.
 
-## About
+## Included data types
 
 These signals are designed using
 [unidirectional data flow](https://en.wikipedia.org/wiki/Unidirectional_data_flow)
@@ -10,7 +10,7 @@ pattern in Effection operations. As with tools like Redux, the state in the data
 container is immutable. A new value will be sent to the stream on every state
 change.
 
-## Boolean Signal
+### Boolean Signal
 
 The Boolean Signal provides a stream for a boolean value. You can set the value
 which will cause the new value to be sent to the stream.
@@ -38,7 +38,7 @@ await run(function* () {
 For an example of Boolean Signal in action, checkout the
 [faucet](https://github.com/thefrontside/effectionx/blob/main/stream-helpers/test-helpers/faucet.ts)
 
-## Array Signal
+### Array Signal
 
 The Array Signal provides a stream for the value of the array. The value is
 considered immutable - you shouldn't modify the value that comes through the
@@ -67,3 +67,27 @@ For an example of Array Signl, checkout the
 and
 [batch](https://github.com/thefrontside/effectionx/blob/main/stream-helpers/batch.ts)
 stream helpers.
+
+## Helpers
+
+### is
+
+`is` helper is useful when you want to wait for a signal to enter a specific state.
+Some of the common use cases are waiting for an array to reach a given length or for a boolean signal to become true or false. This helper takes a predicate that it
+will evaluate for every value.
+
+```ts
+import { run, spawn } from 'effection';
+import { createBooleanSignal, is } from '@effectionx/signals';
+
+await run(function*() {
+  const open = yield* createBooleanSignal(false);
+
+  yield* spawn(function*() {
+    yield* is(open, (open) => open === true);
+    console.log("floodgates are open!");
+  });
+
+  open.set(true);
+})
+```

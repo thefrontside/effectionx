@@ -1,10 +1,10 @@
 import { describe, it } from "bdd";
 import { expect } from "expect";
-import { each, Err, Ok, run, sleep, spawn } from "npm:effection@3.0.3";
+import { each, Err, Ok, run, sleep, spawn } from "effection";
 
 import { parallel } from "./parallel.ts";
 
-import type { Operation, Result } from "npm:effection@3.0.3";
+import type { Operation, Result } from "effection";
 
 const test = describe("parallel()");
 

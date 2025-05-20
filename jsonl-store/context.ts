@@ -2,7 +2,7 @@ import {
   type Context,
   createContext,
   type Operation,
-} from "npm:effection@4.0.0-alpha.3";
+} from "effection";
 import { join } from "jsr:@std/path@1.0.8";
 import type { Store } from "./types.ts";
 import { JSONLStore } from "./jsonl.ts";

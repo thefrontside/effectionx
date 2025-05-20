@@ -1,4 +1,4 @@
-import { run } from "npm:effection@4.0.0-alpha.3";
+import { run } from "effection";
 import { describe, it } from "jsr:@std/testing@1.0.5/bdd";
 import { useStore } from "./mod.ts";
 import { expect } from "expect/expect";

@@ -10,7 +10,7 @@ import {
   sleep,
   spawn,
   suspend,
-} from "npm:effection@4.0.0-alpha.4";
+} from "effection";
 
 import { useWorker } from "./worker.ts";
 import { assert } from "https://deno.land/std@0.158.0/testing/asserts.ts";

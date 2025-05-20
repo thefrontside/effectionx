@@ -1,6 +1,6 @@
 import { describe, it } from "bdd";
 import { expect } from "expect";
-import { run, sleep } from "npm:effection@3.0.3";
+import { run, sleep } from "effection";
 
 import { raceMap } from "./race.ts";
 

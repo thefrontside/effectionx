@@ -13,7 +13,7 @@ import {
   scoped,
   spawn,
   withResolvers,
-} from "npm:effection@4.0.0-alpha.4";
+} from "effection";
 
 export interface WorkerResource<TSend, TRecv, TReturn>
   extends Operation<TReturn> {
@@ -303,7 +303,7 @@ function settled<T>(operation: Operation<T>): Operation<Result<void>> {
     *[Symbol.iterator]() {
       try {
         yield* operation;
-        return Ok();
+        return Ok(void 0);
       } catch (error) {
         return Err(error as Error);
       }

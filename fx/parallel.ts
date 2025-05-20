@@ -1,5 +1,5 @@
-import type { Callable, Channel, Operation, Result } from "npm:effection@3.0.3";
-import { createChannel, resource, spawn } from "npm:effection@3.0.3";
+import type { Callable, Channel, Operation, Result } from "effection";
+import { createChannel, resource, spawn } from "effection";
 
 import { safe } from "./safe.ts";
 

@@ -4,7 +4,7 @@ import {
   resource,
   type Stream,
   stream,
-} from "npm:effection@3.0.3";
+} from "effection";
 import {
   type KillSignal,
   type Options,

@@ -1,4 +1,4 @@
-import { call, suspend } from "npm:effection@4.0.0-alpha.4";
+import { call, suspend } from "effection";
 import { workerMain } from "../worker.ts";
 
 export interface ShutdownWorkerParams {

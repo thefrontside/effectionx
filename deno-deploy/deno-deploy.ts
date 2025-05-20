@@ -2,7 +2,7 @@ import {
   type Context,
   createContext,
   type Operation,
-} from "npm:effection@3.0.3";
+} from "effection";
 
 export interface DenoDeploy {
   /**

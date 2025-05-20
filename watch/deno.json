@@ -7,7 +7,7 @@
     "./lib": "./mod.ts"
   },
   "imports": {
-    "effection": "npm:effection@^4.0.0-alpha.6",
+    "effection": "https://raw.githubusercontent.com/thefrontside/effection/v3/mod.ts",
     "ignore": "npm:ignore@^7.0.3",
     "@std/fs": "jsr:@std/fs@^1.0.11",
     "@std/path": "jsr:@std/path@^1.0.8",

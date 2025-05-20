@@ -1,4 +1,4 @@
-import type { Operation, Stream } from "npm:effection@4.0.0-alpha.3";
+import type { Operation, Stream } from "effection";
 
 export interface Store {
   location: URL;

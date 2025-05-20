@@ -1,5 +1,5 @@
-import type { Future, Operation, Scope } from "npm:effection@4.0.0-alpha.5";
-import { createScope } from "npm:effection@4.0.0-alpha.5";
+import type { Future, Operation, Scope } from "effection";
+import { createScope } from "effection";
 
 export interface TestOperation {
   (): Operation<void>;

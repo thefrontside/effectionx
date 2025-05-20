@@ -5,8 +5,8 @@ import {
   resource,
   spawn,
   withResolvers,
-} from "npm:effection@4.0.0-alpha.6";
-import type { Operation, Stream } from "npm:effection@4.0.0-alpha.6";
+} from "effection";
+import type { Operation, Stream } from "effection";
 
 /**
  * Handle to a

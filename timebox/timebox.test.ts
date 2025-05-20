@@ -6,7 +6,7 @@ import {
   run,
   sleep,
   suspend,
-} from "npm:effection@^4.0.0-alpha.4";
+} from "effection";
 
 describe("timebox", () => {
   it("is completed if operation returns within alloted time", async () => {

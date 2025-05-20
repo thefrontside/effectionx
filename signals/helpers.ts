@@ -1,15 +1,21 @@
 import { each, type Operation } from "effection";
 import type { ValueStream } from "./types.ts";
 
+/**
+ * Returns an operation that will wait until the value of the stream matches the predicate.
+ * @param stream - The stream to check.
+ * @param predicate - The predicate to check the value against.
+ * @returns An operation that will wait until the value of the stream matches the predicate.
+ */
 export function* is<T>(
-  array: ValueStream<T>,
+  stream: ValueStream<T>,
   predicate: (item: T) => boolean,
 ): Operation<void> {
-  const result = predicate(array.valueOf());
+  const result = predicate(stream.valueOf());
   if (result) {
     return;
   }
-  for (const value of yield* each(array)) {
+  for (const value of yield* each(stream)) {
     const result = predicate(value);
     if (result) {
       return;

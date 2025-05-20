@@ -241,11 +241,11 @@ await run(function* () {
   // Pass an operation to control the rate at which items are sent to the stream
   yield* faucet.pour(function* (send) {
     yield* sleep(10);
-    send(5);
+    yield* send(5);
     yield* sleep(30);
-    send(6);
+    yield* send(6);
     yield* sleep(10);
-    send(7);
+    yield* send(7);
   });
 
   // You can close the faucet to stop items from being sent
@@ -256,5 +256,4 @@ await run(function* () {
 });
 ```
 
-Items sent to the faucet stream while it's closed are not buffered, in other
-words, they'll be dropped.
+When passing a function to `faucet.pour`, the `send` function will return an operation. This operation will block when the faucet is closed. This is particularly helpful when testing backpressure, because you can send many event without worrying about the `open/close` state.

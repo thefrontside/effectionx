@@ -2,7 +2,7 @@ import { describe, it } from "jsr:@std/testing@^1/bdd";
 
 import { createArraySignal } from "./array.ts";
 import { each, run, sleep, spawn } from "effection";
-import { expect } from "expect";
+import { expect } from "@std/expect";
 
 describe("array signal", () => {
   it("accepts an initial value", async () => {

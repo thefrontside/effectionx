@@ -4,7 +4,7 @@ import type { SettableValue } from "./types.ts";
 
 export interface BooleanSignal extends SettableValue<boolean> {}
 
-export function createBoolean(
+export function createBooleanSignal(
   initial: boolean = false,
 ): Operation<BooleanSignal> {
   return resource(function* (provide) {

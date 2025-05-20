@@ -2,7 +2,15 @@ import { createSignal, type Operation, resource } from "effection";
 import type { SettableValue } from "./types.ts";
 import { Set } from "immutable";
 
+/**
+ * A signal that represents a set.
+ */
 interface SetSignal<T> extends SettableValue<Set<T>> {
+  /**
+   * Adds an item to the set.
+   * @param item - The item to add to the set.
+   * @returns The set.
+   */
   add(item: T): Set<T>;
   delete(item: T): boolean;
   difference(items: Iterable<T>): Set<T>;

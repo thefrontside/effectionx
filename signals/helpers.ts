@@ -1,5 +1,5 @@
 import { each, type Operation } from "effection";
-import type { ValueStream } from "./types.ts";
+import type { ValueSignal } from "./types.ts";
 
 /**
  * Returns an operation that will wait until the value of the stream matches the predicate.
@@ -8,7 +8,7 @@ import type { ValueStream } from "./types.ts";
  * @returns An operation that will wait until the value of the stream matches the predicate.
  */
 export function* is<T>(
-  stream: ValueStream<T>,
+  stream: ValueSignal<T>,
   predicate: (item: T) => boolean,
 ): Operation<void> {
   const result = predicate(stream.valueOf());

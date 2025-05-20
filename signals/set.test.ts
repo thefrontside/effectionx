@@ -19,7 +19,7 @@ describe("createSetSignal", () => {
   describe("set", () => {
     it("should set the value of the set", async () => {
       expect.assertions(1);
-      
+
       await run(function* () {
         const set = yield* createSetSignal<number>([1, 2, 3]);
 
@@ -30,9 +30,9 @@ describe("createSetSignal", () => {
     });
     it("should not update if the set is the same", async () => {
       expect.assertions(1);
-      
+
       await run(function* () {
-        const set = yield* createSetSignal<number>([1, 2, 3]);  
+        const set = yield* createSetSignal<number>([1, 2, 3]);
 
         const updates: number[][] = [];
 
@@ -48,11 +48,11 @@ describe("createSetSignal", () => {
         expect(updates).toEqual([]);
       });
     });
-  }); 
+  });
   describe("difference", () => {
     it("should return a new set with the items that are in the current set but not in the given iterable", async () => {
       expect.assertions(1);
-      
+
       await run(function* () {
         const set = yield* createSetSignal<number>([1, 2, 3]);
 
@@ -65,14 +65,14 @@ describe("createSetSignal", () => {
   describe("delete", () => {
     it("should remove an item from the set", async () => {
       expect.assertions(1);
-      
+
       await run(function* () {
         const set = yield* createSetSignal<number>([1, 2, 3]);
 
         set.delete(2);
 
         expect(set.valueOf().toArray()).toEqual([1, 3]);
-      }); 
+      });
     });
   });
   describe("add", () => {
@@ -83,6 +83,19 @@ describe("createSetSignal", () => {
         const set = yield* createSetSignal<number>([1, 2, 3]);
 
         set.add(4);
+
+        expect(set.valueOf().toArray()).toEqual([1, 2, 3, 4]);
+      });
+    });
+  });
+  describe("update", () => {
+    it("updates the value of the signal", async () => {
+      expect.assertions(1);
+
+      await run(function* () {
+        const set = yield* createSetSignal<number>([1, 2, 3]);
+
+        set.update((set) => set.add(4));
 
         expect(set.valueOf().toArray()).toEqual([1, 2, 3, 4]);
       });

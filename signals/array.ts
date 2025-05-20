@@ -2,12 +2,12 @@ import { createSignal, type Operation, resource } from "effection";
 import { List } from "immutable";
 
 import { is } from "./helpers.ts";
-import type { SettableValue } from "./types.ts";
+import type { ValueSignal } from "./types.ts";
 
 /**
  * Interface for return value of {@link createArraySignal}.
  */
-interface ArraySignal<T> extends SettableValue<T[]> {
+interface ArraySignal<T> extends ValueSignal<T[]> {
   /**
    * Pushes a new value onto the end of the array.
    *
@@ -54,16 +54,21 @@ export function createArraySignal<T>(
       current: List.of<T>(...initial),
     };
 
+    function set(value: Iterable<T>) {
+      if (ref.current.equals(List.of<T>(...value))) {
+        return ref.current.toArray();
+      }
+
+      ref.current = List.of<T>(...value);
+      signal.send(ref.current.toArray());
+      return ref.current.toArray();
+    }
+
     const array: ArraySignal<T> = {
       [Symbol.iterator]: signal[Symbol.iterator],
-      set(value) {
-        if (ref.current.equals(List.of<T>(...value))) {
-          return ref.current.toArray();
-        }
-
-        ref.current = List.of<T>(...value);
-        signal.send(ref.current.toArray());
-        return ref.current.toArray();
+      set,
+      update(updater) {
+        return set(updater(ref.current.toArray()));
       },
       push(...args: T[]) {
         ref.current = ref.current.push(...args);

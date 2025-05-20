@@ -1,24 +1,39 @@
 import { createSignal, type Operation, resource } from "effection";
 import type { SettableValue } from "./types.ts";
-import { Set } from "immutable";
+import { Set, is } from "immutable";
 
 /**
- * A signal that represents a set.
+ * A signal that represents a Set.
  */
 interface SetSignal<T> extends SettableValue<Set<T>> {
   /**
-   * Adds an item to the set.
-   * @param item - The item to add to the set.
-   * @returns The set.
+   * Adds an item to the Set.
+   * @param item - The item to add to the Set.
+   * @returns The Set.
    */
   add(item: T): Set<T>;
+  /**
+   * Removes an item from the Set.
+   * @param item - The item to remove from the Set.
+   * @returns `true` if the item was removed, `false` otherwise.
+   */
   delete(item: T): boolean;
+  /**
+   * Returns a new Set with the items that are in the current Set but not in the given iterable.
+   * @param items - The items to remove from the Set.
+   * @returns A new Set with the items that are in the current Set but not in the given iterable.
+   */
   difference(items: Iterable<T>): Set<T>;
+  /**
+   * Returns the Set value
+   * @returns The Set.
+   */
   valueOf(): Set<T>;
 }
 
 /**
- * Creates a signal that represents a set.
+ * Creates a signal that represents a set. Adding and removing items from the set will
+ * push a new value through the stream.
  * @param initial - The initial value of the set.
  * @returns A signal that represents a set.
  */
@@ -34,7 +49,10 @@ export function createSetSignal<T>(
       yield* provide({
         [Symbol.iterator]: signal[Symbol.iterator],
         set(value) {
-          ref.current = Set.of<T>(...value);
+          if (is(ref.current, value)) {
+            return ref.current;
+          }
+          ref.current = value;
           signal.send(ref.current.toSet());
           return ref.current;
         },

@@ -47,4 +47,16 @@ describe("boolean", () => {
       });
     });
   });
+  describe("update", () => {
+    it("updates the value of the signal", async () => {
+      expect.assertions(1);
+      await run(function* () {
+        const boolean = yield* createBooleanSignal(true);
+
+        boolean.update((boolean) => !boolean);
+
+        expect(boolean.valueOf()).toEqual(false);
+      });
+    });
+  });
 });

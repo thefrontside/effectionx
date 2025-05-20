@@ -1,11 +1,11 @@
 import { createSignal, type Operation, resource } from "effection";
-import type { SettableValue } from "./types.ts";
-import { Set, is } from "immutable";
+import type { ValueSignal } from "./types.ts";
+import { is, Set } from "immutable";
 
 /**
  * A signal that represents a Set.
  */
-interface SetSignal<T> extends SettableValue<Set<T>> {
+interface SetSignal<T> extends ValueSignal<Set<T>> {
   /**
    * Adds an item to the Set.
    * @param item - The item to add to the Set.
@@ -45,16 +45,21 @@ export function createSetSignal<T>(
 
     const ref = { current: Set.of<T>(...initial) };
 
+    function set(value: Iterable<T>) {
+      if (is(ref.current, value)) {
+        return ref.current;
+      }
+      ref.current = Set.of<T>(...value);
+      signal.send(ref.current);
+      return ref.current;
+    }
+
     try {
       yield* provide({
         [Symbol.iterator]: signal[Symbol.iterator],
-        set(value) {
-          if (is(ref.current, value)) {
-            return ref.current;
-          }
-          ref.current = value;
-          signal.send(ref.current);
-          return ref.current;
+        set,
+        update(updater) {
+          return set(updater(ref.current));
         },
         add(item) {
           ref.current = ref.current.add(item);

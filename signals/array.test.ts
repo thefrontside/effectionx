@@ -97,4 +97,17 @@ describe("array signal", () => {
       });
     });
   });
+
+  describe("update", () => {
+    it("updates the value of the signal", async () => {
+      expect.assertions(1);
+      await run(function* () {
+        const array = yield* createArraySignal([1, 2, 3]);
+
+        array.update((array) => array.map((x) => x + 1));
+
+        expect(array.valueOf()).toEqual([2, 3, 4]);
+      });
+    });
+  });
 });

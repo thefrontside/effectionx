@@ -53,23 +53,23 @@ export function createSetSignal<T>(
             return ref.current;
           }
           ref.current = value;
-          signal.send(ref.current.toSet());
+          signal.send(ref.current);
           return ref.current;
         },
         add(item) {
           ref.current = ref.current.add(item);
-          signal.send(ref.current.toSet());
-          return ref.current.toSet();
+          signal.send(ref.current);
+          return ref.current;
         },
         difference(items) {
           ref.current = ref.current.subtract(items);
-          signal.send(ref.current.toSet());
-          return ref.current.toSet();
+          signal.send(ref.current);
+          return ref.current;
         },
         delete(item) {
           if (ref.current.has(item)) {
             ref.current = ref.current.delete(item);
-            signal.send(ref.current.toSet());
+            signal.send(ref.current);
             return true;
           }
           return false;

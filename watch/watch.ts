@@ -11,15 +11,16 @@ import {
   resource,
   type Result,
   spawn,
+  useScope,
   type Stream,
   withResolvers,
 } from "effection";
 import { default as createIgnore } from "ignore";
-import { pipe } from "npm:remeda@2.21.3";
 import { readFile } from "node:fs/promises";
+import { pipe } from "npm:remeda@2.21.3";
 
-import { type Process, useProcess } from "./child-process.ts";
 import { debounce } from "@effectionx/stream-helpers";
+import { type Process, useProcess } from "./child-process.ts";
 
 /**
  * Represents a single start of the specified command
@@ -119,10 +120,11 @@ export function watch(options: WatchOptions): Stream<Start, never> {
     });
 
     let changes = yield* pipe(input, debounce(100));
+    const scope = yield* useScope();
 
     yield* spawn(function* () {
       while (true) {
-        let task = yield* spawn(function* () {
+        let task = yield* scope.spawn(function* () {
           let restarting = withResolvers<void>();
           try {
             let process = yield* useProcess(options.cmd);

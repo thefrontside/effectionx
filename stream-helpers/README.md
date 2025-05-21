@@ -63,6 +63,27 @@ function* example(stream: Stream<number, unknown>) {
 }
 ```
 
+### Debounce
+
+Debounce helper is useful when the source stream is producing many items, but you only need the latest
+item within a given time period. For example, if you have 100 items passing through the source in 50ms and 
+you set the debounce period to 50ms, then you'll get one item which is going to be last the value.
+
+```typescript
+import { debounce } from "@effectionx/stream-helpers";
+import { each } from "effection";
+
+function* example(stream: Stream<number, unknown>) {
+  const debounced = debounce(10);
+
+  // will produce 1 value within 10ms
+  for (const value of yield* each(debounced(stream))) {
+    console.log(value); 
+    yield* each.next();
+  }
+}
+```
+
 ### Batch
 
 The `batch` helper is useful when you want to convert individual items passing

@@ -19,7 +19,7 @@ import { pipe } from "jsr:@gordonb/pipe@0.1.0";
 import { readFile } from "node:fs/promises";
 
 import { type Process, useProcess } from "./child-process.ts";
-import { debounce } from "./stream-helpers.ts";
+import { debounce } from "@effectionx/stream-helpers";
 
 /**
  * Represents a single start of the specified command

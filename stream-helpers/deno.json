@@ -2,7 +2,7 @@
   "name": "@effectionx/stream-helpers",
   "version": "0.1.0",
   "imports": {
-    "effection": "jsr:@effection/effection@^3",
+    "effection": "npm:effection@^3",
     "immutable": "npm:immutable@^5"
   },
   "license": "MIT",

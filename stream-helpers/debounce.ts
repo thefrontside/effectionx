@@ -9,14 +9,15 @@ import { race, sleep, type Stream } from "effection";
  */
 export function debounce(
   ms: number,
-): <T, R>(stream: Stream<T, R>) => Stream<T, R> {
-  return (stream) => ({
-    *[Symbol.iterator]() {
-      let subscription = yield* stream;
-      return {
+): <T, TDone>(stream: Stream<T, TDone>) => Stream<T, TDone> {
+  return function (stream) {
+    return {
+      *[Symbol.iterator]() {
+        let subscription = yield* stream;
+        return {
         *next() {
           let next = yield* subscription.next();
-          while (true) {
+          while (!next.done) {
             let result = yield* race([sleep(ms), subscription.next()]);
             if (result) {
               next = result;
@@ -24,8 +25,10 @@ export function debounce(
               return next;
             }
           }
+          return next;
         },
       };
-    },
-  });
+      },
+    };
+  };
 }

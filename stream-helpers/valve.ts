@@ -1,10 +1,25 @@
 import { each, type Operation, spawn, type Stream } from "effection";
-import { createArraySignal } from "./signals.ts";
+import { createArraySignal } from "@effectionx/signals";
 
+/**
+ * Options for the valve.
+ */
 export interface ValveOptions {
+  /**
+   * The buffer size when {@link ValveOptions#open} method is called.
+   */
   openAt: number;
+  /**
+   * The buffer size when {@link ValveOptions#close} method is called.
+   */
   closeAt: number;
+  /**
+   * The operation to resume the upstream.
+   */
   open(): Operation<void>;
+  /**
+   * The operation to pause the upstream.
+   */
   close(): Operation<void>;
 }
 

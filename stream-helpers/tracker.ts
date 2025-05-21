@@ -1,5 +1,5 @@
 import { type Operation, resource, type Stream } from "effection";
-import { createSetSignal, is } from "./signals.ts";
+import { createSetSignal, is } from "@effectionx/signals";
 
 export interface Tracker extends Operation<void> {
   /**

@@ -27,12 +27,12 @@
     "./raf",
     "./task-buffer",
     "./test-adapter",
-    "./tinyexec",
     "./timebox",
     "./tinyexec",
     "./watch",
     "./websocket",
     "./worker",
-    "./stream-helpers"
+    "./stream-helpers",
+    "./signals"
   ]
 }

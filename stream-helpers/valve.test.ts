@@ -5,7 +5,7 @@ import { assertSpyCalls, spy } from "jsr:@std/testing@^1/mock";
 import { expect } from "jsr:@std/expect@^1";
 import { valve } from "./valve.ts";
 import { useFaucet } from "./test-helpers/faucet.ts";
-import { createArraySignal, is } from "./signals.ts";
+import { createArraySignal, is } from "@effectionx/signals";
 
 describe("valve", () => {
   it("closes and opens the valve", async () => {

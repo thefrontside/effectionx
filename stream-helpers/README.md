@@ -256,4 +256,7 @@ await run(function* () {
 });
 ```
 
-When passing a function to `faucet.pour`, the `send` function will return an operation. This operation will block when the faucet is closed. This is particularly helpful when testing backpressure, because you can send many event without worrying about the `open/close` state.
+When passing a function to `faucet.pour`, the `send` function will return an
+operation. This operation will block when the faucet is closed. This is
+particularly helpful when testing backpressure, because you can send many event
+without worrying about the `open/close` state.

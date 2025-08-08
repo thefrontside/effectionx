@@ -1,4 +1,4 @@
-import { suspend } from "npm:effection@4.0.0-alpha.4";
+import { suspend } from "effection";
 import { workerMain } from "../worker.ts";
 
 await workerMain(suspend);

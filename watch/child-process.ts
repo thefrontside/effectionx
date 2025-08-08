@@ -1,4 +1,4 @@
-import { spawn as nodeSpawn } from "node:child_process";
+import nanoSpawn from "nano-spawn";
 
 type Signals =
   | "SIGABRT"
@@ -61,9 +61,12 @@ export function useProcess(command: string): Operation<Process> {
     let closed = withResolvers<ProcessResult>();
     let stdout = createSignal<string, void>();
     let stderr = createSignal<string, void>();
-    let nodeproc = nodeSpawn(command, {
+    
+    let controller = new AbortController();
+    let nodeproc = nanoSpawn(command, {
       shell: true,
       stdio: "pipe",
+      signal: controller.signal,
     });
 
     // fail on an "error" event, but only until the process is successfully spawned.
@@ -109,11 +112,16 @@ export function useProcess(command: string): Operation<Process> {
     } finally {
       nodeproc.kill("SIGINT");
       nodeproc.kill("SIGTERM");
+      
+      // Drain any remaining data from streams
+      nodeproc.stdout?.resume();
+      nodeproc.stderr?.resume();
+      
       yield* closed.operation;
       stdout.close();
       stderr.close();
-      nodeproc.stdout.off("data", onstdout);
-      nodeproc.stderr.off("data", onstderr);
+      nodeproc.stdout?.off("data", onstdout);
+      nodeproc.stderr?.off("data", onstderr);
       nodeproc.off("close", onclose);
     }
   });

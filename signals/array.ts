@@ -7,7 +7,7 @@ import type { ValueSignal } from "./types.ts";
 /**
  * Interface for return value of {@link createArraySignal}.
  */
-interface ArraySignal<T> extends ValueSignal<T[]> {
+export interface ArraySignal<T> extends ValueSignal<T[]> {
   /**
    * Pushes a new value onto the end of the array.
    *
@@ -27,7 +27,7 @@ interface ArraySignal<T> extends ValueSignal<T[]> {
    *
    * @returns The current value of the array.
    */
-  valueOf(): T[];
+  valueOf(): Readonly<T[]>;
   /**
    * Returns the length of the array.
    *

@@ -53,7 +53,7 @@ describe("batch", () => {
       const stream = batch({ maxSize: 8, maxTime: 10 })(faucet);
       const finished = withResolvers<void>();
 
-      const batches: number[][] = [];
+      const batches: Readonly<number[]>[] = [];
 
       yield* spawn(function* () {
         for (const batch of yield* each(stream)) {
@@ -88,7 +88,7 @@ describe("batch", () => {
       const faucet = yield* useFaucet<number>({ open: true });
       const stream = batch({ maxSize: 5, maxTime: 3 })(faucet);
 
-      const batches: number[][] = [];
+      const batches: Readonly<number[]>[] = [];
 
       yield* spawn(function* () {
         for (const batch of yield* each(stream)) {

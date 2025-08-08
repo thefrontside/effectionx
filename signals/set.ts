@@ -5,7 +5,7 @@ import { is, Set } from "immutable";
 /**
  * A signal that represents a Set.
  */
-interface SetSignal<T> extends ValueSignal<Set<T>> {
+export interface SetSignal<T> extends ValueSignal<Set<T>> {
   /**
    * Adds an item to the Set.
    * @param item - The item to add to the Set.

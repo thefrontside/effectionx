@@ -1,4 +1,4 @@
-import { call, type Operation, useAbortSignal } from "npm:effection@3.0.3";
+import { call, type Operation, useAbortSignal } from "effection";
 
 export function* request(
   url: string | URL | Request,

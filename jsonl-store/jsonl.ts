@@ -1,13 +1,14 @@
-import { JsonParseStream } from "jsr:@std/json@1.0.1";
-import { TextLineStream } from "jsr:@std/streams@1.0.8";
-import { emptyDir, exists, walk } from "jsr:@std/fs@1.0.4";
+import { JsonParseStream } from "@std/json";
+import { TextLineStream } from "@std/streams";
+import { emptyDir, exists, walk } from "@std/fs";
 import {
   basename,
   dirname,
   globToRegExp,
   join,
   toFileUrl,
-} from "jsr:@std/path@1.0.6";
+} from "@std/path";
+
 import {
   call,
   createChannel,
@@ -18,7 +19,7 @@ import {
   spawn,
   type Stream,
   stream,
-} from "npm:effection@4.0.0-alpha.3";
+} from "effection";
 import type { Store, StoreConstructorOptions } from "./types.ts";
 
 import fs from "node:fs";

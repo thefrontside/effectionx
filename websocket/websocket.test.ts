@@ -9,7 +9,7 @@ import {
   type Subscription,
   suspend,
   useScope,
-} from "npm:effection@4.0.0-alpha.6";
+} from "effection";
 
 import { useWebSocket, type WebSocketResource } from "./websocket.ts";
 

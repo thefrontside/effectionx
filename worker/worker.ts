@@ -1,4 +1,4 @@
-import { assert } from "jsr:@std/assert@1";
+import { assert } from "@std/assert";
 import {
   createSignal,
   each,
@@ -13,7 +13,7 @@ import {
   scoped,
   spawn,
   withResolvers,
-} from "npm:effection@4.0.0-alpha.4";
+} from "effection";
 
 export interface WorkerResource<TSend, TRecv, TReturn>
   extends Operation<TReturn> {

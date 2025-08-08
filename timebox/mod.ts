@@ -1,5 +1,5 @@
-import type { Operation } from "npm:effection@^4.0.0-alpha.4";
-import { race, sleep } from "npm:effection@^4.0.0-alpha.4";
+import type { Operation } from "effection";
+import { race, sleep } from "effection";
 
 /**
  * Either a succesfully computed value, or one that took too long to complete.

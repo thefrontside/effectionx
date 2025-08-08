@@ -2,5 +2,8 @@
   "name": "@effectionx/timebox",
   "version": "0.1.1",
   "license": "MIT",
-  "exports": "./mod.ts"
+  "exports": "./mod.ts",
+  "imports": {
+    "effection": "npm:effection@^4.0.0-alpha.4"
+  }
 }

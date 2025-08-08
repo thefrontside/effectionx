@@ -1,13 +1,7 @@
 import { JsonParseStream } from "@std/json";
 import { TextLineStream } from "@std/streams";
 import { emptyDir, exists, walk } from "@std/fs";
-import {
-  basename,
-  dirname,
-  globToRegExp,
-  join,
-  toFileUrl,
-} from "@std/path";
+import { basename, dirname, globToRegExp, join, toFileUrl } from "@std/path";
 
 import {
   call,

@@ -3,14 +3,7 @@ import { expect } from "expect";
 import { emptyDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import { timebox } from "@effectionx/timebox";
-import {
-  call,
-  run,
-  scoped,
-  sleep,
-  spawn,
-  suspend,
-} from "effection";
+import { call, run, scoped, sleep, spawn, suspend } from "effection";
 
 import { useWorker } from "./worker.ts";
 import { assert } from "@std/assert";

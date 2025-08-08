@@ -1,5 +1,12 @@
 import { spawn as nodeSpawn } from "node:child_process";
-import type { Signals } from "npm:@types/node@16.18.126";
+
+type Signals = 
+  | "SIGABRT" | "SIGALRM" | "SIGBUS" | "SIGCHLD" | "SIGCONT" | "SIGFPE"
+  | "SIGHUP" | "SIGILL" | "SIGINT" | "SIGIO" | "SIGIOT" | "SIGKILL"
+  | "SIGPIPE" | "SIGPOLL" | "SIGPROF" | "SIGPWR" | "SIGQUIT" | "SIGSEGV"
+  | "SIGSTKFLT" | "SIGSTOP" | "SIGSYS" | "SIGTERM" | "SIGTRAP" | "SIGTSTP"
+  | "SIGTTIN" | "SIGTTOU" | "SIGUNUSED" | "SIGURG" | "SIGUSR1" | "SIGUSR2"
+  | "SIGVTALRM" | "SIGWINCH" | "SIGXCPU" | "SIGXFSZ";
 
 import type { Operation, Stream } from "effection";
 import {

@@ -24,8 +24,8 @@ export interface BatchOptions {
  */
 export function batch(
   options: RequireAtLeastOne<BatchOptions>,
-): <T>(stream: Stream<T, never>) => Stream<T[], never> {
-  return function <T>(stream: Stream<T, never>): Stream<T[], never> {
+): <T>(stream: Stream<T, never>) => Stream<Readonly<T[]>, never> {
+  return function <T>(stream: Stream<T, never>): Stream<Readonly<T[]>, never> {
     return {
       *[Symbol.iterator]() {
         let batch = yield* createArraySignal<T>([]);

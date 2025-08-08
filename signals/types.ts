@@ -21,5 +21,5 @@ export interface ValueSignal<T> extends Stream<T, void> {
    * Get the current value of the signal.
    * @returns The current value of the signal.
    */
-  valueOf(): T;
+  valueOf(): Readonly<T>;
 }

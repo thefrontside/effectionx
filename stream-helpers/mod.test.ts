@@ -46,7 +46,7 @@ describe("batch, valve and map composition", () => {
       );
 
       let { resolve, operation } = withResolvers<void>();
-      let results: { id: number; value: number }[][] = [];
+      let results: Readonly<{ id: number; value: number }[]>[] = [];
 
       // Process the stream
       yield* spawn(function* () {

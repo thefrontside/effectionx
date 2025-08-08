@@ -68,13 +68,13 @@ describe("tracker", () => {
         batch({
           maxSize: 3,
         }),
-        map(function* (items: number[]) {
+        map(function* (items) {
           yield* sleep(10);
           return items;
         }),
       );
 
-      const received: number[][] = [];
+      const received: Readonly<number[]>[] = [];
 
       yield* spawn(function* () {
         let count = 0;

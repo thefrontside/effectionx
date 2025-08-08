@@ -2,5 +2,8 @@
   "name": "@effectionx/task-buffer",
   "version": "1.0.2",
   "exports": "./mod.ts",
-  "license": "MIT"
+  "license": "MIT",
+  "imports": {
+    "effection": "npm:effection@4.0.0-alpha.4"
+  }
 }

@@ -1,4 +1,4 @@
-import { each, run } from "npm:effection@4.0.0-alpha.3";
+import { each, run } from "effection";
 import { beforeEach, describe, it } from "jsr:@std/testing@1.0.5/bdd";
 import { JSONLStore } from "./jsonl.ts";
 import type { Store } from "./types.ts";

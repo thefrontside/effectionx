@@ -1,8 +1,8 @@
 import { describe, it } from "bdd";
 import { expect } from "expect";
-import { emptyDir, exists } from "jsr:@std/fs";
-import { join } from "jsr:@std/path@^1.0.7";
-import { timebox } from "jsr:@effectionx/timebox@^0.1.0";
+import { emptyDir, exists } from "@std/fs";
+import { join } from "@std/path";
+import { timebox } from "@effectionx/timebox";
 import {
   call,
   run,
@@ -10,10 +10,10 @@ import {
   sleep,
   spawn,
   suspend,
-} from "npm:effection@4.0.0-alpha.4";
+} from "effection";
 
 import { useWorker } from "./worker.ts";
-import { assert } from "https://deno.land/std@0.158.0/testing/asserts.ts";
+import { assert } from "@std/assert";
 import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
 
 describe("worker", () => {

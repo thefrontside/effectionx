@@ -1,8 +1,4 @@
-import {
-  type Context,
-  createContext,
-  type Operation,
-} from "effection";
+import { type Context, createContext, type Operation } from "effection";
 import { join } from "@std/path";
 import type { Store } from "./types.ts";
 import { JSONLStore } from "./jsonl.ts";

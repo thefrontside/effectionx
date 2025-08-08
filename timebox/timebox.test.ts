@@ -1,12 +1,7 @@
 import { describe, it } from "bdd";
 import { expect } from "expect";
 import { timebox } from "./mod.ts";
-import {
-  type Operation,
-  run,
-  sleep,
-  suspend,
-} from "effection";
+import { type Operation, run, sleep, suspend } from "effection";
 
 describe("timebox", () => {
   it("is completed if operation returns within alloted time", async () => {

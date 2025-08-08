@@ -2,7 +2,8 @@
 
 ## Pull Request Template
 
-When creating pull requests, load and use the template from `.github/pull_request_template.md`.
+When creating pull requests, load and use the template from
+`.github/pull_request_template.md`.
 
 ## Development Commands
 

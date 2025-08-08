@@ -1,6 +1,6 @@
 import { describe, it } from "bdd";
 import { expect } from "expect";
-import { call, run } from "npm:effection@3.0.3";
+import { call, run } from "effection";
 
 const tests = describe("call()");
 

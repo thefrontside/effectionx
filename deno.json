@@ -21,6 +21,7 @@
     }
   },
   "workspace": [
+    "./context-api",
     "./deno-deploy",
     "./jsonl-store",
     "./fx",

@@ -1,7 +1,7 @@
 import { describe, it } from "jsr:@std/testing/bdd";
 import { expect } from "jsr:@std/expect";
 import { createTestAdapter } from "../mod.ts";
-import { createContext } from "npm:effection@4.0.0-alpha.7";
+import { createContext } from "effection";
 
 describe("TestAdapter", () => {
   it("can run a test", async () => {

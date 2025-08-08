@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import type { Callable, Operation, Task } from "npm:effection@3.0.3";
-import { action, call, resource, spawn } from "npm:effection@3.0.3";
+import type { Callable, Operation, Task } from "effection";
+import { action, call, resource, spawn } from "effection";
 
 interface OpMap<T = unknown> {
   [key: string]: Callable<T>;

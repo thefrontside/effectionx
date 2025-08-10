@@ -1,4 +1,4 @@
-import { Operation } from 'effection';
+import { Operation } from 'npm:effection@3.6.0';
 import type { PlanFlags } from '../types.ts';
 
 export function* planCommand(flags: PlanFlags): Operation<void> {

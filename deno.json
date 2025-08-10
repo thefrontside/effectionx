@@ -1,4 +1,7 @@
 {
+  "tasks": {
+    "publisher": "deno run -A tasks/ex-publisher/main.ts"
+  },
   "imports": {
     "bdd": "jsr:@std/testing@1/bdd",
     "expect": "jsr:@std/expect@1"

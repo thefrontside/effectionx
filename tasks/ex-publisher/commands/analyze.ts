@@ -1,4 +1,4 @@
-import { Operation } from 'effection';
+import { Operation } from 'npm:effection@3.6.0';
 import type { AnalyzeFlags } from '../types.ts';
 
 export function* analyzeCommand(flags: AnalyzeFlags): Operation<void> {

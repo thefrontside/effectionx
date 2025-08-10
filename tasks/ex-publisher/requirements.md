@@ -198,3 +198,9 @@ Q: What specific errors trigger retry vs abort (auth failures, network timeouts,
 Only network related failures should cause a retry.
 Auth failures only matter for `analyze` and `publish`.
 Version conflicts can be ignored.
+
+## Code Practices
+
+We're going to use Effection. It's docs are available in https://github.com/thefrontside/effection/tree/effection-v3.6.0/docs
+
+Use Effection where possible instead of async/await.

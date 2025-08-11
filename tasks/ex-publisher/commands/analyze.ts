@@ -2,19 +2,20 @@ import { Operation } from 'npm:effection@3.6.0';
 import { command } from 'npm:zod-opts@0.1.8';
 import { z } from 'npm:zod@^3.20.2';
 import type { AnalyzeFlags } from '../types.ts';
+import { logger } from '../logger.ts';
 
 export function* analyzeCommand(flags: AnalyzeFlags): Operation<void> {
   if (flags.verbose) {
-    console.log('Running analyze command with flags:', flags);
+    yield* logger.debug('Running analyze command with flags:', flags);
   }
 
-  console.log('Analyzing extensions...');
+  yield* logger.info('Analyzing extensions...');
   
   if (flags.extName) {
-    console.log(`Analyzing extension: ${flags.extName}`);
+    yield* logger.info(`Analyzing extension: ${flags.extName}`);
     // TODO: Analyze specific extension
   } else {
-    console.log('Analyzing all extensions');
+    yield* logger.info('Analyzing all extensions');
     // TODO: Discover and analyze all extensions
   }
 
@@ -24,7 +25,7 @@ export function* analyzeCommand(flags: AnalyzeFlags): Operation<void> {
   // 3. Determine latest versions
   // 4. Check Effection v3/v4 compatibility
   
-  console.log('Analysis complete');
+  yield* logger.info('Analysis complete');
 }
 
 export const analyzeCommandDefinition = command("analyze")

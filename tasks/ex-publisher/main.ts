@@ -11,28 +11,53 @@ import {
   publishCommand,
   publishCommandDefinition,
 } from "./commands/publish.ts";
+import { loggerApi } from "./logger.ts";
 
 function* cli(): Operation<void> {
   let commandToRun: Operation<void> | undefined;
+  let verbose = false;
 
   parser()
     .subcommand(analyzeCommandDefinition
       .action((parsed) => {
+        verbose = parsed.verbose;
         commandToRun = analyzeCommand(parsed);
       }))
     .subcommand(verifyCommandDefinition
       .action((parsed) => {
+        verbose = parsed.verbose;
         commandToRun = verifyCommand(parsed);
       }))
     .subcommand(planCommandDefinition
       .action((parsed) => {
+        verbose = parsed.verbose;
         commandToRun = planCommand(parsed);
       }))
     .subcommand(publishCommandDefinition
       .action((parsed) => {
+        verbose = parsed.verbose;
         commandToRun = publishCommand(parsed);
       }))
     .parse();
+
+    yield* loggerApi.around({
+      *info(args, next) {
+        yield* next(...args);
+      },
+      *warn(args, next) {
+        if (verbose) {
+          yield* next(...args);
+        }
+      },
+      *debug(args, next) {
+        if (verbose) {
+          yield* next(...args);
+        }
+      },
+      *error(args, next) {
+        yield* next(...args);
+      },
+    })
 
   if (commandToRun) {
     yield* commandToRun;

@@ -1,4 +1,6 @@
 import { Operation } from 'npm:effection@3.6.0';
+import { command } from 'npm:zod-opts@0.1.8';
+import { z } from 'npm:zod@^3.20.2';
 import type { AnalyzeFlags } from '../types.ts';
 
 export function* analyzeCommand(flags: AnalyzeFlags): Operation<void> {
@@ -24,3 +26,17 @@ export function* analyzeCommand(flags: AnalyzeFlags): Operation<void> {
   
   console.log('Analysis complete');
 }
+
+export const analyzeCommandDefinition = command("analyze")
+  .description("Find extensions")
+  .options({
+    verbose: {
+      type: z.boolean().default(false),
+      alias: 'v',
+      description: "Print debugging output",
+    },
+    extName: {
+      type: z.string().optional(),
+      description: "Select extension to analyze",
+    },
+  });

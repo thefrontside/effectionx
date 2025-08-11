@@ -1,4 +1,6 @@
 import { Operation } from 'npm:effection@3.6.0';
+import { command } from 'npm:zod-opts@0.1.8';
+import { z } from 'npm:zod@^3.20.2';
 import type { VerifyFlags } from '../types.ts';
 
 export function* verifyCommand(flags: VerifyFlags): Operation<void> {
@@ -42,3 +44,33 @@ export function* verifyCommand(flags: VerifyFlags): Operation<void> {
   
   console.log('Verification complete');
 }
+
+export const verifyCommandDefinition = command("verify")
+  .description("Run tests for extensions")
+  .options({
+    verbose: {
+      type: z.boolean().default(false),
+      alias: 'v',
+      description: "Print debugging output",
+    },
+    extName: {
+      type: z.string().optional(),
+      description: "Select extension to run tests for",
+    },
+    deno: {
+      type: z.boolean().optional(),
+      description: "Run tests for deno",
+    },
+    node: {
+      type: z.boolean().optional(),
+      description: "Run tests for node",
+    },
+    effection: {
+      type: z.string().optional(),
+      description: "Run tests for specified version of Effection",
+    },
+    lint: {
+      type: z.boolean().optional(),
+      description: "Run lint as part of verify",
+    },
+  });

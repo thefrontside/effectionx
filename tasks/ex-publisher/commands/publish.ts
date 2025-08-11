@@ -1,4 +1,6 @@
 import { Operation } from 'npm:effection@3.6.0';
+import { command } from 'npm:zod-opts@0.1.8';
+import { z } from 'npm:zod@^3.20.2';
 import type { PublishFlags } from '../types.ts';
 
 export function* publishCommand(flags: PublishFlags): Operation<void> {
@@ -36,3 +38,29 @@ export function* publishCommand(flags: PublishFlags): Operation<void> {
   
   console.log('Publishing complete');
 }
+
+export const publishCommandDefinition = command("publish")
+  .description("Publish new versions of extensions")
+  .options({
+    verbose: {
+      type: z.boolean().default(false),
+      alias: 'v',
+      description: "Print debugging output",
+    },
+    extName: {
+      type: z.string().optional(),
+      description: "Select extension to publish",
+    },
+    jsr: {
+      type: z.boolean().optional(),
+      description: "Publish to JSR",
+    },
+    npm: {
+      type: z.boolean().optional(),
+      description: "Publish to NPM",
+    },
+    effection: {
+      type: z.string().optional(),
+      description: "Publish for specified version of Effection",
+    },
+  });

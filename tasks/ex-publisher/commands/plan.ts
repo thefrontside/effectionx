@@ -1,4 +1,6 @@
 import { Operation } from 'npm:effection@3.6.0';
+import { command } from 'npm:zod-opts@0.1.8';
+import { z } from 'npm:zod@^3.20.2';
 import type { PlanFlags } from '../types.ts';
 
 export function* planCommand(flags: PlanFlags): Operation<void> {
@@ -34,3 +36,29 @@ export function* planCommand(flags: PlanFlags): Operation<void> {
   
   console.log('Planning complete');
 }
+
+export const planCommandDefinition = command("plan")
+  .description("Show the plan for publishing new versions of extensions")
+  .options({
+    verbose: {
+      type: z.boolean().default(false),
+      alias: 'v',
+      description: "Print debugging output",
+    },
+    extName: {
+      type: z.string().optional(),
+      description: "Select extension to plan",
+    },
+    jsr: {
+      type: z.boolean().optional(),
+      description: "Show plan for JSR",
+    },
+    npm: {
+      type: z.boolean().optional(),
+      description: "Show plan for NPM",
+    },
+    effection: {
+      type: z.string().optional(),
+      description: "Show plan for specified version of Effection",
+    },
+  });

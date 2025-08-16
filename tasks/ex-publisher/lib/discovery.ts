@@ -2,6 +2,7 @@ import { Operation, until } from 'npm:effection@3.6.0';
 import { join, resolve } from 'jsr:@std/path';
 import { exists as fsExists } from 'jsr:@std/fs';
 import type { ExtensionConfig } from '../types.ts';
+import { ExtensionConfigSchema } from '../types.ts';
 import { logger } from '../logger.ts';
 
 export interface DiscoveredExtension {
@@ -91,18 +92,31 @@ function* tryDiscoverExtension(extensionPath: string): Operation<DiscoveredExten
   }
 }
 
-function* loadExtensionConfig(configPath: string): Operation<ExtensionConfig> {
+export function* loadExtensionConfig(configPath: string): Operation<ExtensionConfig> {
   yield* logger.debug(`Loading extension config from ${configPath}`);
   
-  // For now, we'll use dynamic import to load the config
-  // In a real implementation, we might want to use a more secure approach
-  const configModule = yield* dynamicImport(configPath);
-  
-  if (!configModule.default) {
-    throw new Error(`No default export found in ${configPath}`);
-  }
+  try {
+    // Dynamic import to load the config module
+    const configModule = yield* dynamicImport(configPath);
+    
+    if (!configModule.default) {
+      throw new Error(`No default export found in ${configPath}`);
+    }
 
-  return configModule.default as ExtensionConfig;
+    // Validate the configuration with Zod schema
+    const validatedConfig = ExtensionConfigSchema.parse(configModule.default);
+    
+    yield* logger.debug(`Successfully validated config for ${validatedConfig.name}`);
+    return validatedConfig;
+    
+  } catch (error) {
+    if (error instanceof Error && error.name === 'ZodError') {
+      const zodError = error as any; // Zod error has errors property
+      const details = zodError.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ');
+      throw new Error(`Invalid configuration in ${configPath}: ${details}`);
+    }
+    throw error;
+  }
 }
 
 function* loadExtensionVersion(extensionPath: string): Operation<string> {

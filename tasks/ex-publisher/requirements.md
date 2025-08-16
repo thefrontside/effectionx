@@ -43,16 +43,16 @@ export default defineConfig({
   // name of the extension
   name: 'example',
 
-  // description that will go into package.json and description in project's JSR config
+  // description that will go into package.json
   description: 'example description',
 
   // versions of effection this project is compatible with
-  // this will determine which versions are published
+  // this will be converted to a semver range in package.json (e.g., "^3.0.0 || ^4.0.0")
   effection: ['3', '4'],
 
   // new versions will be published to these registries
-  // also used to determine which versions have been published
-  registries: ['npm', 'jsr']
+  // NOTE: JSR publishing is not currently supported, only NPM
+  registries: ['npm']
 })
 ```
 
@@ -103,7 +103,7 @@ For Node, we might need to edit the package.json followed by an `npm install` to
     ext_name: [optional] select extension to plan
   
   Arguments
-    --jsr: [optional] show plan for JSR
+    --jsr: [optional] show plan for JSR (not currently supported)
     --npm: [optional] show plan for NPM
     --effection: [optional]: show plan for specified version of Effection
 
@@ -114,7 +114,7 @@ For Node, we might need to edit the package.json followed by an `npm install` to
     ext_name: [optional] select extension to plan
 
   Arguments
-    --jsr: [optional] publish to JSR
+    --jsr: [optional] publish to JSR (not currently supported)
     --npm: [optional] publish to NPM
     --effection: [optional]: publish for specified version of Effection
 

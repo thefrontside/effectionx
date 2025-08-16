@@ -4,6 +4,7 @@ import { run } from 'npm:effection@3.6.0';
 import { ensureDir } from 'jsr:@std/fs';
 import { join } from 'jsr:@std/path';
 import { discoverExtensions, type DiscoveredExtension } from './discovery.ts';
+import { loadExtensionConfig } from './discovery.ts';
 
 describe('Extension Discovery - Basic', () => {
   let testDir: string;
@@ -150,6 +151,118 @@ export default defineConfig({
     await run(function* () {
       const extensions = yield* discoverExtensions(testDir);
       expect(extensions).toHaveLength(0);
+    });
+  });
+});
+
+describe('Configuration Loading', () => {
+  let testDir: string;
+
+  beforeEach(async () => {
+    testDir = await Deno.makeTempDir({ prefix: 'ex-publisher-config-test-' });
+  });
+
+  afterEach(async () => {
+    await Deno.remove(testDir, { recursive: true });
+  });
+
+  it('should load and validate a properly formatted configuration', async () => {
+    const configPath = join(testDir, 'ex-publisher.ts');
+    
+    await Deno.writeTextFile(
+      configPath,
+      `import { defineConfig } from 'ex-publisher';
+
+export default defineConfig({
+  name: 'test-extension',
+  description: 'A test extension for validation',
+  effection: ['3', '4'],
+  registries: ['npm', 'jsr']
+});`
+    );
+
+    await run(function* () {
+      const config = yield* loadExtensionConfig(configPath);
+
+      expect(config).toEqual({
+        name: 'test-extension',
+        description: 'A test extension for validation',
+        effection: ['3', '4'],
+        registries: ['npm', 'jsr'],
+      });
+    });
+  });
+
+  it('should load configuration with minimal required fields', async () => {
+    const configPath = join(testDir, 'ex-publisher.ts');
+    
+    await Deno.writeTextFile(
+      configPath,
+      `import { defineConfig } from 'ex-publisher';
+
+export default defineConfig({
+  name: 'minimal-extension',
+  description: 'Minimal test extension',
+  effection: ['4'],
+  registries: ['jsr']
+});`
+    );
+
+    await run(function* () {
+      const config = yield* loadExtensionConfig(configPath);
+
+      expect(config).toEqual({
+        name: 'minimal-extension',
+        description: 'Minimal test extension',
+        effection: ['4'],
+        registries: ['jsr'],
+      });
+    });
+  });
+
+  it('should load configuration with multiple effection versions', async () => {
+    const configPath = join(testDir, 'ex-publisher.ts');
+    
+    await Deno.writeTextFile(
+      configPath,
+      `import { defineConfig } from 'ex-publisher';
+
+export default defineConfig({
+  name: 'multi-version-extension',
+  description: 'Extension supporting multiple Effection versions',
+  effection: ['3', '4', '5'],
+  registries: ['npm', 'jsr']
+});`
+    );
+
+    await run(function* () {
+      const config = yield* loadExtensionConfig(configPath);
+
+      expect(config.effection).toEqual(['3', '4', '5']);
+      expect(config.name).toBe('multi-version-extension');
+    });
+  });
+
+  it('should load configuration with only npm registry', async () => {
+    const configPath = join(testDir, 'ex-publisher.ts');
+    
+    await Deno.writeTextFile(
+      configPath,
+      `import { defineConfig } from 'ex-publisher';
+
+export default defineConfig({
+  name: 'npm-only-extension',
+  description: 'Extension published only to NPM',
+  effection: ['3'],
+  registries: ['npm']
+});`
+    );
+
+    await run(function* () {
+      const config = yield* loadExtensionConfig(configPath);
+
+      expect(config.registries).toEqual(['npm']);
+      expect(config.name).toBe('npm-only-extension');
     });
   });
 });

@@ -4,7 +4,8 @@
   },
   "imports": {
     "bdd": "jsr:@std/testing@1/bdd",
-    "expect": "jsr:@std/expect@1"
+    "expect": "jsr:@std/expect@1",
+    "ex-publisher": "./tasks/ex-publisher/mod.ts"
   },
   "compilerOptions": {
     "lib": [

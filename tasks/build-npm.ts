@@ -1,4 +1,4 @@
-import { build, emptyDir } from "jsr:@deno/dnt@0.41.3";
+import { build, emptyDir } from "jsr:@deno/dnt@0.42.3";
 import { DenoJson } from "./lib/read-packages.ts";
 import { join } from "jsr:@std/path@^1.0.7/join";
 

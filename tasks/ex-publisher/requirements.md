@@ -54,6 +54,13 @@ export default defineConfig({
 
   // versions of effection this project is compatible with
   // this will be converted to a semver range in package.json (e.g., "^3.0.0 || ^4.0.0")
+  // supports prerelease version specifiers:
+  // ["3", "4"] - stable versions only
+  // ["4-beta"] - beta prereleases only (e.g., 4.0.0-beta.1)
+  // ["4-alpha"] - alpha prereleases only (e.g., 4.0.0-alpha.2)
+  // ["4-rc"] - release candidate prereleases only (e.g., 4.0.0-rc.1)
+  // ["4-prerelease"] - any prerelease (alpha, beta, rc)
+  // ["4-any"] - stable or prerelease (prefers stable when available)
   effection: ["3", "4"],
 
   // new versions will be published to these registries
@@ -73,6 +80,36 @@ a file.
 It's a roll forward only workflow - it should be possible to re-run the entire
 process to publish only the previously failed extensions, versions or
 registries.
+
+## Version Resolution
+
+Before generating semver ranges for package.json, ex-publisher must resolve the highest available version for each Effection version constraint specified in the extension configuration.
+
+### Process
+
+1. **Fetch Available Versions**: Query NPM registry for all published Effection versions
+2. **Parse Constraints**: Convert extension config constraints (e.g., `["3", "4-beta"]`) into semver ranges
+3. **Resolve Highest**: For each constraint, find the highest version that matches the range
+4. **Cache Results**: Cache NPM registry responses to avoid repeated network requests
+
+### Constraint Resolution Examples
+
+| Configuration | Semver Range | Resolved Version | Description |
+|---------------|--------------|------------------|-------------|
+| `"3"` | `>=3.0.0 <4.0.0` | `3.6.1` | Highest stable 3.x |
+| `"4"` | `>=4.0.0 <5.0.0` | `4.2.1` | Highest stable 4.x |
+| `"4-beta"` | `>=4.0.0-beta <4.0.0` | `4.0.0-beta.1` | Highest 4.x beta |
+| `"4-alpha"` | `>=4.0.0-alpha <4.0.0` | `4.0.0-alpha.2` | Highest 4.x alpha |
+| `"4-rc"` | `>=4.0.0-rc <4.0.0` | `4.0.0-rc.1` | Highest 4.x RC |
+| `"4-prerelease"` | `>=4.0.0-0 <4.0.0` | `4.0.0-rc.1` | Highest 4.x prerelease |
+| `"4-any"` | `>=4.0.0-0 <5.0.0` | `4.2.1` | Stable preferred over prerelease |
+
+### Error Handling
+
+- Network timeouts: Retry with exponential backoff
+- 404 responses: Log warning and continue with empty version list
+- Malformed responses: Log error and continue with empty version list
+- No matching versions: Include error in resolution result
 
 ## Dependency resolution
 

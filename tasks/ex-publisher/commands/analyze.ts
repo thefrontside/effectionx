@@ -1,11 +1,11 @@
 import { Operation } from "npm:effection@3.6.0";
 import { command } from "npm:zod-opts@0.1.8";
 import { z } from "npm:zod@^3.20.2";
-import type { AnalyzeFlags } from "../types.ts";
+import type { AnalyzeCommandArgs } from "../types.ts";
 import { logger } from "../logger.ts";
-import { discoverExtensions } from "../lib/discovery.ts";
+import { discoverExtensions, type DiscoveredExtension } from "../lib/discovery.ts";
 
-export function* analyzeCommand(flags: AnalyzeFlags): Operation<void> {
+export function* analyzeCommand(flags: AnalyzeCommandArgs): Operation<DiscoveredExtension[]> {
   if (flags.verbose) {
     yield* logger.debug("Running analyze command with flags:", flags);
   }
@@ -13,12 +13,12 @@ export function* analyzeCommand(flags: AnalyzeFlags): Operation<void> {
   yield* logger.info("Analyzing extensions...");
 
   // Discover all extensions in the workspace
-  const workspaceDir = Deno.cwd();
+  const workspaceDir = flags.workspaceRoot;
   const allExtensions = yield* discoverExtensions(workspaceDir);
 
   if (allExtensions.length === 0) {
     yield* logger.info("No extensions found in workspace");
-    return;
+    return [];
   }
 
   // Filter extensions if specific extension requested
@@ -28,7 +28,7 @@ export function* analyzeCommand(flags: AnalyzeFlags): Operation<void> {
 
   if (flags.extName && extensionsToAnalyze.length === 0) {
     yield* logger.error(`Extension '${flags.extName}' not found`);
-    return;
+    return [];
   }
 
   // Display analysis results
@@ -51,6 +51,8 @@ export function* analyzeCommand(flags: AnalyzeFlags): Operation<void> {
   yield* logger.info(
     `\nAnalysis complete - discovered ${extensionsToAnalyze.length} extension(s)`,
   );
+  
+  return extensionsToAnalyze;
 }
 
 export const analyzeCommandDefinition = command("analyze")
@@ -64,5 +66,9 @@ export const analyzeCommandDefinition = command("analyze")
     extName: {
       type: z.string().optional(),
       description: "Select extension to analyze",
+    },
+    workspaceRoot: {
+      type: z.string().optional(),
+      description: "Root directory of the workspace to search for extensions",
     },
   });

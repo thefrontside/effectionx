@@ -13,6 +13,7 @@ export const GlobalFlagsSchema = z.object({
 
 export const AnalyzeFlagsSchema = GlobalFlagsSchema.extend({
   extName: z.string().optional(),
+  workspaceRoot: z.string().optional(),
 });
 
 export const VerifyFlagsSchema = GlobalFlagsSchema.extend({
@@ -43,6 +44,9 @@ export type AnalyzeFlags = z.infer<typeof AnalyzeFlagsSchema>;
 export type VerifyFlags = z.infer<typeof VerifyFlagsSchema>;
 export type PlanFlags = z.infer<typeof PlanFlagsSchema>;
 export type PublishFlags = z.infer<typeof PublishFlagsSchema>;
+
+// Command argument types with required workspaceRoot
+export type AnalyzeCommandArgs = Omit<AnalyzeFlags, 'workspaceRoot'> & { workspaceRoot: string };
 
 export function defineConfig(config: ExtensionConfig): ExtensionConfig {
   return ExtensionConfigSchema.parse(config);

@@ -14,14 +14,17 @@ import {
 import { loggerApi } from "./logger.ts";
 
 function* cli(): Operation<void> {
-  let commandToRun: Operation<void> | undefined;
+  let commandToRun: Operation<unknown> | undefined;
   let verbose = false;
 
   parser()
     .subcommand(analyzeCommandDefinition
       .action((parsed) => {
         verbose = parsed.verbose;
-        commandToRun = analyzeCommand(parsed);
+        commandToRun = analyzeCommand({
+          ...parsed,
+          workspaceRoot: parsed.workspaceRoot || Deno.cwd(),
+        });
       }))
     .subcommand(verifyCommandDefinition
       .action((parsed) => {

@@ -1,22 +1,8 @@
 import { type Operation, until } from "npm:effection@3.6.0";
 import { fetch } from "./fetch.ts";
+import type { EffectionVersionResolution, ExtensionInput } from "../types.ts";
+import { logger } from "../logger.ts";
 
-export interface EffectionVersionResolution {
-  extensionName: string;
-  requestedVersions: string[];
-  resolvedVersions: Record<string, string>;
-  errors?: string[];
-}
-
-export interface ExtensionInput {
-  name: string;
-  config: {
-    effection: string[];
-  };
-}
-
-// Cache for NPM registry responses to avoid repeated requests
-let versionCache: string[] | null = null;
 
 export function parseVersionConstraint(constraint: string): string {
   if (constraint.includes("-")) {
@@ -126,11 +112,6 @@ function parseVersion(version: string): { numbers: number[]; prerelease?: string
 }
 
 export function* fetchEffectionVersions(): Operation<string[]> {
-  // Return cached versions if available
-  if (versionCache !== null) {
-    return versionCache;
-  }
-  
   try {
     const response = yield* fetch("https://registry.npmjs.org/effection");
     
@@ -141,21 +122,26 @@ export function* fetchEffectionVersions(): Operation<string[]> {
     const data = yield* until(response.json());
     const versions = Object.keys(data.versions || {});
     
-    // Cache the results
-    versionCache = versions;
-    
     return versions;
   } catch (error) {
-    console.warn("Failed to fetch Effection versions:", error);
-    return [];
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    yield* logger.error("Failed to fetch Effection versions:", errorMessage);
+    throw new Error(`Failed to fetch Effection versions: ${errorMessage}`);
   }
 }
 
 export function* resolveEffectionVersions(
   extensions: ExtensionInput[]
 ): Operation<EffectionVersionResolution[]> {
-  // Fetch all available Effection versions once
-  const availableVersions = yield* fetchEffectionVersions();
+  let availableVersions: string[] = [];
+  let fetchError: string | null = null;
+  
+  // Try to fetch available Effection versions
+  try {
+    availableVersions = yield* fetchEffectionVersions();
+  } catch (error) {
+    fetchError = error instanceof Error ? error.message : String(error);
+  }
   
   const results: EffectionVersionResolution[] = [];
   
@@ -167,18 +153,26 @@ export function* resolveEffectionVersions(
       errors: []
     };
     
-    for (const constraint of extension.config.effection) {
-      try {
-        const range = parseVersionConstraint(constraint);
-        const resolvedVersion = findHighestVersionInRange(availableVersions, range);
-        
-        if (resolvedVersion) {
-          resolution.resolvedVersions[constraint] = resolvedVersion;
-        } else {
-          resolution.errors?.push(`No versions found for constraint: ${constraint}`);
+    // If there was a fetch error, add it to all constraints
+    if (fetchError) {
+      for (const constraint of extension.config.effection) {
+        resolution.errors?.push(`Failed to resolve ${constraint}: ${fetchError}`);
+      }
+    } else {
+      // Process each constraint normally
+      for (const constraint of extension.config.effection) {
+        try {
+          const range = parseVersionConstraint(constraint);
+          const resolvedVersion = findHighestVersionInRange(availableVersions, range);
+          
+          if (resolvedVersion) {
+            resolution.resolvedVersions[constraint] = resolvedVersion;
+          } else {
+            resolution.errors?.push(`No versions found for constraint: ${constraint}`);
+          }
+        } catch (error) {
+          resolution.errors?.push(`Failed to resolve ${constraint}: ${error instanceof Error ? error.message : String(error)}`);
         }
-      } catch (error) {
-        resolution.errors?.push(`Failed to resolve ${constraint}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
     

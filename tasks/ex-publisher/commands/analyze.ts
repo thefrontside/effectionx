@@ -1,9 +1,10 @@
 import { Operation } from "npm:effection@3.6.0";
 import { command } from "npm:zod-opts@0.1.8";
 import { z } from "npm:zod@^3.20.2";
-import type { AnalyzeCommandArgs } from "../types.ts";
+import type { AnalyzeCommandArgs, VersionResolutionResult, ExtensionInput } from "../types.ts";
 import { logger } from "../logger.ts";
 import { discoverExtensions, type DiscoveredExtension } from "../lib/discovery.ts";
+import { resolveEffectionVersions } from "../lib/version-resolution.ts";
 
 export function* analyzeCommand(flags: AnalyzeCommandArgs): Operation<DiscoveredExtension[]> {
   if (flags.verbose) {
@@ -22,13 +23,40 @@ export function* analyzeCommand(flags: AnalyzeCommandArgs): Operation<Discovered
   }
 
   // Filter extensions if specific extension requested
-  const extensionsToAnalyze = flags.extName
+  let extensionsToAnalyze = flags.extName
     ? allExtensions.filter((ext) => ext.name === flags.extName)
     : allExtensions;
 
   if (flags.extName && extensionsToAnalyze.length === 0) {
     yield* logger.error(`Extension '${flags.extName}' not found`);
     return [];
+  }
+
+  // Resolve Effection versions for all extensions
+  if (extensionsToAnalyze.length > 0) {
+    yield* logger.debug("Resolving Effection versions...");
+    
+    const extensionInputs: ExtensionInput[] = extensionsToAnalyze.map(ext => ({
+      name: ext.name,
+      config: { effection: ext.config.effection }
+    }));
+    
+    const resolutions = yield* resolveEffectionVersions(extensionInputs);
+    
+    // Transform resolutions and update extensions
+    extensionsToAnalyze = extensionsToAnalyze.map(ext => {
+      const resolution = resolutions.find(r => r.extensionName === ext.name);
+      if (resolution) {
+        const resolvedVersions: VersionResolutionResult[] = ext.config.effection.map(constraint => {
+          const resolvedVersion = resolution.resolvedVersions[constraint] || null;
+          const error = resolution.errors?.find(err => err.includes(`Failed to resolve ${constraint}:`)) || null;
+          return { constraint, resolvedVersion, error };
+        });
+        
+        return { ...ext, resolvedVersions };
+      }
+      return ext;
+    });
   }
 
   // Display analysis results
@@ -43,6 +71,19 @@ export function* analyzeCommand(flags: AnalyzeCommandArgs): Operation<Discovered
     yield* logger.info(
       `   Effection versions: ${extension.config.effection.join(", ")}`,
     );
+    
+    // Display resolved versions
+    if (extension.resolvedVersions.length > 0) {
+      yield* logger.info(`   Resolved versions:`);
+      for (const resolution of extension.resolvedVersions) {
+        if (resolution.error) {
+          yield* logger.info(`     ${resolution.constraint}: ❌ ${resolution.error}`);
+        } else {
+          yield* logger.info(`     ${resolution.constraint}: ✅ ${resolution.resolvedVersion}`);
+        }
+      }
+    }
+    
     yield* logger.info(
       `   Registries: ${extension.config.registries.join(", ")}`,
     );

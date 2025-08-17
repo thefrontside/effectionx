@@ -1,7 +1,7 @@
 import { Operation, until } from "npm:effection@3.6.0";
 import { join, resolve } from "jsr:@std/path";
 import { exists as fsExists } from "jsr:@std/fs";
-import type { ExtensionConfig } from "../types.ts";
+import type { ExtensionConfig, VersionResolutionResult } from "../types.ts";
 import { ExtensionConfigSchema } from "../types.ts";
 import { logger } from "../logger.ts";
 
@@ -10,6 +10,7 @@ export interface DiscoveredExtension {
   path: string;
   config: ExtensionConfig;
   version: string;
+  resolvedVersions: VersionResolutionResult[];
 }
 
 interface WorkspaceConfig {
@@ -91,6 +92,7 @@ function* tryDiscoverExtension(
       path: extensionPath,
       config,
       version,
+      resolvedVersions: [], // TODO: Populate with version resolution
     };
   } catch (error) {
     yield* logger.warn(

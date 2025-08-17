@@ -1,4 +1,24 @@
 import { z } from "npm:zod@^3.20.2";
+export interface EffectionVersionResolution {
+  extensionName: string;
+  requestedVersions: string[];
+  resolvedVersions: Record<string, string>;
+  errors?: string[];
+}
+
+export interface ExtensionInput {
+  name: string;
+  config: {
+    effection: string[];
+  };
+}
+
+// Individual version resolution result for UI display
+export interface VersionResolutionResult {
+  constraint: string;
+  resolvedVersion: string | null;
+  error: string | null;
+}
 
 export const ExtensionConfigSchema = z.object({
   name: z.string(),
@@ -47,6 +67,15 @@ export type PublishFlags = z.infer<typeof PublishFlagsSchema>;
 
 // Command argument types with required workspaceRoot
 export type AnalyzeCommandArgs = Omit<AnalyzeFlags, 'workspaceRoot'> & { workspaceRoot: string };
+
+// Extension analysis result with resolved versions
+export interface ExtensionAnalysis {
+  name: string;
+  path: string;
+  config: ExtensionConfig;
+  version: string;
+  resolvedVersions: VersionResolutionResult[];
+} 
 
 export function defineConfig(config: ExtensionConfig): ExtensionConfig {
   return ExtensionConfigSchema.parse(config);

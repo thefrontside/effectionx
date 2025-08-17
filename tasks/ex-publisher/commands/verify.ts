@@ -2,37 +2,37 @@ import { Operation } from "npm:effection@3.6.0";
 import { command } from "npm:zod-opts@0.1.8";
 import { z } from "npm:zod@^3.20.2";
 import type { VerifyFlags } from "../types.ts";
-import { logger } from "../logger.ts";
+import { log } from "../logger.ts";
 
 export function* verifyCommand(flags: VerifyFlags): Operation<void> {
   if (flags.verbose) {
-    yield* logger.debug("Running verify command with flags:", flags);
+    yield* log.debug("Running verify command with flags:", flags);
   }
 
-  yield* logger.info("Verifying extensions...");
+  yield* log.info("Verifying extensions...");
 
   if (flags.extName) {
-    yield* logger.info(`Verifying extension: ${flags.extName}`);
+    yield* log.info(`Verifying extension: ${flags.extName}`);
   } else {
-    yield* logger.info("Verifying all extensions");
+    yield* log.info("Verifying all extensions");
   }
 
   if (flags.effection) {
-    yield* logger.info(`Testing with Effection version: ${flags.effection}`);
+    yield* log.info(`Testing with Effection version: ${flags.effection}`);
   }
 
   if (flags.deno) {
-    yield* logger.info("Running Deno tests...");
+    yield* log.info("Running Deno tests...");
     // TODO: Execute Deno tests with import map
   }
 
   if (flags.node) {
-    yield* logger.info("Running Node tests...");
+    yield* log.info("Running Node tests...");
     // TODO: Generate Node package with DNT and run tests
   }
 
   if (flags.lint) {
-    yield* logger.info("Running linting...");
+    yield* log.info("Running linting...");
     // TODO: Execute linting
   }
 
@@ -43,7 +43,7 @@ export function* verifyCommand(flags: VerifyFlags): Operation<void> {
   // 4. Execute Node tests
   // 5. Run linting if requested
 
-  yield* logger.info("Verification complete");
+  yield* log.info("Verification complete");
 }
 
 export const verifyCommandDefinition = command("verify")

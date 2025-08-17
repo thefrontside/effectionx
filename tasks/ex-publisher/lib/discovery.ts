@@ -3,7 +3,7 @@ import { join, resolve } from "jsr:@std/path";
 import { exists as fsExists } from "jsr:@std/fs";
 import type { ExtensionConfig, VersionResolutionResult } from "../types.ts";
 import { ExtensionConfigSchema } from "../types.ts";
-import { logger } from "../logger.ts";
+import { log } from "../logger.ts";
 
 export interface DiscoveredExtension {
   name: string;
@@ -21,7 +21,7 @@ interface WorkspaceConfig {
 export function* discoverExtensions(
   workspaceDir: string,
 ): Operation<DiscoveredExtension[]> {
-  yield* logger.debug(`Discovering extensions in workspace: ${workspaceDir}`);
+  yield* log.debug(`Discovering extensions in workspace: ${workspaceDir}`);
 
   try {
     // Read workspace configuration
@@ -29,7 +29,7 @@ export function* discoverExtensions(
     const workspaceExists = yield* exists(workspaceConfigPath);
 
     if (!workspaceExists) {
-      yield* logger.debug("No workspace deno.json found");
+      yield* log.debug("No workspace deno.json found");
       return [];
     }
 
@@ -37,11 +37,11 @@ export function* discoverExtensions(
     const workspaceConfig: WorkspaceConfig = JSON.parse(workspaceContent);
 
     if (!workspaceConfig.workspace || workspaceConfig.workspace.length === 0) {
-      yield* logger.debug("Workspace has no members");
+      yield* log.debug("Workspace has no members");
       return [];
     }
 
-    yield* logger.debug(
+    yield* log.debug(
       `Found ${workspaceConfig.workspace.length} workspace members`,
     );
 
@@ -54,14 +54,14 @@ export function* discoverExtensions(
 
       if (extension) {
         extensions.push(extension);
-        yield* logger.debug(`Discovered extension: ${extension.name}`);
+        yield* log.debug(`Discovered extension: ${extension.name}`);
       }
     }
 
-    yield* logger.info(`Discovered ${extensions.length} extensions`);
+    yield* log.info(`Discovered ${extensions.length} extensions`);
     return extensions;
   } catch (error) {
-    yield* logger.error("Failed to discover extensions:", error);
+    yield* log.error("Failed to discover extensions:", error);
     throw error;
   }
 }
@@ -75,7 +75,7 @@ function* tryDiscoverExtension(
     const configExists = yield* exists(configPath);
 
     if (!configExists) {
-      yield* logger.debug(
+      yield* log.debug(
         `No ex-publisher.ts config found in ${extensionPath}`,
       );
       return null;
@@ -95,7 +95,7 @@ function* tryDiscoverExtension(
       resolvedVersions: [], // TODO: Populate with version resolution
     };
   } catch (error) {
-    yield* logger.warn(
+    yield* log.warn(
       `Failed to discover extension at ${extensionPath}:`,
       error,
     );
@@ -106,7 +106,7 @@ function* tryDiscoverExtension(
 export function* loadExtensionConfig(
   configPath: string,
 ): Operation<ExtensionConfig> {
-  yield* logger.debug(`Loading extension config from ${configPath}`);
+  yield* log.debug(`Loading extension config from ${configPath}`);
 
   try {
     // Dynamic import to load the config module
@@ -119,7 +119,7 @@ export function* loadExtensionConfig(
     // Validate the configuration with Zod schema
     const validatedConfig = ExtensionConfigSchema.parse(configModule.default);
 
-    yield* logger.debug(
+    yield* log.debug(
       `Successfully validated config for ${validatedConfig.name}`,
     );
     return validatedConfig;

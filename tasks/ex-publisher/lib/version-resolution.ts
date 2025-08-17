@@ -1,7 +1,7 @@
 import { type Operation, until } from "npm:effection@3.6.0";
 import { fetch } from "./fetch.ts";
 import type { EffectionVersionResolution, ExtensionInput } from "../types.ts";
-import { logger } from "../logger.ts";
+import { log } from "../logger.ts";
 
 export function parseVersionConstraint(constraint: string): string {
   if (constraint.includes("-")) {
@@ -138,7 +138,7 @@ export function* fetchEffectionVersions(): Operation<string[]> {
     return versions;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    yield* logger.error("Failed to fetch Effection versions:", errorMessage);
+    yield* log.error("Failed to fetch Effection versions:", errorMessage);
     throw new Error(`Failed to fetch Effection versions: ${errorMessage}`);
   }
 }

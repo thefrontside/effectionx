@@ -32,4 +32,4 @@ const consoleLogger: Logger = {
 };
 
 export const loggerApi = createApi("logger", consoleLogger);
-export const logger = loggerApi.operations;
+export const log = loggerApi.operations;

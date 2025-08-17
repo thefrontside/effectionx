@@ -2,23 +2,23 @@ import { Operation } from "npm:effection@3.6.0";
 import { command } from "npm:zod-opts@0.1.8";
 import { z } from "npm:zod@^3.20.2";
 import type { PlanFlags } from "../types.ts";
-import { logger } from "../logger.ts";
+import { log } from "../logger.ts";
 
 export function* planCommand(flags: PlanFlags): Operation<void> {
   if (flags.verbose) {
-    yield* logger.debug("Running plan command with flags:", flags);
+    yield* log.debug("Running plan command with flags:", flags);
   }
 
-  yield* logger.info("Planning publication...");
+  yield* log.info("Planning publication...");
 
   if (flags.extName) {
-    yield* logger.info(`Planning for extension: ${flags.extName}`);
+    yield* log.info(`Planning for extension: ${flags.extName}`);
   } else {
-    yield* logger.info("Planning for all extensions");
+    yield* log.info("Planning for all extensions");
   }
 
   if (flags.effection) {
-    yield* logger.info(`Planning for Effection version: ${flags.effection}`);
+    yield* log.info(`Planning for Effection version: ${flags.effection}`);
   }
 
   let registries = [];
@@ -26,7 +26,7 @@ export function* planCommand(flags: PlanFlags): Operation<void> {
   if (flags.npm) registries.push("NPM");
   if (registries.length === 0) registries = ["JSR", "NPM"];
 
-  yield* logger.info(`Planning for registries: ${registries.join(", ")}`);
+  yield* log.info(`Planning for registries: ${registries.join(", ")}`);
 
   // TODO: Implement planning logic
   // 1. Compare current versions with published versions
@@ -35,7 +35,7 @@ export function* planCommand(flags: PlanFlags): Operation<void> {
   // 4. Generate execution plan
   // 5. Display plan to user
 
-  yield* logger.info("Planning complete");
+  yield* log.info("Planning complete");
 }
 
 export const planCommandDefinition = command("plan")

@@ -6,7 +6,7 @@ import type {
   ExtensionInput,
   VersionResolutionResult,
 } from "../types.ts";
-import { logger } from "../logger.ts";
+import { log } from "../logger.ts";
 import {
   type DiscoveredExtension,
   discoverExtensions,
@@ -17,17 +17,17 @@ export function* analyzeCommand(
   flags: AnalyzeCommandArgs,
 ): Operation<DiscoveredExtension[]> {
   if (flags.verbose) {
-    yield* logger.debug("Running analyze command with flags:", flags);
+    yield* log.debug("Running analyze command with flags:", flags);
   }
 
-  yield* logger.info("Analyzing extensions...");
+  yield* log.info("Analyzing extensions...");
 
   // Discover all extensions in the workspace
   const workspaceDir = flags.workspaceRoot;
   const allExtensions = yield* discoverExtensions(workspaceDir);
 
   if (allExtensions.length === 0) {
-    yield* logger.info("No extensions found in workspace");
+    yield* log.info("No extensions found in workspace");
     return [];
   }
 
@@ -37,13 +37,13 @@ export function* analyzeCommand(
     : allExtensions;
 
   if (flags.extName && extensionsToAnalyze.length === 0) {
-    yield* logger.error(`Extension '${flags.extName}' not found`);
+    yield* log.error(`Extension '${flags.extName}' not found`);
     return [];
   }
 
   // Resolve Effection versions for all extensions
   if (extensionsToAnalyze.length > 0) {
-    yield* logger.debug("Resolving Effection versions...");
+    yield* log.debug("Resolving Effection versions...");
 
     const extensionInputs: ExtensionInput[] = extensionsToAnalyze.map(
       (ext) => ({
@@ -75,40 +75,40 @@ export function* analyzeCommand(
   }
 
   // Display analysis results
-  yield* logger.info(
+  yield* log.info(
     `Found ${extensionsToAnalyze.length} extension(s) to analyze:`,
   );
 
   for (const extension of extensionsToAnalyze) {
-    yield* logger.info(`\n📦 ${extension.name} (v${extension.version})`);
-    yield* logger.info(`   Description: ${extension.config.description}`);
-    yield* logger.info(`   Path: ${extension.path}`);
-    yield* logger.info(
+    yield* log.info(`\n📦 ${extension.name} (v${extension.version})`);
+    yield* log.info(`   Description: ${extension.config.description}`);
+    yield* log.info(`   Path: ${extension.path}`);
+    yield* log.info(
       `   Effection versions: ${extension.config.effection.join(", ")}`,
     );
 
     // Display resolved versions
     if (extension.resolvedVersions.length > 0) {
-      yield* logger.info(`   Resolved versions:`);
+      yield* log.info(`   Resolved versions:`);
       for (const resolution of extension.resolvedVersions) {
         if (resolution.error) {
-          yield* logger.info(
+          yield* log.info(
             `     ${resolution.constraint}: ❌ ${resolution.error}`,
           );
         } else {
-          yield* logger.info(
+          yield* log.info(
             `     ${resolution.constraint}: ✅ ${resolution.resolvedVersion}`,
           );
         }
       }
     }
 
-    yield* logger.info(
+    yield* log.info(
       `   Registries: ${extension.config.registries.join(", ")}`,
     );
   }
 
-  yield* logger.info(
+  yield* log.info(
     `\nAnalysis complete - discovered ${extensionsToAnalyze.length} extension(s)`,
   );
 

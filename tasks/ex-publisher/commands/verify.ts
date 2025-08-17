@@ -1,20 +1,20 @@
-import { Operation } from 'npm:effection@3.6.0';
-import { command } from 'npm:zod-opts@0.1.8';
-import { z } from 'npm:zod@^3.20.2';
-import type { VerifyFlags } from '../types.ts';
-import { logger } from '../logger.ts';
+import { Operation } from "npm:effection@3.6.0";
+import { command } from "npm:zod-opts@0.1.8";
+import { z } from "npm:zod@^3.20.2";
+import type { VerifyFlags } from "../types.ts";
+import { logger } from "../logger.ts";
 
 export function* verifyCommand(flags: VerifyFlags): Operation<void> {
   if (flags.verbose) {
-    yield* logger.debug('Running verify command with flags:', flags);
+    yield* logger.debug("Running verify command with flags:", flags);
   }
 
-  yield* logger.info('Verifying extensions...');
-  
+  yield* logger.info("Verifying extensions...");
+
   if (flags.extName) {
     yield* logger.info(`Verifying extension: ${flags.extName}`);
   } else {
-    yield* logger.info('Verifying all extensions');
+    yield* logger.info("Verifying all extensions");
   }
 
   if (flags.effection) {
@@ -22,17 +22,17 @@ export function* verifyCommand(flags: VerifyFlags): Operation<void> {
   }
 
   if (flags.deno) {
-    yield* logger.info('Running Deno tests...');
+    yield* logger.info("Running Deno tests...");
     // TODO: Execute Deno tests with import map
   }
 
   if (flags.node) {
-    yield* logger.info('Running Node tests...');
+    yield* logger.info("Running Node tests...");
     // TODO: Generate Node package with DNT and run tests
   }
 
   if (flags.lint) {
-    yield* logger.info('Running linting...');
+    yield* logger.info("Running linting...");
     // TODO: Execute linting
   }
 
@@ -42,8 +42,8 @@ export function* verifyCommand(flags: VerifyFlags): Operation<void> {
   // 3. Generate Node packages with DNT
   // 4. Execute Node tests
   // 5. Run linting if requested
-  
-  yield* logger.info('Verification complete');
+
+  yield* logger.info("Verification complete");
 }
 
 export const verifyCommandDefinition = command("verify")
@@ -51,7 +51,7 @@ export const verifyCommandDefinition = command("verify")
   .options({
     verbose: {
       type: z.boolean().default(false),
-      alias: 'v',
+      alias: "v",
       description: "Print debugging output",
     },
     extName: {

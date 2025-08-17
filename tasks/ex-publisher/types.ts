@@ -1,10 +1,10 @@
-import { z } from 'npm:zod@^3.20.2';
+import { z } from "npm:zod@^3.20.2";
 
 export const ExtensionConfigSchema = z.object({
   name: z.string(),
   description: z.string(),
   effection: z.array(z.string()),
-  registries: z.array(z.enum(['npm', 'jsr'])),
+  registries: z.array(z.enum(["npm", "jsr"])),
 });
 
 export const GlobalFlagsSchema = z.object({

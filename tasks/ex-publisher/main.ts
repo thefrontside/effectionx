@@ -40,24 +40,24 @@ function* cli(): Operation<void> {
       }))
     .parse();
 
-    yield* loggerApi.around({
-      *info(args, next) {
+  yield* loggerApi.around({
+    *info(args, next) {
+      yield* next(...args);
+    },
+    *warn(args, next) {
+      if (verbose) {
         yield* next(...args);
-      },
-      *warn(args, next) {
-        if (verbose) {
-          yield* next(...args);
-        }
-      },
-      *debug(args, next) {
-        if (verbose) {
-          yield* next(...args);
-        }
-      },
-      *error(args, next) {
+      }
+    },
+    *debug(args, next) {
+      if (verbose) {
         yield* next(...args);
-      },
-    })
+      }
+    },
+    *error(args, next) {
+      yield* next(...args);
+    },
+  });
 
   if (commandToRun) {
     yield* commandToRun;

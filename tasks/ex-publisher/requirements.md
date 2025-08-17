@@ -142,8 +142,7 @@ by not publishing to JSR.
 
 ~~[major] - version of effection that this package is compatible with~~
 ~~[minor] - equivalent of major version but for project specifically~~
-~~[patch] - most changes will be patch as long as they're significant breaking
-changes~~
+~~[patch] - most changes will be patch as long as they're significant breaking changes~~
 
 When want to support a sliding version dependency on an extension, use `~`
 prefix otherwise specify a version explicitly.

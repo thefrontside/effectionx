@@ -16,10 +16,6 @@ import { resolveEffectionVersions } from "../lib/version-resolution.ts";
 export function* analyzeCommand(
   flags: AnalyzeCommandArgs,
 ): Operation<DiscoveredExtension[]> {
-  if (flags.verbose) {
-    yield* log.debug("Running analyze command with flags:", flags);
-  }
-
   yield* log.info("Analyzing extensions...");
 
   // Discover all extensions in the workspace
@@ -32,20 +28,20 @@ export function* analyzeCommand(
   }
 
   // Filter extensions if specific extension requested
-  let extensionsToAnalyze = flags.extName
+  let extensions = flags.extName
     ? allExtensions.filter((ext) => ext.name === flags.extName)
     : allExtensions;
 
-  if (flags.extName && extensionsToAnalyze.length === 0) {
+  if (flags.extName && extensions.length === 0) {
     yield* log.error(`Extension '${flags.extName}' not found`);
     return [];
   }
 
   // Resolve Effection versions for all extensions
-  if (extensionsToAnalyze.length > 0) {
+  if (extensions.length > 0) {
     yield* log.debug("Resolving Effection versions...");
 
-    const extensionInputs: ExtensionInput[] = extensionsToAnalyze.map(
+    const extensionInputs: ExtensionInput[] = extensions.map(
       (ext) => ({
         name: ext.name,
         config: { effection: ext.config.effection },
@@ -55,7 +51,7 @@ export function* analyzeCommand(
     const resolutions = yield* resolveEffectionVersions(extensionInputs);
 
     // Transform resolutions and update extensions
-    extensionsToAnalyze = extensionsToAnalyze.map((ext) => {
+    extensions = extensions.map((ext) => {
       const resolution = resolutions.find((r) => r.extensionName === ext.name);
       if (resolution) {
         const resolvedVersions: VersionResolutionResult[] = ext.config.effection
@@ -76,10 +72,10 @@ export function* analyzeCommand(
 
   // Display analysis results
   yield* log.info(
-    `Found ${extensionsToAnalyze.length} extension(s) to analyze:`,
+    `Found ${extensions.length} extension(s)`,
   );
 
-  for (const extension of extensionsToAnalyze) {
+  for (const extension of extensions) {
     yield* log.info(`\n📦 ${extension.name} (v${extension.version})`);
     yield* log.info(`   Description: ${extension.config.description}`);
     yield* log.info(`   Path: ${extension.path}`);
@@ -109,10 +105,10 @@ export function* analyzeCommand(
   }
 
   yield* log.info(
-    `\nAnalysis complete - discovered ${extensionsToAnalyze.length} extension(s)`,
+    `\nAnalysis complete - discovered ${extensions.length} extension(s)`,
   );
 
-  return extensionsToAnalyze;
+  return extensions;
 }
 
 export const analyzeCommandDefinition = command("analyze")

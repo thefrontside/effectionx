@@ -33,3 +33,41 @@ const consoleLogger: Logger = {
 
 export const loggerApi = createApi("logger", consoleLogger);
 export const log = loggerApi.operations;
+
+export function* setupVerboseLogging(verbose: boolean) {
+  yield* loggerApi.around({
+    *info(args, next) {
+      yield* next(...args);
+    },
+    *warn(args, next) {
+      if (verbose) {
+        yield* next(...args);
+      }
+    },
+    *debug(args, next) {
+      if (verbose) {
+        yield* next(...args);
+      }
+    },
+    *error(args, next) {
+      yield* next(...args);
+    },
+  });
+}
+
+export function* namespace(namespace: string) {
+  yield* loggerApi.around({
+    *info(args, next) {
+      yield* next(`[${namespace}] ${args[0]}`, ...args.slice(1));
+    },
+    *warn(args, next) {
+      yield* next(`[${namespace}] ${args[0]}`, ...args.slice(1));
+    },
+    *debug(args, next) {
+      yield* next(`[${namespace}] ${args[0]}`, ...args.slice(1));
+    },
+    *error(args, next) {
+      yield* next(`[${namespace}] ${args[0]}`, ...args.slice(1));
+    },
+  });
+}

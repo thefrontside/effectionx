@@ -2,11 +2,13 @@ import { expect } from "expect";
 import { beforeEach, describe, it } from "../testing.ts";
 import { createTempDir, type TempDir } from "../testing/temp-dir.ts";
 import { discoverExtensions } from "./discovery.ts";
+import { setupLogging } from "../testing/logging.ts";
 
 describe("Extension Discovery", () => {
   let tempDir: TempDir;
 
   beforeEach(function* () {
+    yield* setupLogging(false);
     tempDir = yield* createTempDir();
   });
 

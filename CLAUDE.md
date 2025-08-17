@@ -102,6 +102,7 @@ function* myFunction(): Operation<any> {
 - Mock external dependencies (file system, network)
 - Use BDD-style test structure
 - Test both success and failure scenarios
+- Keep `it` pure by running side effects causing utilities into beforeEach
 
 **TDD Workflow:**
 1. User specifies test requirements
@@ -110,32 +111,44 @@ function* myFunction(): Operation<any> {
 4. Claude implements code to make tests pass
 5. Refactor if needed while keeping tests green
 
-**Fixture Data Strategy:**
-- Use temporary directories with `Deno.makeTempDir()` for isolated test environments
-- Generate fixtures programmatically for varied test scenarios
-- Combine real file system operations with controlled test data
-- Automatic cleanup with `Deno.remove()` in test teardown
-- Structure: `testDir/extension-name/ex-publisher.ts` and `testDir/extension-name/deno.json`
+**Mocking Strategy:**
 
-**Fixture Utilities:**
-```typescript
-// Create isolated test environment
-const testDir = await Deno.makeTempDir({ prefix: "ex-publisher-test-" });
+- Prefer Context API and around
+- See logger and fetch context as an example
 
-// Generate extension fixtures programmatically
-function createExtensionFixture(name: string, config: ExtensionConfig) {
-  return {
-    [`${name}/ex-publisher.ts`]: `export default ${JSON.stringify(config)}`,
-    [`${name}/deno.json`]: JSON.stringify({ version: "1.0.0" }),
-  };
-}
-
-// Cleanup after test
-await Deno.remove(testDir, { recursive: true });
-```
 
 **Configuration Management:**
 - Use Zod schemas for all configuration
 - Validate configuration at load time
 - Provide clear error messages for invalid config
 - Support both CLI flags and config files
+
+## Session Management
+
+### Save Session Command
+
+Use `/save-session` to export and save the current Claude Code chat session. This command:
+
+1. **Exports chat session** using Claude Code MCP to a temporary file
+2. **Copies to repository** with timestamp: `chat-session-YYYYMMDD-HHMMSS.md`
+3. **Creates git commit** with:
+   - The chat session file
+   - Complete chat content in commit message
+   - Restoration instructions in commit header
+   - Environment context and project state
+4. **Compact** using Claude Code MCP
+
+### Restoring Sessions
+
+To restore a saved session:
+
+1. **Find the session commit**: `git log --oneline --grep="Save Claude Code chat session"`
+2. **Checkout the commit**: `git checkout <commit-hash>`
+3. **Read the chat file**: `cat chat-session-*.md`
+4. **Start new Claude Code session** with this prompt:
+   ```
+   Load the context from the following chat session and continue where we left off: 
+   [paste the content from the .md file]
+   ```
+
+This workflow preserves complete chat context, environment state, and project information for seamless session restoration.

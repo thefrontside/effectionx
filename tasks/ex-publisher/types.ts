@@ -66,7 +66,9 @@ export type PlanFlags = z.infer<typeof PlanFlagsSchema>;
 export type PublishFlags = z.infer<typeof PublishFlagsSchema>;
 
 // Command argument types with required workspaceRoot
-export type AnalyzeCommandArgs = Omit<AnalyzeFlags, 'workspaceRoot'> & { workspaceRoot: string };
+export type AnalyzeCommandArgs = Omit<AnalyzeFlags, "workspaceRoot"> & {
+  workspaceRoot: string;
+};
 
 // Extension analysis result with resolved versions
 export interface ExtensionAnalysis {
@@ -75,7 +77,7 @@ export interface ExtensionAnalysis {
   config: ExtensionConfig;
   version: string;
   resolvedVersions: VersionResolutionResult[];
-} 
+}
 
 export function defineConfig(config: ExtensionConfig): ExtensionConfig {
   return ExtensionConfigSchema.parse(config);

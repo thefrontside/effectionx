@@ -9,11 +9,11 @@ export interface Logger {
 }
 
 const colors = {
-  reset: '\x1b[0m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  gray: '\x1b[90m',
+  reset: "\x1b[0m",
+  red: "\x1b[31m",
+  yellow: "\x1b[33m",
+  blue: "\x1b[34m",
+  gray: "\x1b[90m",
 };
 
 const consoleLogger: Logger = {

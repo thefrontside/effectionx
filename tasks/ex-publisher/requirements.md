@@ -83,26 +83,32 @@ registries.
 
 ## Version Resolution
 
-Before generating semver ranges for package.json, ex-publisher must resolve the highest available version for each Effection version constraint specified in the extension configuration.
+Before generating semver ranges for package.json, ex-publisher must resolve the
+highest available version for each Effection version constraint specified in the
+extension configuration.
 
 ### Process
 
-1. **Fetch Available Versions**: Query NPM registry for all published Effection versions
-2. **Parse Constraints**: Convert extension config constraints (e.g., `["3", "4-beta"]`) into semver ranges
-3. **Resolve Highest**: For each constraint, find the highest version that matches the range
-4. **Cache Results**: Cache NPM registry responses to avoid repeated network requests
+1. **Fetch Available Versions**: Query NPM registry for all published Effection
+   versions
+2. **Parse Constraints**: Convert extension config constraints (e.g.,
+   `["3", "4-beta"]`) into semver ranges
+3. **Resolve Highest**: For each constraint, find the highest version that
+   matches the range
+4. **Cache Results**: Cache NPM registry responses to avoid repeated network
+   requests
 
 ### Constraint Resolution Examples
 
-| Configuration | Semver Range | Resolved Version | Description |
-|---------------|--------------|------------------|-------------|
-| `"3"` | `>=3.0.0 <4.0.0` | `3.6.1` | Highest stable 3.x |
-| `"4"` | `>=4.0.0 <5.0.0` | `4.2.1` | Highest stable 4.x |
-| `"4-beta"` | `>=4.0.0-beta <4.0.0` | `4.0.0-beta.1` | Highest 4.x beta |
-| `"4-alpha"` | `>=4.0.0-alpha <4.0.0` | `4.0.0-alpha.2` | Highest 4.x alpha |
-| `"4-rc"` | `>=4.0.0-rc <4.0.0` | `4.0.0-rc.1` | Highest 4.x RC |
-| `"4-prerelease"` | `>=4.0.0-0 <4.0.0` | `4.0.0-rc.1` | Highest 4.x prerelease |
-| `"4-any"` | `>=4.0.0-0 <5.0.0` | `4.2.1` | Stable preferred over prerelease |
+| Configuration    | Semver Range           | Resolved Version | Description                      |
+| ---------------- | ---------------------- | ---------------- | -------------------------------- |
+| `"3"`            | `>=3.0.0 <4.0.0`       | `3.6.1`          | Highest stable 3.x               |
+| `"4"`            | `>=4.0.0 <5.0.0`       | `4.2.1`          | Highest stable 4.x               |
+| `"4-beta"`       | `>=4.0.0-beta <4.0.0`  | `4.0.0-beta.1`   | Highest 4.x beta                 |
+| `"4-alpha"`      | `>=4.0.0-alpha <4.0.0` | `4.0.0-alpha.2`  | Highest 4.x alpha                |
+| `"4-rc"`         | `>=4.0.0-rc <4.0.0`    | `4.0.0-rc.1`     | Highest 4.x RC                   |
+| `"4-prerelease"` | `>=4.0.0-0 <4.0.0`     | `4.0.0-rc.1`     | Highest 4.x prerelease           |
+| `"4-any"`        | `>=4.0.0-0 <5.0.0`     | `4.2.1`          | Stable preferred over prerelease |
 
 ### Error Handling
 
@@ -179,7 +185,8 @@ by not publishing to JSR.
 
 ~~[major] - version of effection that this package is compatible with~~
 ~~[minor] - equivalent of major version but for project specifically~~
-~~[patch] - most changes will be patch as long as they're significant breaking changes~~
+~~[patch] - most changes will be patch as long as they're significant breaking
+changes~~
 
 When want to support a sliding version dependency on an extension, use `~`
 prefix otherwise specify a version explicitly.

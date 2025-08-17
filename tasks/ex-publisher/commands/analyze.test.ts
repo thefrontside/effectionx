@@ -341,7 +341,11 @@ export default defineConfig({
         // Both extensions should have same resolved versions for same constraints
         const expectedResolution = [
           { constraint: "3", resolvedVersion: "3.6.1", error: null },
-          { constraint: "4-beta", resolvedVersion: "4.0.0-beta.1", error: null },
+          {
+            constraint: "4-beta",
+            resolvedVersion: "4.0.0-beta.1",
+            error: null,
+          },
         ];
 
         expect(extensions[0].resolvedVersions).toEqual(expectedResolution);

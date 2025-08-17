@@ -14,7 +14,7 @@ export function describe(name: string, body: () => void) {
   try {
     const child = current = createTestAdapter({ name, parent: original });
     if (isTop) {
-      // 
+      //
     }
 
     $describe(name, () => {

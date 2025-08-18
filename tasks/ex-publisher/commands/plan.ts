@@ -1,8 +1,15 @@
-import { Operation } from "npm:effection@3.6.0";
+import { call, Operation } from "npm:effection@3.6.0";
 import { command } from "npm:zod-opts@0.1.8";
 import { z } from "npm:zod@^3.20.2";
 import type { PlanFlags } from "../types.ts";
-import { log } from "../logger.ts";
+import { log, namespace } from "../logger.ts";
+
+export function* plan(flags: PlanFlags): Operation<void> {
+  return yield* call(function* () {
+    yield* namespace("plan");
+    return yield* planCommand(flags);
+  });
+}
 
 export function* planCommand(flags: PlanFlags): Operation<void> {
   if (flags.verbose) {

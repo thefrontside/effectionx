@@ -34,7 +34,7 @@ const consoleLogger: Logger = {
 export const loggerApi = createApi("logger", consoleLogger);
 export const log = loggerApi.operations;
 
-export function* setupVerboseLogging(verbose: boolean) {
+export function* verboseLogging(verbose: boolean) {
   yield* loggerApi.around({
     *info(args, next) {
       yield* next(...args);

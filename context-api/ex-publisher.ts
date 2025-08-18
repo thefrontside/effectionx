@@ -5,7 +5,8 @@ export default defineConfig({
   name: "context-api",
 
   // description that will go into package.json
-  description: "Context API for managing dependency injection in Effection applications",
+  description:
+    "Context API for managing dependency injection in Effection applications",
 
   // versions of effection this project is compatible with
   effection: ["3"],

@@ -1,8 +1,15 @@
-import { Operation } from "npm:effection@3.6.0";
+import { call, Operation } from "npm:effection@3.6.0";
 import { command } from "npm:zod-opts@0.1.8";
 import { z } from "npm:zod@^3.20.2";
 import type { VerifyFlags } from "../types.ts";
-import { log } from "../logger.ts";
+import { log, namespace } from "../logger.ts";
+
+export function* verify(flags: VerifyFlags): Operation<void> {
+  return yield* call(function* () {
+    yield* namespace("verify");
+    return yield* verifyCommand(flags);
+  });
+}
 
 export function* verifyCommand(flags: VerifyFlags): Operation<void> {
   if (flags.verbose) {

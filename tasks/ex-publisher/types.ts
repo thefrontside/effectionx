@@ -82,3 +82,17 @@ export interface ExtensionAnalysis {
 export function defineConfig(config: ExtensionConfig): ExtensionConfig {
   return ExtensionConfigSchema.parse(config);
 }
+
+export type Commands = {
+  command: "analyze";
+  options: AnalyzeFlags;
+} | {
+  command: "verify";
+  options: VerifyFlags;
+} | {
+  command: "plan";
+  options: PlanFlags;
+} | {
+  command: "publish";
+  options: PublishFlags;
+};

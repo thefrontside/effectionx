@@ -1,4 +1,4 @@
-import { Operation } from "npm:effection@3.6.0";
+import { call, Operation } from "npm:effection@3.6.0";
 import { command } from "npm:zod-opts@0.1.8";
 import { z } from "npm:zod@^3.20.2";
 import type {
@@ -6,12 +6,21 @@ import type {
   ExtensionInput,
   VersionResolutionResult,
 } from "../types.ts";
-import { log } from "../logger.ts";
+import { log, namespace } from "../logger.ts";
 import {
   type DiscoveredExtension,
   discoverExtensions,
 } from "../lib/discovery.ts";
 import { resolveEffectionVersions } from "../lib/version-resolution.ts";
+
+export function* analyze(
+  flags: AnalyzeCommandArgs,
+): Operation<DiscoveredExtension[]> {
+  return yield* call(function* () {
+    yield* namespace("analyze");
+    return yield* analyzeCommand(flags);
+  });
+}
 
 export function* analyzeCommand(
   flags: AnalyzeCommandArgs,

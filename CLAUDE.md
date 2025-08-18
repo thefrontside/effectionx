@@ -108,20 +108,20 @@ function* myFunction(): Operation<any> {
 
 **Testing Approach:**
 
-- **TDD (Test-Driven Development)**: Write tests first, then implement
-- Test each command in isolation
-- Mock external dependencies (file system, network)
-- Use BDD-style test structure
-- Test both success and failure scenarios
-- Keep `it` pure by running side effects causing utilities into beforeEach
-
-**TDD Workflow:**
-
-1. User specifies test requirements
-2. Claude writes the tests based on requirements
-3. User confirms tests are correct
-4. Claude implements code to make tests pass
-5. Refactor if needed while keeping tests green
+*  Work TDD style:
+   * User specifies test requirements
+   * Claude writes the tests based on requirements
+   * User confirms tests are correct
+   * Claude implements code to make tests pass
+   * Refactor if needed while keeping tests green
+* Uses `function*` generators for all it and beforeEach blocks
+* Uses `yield*` for all async operations
+* Uses `setupLogging(false)` in beforeEach
+* Uses `createTempDir` with prefix for test isolation
+* Uses `yield* until()` wrapper pattern for Deno APIs
+* Proper cleanup in tests that create temporary files
+* Uses the established TempDir type and testing utilities
+* Keep `it` pure, do not envode side effects in it functions
 
 **Mocking Strategy:**
 

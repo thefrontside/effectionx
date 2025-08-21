@@ -22,16 +22,13 @@ export interface FindTestFilesOptions {
 }
 
 export function* runDenoTests(options: DenoTestOptions): Operation<DenoTestResult> {
-  const { workingDir, testFiles = [], importMapPath, additionalFlags = [], cacheDir } = options;
+  const { workingDir, testFiles = [], importMapPath, additionalFlags = [] } = options;
 
   yield* log.debug(`Running Deno tests in ${workingDir}`);
 
   const args = ["test"];
 
-  // Add cache directory if provided
-  if (cacheDir) {
-    args.push("--cache-dir", cacheDir);
-  }
+  // Note: deno test doesn't support --cache-dir flag, so we don't use cacheDir here
 
   // Add import map if provided
   if (importMapPath) {

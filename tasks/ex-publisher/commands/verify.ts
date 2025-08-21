@@ -392,12 +392,12 @@ function* runDNTBuildForVersion(
   importMapPath?: string
 ): Operation<DNTBuildResult> {
   try {
-    // Find test files to include in the build
-    const testFiles = yield* findTestFiles(extension.path);
-    yield* log.debug(`Found ${testFiles.length} test files: ${testFiles.join(", ")}`);
+    // For Node.js package building, only include main source files, not test files
+    // Test files will be handled separately when running Node.js tests
+    yield* log.debug("Using only main module as entry point for Node.js package build");
     
-    // Create entry points including main module and test files
-    const entryPoints = ["./mod.ts", ...testFiles];
+    // Create entry points with only main module
+    const entryPoints = ["./mod.ts"];
     
     yield* log.debug(`Using import map: ${importMapPath || "none"}`);
     
@@ -432,6 +432,50 @@ function* runDNTBuildForVersion(
 }
 
 /**
+ * Load base import map from both workspace root and package's deno.json
+ */
+function* loadBaseImportMap(packagePath: string): Operation<ImportMap | undefined> {
+  try {
+    const imports: Record<string, string> = {};
+    
+    // First, load from workspace root deno.json
+    const workspaceDenoJsonPath = join(Deno.cwd(), "deno.json");
+    try {
+      yield* until(Deno.stat(workspaceDenoJsonPath));
+      const workspaceContent = yield* until(Deno.readTextFile(workspaceDenoJsonPath));
+      const workspaceConfig = JSON.parse(workspaceContent);
+      if (workspaceConfig.imports) {
+        Object.assign(imports, workspaceConfig.imports);
+      }
+    } catch (error) {
+      yield* log.debug(`Could not load workspace deno.json: ${error}`);
+    }
+    
+    // Then, load from package deno.json (this will override workspace imports if they conflict)
+    const packageDenoJsonPath = join(packagePath, "deno.json");
+    try {
+      yield* until(Deno.stat(packageDenoJsonPath));
+      const packageContent = yield* until(Deno.readTextFile(packageDenoJsonPath));
+      const packageConfig = JSON.parse(packageContent);
+      if (packageConfig.imports) {
+        Object.assign(imports, packageConfig.imports);
+      }
+    } catch (error) {
+      yield* log.debug(`Could not load package deno.json from ${packagePath}: ${error}`);
+    }
+    
+    if (Object.keys(imports).length > 0) {
+      return { imports };
+    }
+    
+    return undefined;
+  } catch (error) {
+    yield* log.debug(`Failed to load base import map from ${packagePath}:`, error);
+    return undefined;
+  }
+}
+
+/**
  * Generate import map for a specific Effection version.
  */
 function* generateImportMapForVersion(
@@ -443,8 +487,11 @@ function* generateImportMapForVersion(
   try {
     const importMapPath = join(tempDir, "import_map.json");
     
-    // Generate the import map
-    const importMap = yield* deps.generateImportMap(effectionVersion);
+    // Load base import map from package deno.json
+    const baseImportMap = yield* loadBaseImportMap(extension.path);
+    
+    // Generate the import map with base
+    const importMap = yield* deps.generateImportMap(effectionVersion, baseImportMap);
     
     // Save to file
     yield* until(Deno.writeTextFile(importMapPath, JSON.stringify(importMap, null, 2)));

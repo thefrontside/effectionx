@@ -179,6 +179,9 @@ export function* runDNTBuild(options: DNTRunOptions): Operation<DNTBuildResult> 
     Deno.env.set("DENO_DIR", denoDir);
     
     try {
+      // Don't pass import map to DNT - it should only need mappings for the main source dependencies
+      yield* log.debug("Running DNT build without import map to avoid test dependencies");
+
       // Run DNT build
       yield* until(build({
         entryPoints: config.entryPoints,
@@ -186,7 +189,7 @@ export function* runDNTBuild(options: DNTRunOptions): Operation<DNTBuildResult> 
         shims: config.shims,
         package: config.package,
         scriptModule: false,
-        importMap: config.importMap,
+        // importMap: config.importMap, // Commenting out to avoid test dependencies
         // Exclude test files since they're not part of the Node.js package
         filterDiagnostic: (diagnostic) => {
           // Skip diagnostics for test files

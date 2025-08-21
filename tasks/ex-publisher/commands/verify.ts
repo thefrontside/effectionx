@@ -355,6 +355,32 @@ function* verifyExtensionVersion(
 }
 
 /**
+ * Find test files in the extension directory
+ */
+function* findTestFiles(extensionPath: string): Operation<string[]> {
+  const testFiles = new Set<string>();
+  
+  try {
+    // Use a simple approach - check for common test file patterns
+    const entries = yield* until(Array.fromAsync(Deno.readDir(extensionPath)));
+    
+    for (const entry of entries) {
+      if (entry.isFile && (
+        entry.name.endsWith(".test.ts") || 
+        entry.name.endsWith("_test.ts") || 
+        entry.name.endsWith(".spec.ts")
+      )) {
+        testFiles.add(`./${entry.name}`);
+      }
+    }
+  } catch (error) {
+    yield* log.debug(`Error reading directory ${extensionPath}:`, error);
+  }
+  
+  return Array.from(testFiles);
+}
+
+/**
  * Run DNT build for a specific Effection version.
  */
 function* runDNTBuildForVersion(
@@ -365,10 +391,15 @@ function* runDNTBuildForVersion(
   sharedCacheDir: string
 ): Operation<DNTBuildResult> {
   try {
-    // For the real implementation, we would generate a proper DNT config
-    // For now, create a minimal config for the mock
+    // Find test files to include in the build
+    const testFiles = yield* findTestFiles(extension.path);
+    yield* log.debug(`Found ${testFiles.length} test files: ${testFiles.join(", ")}`);
+    
+    // Create entry points including main module and test files
+    const entryPoints = ["./mod.ts", ...testFiles];
+    
     const dntConfig = {
-      entryPoints: ["./mod.ts"],
+      entryPoints,
       outDir: join(tempDir, "npm"),
       shims: { deno: true },
       mappings: { "effection": `npm:effection@${effectionVersion}` },

@@ -7,6 +7,7 @@ import { plan } from "./commands/plan.ts";
 import { publish } from "./commands/publish.ts";
 import { verboseLogging } from "./logger.ts";
 import { parseArgs } from "./lib/parse-args.ts";
+import type { DiscoveredExtension } from "./lib/discovery.ts";
 
 function* cli(): Operation<void> {
   const command = yield* parseArgs();
@@ -31,7 +32,7 @@ function* cli(): Operation<void> {
         });
         break;
       case "verify":
-        lastStageResult = yield* verify(command.options);
+        lastStageResult = yield* verify(command.options, lastStageResult as DiscoveredExtension[]);
         break;
       case "plan":
         lastStageResult = yield* plan(command.options);

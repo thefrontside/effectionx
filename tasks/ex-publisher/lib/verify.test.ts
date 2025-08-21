@@ -2,7 +2,7 @@ import { expect } from "expect";
 import { beforeEach, describe, it } from "../testing.ts";
 import { createTempDir } from "../testing/temp-dir.ts";
 import { setupLogging } from "../testing/logging.ts";
-import { runVerification } from "./verify.ts";
+import { runVerification } from "../commands/verify.ts";
 import type { DiscoveredExtension } from "./discovery.ts";
 import type { Operation } from "npm:effection@3.6.0";
 import {

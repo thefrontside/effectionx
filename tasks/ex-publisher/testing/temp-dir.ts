@@ -1,5 +1,5 @@
 import { type Operation, resource, until } from "npm:effection@3.6.0";
-import { ensureFile } from "jsr:@std/fs";
+import { ensureFile, ensureDir } from "jsr:@std/fs";
 import { join } from "jsr:@std/path";
 
 function* writeFiles(
@@ -22,10 +22,29 @@ export interface TempDir {
 }
 
 export function createTempDir(
-  { prefix = "ex-publisher-test-" }: { prefix?: string } = {},
+  { 
+    prefix = "ex-publisher-test-", 
+    baseDir 
+  }: { 
+    prefix?: string; 
+    baseDir?: string; 
+  } = {},
 ): Operation<TempDir> {
   return resource(function* (provide) {
-    const dir = yield* until(Deno.makeTempDir({ prefix }));
+    let dir: string;
+    
+    if (baseDir) {
+      // Create directory in specified base directory
+      yield* until(ensureDir(baseDir));
+      const timestamp = Date.now().toString(36);
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const dirName = `${prefix}${timestamp}-${randomSuffix}`;
+      dir = join(baseDir, dirName);
+      yield* until(ensureDir(dir));
+    } else {
+      // Fall back to system temp directory
+      dir = yield* until(Deno.makeTempDir({ prefix }));
+    }
 
     try {
       yield* provide({
@@ -40,7 +59,10 @@ export function createTempDir(
         },
       });
     } finally {
-      yield* until(Deno.remove(dir, { recursive: true }));
+      // Only remove if we created it (not if it's in a managed base directory)
+      if (!baseDir) {
+        yield* until(Deno.remove(dir, { recursive: true }));
+      }
     }
   });
 }

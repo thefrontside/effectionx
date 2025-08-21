@@ -2,5 +2,6 @@
 /**/build/
 **/.deno-cache/
 **/ex-publisher-verify-*/
+ex-publisher-cache/
 
 .vscode

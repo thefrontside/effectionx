@@ -45,6 +45,7 @@ export interface DNTRunOptions {
   config: DNTConfig;
   workingDir: string;
   importMapPath?: string;
+  cacheDir?: string;
 }
 
 export function* generateDNTConfig(options: DNTBuildOptions): Operation<DNTConfig> {
@@ -154,7 +155,7 @@ export function* generateDNTConfig(options: DNTBuildOptions): Operation<DNTConfi
 }
 
 export function* runDNTBuild(options: DNTRunOptions): Operation<DNTBuildResult> {
-  const { config, workingDir } = options;
+  const { config, workingDir, cacheDir } = options;
 
   yield* log.debug(`Running DNT build in ${workingDir}`);
 
@@ -171,10 +172,10 @@ export function* runDNTBuild(options: DNTRunOptions): Operation<DNTBuildResult> 
     yield* until(emptyDir(config.outDir));
     yield* log.debug("Cleaned output directory");
 
-    // Set DENO_DIR environment variable to avoid cache issues
+    // Set DENO_DIR environment variable to use shared cache or avoid cache issues
     const originalDenoDir = Deno.env.get("DENO_DIR");
-    const tempDenoDir = `${workingDir}/.deno-cache`;
-    Deno.env.set("DENO_DIR", tempDenoDir);
+    const denoDir = cacheDir || `${workingDir}/.deno-cache`;
+    Deno.env.set("DENO_DIR", denoDir);
     
     try {
       // Run DNT build

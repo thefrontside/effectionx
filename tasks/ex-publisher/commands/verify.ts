@@ -40,9 +40,9 @@ export interface ExtensionVerificationResult {
 
 export interface VerificationDependencies {
   generateImportMap: (effectionVersion: string, baseImportMap?: ImportMap) => Operation<ImportMap>;
-  runDenoTests: (options: { workingDir: string; importMapPath?: string }) => Operation<DenoTestResult>;
-  runLint: (options: { packageDir: string }) => Operation<LintResult>;
-  runDNTBuild: (options: { config: any; workingDir: string; importMapPath?: string }) => Operation<DNTBuildResult>;
+  runDenoTests: (options: { workingDir: string; importMapPath?: string; cacheDir?: string }) => Operation<DenoTestResult>;
+  runLint: (options: { packageDir: string; cacheDir?: string }) => Operation<LintResult>;
+  runDNTBuild: (options: { config: any; workingDir: string; importMapPath?: string; cacheDir?: string }) => Operation<DNTBuildResult>;
   runNodeTests: (options: { packageDir: string }) => Operation<NodeTestResult>;
 }
 
@@ -113,17 +113,21 @@ export function* runVerification(
   };
   yield* log.info(`Starting verification of ${extensions.length} extensions`);
   
-  // Create timestamped verification run directory
+  // Create timestamped verification run directory  
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const verificationRunDir = join(Deno.cwd(), `ex-publisher-verify-${timestamp}`);
   yield* log.debug(`Creating verification run directory: ${verificationRunDir}`);
+  
+  // Create shared cache directory for all verification operations
+  const sharedCacheDir = join(Deno.cwd(), "ex-publisher-cache");
+  yield* log.debug(`Using shared cache directory: ${sharedCacheDir}`);
   
   const results: ExtensionVerificationResult[] = [];
   
   for (const extension of extensions) {
     yield* log.info(`Verifying ${extension.name}...`);
     
-    const extensionResult = yield* verifyExtension(extension, dependencies, verificationRunDir);
+    const extensionResult = yield* verifyExtension(extension, dependencies, verificationRunDir, sharedCacheDir);
     results.push(extensionResult);
     
     if (extensionResult.overallSuccess) {
@@ -146,7 +150,8 @@ export function* runVerification(
 function* verifyExtension(
   extension: DiscoveredExtension,
   deps: VerificationDependencies,
-  verificationRunDir: string
+  verificationRunDir: string,
+  sharedCacheDir: string
 ): Operation<ExtensionVerificationResult> {
   const results: Record<string, VersionVerificationResult> = {};
   let overallSuccess = true;
@@ -163,7 +168,7 @@ function* verifyExtension(
     yield* log.debug(`Testing ${extension.name} with Effection ${effectionVersion}`);
     
     try {
-      const versionResult = yield* verifyExtensionVersion(extension, effectionVersion, deps, verificationRunDir);
+      const versionResult = yield* verifyExtensionVersion(extension, effectionVersion, deps, verificationRunDir, sharedCacheDir);
       results[effectionVersion] = versionResult;
       
       if (!versionResult.overall) {
@@ -196,13 +201,17 @@ function* verifyExtensionVersion(
   extension: DiscoveredExtension,
   effectionVersion: string,
   deps: VerificationDependencies,
-  verificationRunDir: string
+  verificationRunDir: string,
+  sharedCacheDir: string
 ): Operation<VersionVerificationResult> {
   // Create isolated temp directory for this version test in the verification run directory
   const tempDir = yield* createTempDir({ 
     prefix: `verify-${extension.name.replace("@effectionx/", "")}-${effectionVersion}-`,
     baseDir: verificationRunDir
   });
+  
+  // Create shared cache directory if it doesn't exist
+  yield* until(Deno.mkdir(sharedCacheDir, { recursive: true }));
   
   try {
     yield* log.debug(`Using temp directory: ${tempDir.path}`);
@@ -215,18 +224,20 @@ function* verifyExtensionVersion(
     yield* log.debug(`Running Deno tests`);
     const denoTestResult = yield* deps.runDenoTests({
       workingDir: extension.path,
-      importMapPath: importMapResult.importMapPath
+      importMapPath: importMapResult.importMapPath,
+      cacheDir: sharedCacheDir
     });
     
     // Step 3: Run lint
     yield* log.debug(`Running lint`);
     const lintResult = yield* deps.runLint({
-      packageDir: extension.path
+      packageDir: extension.path,
+      cacheDir: sharedCacheDir
     });
     
     // Step 4: Build Node.js package with DNT
     yield* log.debug(`Building Node.js package`);
-    const dntBuildResult = yield* runDNTBuildForVersion(extension, effectionVersion, tempDir.path, deps);
+    const dntBuildResult = yield* runDNTBuildForVersion(extension, effectionVersion, tempDir.path, deps, sharedCacheDir);
     
     // Step 5: Run Node.js tests (if build succeeded)
     let nodeTestResult: NodeTestResult & { skipped?: boolean };
@@ -278,7 +289,8 @@ function* runDNTBuildForVersion(
   extension: DiscoveredExtension,
   effectionVersion: string,
   tempDir: string,
-  deps: VerificationDependencies
+  deps: VerificationDependencies,
+  sharedCacheDir: string
 ): Operation<DNTBuildResult> {
   try {
     // For the real implementation, we would generate a proper DNT config
@@ -300,7 +312,8 @@ function* runDNTBuildForVersion(
     return yield* deps.runDNTBuild({
       config: dntConfig,
       workingDir: extension.path,
-      importMapPath: undefined
+      importMapPath: undefined,
+      cacheDir: sharedCacheDir
     });
   } catch (error) {
     yield* log.error(`Failed to build Node.js package for ${extension.name}@${effectionVersion}:`, error);

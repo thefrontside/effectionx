@@ -6,6 +6,8 @@ export interface LintOptions {
   packageDir: string;
   /** Files/patterns to lint (optional, uses Deno lint defaults if not specified) */
   files?: string[];
+  /** Cache directory for Deno (optional) */
+  cacheDir?: string;
 }
 
 export interface LintIssue {
@@ -49,11 +51,16 @@ export interface LintResult {
  * 2. Parse and return structured lint results
  */
 export function* runLint(options: LintOptions): Operation<LintResult> {
-  const { packageDir, files } = options;
+  const { packageDir, files, cacheDir } = options;
   
   yield* log.debug(`Running deno lint in ${packageDir}`);
   
   const args = ["lint"];
+  
+  // Add cache directory if provided
+  if (cacheDir) {
+    args.push("--cache-dir", cacheDir);
+  }
   
   // Add files if specified, otherwise use default Deno behavior
   if (files && files.length > 0) {

@@ -29,6 +29,7 @@ export function* mockGenerateImportMap(
 export function* mockRunDenoTests(options: {
   workingDir: string;
   importMapPath?: string;
+  cacheDir?: string;
 }): Operation<DenoTestResult> {
   // Extract mock behavior from the working directory path
   const mockOpts = getMockOptionsFromPath(options.workingDir);
@@ -46,6 +47,7 @@ export function* mockRunDenoTests(options: {
 
 export function* mockRunLint(options: {
   packageDir: string;
+  cacheDir?: string;
 }): Operation<LintResult> {
   const mockOpts = getMockOptionsFromPath(options.packageDir);
   const hasLintIssues = mockOpts.hasLintIssues ?? false;
@@ -73,6 +75,7 @@ export function* mockRunDNTBuild(options: {
   config: any;
   workingDir: string;
   importMapPath?: string;
+  cacheDir?: string;
 }): Operation<DNTBuildResult> {
   const mockOpts = getMockOptionsFromPath(options.workingDir);
   const dntShouldSucceed = mockOpts.dntShouldSucceed ?? true;

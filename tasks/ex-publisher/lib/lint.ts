@@ -57,10 +57,7 @@ export function* runLint(options: LintOptions): Operation<LintResult> {
   
   const args = ["lint"];
   
-  // Add cache directory if provided
-  if (cacheDir) {
-    args.push("--cache-dir", cacheDir);
-  }
+  // Note: deno lint doesn't support --cache-dir flag, so we don't use cacheDir here
   
   // Add files if specified, otherwise use default Deno behavior
   if (files && files.length > 0) {

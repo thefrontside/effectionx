@@ -308,7 +308,7 @@ function* verifyExtensionVersion(
     
     // Step 4: Build Node.js package with DNT
     yield* log.debug(`Building Node.js package`);
-    const dntBuildResult = yield* runDNTBuildForVersion(extension, effectionVersion, tempDir.path, deps, sharedCacheDir);
+    const dntBuildResult = yield* runDNTBuildForVersion(extension, effectionVersion, tempDir.path, deps, sharedCacheDir, importMapResult.importMapPath);
     
     // Step 5: Run Node.js tests (if build succeeded)
     let nodeTestResult: NodeTestResult & { skipped?: boolean };
@@ -388,7 +388,8 @@ function* runDNTBuildForVersion(
   effectionVersion: string,
   tempDir: string,
   deps: VerificationDependencies,
-  sharedCacheDir: string
+  sharedCacheDir: string,
+  importMapPath?: string
 ): Operation<DNTBuildResult> {
   try {
     // Find test files to include in the build
@@ -398,11 +399,13 @@ function* runDNTBuildForVersion(
     // Create entry points including main module and test files
     const entryPoints = ["./mod.ts", ...testFiles];
     
+    yield* log.debug(`Using import map: ${importMapPath || "none"}`);
+    
     const dntConfig = {
       entryPoints,
       outDir: join(tempDir, "npm"),
       shims: { deno: true },
-      mappings: { "effection": `npm:effection@${effectionVersion}` },
+      importMap: importMapPath, // Absolute path to import map
       package: {
         name: extension.config.name,
         version: extension.version,
@@ -415,7 +418,6 @@ function* runDNTBuildForVersion(
     return yield* deps.runDNTBuild({
       config: dntConfig,
       workingDir: extension.path,
-      importMapPath: undefined,
       cacheDir: sharedCacheDir
     });
   } catch (error) {

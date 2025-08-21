@@ -9,6 +9,7 @@ export interface DNTConfig {
     deno: boolean;
   };
   mappings: Record<string, string>;
+  importMap?: string;
   package: {
     name: string;
     version: string;
@@ -185,7 +186,7 @@ export function* runDNTBuild(options: DNTRunOptions): Operation<DNTBuildResult> 
         shims: config.shims,
         package: config.package,
         scriptModule: false,
-        importMap: "./deno.json",
+        importMap: config.importMap,
         // Exclude test files since they're not part of the Node.js package
         filterDiagnostic: (diagnostic) => {
           // Skip diagnostics for test files

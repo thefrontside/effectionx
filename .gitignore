@@ -1,4 +1,6 @@
 /deno.lock
 /**/build/
+**/.deno-cache/
+**/ex-publisher-verify-*/
 
 .vscode

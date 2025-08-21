@@ -24,6 +24,7 @@ export interface ImportMapResult {
 }
 
 export interface VersionVerificationResult {
+  resolvedVersion: string;
   importMap: ImportMapResult;
   denoTests: DenoTestResult;
   lint: LintResult;
@@ -76,23 +77,89 @@ export function* verifyCommand(flags: VerifyFlags, extensions?: DiscoveredExtens
   // Run verification
   const results = yield* runVerification(extensionsToVerify);
   
-  // Report results
+  // Display results in formatted table
+  yield* displayVerificationTable(results);
+  
+  return results;
+}
+
+/**
+ * Display verification results in a formatted table
+ */
+function* displayVerificationTable(results: ExtensionVerificationResult[]): Operation<void> {
   const successCount = results.filter(r => r.overallSuccess).length;
   const totalCount = results.length;
   
+  // Summary line
   if (successCount === totalCount) {
     yield* log.info(`✅ All ${totalCount} extensions passed verification`);
   } else {
     yield* log.warn(`❌ ${totalCount - successCount}/${totalCount} extensions failed verification`);
+  }
+  
+  if (results.length === 0) {
+    return;
+  }
+  
+  // Build the table
+  const rows: string[][] = [];
+  
+  // Header row
+  const headers = ["Extension", "Version", "Import Map", "Deno Tests", "Lint", "DNT Build", "Node Tests", "Overall"];
+  rows.push(headers);
+  
+  // Data rows
+  for (const result of results) {
+    const extensionName = result.extension.name.replace("@effectionx/", "");
     
-    // List failed extensions
-    const failures = results.filter(r => !r.overallSuccess);
-    for (const failure of failures) {
-      yield* log.warn(`  - ${failure.extension.name}: ${Object.keys(failure.results).length} version(s) tested`);
+    for (const [version, versionResult] of Object.entries(result.results)) {
+      const row = [
+        extensionName,
+        versionResult.resolvedVersion,
+        formatStatus(versionResult.importMap.success),
+        formatStatus(versionResult.denoTests.success),
+        formatStatus(versionResult.lint.success),
+        formatStatus(versionResult.dntBuild.success),
+        versionResult.nodeTests.skipped ? "⏭️" : formatStatus(versionResult.nodeTests.success),
+        formatStatus(versionResult.overall)
+      ];
+      rows.push(row);
     }
   }
   
-  return results;
+  // Calculate column widths
+  const columnWidths = headers.map((_, colIndex) => 
+    Math.max(...rows.map(row => row[colIndex]?.length || 0))
+  );
+  
+  // Format and display table
+  yield* log.info("");
+  yield* log.info("Verification Results:");
+  yield* log.info("=".repeat(columnWidths.reduce((sum, width) => sum + width + 3, -1)));
+  
+  for (const [rowIndex, row] of rows.entries()) {
+    const formattedRow = row.map((cell, colIndex) => 
+      cell.padEnd(columnWidths[colIndex])
+    ).join(" | ");
+    
+    yield* log.info(formattedRow);
+    
+    // Add separator after header
+    if (rowIndex === 0) {
+      const separator = columnWidths.map(width => "-".repeat(width)).join("-|-");
+      yield* log.info(separator);
+    }
+  }
+  
+  yield* log.info("=".repeat(columnWidths.reduce((sum, width) => sum + width + 3, -1)));
+  yield* log.info("");
+}
+
+/**
+ * Format a boolean status as an emoji
+ */
+function formatStatus(success: boolean): string {
+  return success ? "✅" : "❌";
 }
 
 /**
@@ -204,6 +271,10 @@ function* verifyExtensionVersion(
   verificationRunDir: string,
   sharedCacheDir: string
 ): Operation<VersionVerificationResult> {
+  // Find the resolved version for this constraint
+  const resolvedVersionInfo = extension.resolvedVersions.find(rv => rv.constraint === effectionVersion);
+  const resolvedVersion = resolvedVersionInfo?.resolvedVersion || effectionVersion;
+  
   // Create isolated temp directory for this version test in the verification run directory
   const tempDir = yield* createTempDir({ 
     prefix: `verify-${extension.name.replace("@effectionx/", "")}-${effectionVersion}-`,
@@ -270,6 +341,7 @@ function* verifyExtensionVersion(
                    nodeTestResult.success;
     
     return {
+      resolvedVersion,
       importMap: importMapResult,
       denoTests: denoTestResult,
       lint: lintResult,

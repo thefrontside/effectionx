@@ -104,11 +104,11 @@ function* displayVerificationTable(results: ExtensionVerificationResult[]): Oper
   // Build the table
   const rows: string[][] = [];
   
-  // Header row
+  // Header row - ordered by verification execution sequence
   const headers = ["Extension", "Version", "Import Map", "Deno Tests", "Lint", "DNT Build", "Node Tests", "Overall"];
   rows.push(headers);
   
-  // Data rows
+  // Data rows - ordered by verification execution sequence
   for (const result of results) {
     const extensionName = result.extension.name.replace("@effectionx/", "");
     
@@ -116,12 +116,12 @@ function* displayVerificationTable(results: ExtensionVerificationResult[]): Oper
       const row = [
         extensionName,
         versionResult.resolvedVersion,
-        formatStatus(versionResult.importMap.success),
-        formatStatus(versionResult.denoTests.success),
-        formatStatus(versionResult.lint.success),
-        formatStatus(versionResult.dntBuild.success),
-        versionResult.nodeTests.skipped ? "⏭️" : formatStatus(versionResult.nodeTests.success),
-        formatStatus(versionResult.overall)
+        formatStatus(versionResult.importMap.success),        // Step 1
+        formatStatus(versionResult.denoTests.success),        // Step 2
+        formatStatus(versionResult.lint.success),             // Step 3
+        formatStatus(versionResult.dntBuild.success),         // Step 4
+        versionResult.nodeTests.skipped ? "⏭️" : formatStatus(versionResult.nodeTests.success), // Step 5
+        formatStatus(versionResult.overall)                   // Final result
       ];
       rows.push(row);
     }

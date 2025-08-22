@@ -1,16 +1,5 @@
-import {
-  call,
-  type Operation,
-  resource,
-  type Stream,
-  stream,
-} from "effection";
-import {
-  type KillSignal,
-  type Options,
-  type Output,
-  x as $x,
-} from "tinyexec";
+import { call, type Operation, resource, type Stream, stream } from "effection";
+import { type KillSignal, type Options, type Output, x as $x } from "tinyexec";
 
 /**
  * Wraps a [tinyexec](https://github.com/tinylibs/tinyexec) process.

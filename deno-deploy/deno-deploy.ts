@@ -1,8 +1,4 @@
-import {
-  type Context,
-  createContext,
-  type Operation,
-} from "effection";
+import { type Context, createContext, type Operation } from "effection";
 
 export interface DenoDeploy {
   /**

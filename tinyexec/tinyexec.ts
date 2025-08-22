@@ -4,13 +4,13 @@ import {
   resource,
   type Stream,
   stream,
-} from "npm:effection@3.0.3";
+} from "effection";
 import {
   type KillSignal,
   type Options,
   type Output,
   x as $x,
-} from "npm:tinyexec@0.3.2";
+} from "tinyexec";
 
 /**
  * Wraps a [tinyexec](https://github.com/tinylibs/tinyexec) process.

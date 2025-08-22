@@ -1,6 +1,9 @@
 {
   "name": "@effectionx/deno-deploy",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "exports": "./mod.ts",
-  "license": "MIT"
+  "license": "MIT",
+  "imports": {
+    "effection": "npm:effection@^3"
+  }
 }

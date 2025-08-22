@@ -1,6 +1,6 @@
 {
   "name": "@effectionx/task-buffer",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "exports": "./mod.ts",
   "license": "MIT",
   "imports": {

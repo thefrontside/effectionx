@@ -1,10 +1,10 @@
 {
   "name": "@effectionx/stream-helpers",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "imports": {
-    "effection": "jsr:@effection/effection@^3",
+    "effection": "npm:effection@^3",
     "immutable": "npm:immutable@^5",
-    "@effectionx/signals": "jsr:@effectionx/signals@^0.1.0"
+    "@effectionx/signals": "npm:@effectionx/signals@^0.1.0"
   },
   "license": "MIT",
   "exports": {

@@ -118,4 +118,34 @@ describe("context api", () => {
       expect(yield* add(1, 1)).toEqual(2);
     });
   });
+
+  it("chains multiple middleware", async () => {
+    const math = createApi("math", {
+      *add(left: number, right: number): Operation<number> {
+        return left + right;
+      },
+    });
+
+    await run(function*() {
+      yield* math.around({
+        *add([left, right], next) {
+          return 10 + (yield* next(left, right));
+        }
+      });
+
+      yield* math.around({
+        *add([left, right], next) {
+          return 100 + (yield* next(left, right));
+        }
+      })
+
+            yield* math.around({
+        *add([left, right], next) {
+          return 20 + (yield* next(left, right));
+        }
+      })
+      
+      expect(yield* math.operations.add(5, 15)).toEqual(150);
+    });
+  })
 });

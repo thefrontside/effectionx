@@ -126,26 +126,26 @@ describe("context api", () => {
       },
     });
 
-    await run(function*() {
+    await run(function* () {
       yield* math.around({
         *add([left, right], next) {
           return 10 + (yield* next(left, right));
-        }
+        },
       });
 
       yield* math.around({
         *add([left, right], next) {
           return 100 + (yield* next(left, right));
-        }
-      })
+        },
+      });
 
-            yield* math.around({
+      yield* math.around({
         *add([left, right], next) {
           return 20 + (yield* next(left, right));
-        }
-      })
-      
+        },
+      });
+
       expect(yield* math.operations.add(5, 15)).toEqual(150);
     });
-  })
+  });
 });

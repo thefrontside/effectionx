@@ -56,6 +56,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
     childProcess.stdout,
     "data",
   );
+
   let stderr = yield* createOutputStreamFromEventEmitter(
     childProcess.stderr,
     "data",

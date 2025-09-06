@@ -16,7 +16,7 @@ describe("exec", () => {
         expect(result).toMatchObject({
           code: 0,
           stdout: "hello\nworld\n",
-          stderr: "boom\n"
+          stderr: "boom\n",
         });
       });
     });
@@ -41,46 +41,46 @@ describe("exec", () => {
         let result: ProcessResult = yield* exec(
           "node './test/fixtures/hello-world.js'",
         ).expect();
-        
+
         expect(result).toMatchObject({
           code: 0,
           stdout: "hello\nworld\n",
-          stderr: "boom\n"
+          stderr: "boom\n",
         });
-      })
+      });
     });
 
     it("throws an error if process fails", async () => {
       expect.assertions(1);
       await run(function* () {
-      let error: Error = yield* captureError(
-        exec("node './test/fixtures/hello-world-failed.js'").expect(),
-      );
+        let error: Error = yield* captureError(
+          exec("node './test/fixtures/hello-world-failed.js'").expect(),
+        );
 
-      expect(error.name).toEqual("ExecError");
-    })
+        expect(error.name).toEqual("ExecError");
+      });
     });
   });
 
-  // it("applies labels to resource", function* () {
-  //   expect(exec("foo").name).toEqual('exec("foo")');
-  // });
-
-  // describe("spawning", () => {
-  //   describe("a process that fails to start", () => {
-  //     describe("calling join()", () => {
-  //       it("reports the failed status", function* () {
-  //         let error: unknown;
-  //         let proc = yield exec("argle", { arguments: ["bargle"] });
-  //         try {
-  //           yield proc.join();
-  //         } catch (e) {
-  //           error = e;
-  //         }
-  //         expect(error).toBeInstanceOf(Error);
-  //       });
-  //     });
-
+  describe("spawning", () => {
+    describe("a process that fails to start", () => {
+      describe("calling join()", () => {
+        it("reports the failed status", async () => {
+          expect.assertions(1);
+          await run(function* () {
+            let error: unknown;
+            let proc = yield* exec("argle", { arguments: ["bargle"] });
+            try {
+              yield* proc.join();
+            } catch (e) {
+              error = e;
+            }
+            expect(error).toBeInstanceOf(Error);
+          });
+        });
+      });
+    });
+  });
   //     describe("calling expect()", () => {
   //       it("fails", function* () {
   //         let error: unknown;

@@ -54,15 +54,17 @@ export function createOutputStream(stream: Stream<Buffer, void>): OutputStream {
 }
 
 export function createOutputStreamFromEventEmitter(
-  readable: EventEmitter,
+  eventEmitter: EventEmitter,
   event: string,
 ): Operation<OutputStream> {
   return resource(function* (provide) {
     let signal = createSignal<Buffer<ArrayBufferLike>, void>();
 
-    yield* spawn(
-      forEach(signal.send, on<Buffer<ArrayBufferLike>>(readable, event)),
-    );
+    if (eventEmitter) {
+      yield* spawn(
+        forEach(signal.send, on<Buffer<ArrayBufferLike>>(eventEmitter, event)),
+      );
+    }
     
     try {
       yield* provide(createOutputStream(signal));

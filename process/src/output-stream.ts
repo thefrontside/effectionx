@@ -6,17 +6,18 @@ import {
   spawn,
   type Stream,
 } from "effection";
-import { Buffer } from "node:buffer";
+import type { Buffer } from "node:buffer";
 import { map } from "@effectionx/stream-helpers";
+import type { EventEmitter } from "node:stream";
+import { forEach } from "./for-each.ts";
+import { on } from "./eventemitter.ts";
 
 export interface OutputStream extends Stream<Buffer, void> {
   text(): Stream<string, void>;
   lines(): Stream<string, void>;
 }
 
-export function createOutputStream(
-  stream: Stream<Buffer, void>,
-): OutputStream {
+export function createOutputStream(stream: Stream<Buffer, void>): OutputStream {
   return {
     [Symbol.iterator]: stream[Symbol.iterator],
     text() {
@@ -31,7 +32,9 @@ export function createOutputStream(
 
           yield* spawn(function* () {
             let current = "";
+            console.log("started lines loop")
             for (const chunk of yield* each(stream)) {
+              console.log("in lines got", chunk)
               let lines = (current + chunk.toString()).split("\n");
               lines.slice(0, -1).forEach(linesOutput.send);
               current = lines.slice(-1)[0];
@@ -50,3 +53,21 @@ export function createOutputStream(
   };
 }
 
+export function createOutputStreamFromEventEmitter(
+  readable: EventEmitter,
+  event: string,
+): Operation<OutputStream> {
+  return resource(function* (provide) {
+    let signal = createSignal<Buffer<ArrayBufferLike>, void>();
+
+    yield* spawn(
+      forEach(signal.send, on<Buffer<ArrayBufferLike>>(readable, event)),
+    );
+    
+    try {
+      yield* provide(createOutputStream(signal));
+    } finally {
+      signal.close();
+    }
+  });
+}

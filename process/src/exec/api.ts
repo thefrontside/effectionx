@@ -1,5 +1,5 @@
-import { Operation, Resource } from 'effection';
-import { OutputStream } from '../output-stream';
+import type { Operation } from 'effection';
+import type { OutputStream } from '../output-stream.ts';
 
 // TODO: import from subscription package once #236 is merged
 export interface Writable<T> {
@@ -78,7 +78,6 @@ export interface ProcessResult extends ExitStatus {
   stdout: string;
   stderr: string;
 }
-
 export interface CreateOSProcess {
-  (command: string, options: ExecOptions): Resource<Process>;
+  (command: string, options: ExecOptions): Operation<Process>;
 }

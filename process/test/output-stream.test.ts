@@ -1,65 +1,78 @@
-import expect from 'expect';
-import { describe, it } from '@effection/mocha';
-import { createStream } from 'effection';
+import { expect } from "@std/expect";
+import { createSignal, each, run, spawn } from "effection";
+import { describe, it } from "@std/testing/bdd";
 
-import { createOutputStream } from '../src/output-stream';
+import { createOutputStream } from "../src/output-stream.ts";
+import { Buffer } from "node:buffer";
 
-const b = (value: string) => Buffer.from(value, 'utf8');
+const b = (value: string) => Buffer.from(value, "utf8");
 
-describe('createOutputStream', () => {
-  it('can be created from regular stream', function*() {
-    let stream = createStream<Buffer>(function*(publish) {
-      publish(b("foo"));
-      publish(b("bar"));
-      publish(b("baz"));
-      return undefined;
-    });
-    let ioStream = createOutputStream(stream);
-    let values: Buffer[] = [];
+describe("createOutputStream", () => {
+  it("can be created from regular stream", async () => {
+    await run(function* () {
+      const stream = createSignal<Buffer, void>();
 
-    yield ioStream.forEach((item) => function*() { values.push(item); });
-    expect(values).toEqual([b("foo"), b("bar"), b("baz")]);
-  });
+      let ioStream = createOutputStream(stream);
+      let values: Buffer[] = [];
 
-  it('works like a regular stream', function*() {
-    let stream = createOutputStream(function*(publish) {
-      publish(b("foo"));
-      publish(b("bar"));
-      publish(b("baz"));
-      return undefined;
-    });
-    let values: Buffer[] = [];
-
-    yield stream.forEach((item) => function*() { values.push(item); });
-    expect(values).toEqual([b("foo"), b("bar"), b("baz")]);
-  });
-
-  describe('text()', () => {
-    it('maps output to string', function*() {
-      let stream = createOutputStream(function*(publish) {
-        publish(b("foo"));
-        publish(b("bar"));
-        publish(b("baz"));
-        return undefined;
+      yield* spawn(function* () {
+        for (const value of yield* each(ioStream)) {
+          values.push(value);
+          yield* each.next();
+        }
       });
+
+      stream.send(b("foo"));
+      stream.send(b("bar"));
+      stream.send(b("baz"));
+
+      expect(values).toEqual([b("foo"), b("bar"), b("baz")]);
+    });
+  });
+});
+
+describe("text()", () => {
+  it("maps output to string", async () => {
+    await run(function* () {
+      const stream = createSignal<Buffer, void>();
+      let ioStream = createOutputStream(stream);
       let values: string[] = [];
 
-      yield stream.text().forEach((item) => function*() { values.push(item); });
+      yield* spawn(function* () {
+        for (const value of yield* each(ioStream.text())) {
+          values.push(value);
+          yield* each.next();
+        }
+      });
+
+      stream.send(b("foo"));
+      stream.send(b("bar"));
+      stream.send(b("baz"));
+
       expect(values).toEqual(["foo", "bar", "baz"]);
     });
   });
+});
 
-  describe('lines()', () => {
-    it('combines output into complete lines', function*() {
-      let stream = createOutputStream(function*(publish) {
-        publish(b("foo\nhello"));
-        publish(b("world\n"));
-        publish(b("something"));
-        return undefined;
-      });
+describe("lines()", () => {
+  it("combines output into complete lines", async () => {
+    await run(function* () {
+      const stream = createSignal<Buffer, void>();
+      let ioStream = createOutputStream(stream);
       let values: string[] = [];
 
-      yield stream.lines().forEach((item) => function*() { values.push(item); });
+      yield* spawn(function* () {
+        for (const value of yield* each(ioStream.lines())) {
+          values.push(value);
+          yield* each.next();
+        }
+      });
+
+      stream.send(b("foo\nhello"));
+      stream.send(b("world\n"));
+      stream.send(b("something"));
+      stream.close();
+
       expect(values).toEqual(["foo", "helloworld", "something"]);
     });
   });

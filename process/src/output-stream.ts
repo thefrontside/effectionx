@@ -1,39 +1,52 @@
-import { Operation, Stream, createStream } from 'effection';
+import {
+  createSignal,
+  each,
+  type Operation,
+  resource,
+  spawn,
+  type Stream,
+} from "effection";
+import { Buffer } from "node:buffer";
+import { map } from "@effectionx/stream-helpers";
 
-export type Callback<T,TReturn> = (publish: (value: T) => void) => Operation<TReturn>;
-
-export interface OutputStream extends Stream<Buffer> {
-  text(): Stream<string>;
-  lines(): Stream<string>;
+export interface OutputStream extends Stream<Buffer, void> {
+  text(): Stream<string, void>;
+  lines(): Stream<string, void>;
 }
 
-export function createOutputStream(callbackOrStream: Stream<Buffer> | Callback<Buffer, undefined>, name = 'iostream'): OutputStream {
-  let stream: Stream<Buffer>;
-  if(typeof(callbackOrStream) === 'function') {
-    stream = createStream<Buffer, undefined>(callbackOrStream, name);
-  } else {
-    stream = callbackOrStream;
-  }
-
-  return Object.assign(stream, {
+export function createOutputStream(
+  stream: Stream<Buffer, void>,
+): OutputStream {
+  return {
+    [Symbol.iterator]: stream[Symbol.iterator],
     text() {
-      return stream.map((c) => c.toString());
+      return map<Buffer, string>(function* (c) {
+        return c.toString();
+      })(stream);
     },
     lines() {
-      return createStream<string, undefined>(function*(publish) {
-        let current = "";
-        yield stream.forEach(function*(chunk) {
-          let lines = (current + chunk.toString()).split('\n');
-          lines.slice(0, -1).forEach(publish);
-          current = lines.slice(-1)[0];
-        });
+      return {
+        *[Symbol.iterator]() {
+          const linesOutput = createSignal<string, void>();
 
-        if(current) {
-          publish(current);
-        }
+          yield* spawn(function* () {
+            let current = "";
+            for (const chunk of yield* each(stream)) {
+              let lines = (current + chunk.toString()).split("\n");
+              lines.slice(0, -1).forEach(linesOutput.send);
+              current = lines.slice(-1)[0];
+              yield* each.next();
+            }
+            if (current) {
+              linesOutput.send(current);
+            }
+            linesOutput.close();
+          });
 
-        return undefined;
-      }, name);
-    }
-  });
+          return yield* linesOutput;
+        },
+      };
+    },
+  };
 }
+

@@ -1,13 +1,13 @@
-import { ExitStatus, ExecOptions } from './api';
+import type { ExitStatus, ExecOptions } from './api.ts';
 
 export class ExecError extends Error {
   constructor(public status: ExitStatus, public command: string, public options: ExecOptions) {
     super();
   }
 
-  name = "ExecError";
+  override name = "ExecError";
 
-  get message(): string {
+  override get message(): string {
     let code = this.status.code ? `code: ${this.status.code}`: null;
 
     let signal = this.status.signal ? `signal: ${this.status.signal}` : null;
@@ -25,9 +25,9 @@ export class ExecError extends Error {
 }
 
 export class DaemonExitError extends ExecError {
-  name = "DaemonExitError";
+  override name = "DaemonExitError";
 
-  get message(): string {
+  override get message(): string {
     return `daemon process quit unexpectedly\n${super.message}`;
   }
 }

@@ -1,26 +1,32 @@
-/// <reference types="../types/shellwords" />
-import { split } from 'shellwords';
+import { split } from "shellwords";
 
-import { Task, Operation, Resource, spawn, withLabels } from 'effection';
-import { ExecOptions, Process, ProcessResult, CreateOSProcess, ExitStatus } from './exec/api';
-import { createPosixProcess } from './exec/posix';
-import { createWin32Process, isWin32 } from './exec/win32';
+import { type Operation, sleep, spawn, type Task } from "effection";
+import type {
+  CreateOSProcess,
+  ExecOptions,
+  ExitStatus,
+  Process,
+  ProcessResult,
+} from "./exec/api.ts";
+import { createPosixProcess } from "./exec/posix.ts";
+// import { createWin32Process, isWin32 } from "./exec/win32.ts";
+import { forEach } from "./for-each.ts";
 
-export * from './exec/api';
-export * from './exec/error';
+export * from "./exec/api.ts";
+export * from "./exec/error.ts";
 
-export interface Exec extends Resource<Process> {
+export interface Exec extends Operation<Process> {
   join(): Operation<ProcessResult>;
   expect(): Operation<ProcessResult>;
 }
 
-const createProcess: CreateOSProcess = (cmd, opts) => {
-  if (isWin32()) {
-    return createWin32Process(cmd, opts);
-  } else {
-    return createPosixProcess(cmd, opts);
-  }
-};
+// const createProcess: CreateOSProcess = (cmd, opts) => {
+//   if (isWin32()) {
+//     return createWin32Process(cmd, opts);
+//   } else {
+//     return createPosixProcess(cmd, opts);
+//   }
+// };
 
 /**
  * Execute `command` with `options`. You should use this operation for processes
@@ -29,46 +35,42 @@ const createProcess: CreateOSProcess = (cmd, opts) => {
  * forever, consider using `daemon()`
  */
 export function exec(command: string, options: ExecOptions = {}): Exec {
-  let [cmd, ...args] = options.shell ? [command]: split(command);
+  let [cmd, ...args] = options.shell ? [command] : split(command);
   let opts = { ...options, arguments: args.concat(options.arguments || []) };
 
+  // let process: Process = yield* createProcess(cmd, opts);
+
   return {
-    name: `exec(${JSON.stringify(command)})`,
-    labels: {
-      expand: false
+    *[Symbol.iterator]() {
+      return yield* createPosixProcess(cmd, opts);
     },
-    init(scope: Task, local: Task) {
-      return createProcess(cmd, opts).init(scope, local);
+    *join() {
+      let process = yield* createPosixProcess(cmd, opts);
+
+      let stdout = "";
+      let stderr = "";
+
+      yield* spawn(forEach((chunk) => (stdout += chunk), process.stdout));
+      yield* spawn(forEach((chunk) => (stderr += chunk), process.stderr));
+
+      let status: ExitStatus = yield* process.join();
+      
+      yield* sleep(20);
+
+      return { ...status, stdout, stderr };
     },
-    join() {
-      return withLabels(function*() {
-        let process: Process = yield createProcess(cmd, opts);
+    *expect() {
+      let process: Process = yield* createPosixProcess(cmd, opts);
 
-        let stdout = "";
-        let stderr = "";
+      let stdout = "";
+      let stderr = "";
 
-        yield spawn(process.stdout.forEach((chunk) => { stdout += chunk }));
-        yield spawn(process.stderr.forEach((chunk) => { stderr += chunk }));
+      yield* spawn(forEach((chunk) => (stdout += chunk), process.stdout));
+      yield* spawn(forEach((chunk) => (stderr += chunk), process.stderr));
 
-        let status: ExitStatus = yield process.join();
+      let status: ExitStatus = yield* process.expect();
 
-        return { ...status, stdout, stderr };
-      }, { name: `exec(${JSON.stringify(command)}).join()`, expand: false });
+      return { ...status, stdout, stderr };
     },
-    expect() {
-      return withLabels(function*() {
-        let process: Process = yield createProcess(cmd, opts);
-
-        let stdout = "";
-        let stderr = "";
-
-        yield spawn(process.stdout.forEach((chunk) => { stdout += chunk }));
-        yield spawn(process.stderr.forEach((chunk) => { stderr += chunk }));
-
-        let status: ExitStatus = yield process.expect();
-
-        return { ...status, stdout, stderr };
-      }, { name: `exec(${JSON.stringify(command)}).expect()`, expand: false });
-    }
   };
 }

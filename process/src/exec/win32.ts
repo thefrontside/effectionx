@@ -1,4 +1,4 @@
-import { platform } from "os";
+import { platform } from "node:os";
 import { on, once, onceEmit, spawn, Task, Operation, createFuture } from 'effection';
 import { spawn as spawnProcess } from "cross-spawn";
 import { ctrlc } from "ctrlc-windows";

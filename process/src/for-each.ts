@@ -1,13 +1,16 @@
-import { each, type Operation, type Stream } from "effection";
+import type { Operation, Stream } from "effection";
 
 export function forEach<T, TClose>(
-  fn: (chunk: T) => void,
+  fn: (chunk: T) => Operation<void>,
   stream: Stream<T, TClose>,
-): () => Operation<void> {
+): () => Operation<TClose> {
   return function* () {
-    for (const chunk of yield* each(stream)) {
-      fn(chunk);
-      yield* each.next();
+    let subscription = yield* stream;
+    let next = yield* subscription.next();
+    while (!next.done) {
+      yield* fn(next.value);
+      next = yield* subscription.next();
     }
+    return next.value;
   };
 }

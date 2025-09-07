@@ -62,7 +62,7 @@ export function createOutputStreamFromEventEmitter(
 
     if (eventEmitter) {
       yield* spawn(
-        forEach(signal.send, on<Buffer<ArrayBufferLike>>(eventEmitter, event)),
+        forEach(function* (chunk) { signal.send(chunk); }, on<Buffer<ArrayBufferLike>>(eventEmitter, event)),
       );
     }
     

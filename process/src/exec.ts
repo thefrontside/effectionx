@@ -50,12 +50,10 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
       let stdout = "";
       let stderr = "";
 
-      yield* spawn(forEach((chunk) => (stdout += chunk), process.stdout));
-      yield* spawn(forEach((chunk) => (stderr += chunk), process.stderr));
+      yield* spawn(forEach(function* (chunk) { stdout += chunk; }, process.stdout));
+      yield* spawn(forEach(function* (chunk) { stderr += chunk; }, process.stderr));
 
       let status: ExitStatus = yield* process.join();
-      
-      yield* sleep(20);
 
       return { ...status, stdout, stderr };
     },
@@ -65,8 +63,8 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
       let stdout = "";
       let stderr = "";
 
-      yield* spawn(forEach((chunk) => (stdout += chunk), process.stdout));
-      yield* spawn(forEach((chunk) => (stderr += chunk), process.stderr));
+      yield* spawn(forEach(function* (chunk) { stdout += chunk; }, process.stdout));
+      yield* spawn(forEach(function* (chunk) { stderr += chunk; }, process.stderr));
 
       let status: ExitStatus = yield* process.expect();
 

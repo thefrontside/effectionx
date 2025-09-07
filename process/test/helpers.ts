@@ -1,6 +1,6 @@
 import { ctrlc } from "ctrlc-windows";
 import type { Process } from "../src/exec.ts";
-import { type Operation } from "effection";
+import { type Stream, until, type Operation } from "effection";
 
 const isWin32 = globalThis.process.platform === "win32";
 
@@ -34,4 +34,37 @@ export function* captureError(op: Operation<unknown>): Operation<Error> {
     return error as Error;
   }
   throw new Error("expected operation to throw an error, but it did not!");
+}
+
+export function expectStreamNotEmpty(
+  stream: Stream<unknown, unknown>,
+): Operation<void> {
+  return {
+    *[Symbol.iterator]() {
+      const subscription = yield* stream;
+      let next = yield* subscription.next();
+      if (next.done) {
+        throw new Error(
+          `Expected the stream to produce at least one value before closing.`,
+        );
+      }
+    },
+  };
+}
+
+export function fetch(input: RequestInfo | URL, init?: RequestInit) {
+  return until(globalThis.fetch(input, init));
+}
+
+export function streamClose<TClose>(
+  stream: Stream<unknown, TClose>,
+): () => Operation<TClose> {
+  return function* () {
+    const subscription = yield* stream;
+    let next = yield* subscription.next();
+    while (!next.done) {
+      next = yield* subscription.next();
+    }
+    return next.value;
+  };
 }

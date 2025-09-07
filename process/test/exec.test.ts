@@ -1,9 +1,12 @@
-import { type Task, spawn, run } from "effection";
+import { Scope, type Task, createScope, run, spawn, suspend } from "effection";
 import { expect } from "@std/expect";
-import { describe, it } from "@std/testing/bdd";
+import { beforeEach, describe, it, afterEach } from "@std/testing/bdd";
 
 import { exec, type Process, type ProcessResult } from "../mod.ts";
-import { captureError } from "./helpers.ts";
+import { captureError, expectStreamNotEmpty } from "./helpers.ts";
+import { filter } from "@effectionx/stream-helpers";
+import process from "node:process";
+import { forEach } from "../src/for-each.ts";
 
 describe("exec", () => {
   describe(".join", () => {
@@ -79,72 +82,103 @@ describe("exec", () => {
           });
         });
       });
+
+      describe("calling expect()", () => {
+        it("fails", async () => {
+          await run(function* () {
+            let error: unknown;
+            let proc = yield* exec("argle", { arguments: ["bargle"] });
+            try {
+              yield* proc.expect();
+            } catch (e) {
+              error = e;
+            }
+
+            expect(error).toBeDefined();
+          });
+        });
+      });
     });
   });
-  //     describe("calling expect()", () => {
-  //       it("fails", function* () {
-  //         let error: unknown;
-  //         let proc = yield exec("argle", { arguments: ["bargle"] });
-  //         try {
-  //           yield proc.expect();
-  //         } catch (e) {
-  //           error = e;
-  //         }
-
-  //         expect(error).toBeDefined();
-  //       });
-  //     });
-  //   });
-
   //   describe("a process that starts successfully", () => {
   //     let proc: Process;
-  //     let joinStdout: Task;
-  //     let joinStderr: Task;
+  //     let joinStdout: Task<unknown>;
+  //     let joinStderr: Task<unknown>;
+  //     let scope: Scope;
+  //     let halt: () => void;
 
-  //     beforeEach(function* () {
-  //       proc = yield exec("node './fixtures/echo-server.js'", {
-  //         env: { PORT: "29000", PATH: process.env.PATH as string },
-  //         cwd: __dirname,
+  //     beforeEach(async () => {
+  //       [scope, halt] = createScope();
+  //       await scope.run(function* () {
+  //         proc = yield* exec("node './fixtures/echo-server.js'", {
+  //           env: { PORT: "29000", PATH: process.env.PATH as string },
+  //           cwd: import.meta.dirname,
+  //         });
+
+  //         // joinStdout = yield* spawn(streamClose(proc.stdout));
+  //         // joinStderr = yield* spawn(streamClose(proc.stderr));
+
+  //         yield* spawn(forEach(function* (chunk){ console.log(`stdout: ${chunk}`) }, proc.stdout));
+  //         yield* spawn(forEach(function* (chunk){ console.log(`stderr: ${chunk}`) }, proc.stderr));
+
+  //         const stdout = filter<string>(function* (v) {
+  //           return v.includes("listening");
+  //         })(proc.stdout.lines());
+
+  //         yield* expectStreamNotEmpty(stdout);
   //       });
-
-  //       joinStdout = yield spawn(proc.stdout.join());
-  //       joinStderr = yield spawn(proc.stderr.join());
-
-  //       yield proc.stdout
-  //         .lines()
-  //         .filter((v) => v.includes("listening"))
-  //         .expect();
   //     });
 
-  //     it("has a pid", function* () {
-  //       expect(typeof proc.pid).toBe("number");
-  //       expect(proc.pid).not.toBeNaN();
+  //     afterEach(() => {
+  //       console.log('halting');
+  //       halt();
   //     });
+
+  //     // it("has a pid", () => {
+  //     //   expect(typeof proc.pid).toBe("number");
+  //     //   expect(proc.pid).not.toBeNaN();
+  //     // });
 
   //     describe("when it succeeds", () => {
-  //       beforeEach(function* () {
-  //         yield fetch("http://localhost:29000", {
-  //           method: "POST",
-  //           body: "exit",
+  //       // beforeEach(async () => {
+  //       //   await scope.run(function* () {
+  //       //     const response = yield* fetch("http://localhost:29000", {
+  //       //       method: "POST",
+  //       //       body: "exit",
+  //       //     });
+  //       //     if (!response.ok) {
+  //       //       throw new Error(response.statusText)
+  //       //     }
+  //       //   });
+  //       // });
+
+  //       it("joins successfully", async () => {
+  //         expect.assertions(1);
+  //         await scope.run(function* () {
+  //           let status = yield* proc.join();
+  //           console.log({ status });
+  //           expect(status.code).toEqual(0);
   //         });
   //       });
 
-  //       it("joins successfully", function* () {
-  //         let status = yield proc.join();
-  //         expect(status.code).toEqual(0);
-  //       });
+  //       // it("expects successfully", async () => {
+  //       //   expect.assertions(1);
+  //       //   await run(function* () {
+  //       //     let status = yield* proc.expect();
+  //       //     expect(status.code).toEqual(0);
+  //       //   });
+  //       // });
 
-  //       it("expects successfully", function* () {
-  //         let status = yield proc.expect();
-  //         expect(status.code).toEqual(0);
-  //       });
-
-  //       it("closes stdout and stderr", function* () {
-  //         yield proc.expect();
-  //         expect(yield joinStdout).toEqual(undefined);
-  //         expect(yield joinStderr).toEqual(undefined);
-  //       });
+  //       // it("closes stdout and stderr", async () => {
+  //       //   await run(function* () {
+  //       //     yield* proc.expect();
+  //       //     expect(yield* joinStdout).toEqual(undefined);
+  //       //     expect(yield* joinStderr).toEqual(undefined);
+  //       //   });
+  //       // });
   //     });
+  //   });
+  // });
 
   //     describe("when it fails", () => {
   //       let error: Error;

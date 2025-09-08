@@ -1,9 +1,14 @@
-import { type Task, spawn } from "effection";
+import { type Task, spawn, until } from "effection";
 import { expect } from "@std/expect";
 import { beforeEach, describe, it } from "@effectionx/deno-testing-bdd";
 
 import { exec, type Process, type ProcessResult } from "../mod.ts";
-import { captureError, expectStreamNotEmpty, fetch } from "./helpers.ts";
+import {
+  captureError,
+  expectStreamNotEmpty,
+  fetch,
+  streamClose,
+} from "./helpers.ts";
 import { filter } from "@effectionx/stream-helpers";
 import process from "node:process";
 import { forEach } from "../src/for-each.ts";
@@ -97,31 +102,14 @@ describe("exec", () => {
         cwd: import.meta.dirname,
       });
 
-      // joinStdout = yield* spawn(streamClose(proc.stdout));
-      // joinStderr = yield* spawn(streamClose(proc.stderr));
-
-      yield* spawn(
-        forEach(function* (chunk) {
-          console.log(`stdout: ${chunk}`);
-        }, proc.stdout),
-      );
-
-      yield* spawn(
-        forEach(function* (chunk) {
-          console.log(`stderr: ${chunk}`);
-        }, proc.stderr),
-      );
+      joinStdout = yield* spawn(streamClose(proc.stdout));
+      joinStderr = yield* spawn(streamClose(proc.stderr));
 
       const stdout = filter<string>(function* (v) {
         return v.includes("listening");
       })(proc.stdout.lines());
 
       yield* expectStreamNotEmpty(stdout);
-    });
-
-    it("has a pid", function* () {
-      expect(typeof proc.pid).toBe("number");
-      expect(proc.pid).not.toBeNaN();
     });
 
     describe("when it succeeds", () => {
@@ -133,6 +121,12 @@ describe("exec", () => {
         if (!response.ok) {
           throw new Error(response.statusText);
         }
+        yield* until(response.text());
+      });
+
+      it("has a pid", function* () {
+        expect(typeof proc.pid).toBe("number");
+        expect(proc.pid).not.toBeNaN();
       });
 
       it("joins successfully", function* () {
@@ -140,17 +134,15 @@ describe("exec", () => {
         expect(status.code).toEqual(0);
       });
 
-      // it("expects successfully", function* () {
-      //   let status = yield* proc.expect();
-      //   expect(status.code).toEqual(0);
-      // });
+      it("expects successfully", function* () {
+        let status = yield* proc.expect();
+        expect(status.code).toEqual(0);
+      });
 
-      // it("closes stdout and stderr", async () => {
-      //   await run(function* () {
-      //     yield* proc.expect();
-      //     expect(yield* joinStdout).toEqual(undefined);
-      //     expect(yield* joinStderr).toEqual(undefined);
-      //   });
+      // it("closes stdout and stderr", function* () {
+      //   yield* proc.expect();
+      //   expect(yield* joinStdout).toEqual(undefined);
+      //   expect(yield* joinStderr).toEqual(undefined);
       // });
     });
   });

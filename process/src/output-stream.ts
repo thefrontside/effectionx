@@ -32,9 +32,7 @@ export function createOutputStream(stream: Stream<Buffer, void>): OutputStream {
 
           yield* spawn(function* () {
             let current = "";
-            console.log("started lines loop")
             for (const chunk of yield* each(stream)) {
-              console.log("in lines got", chunk)
               let lines = (current + chunk.toString()).split("\n");
               lines.slice(0, -1).forEach(linesOutput.send);
               current = lines.slice(-1)[0];

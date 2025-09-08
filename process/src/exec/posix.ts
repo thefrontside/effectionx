@@ -83,6 +83,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
           // deno-lint-ignore no-unsafe-finally
           throw new Error("no pid for childProcess");
         }
+        childProcess.kill("SIGTERM");
         process.kill(-childProcess.pid, "SIGTERM");
       } catch (_e) {
         // do nothing, process is probably already dead

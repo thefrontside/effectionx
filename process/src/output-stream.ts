@@ -10,7 +10,7 @@ import type { Buffer } from "node:buffer";
 import { map } from "@effectionx/stream-helpers";
 import type { EventEmitter } from "node:stream";
 import { forEach } from "./for-each.ts";
-import { on } from "./eventemitter.ts";
+import { on, once } from "./eventemitter.ts";
 
 export interface OutputStream extends Stream<Buffer, void> {
   text(): Stream<string, void>;
@@ -62,6 +62,17 @@ export function createOutputStreamFromEventEmitter(
       yield* spawn(
         forEach(function* (chunk) { signal.send(chunk); }, on<Buffer<ArrayBufferLike>>(eventEmitter, event)),
       );
+
+      yield* spawn(function*() {
+        yield* once(eventEmitter, "end");
+        signal.close();
+      });
+
+      yield* spawn(function*() {
+        const error = yield* once(eventEmitter, "error");
+        console.error(`${event} encountered an error ${error}`);
+        // TODO: what do we do here?
+      });
     }
     
     try {

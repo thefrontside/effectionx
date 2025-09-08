@@ -139,47 +139,48 @@ describe("exec", () => {
         expect(status.code).toEqual(0);
       });
 
-      // it("closes stdout and stderr", function* () {
-      //   yield* proc.expect();
-      //   expect(yield* joinStdout).toEqual(undefined);
-      //   expect(yield* joinStderr).toEqual(undefined);
-      // });
+      it("closes stdout and stderr", function* () {
+        expect.assertions(2);
+        yield* proc.expect();
+        expect(yield* joinStdout).toEqual(undefined);
+        expect(yield* joinStderr).toEqual(undefined);
+      });
+    });
+
+    describe("when it fails", () => {
+      let error: Error;
+      beforeEach(function* () {
+        const response = yield* fetch("http://localhost:29000", {
+          method: "POST",
+          body: "fail",
+        });
+        if (!response.ok) {
+          throw new Error(response.statusText);
+        }
+        yield* until(response.text());
+      });
+
+      it("joins successfully", function* () {
+        let status = yield* proc.join();
+        expect(status.code).not.toEqual(0);
+      });
+
+      it("expects unsuccessfully", function* () {
+        try {
+          yield* proc.expect();
+        } catch (e) {
+          error = e as Error;
+        }
+        expect(error).toBeDefined();
+      });
+
+      it("closes stdout and stderr", function* () {
+        expect(yield* joinStdout).toEqual(undefined);
+        expect(yield* joinStderr).toEqual(undefined);
+      });
     });
   });
 });
-
-//     describe("when it fails", () => {
-//       let error: Error;
-//       beforeEach(function* () {
-//         yield fetch("http://localhost:29000", {
-//           method: "POST",
-//           body: "fail",
-//         });
-//       });
-
-//       it("joins successfully", function* () {
-//         let status = yield proc.join();
-//         expect(status.code).not.toEqual(0);
-//       });
-
-//       it("expects unsuccessfully", function* () {
-//         yield function* () {
-//           try {
-//             yield proc.expect();
-//           } catch (e) {
-//             error = e as Error;
-//           }
-//         };
-//         expect(error).toBeDefined();
-//       });
-
-//       it("closes stdout and stderr", function* () {
-//         expect(yield joinStdout).toEqual(undefined);
-//         expect(yield joinStderr).toEqual(undefined);
-//       });
-//     });
-//   });
-// });
 
 // // running shell scripts in windows is not well supported, our windows
 // // process stuff sets shell to `false` and so you probably shouldn't do this

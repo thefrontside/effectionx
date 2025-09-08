@@ -1,6 +1,7 @@
 import { ctrlc } from "ctrlc-windows";
 import type { Process } from "../src/exec.ts";
 import { type Stream, until, type Operation } from "effection";
+import { filter } from "@effectionx/stream-helpers";
 
 const isWin32 = globalThis.process.platform === "win32";
 
@@ -67,4 +68,12 @@ export function streamClose<TClose>(
     }
     return next.value;
   };
+}
+
+export function* expectMatch(pattern: RegExp, stream: Stream<string, unknown>) {
+  const stdout = filter<string>(function* (v) {
+    return pattern.test(v);
+  })(stream);
+
+  yield* expectStreamNotEmpty(stdout);
 }

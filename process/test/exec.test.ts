@@ -5,13 +5,11 @@ import { beforeEach, describe, it } from "@effectionx/deno-testing-bdd";
 import { exec, type Process, type ProcessResult } from "../mod.ts";
 import {
   captureError,
-  expectStreamNotEmpty,
+  expectMatch,
   fetch,
   streamClose,
 } from "./helpers.ts";
-import { filter } from "@effectionx/stream-helpers";
 import process from "node:process";
-import { forEach } from "../src/for-each.ts";
 
 describe("exec", () => {
   describe(".join", () => {
@@ -105,11 +103,7 @@ describe("exec", () => {
       joinStdout = yield* spawn(streamClose(proc.stdout));
       joinStderr = yield* spawn(streamClose(proc.stderr));
 
-      const stdout = filter<string>(function* (v) {
-        return v.includes("listening");
-      })(proc.stdout.lines());
-
-      yield* expectStreamNotEmpty(stdout);
+      yield* expectMatch(/listening/, proc.stdout.lines());
     });
 
     describe("when it succeeds", () => {

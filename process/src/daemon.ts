@@ -20,11 +20,15 @@ export function daemon(
   return resource(function* (provide) {
     let process = yield* exec(command, options);
 
-    yield* spawn(function* failOnExit() {
+    const task = yield* spawn(function* failOnExit() {
       let status: ExitStatus = yield* process.join();
       throw new DaemonExitError(status, command, options);
     });
 
-    yield* provide(process);
+    try {
+      yield* provide(process);
+    } finally {
+      task.halt();
+    }
   });
 }

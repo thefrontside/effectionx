@@ -1,7 +1,7 @@
-import { describe, it } from "jsr:@std/testing/bdd";
-import { expect } from "jsr:@std/expect";
-import { createTestAdapter } from "../mod.ts";
 import { createContext } from "effection";
+import { describe, it } from "@std/testing/bdd";
+import { expect } from "@std/expect";
+import { createTestAdapter } from "../mod.ts";
 
 describe("TestAdapter", () => {
   it("can run a test", async () => {

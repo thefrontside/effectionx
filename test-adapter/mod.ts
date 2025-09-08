@@ -1,5 +1,5 @@
-import type { Future, Operation, Scope } from "effection";
-import { createScope } from "effection";
+import type { Future, Operation, Result, Scope } from "effection";
+import { createScope, Err, Ok } from "effection";
 
 export interface TestOperation {
   (): Operation<void>;
@@ -50,7 +50,7 @@ export interface TestAdapter {
    * Actually run a test. This evaluates all setup operations, and then after those have completed
    * it runs the body of the test itself.
    */
-  runTest(body: TestOperation): Future<void>;
+  runTest(body: TestOperation): Future<Result<void>>;
 
   /**
    * Teardown this test adapter and all of the task and resources that are running inside it.
@@ -87,18 +87,18 @@ const anonymousNames: Iterator<string, never> = (function* () {
 export function createTestAdapter(
   options: TestAdapterOptions = {},
 ): TestAdapter {
-  let setups: TestOperation[] = [];
-  let { parent, name = anonymousNames.next().value } = options;
+  const setups: TestOperation[] = [];
+  const { parent, name = anonymousNames.next().value } = options;
 
-  let [scope, destroy] = createScope(parent?.scope);
+  const [scope, destroy] = createScope(parent?.scope);
 
-  let adapter: TestAdapter = {
+  const adapter: TestAdapter = {
     parent,
     name,
     scope,
     setups,
     get lineage() {
-      let lineage = [adapter];
+      const lineage = [adapter];
       for (let current = parent; current; current = current.parent) {
         lineage.unshift(current);
       }
@@ -112,14 +112,19 @@ export function createTestAdapter(
     },
     runTest(op) {
       return scope.run(function* () {
-        let allSetups = adapter.lineage.reduce(
+        const allSetups = adapter.lineage.reduce(
           (all, adapter) => all.concat(adapter.setups),
           [] as TestOperation[],
         );
-        for (let setup of allSetups) {
-          yield* setup();
+        try {
+          for (const setup of allSetups) {
+            yield* setup();
+          }
+          yield* op();
+          return Ok<void>(void 0);
+        } catch (error) {
+          return Err(error as Error);
         }
-        yield* op();
       });
     },
     destroy,

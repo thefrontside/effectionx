@@ -1,379 +1,355 @@
-import { Scope, type Task, createScope, run, spawn, suspend } from "effection";
+import { type Task, spawn } from "effection";
 import { expect } from "@std/expect";
-import { beforeEach, describe, it, afterEach } from "@std/testing/bdd";
+import { beforeEach, describe, it } from "@effectionx/deno-testing-bdd";
 
 import { exec, type Process, type ProcessResult } from "../mod.ts";
-import { captureError, expectStreamNotEmpty } from "./helpers.ts";
+import { captureError, expectStreamNotEmpty, fetch } from "./helpers.ts";
 import { filter } from "@effectionx/stream-helpers";
 import process from "node:process";
 import { forEach } from "../src/for-each.ts";
 
 describe("exec", () => {
   describe(".join", () => {
-    it("runs successfully to completion", async () => {
-      await run(function* () {
-        let result: ProcessResult = yield* exec(
-          "node './test/fixtures/hello-world.js'",
-        ).join();
+    it("runs successfully to completion", function* () {
+      let result: ProcessResult = yield* exec(
+        "node './test/fixtures/hello-world.js'",
+      ).join();
 
-        expect(result).toMatchObject({
-          code: 0,
-          stdout: "hello\nworld\n",
-          stderr: "boom\n",
-        });
+      expect(result).toMatchObject({
+        code: 0,
+        stdout: "hello\nworld\n",
+        stderr: "boom\n",
       });
     });
 
-    it("runs failed process to completion", async () => {
-      await run(function* () {
-        let result: ProcessResult = yield* exec(
-          "node './test/fixtures/hello-world-failed.js'",
-        ).join();
+    it("runs failed process to completion", function* () {
+      let result: ProcessResult = yield* exec(
+        "node './test/fixtures/hello-world-failed.js'",
+      ).join();
 
-        expect(result.code).toEqual(37);
-        expect(result.stdout).toEqual("hello world\n");
-        expect(result.stderr).toEqual("boom\n");
-      });
+      expect(result.code).toEqual(37);
+      expect(result.stdout).toEqual("hello world\n");
+      expect(result.stderr).toEqual("boom\n");
     });
   });
 
   describe(".expect", () => {
     expect.assertions(1);
-    it("runs successfully to completion", async () => {
-      await run(function* () {
-        let result: ProcessResult = yield* exec(
-          "node './test/fixtures/hello-world.js'",
-        ).expect();
+    it("runs successfully to completion", function* () {
+      let result: ProcessResult = yield* exec(
+        "node './test/fixtures/hello-world.js'",
+      ).expect();
 
-        expect(result).toMatchObject({
-          code: 0,
-          stdout: "hello\nworld\n",
-          stderr: "boom\n",
-        });
+      expect(result).toMatchObject({
+        code: 0,
+        stdout: "hello\nworld\n",
+        stderr: "boom\n",
       });
     });
 
-    it("throws an error if process fails", async () => {
-      expect.assertions(1);
-      await run(function* () {
-        let error: Error = yield* captureError(
-          exec("node './test/fixtures/hello-world-failed.js'").expect(),
-        );
+    it("throws an error if process fails", function* () {
+      let error: Error = yield* captureError(
+        exec("node './test/fixtures/hello-world-failed.js'").expect(),
+      );
 
-        expect(error.name).toEqual("ExecError");
-      });
+      expect(error.name).toEqual("ExecError");
     });
   });
 
   describe("spawning", () => {
     describe("a process that fails to start", () => {
       describe("calling join()", () => {
-        it("reports the failed status", async () => {
-          expect.assertions(1);
-          await run(function* () {
-            let error: unknown;
-            let proc = yield* exec("argle", { arguments: ["bargle"] });
-            try {
-              yield* proc.join();
-            } catch (e) {
-              error = e;
-            }
-            expect(error).toBeInstanceOf(Error);
-          });
+        it("reports the failed status", function* () {
+          let error: unknown;
+          let proc = yield* exec("argle", { arguments: ["bargle"] });
+          try {
+            yield* proc.join();
+          } catch (e) {
+            error = e;
+          }
+          expect(error).toBeInstanceOf(Error);
         });
       });
 
       describe("calling expect()", () => {
-        it("fails", async () => {
-          await run(function* () {
-            let error: unknown;
-            let proc = yield* exec("argle", { arguments: ["bargle"] });
-            try {
-              yield* proc.expect();
-            } catch (e) {
-              error = e;
-            }
+        it("fails", function* () {
+          let error: unknown;
+          let proc = yield* exec("argle", { arguments: ["bargle"] });
+          try {
+            yield* proc.expect();
+          } catch (e) {
+            error = e;
+          }
 
-            expect(error).toBeDefined();
-          });
+          expect(error).toBeDefined();
         });
       });
     });
   });
-  //   describe("a process that starts successfully", () => {
-  //     let proc: Process;
-  //     let joinStdout: Task<unknown>;
-  //     let joinStderr: Task<unknown>;
-  //     let scope: Scope;
-  //     let halt: () => void;
+  describe("a process that starts successfully", () => {
+    let proc: Process;
+    let joinStdout: Task<unknown>;
+    let joinStderr: Task<unknown>;
 
-  //     beforeEach(async () => {
-  //       [scope, halt] = createScope();
-  //       await scope.run(function* () {
-  //         proc = yield* exec("node './fixtures/echo-server.js'", {
-  //           env: { PORT: "29000", PATH: process.env.PATH as string },
-  //           cwd: import.meta.dirname,
-  //         });
+    beforeEach(function* () {
+      proc = yield* exec("node './fixtures/echo-server.js'", {
+        env: { PORT: "29000", PATH: process.env.PATH as string },
+        cwd: import.meta.dirname,
+      });
 
-  //         // joinStdout = yield* spawn(streamClose(proc.stdout));
-  //         // joinStderr = yield* spawn(streamClose(proc.stderr));
+      // joinStdout = yield* spawn(streamClose(proc.stdout));
+      // joinStderr = yield* spawn(streamClose(proc.stderr));
 
-  //         yield* spawn(forEach(function* (chunk){ console.log(`stdout: ${chunk}`) }, proc.stdout));
-  //         yield* spawn(forEach(function* (chunk){ console.log(`stderr: ${chunk}`) }, proc.stderr));
+      yield* spawn(
+        forEach(function* (chunk) {
+          console.log(`stdout: ${chunk}`);
+        }, proc.stdout),
+      );
 
-  //         const stdout = filter<string>(function* (v) {
-  //           return v.includes("listening");
-  //         })(proc.stdout.lines());
+      yield* spawn(
+        forEach(function* (chunk) {
+          console.log(`stderr: ${chunk}`);
+        }, proc.stderr),
+      );
 
-  //         yield* expectStreamNotEmpty(stdout);
-  //       });
-  //     });
+      const stdout = filter<string>(function* (v) {
+        return v.includes("listening");
+      })(proc.stdout.lines());
 
-  //     afterEach(() => {
-  //       console.log('halting');
-  //       halt();
-  //     });
+      yield* expectStreamNotEmpty(stdout);
+    });
 
-  //     // it("has a pid", () => {
-  //     //   expect(typeof proc.pid).toBe("number");
-  //     //   expect(proc.pid).not.toBeNaN();
-  //     // });
+    it("has a pid", function* () {
+      expect(typeof proc.pid).toBe("number");
+      expect(proc.pid).not.toBeNaN();
+    });
 
-  //     describe("when it succeeds", () => {
-  //       // beforeEach(async () => {
-  //       //   await scope.run(function* () {
-  //       //     const response = yield* fetch("http://localhost:29000", {
-  //       //       method: "POST",
-  //       //       body: "exit",
-  //       //     });
-  //       //     if (!response.ok) {
-  //       //       throw new Error(response.statusText)
-  //       //     }
-  //       //   });
-  //       // });
+    describe("when it succeeds", () => {
+      beforeEach(function* () {
+        const response = yield* fetch("http://localhost:29000", {
+          method: "POST",
+          body: "exit",
+        });
+        if (!response.ok) {
+          throw new Error(response.statusText);
+        }
+      });
 
-  //       it("joins successfully", async () => {
-  //         expect.assertions(1);
-  //         await scope.run(function* () {
-  //           let status = yield* proc.join();
-  //           console.log({ status });
-  //           expect(status.code).toEqual(0);
-  //         });
-  //       });
+      it("joins successfully", function* () {
+        let status = yield* proc.join();
+        expect(status.code).toEqual(0);
+      });
 
-  //       // it("expects successfully", async () => {
-  //       //   expect.assertions(1);
-  //       //   await run(function* () {
-  //       //     let status = yield* proc.expect();
-  //       //     expect(status.code).toEqual(0);
-  //       //   });
-  //       // });
+      // it("expects successfully", function* () {
+      //   let status = yield* proc.expect();
+      //   expect(status.code).toEqual(0);
+      // });
 
-  //       // it("closes stdout and stderr", async () => {
-  //       //   await run(function* () {
-  //       //     yield* proc.expect();
-  //       //     expect(yield* joinStdout).toEqual(undefined);
-  //       //     expect(yield* joinStderr).toEqual(undefined);
-  //       //   });
-  //       // });
-  //     });
-  //   });
-  // });
-
-  //     describe("when it fails", () => {
-  //       let error: Error;
-  //       beforeEach(function* () {
-  //         yield fetch("http://localhost:29000", {
-  //           method: "POST",
-  //           body: "fail",
-  //         });
-  //       });
-
-  //       it("joins successfully", function* () {
-  //         let status = yield proc.join();
-  //         expect(status.code).not.toEqual(0);
-  //       });
-
-  //       it("expects unsuccessfully", function* () {
-  //         yield function* () {
-  //           try {
-  //             yield proc.expect();
-  //           } catch (e) {
-  //             error = e as Error;
-  //           }
-  //         };
-  //         expect(error).toBeDefined();
-  //       });
-
-  //       it("closes stdout and stderr", function* () {
-  //         expect(yield joinStdout).toEqual(undefined);
-  //         expect(yield joinStderr).toEqual(undefined);
-  //       });
-  //     });
-  //   });
-  // });
-
-  // // running shell scripts in windows is not well supported, our windows
-  // // process stuff sets shell to `false` and so you probably shouldn't do this
-  // // in windows at all.
-  // if (process.platform !== "win32") {
-  //   describe("when the `shell` option is true", () => {
-  //     it("lets the shell do all of the shellword parsing", function* () {
-  //       let proc = exec('echo "first" | echo "second"', {
-  //         shell: true,
-  //       });
-  //       let { stdout }: ProcessResult = yield proc.expect();
-
-  //       expect(stdout).toEqual("second\n");
-  //     });
-  //   });
-  // }
-
-  // describe("when the `shell` option is `false`", () => {
-  //   it("automatically parses the command argumens using shellwords", function* () {
-  //     let proc = exec('echo "first" | echo "second"', {
-  //       shell: false,
-  //     });
-  //     let { stdout }: ProcessResult = yield proc.expect();
-
-  //     expect(stdout).toEqual("first | echo second\n");
-  //   });
-  // });
-
-  // describe("handles env vars", () => {
-  //   describe("when the `shell` option is `bash`", () => {
-  //     let shell = "bash";
-
-  //     it("can echo a passed in environment variable", function* () {
-  //       let proc = exec("echo $EFFECTION_TEST_ENV_VAL", {
-  //         shell,
-  //         env: { EFFECTION_TEST_ENV_VAL: "boop" },
-  //       });
-  //       let { stdout, code }: ProcessResult = yield proc.expect();
-
-  //       expect(stdout).toEqual("boop\n");
-  //       expect(code).toBe(0);
-  //     });
-
-  //     it("can echo a passed in environment variable with curly brace syntax", function* () {
-  //       let proc = exec("echo ${EFFECTION_TEST_ENV_VAL}", {
-  //         shell,
-  //         env: { EFFECTION_TEST_ENV_VAL: "boop" },
-  //       });
-  //       let { stdout, code }: ProcessResult = yield proc.expect();
-
-  //       expect(stdout).toEqual("boop\n");
-  //       expect(code).toBe(0);
-  //     });
-  //   });
-
-  //   describe("when the `shell` option is `true`", () => {
-  //     let shell = true;
-
-  //     it("can echo a passed in environment variable", function* () {
-  //       let proc = exec("echo $EFFECTION_TEST_ENV_VAL", {
-  //         shell,
-  //         env: { EFFECTION_TEST_ENV_VAL: "boop" },
-  //       });
-  //       let { stdout, code }: ProcessResult = yield proc.expect();
-
-  //       // this fails on windows, this shell option doesn't work on windows
-  //       // due to it generally running through cmd.exe which can't handle this syntax
-  //       let result =
-  //         process.platform !== "win32"
-  //           ? "boop\n"
-  //           : // note the additional \r that is added
-  //             "$EFFECTION_TEST_ENV_VAL\r\n";
-  //       expect(stdout).toEqual(result);
-  //       expect(code).toBe(0);
-  //     });
-
-  //     it("can echo a passed in environment variable with curly brace syntax", function* () {
-  //       let proc = exec("echo ${EFFECTION_TEST_ENV_VAL}", {
-  //         shell,
-  //         env: { EFFECTION_TEST_ENV_VAL: "boop" },
-  //       });
-  //       let { stdout, code }: ProcessResult = yield proc.expect();
-
-  //       // this fails on windows, this shell option doesn't work on windows
-  //       // due to it generally running through cmd.exe which can't handle this syntax
-  //       let result =
-  //         process.platform !== "win32"
-  //           ? "boop\n"
-  //           : // note the additional \r that is added
-  //             "${EFFECTION_TEST_ENV_VAL}\r\n";
-  //       expect(stdout).toEqual(result);
-  //       expect(code).toBe(0);
-  //     });
-  //   });
-
-  //   describe("when the `shell` option is `false`", () => {
-  //     let shell = false;
-
-  //     it("can echo a passed in environment variable", function* () {
-  //       let proc = exec("echo $EFFECTION_TEST_ENV_VAL", {
-  //         shell,
-  //         env: { EFFECTION_TEST_ENV_VAL: "boop" },
-  //       });
-  //       let { stdout, code }: ProcessResult = yield proc.expect();
-
-  //       expect(stdout).toEqual("$EFFECTION_TEST_ENV_VAL\n");
-  //       expect(code).toBe(0);
-  //     });
-
-  //     it("can echo a passed in environment variable with curly brace syntax", function* () {
-  //       let proc = exec("echo ${EFFECTION_TEST_ENV_VAL}", {
-  //         shell,
-  //         env: { EFFECTION_TEST_ENV_VAL: "boop" },
-  //       });
-  //       let { stdout, code }: ProcessResult = yield proc.expect();
-
-  //       // note shellwords normalizes this from ${ENV} to $ENV on windows
-  //       let result =
-  //         process.platform !== "win32"
-  //           ? "${EFFECTION_TEST_ENV_VAL}\n"
-  //           : "$EFFECTION_TEST_ENV_VAL\n";
-  //       expect(stdout).toEqual(result);
-  //       expect(code).toBe(0);
-  //     });
-  //   });
-
-  //   describe("when the `shell` option is `process.env.shell`", () => {
-  //     let shell = process.env.shell;
-  //     // This comes back undefined in linux, mac and windows (using the cmd.exe default).
-  //     // When using git-bash on windows, this appears to be set.
-  //     // We haven't found any other configurations where it is set by default.
-
-  //     it("can echo a passed in environment variable", function* () {
-  //       let proc = exec("echo $EFFECTION_TEST_ENV_VAL", {
-  //         shell,
-  //         env: { EFFECTION_TEST_ENV_VAL: "boop" },
-  //       });
-  //       let { stdout, code }: ProcessResult = yield proc.expect();
-
-  //       let result = shell?.endsWith("bash.exe")
-  //         ? "boop\n"
-  //         : "$EFFECTION_TEST_ENV_VAL\n";
-  //       expect(stdout).toEqual(result);
-  //       expect(code).toBe(0);
-  //     });
-
-  //     it("can echo a passed in environment variable with curly brace syntax", function* () {
-  //       let proc = exec("echo ${EFFECTION_TEST_ENV_VAL}", {
-  //         shell,
-  //         env: { EFFECTION_TEST_ENV_VAL: "boop" },
-  //       });
-  //       let { stdout, code }: ProcessResult = yield proc.expect();
-
-  //       if (shell?.endsWith("bash.exe")) {
-  //         expect(stdout).toEqual("boop\n");
-  //       } else if (process.platform === "win32") {
-  //         expect(stdout).toEqual("$EFFECTION_TEST_ENV_VAL\n");
-  //       } else {
-  //         expect(stdout).toEqual("${EFFECTION_TEST_ENV_VAL}\n");
-  //       }
-  //       expect(code).toBe(0);
-  //     });
-  //   });
-  // });
+      // it("closes stdout and stderr", async () => {
+      //   await run(function* () {
+      //     yield* proc.expect();
+      //     expect(yield* joinStdout).toEqual(undefined);
+      //     expect(yield* joinStderr).toEqual(undefined);
+      //   });
+      // });
+    });
+  });
 });
+
+//     describe("when it fails", () => {
+//       let error: Error;
+//       beforeEach(function* () {
+//         yield fetch("http://localhost:29000", {
+//           method: "POST",
+//           body: "fail",
+//         });
+//       });
+
+//       it("joins successfully", function* () {
+//         let status = yield proc.join();
+//         expect(status.code).not.toEqual(0);
+//       });
+
+//       it("expects unsuccessfully", function* () {
+//         yield function* () {
+//           try {
+//             yield proc.expect();
+//           } catch (e) {
+//             error = e as Error;
+//           }
+//         };
+//         expect(error).toBeDefined();
+//       });
+
+//       it("closes stdout and stderr", function* () {
+//         expect(yield joinStdout).toEqual(undefined);
+//         expect(yield joinStderr).toEqual(undefined);
+//       });
+//     });
+//   });
+// });
+
+// // running shell scripts in windows is not well supported, our windows
+// // process stuff sets shell to `false` and so you probably shouldn't do this
+// // in windows at all.
+// if (process.platform !== "win32") {
+//   describe("when the `shell` option is true", () => {
+//     it("lets the shell do all of the shellword parsing", function* () {
+//       let proc = exec('echo "first" | echo "second"', {
+//         shell: true,
+//       });
+//       let { stdout }: ProcessResult = yield proc.expect();
+
+//       expect(stdout).toEqual("second\n");
+//     });
+//   });
+// }
+
+// describe("when the `shell` option is `false`", () => {
+//   it("automatically parses the command argumens using shellwords", function* () {
+//     let proc = exec('echo "first" | echo "second"', {
+//       shell: false,
+//     });
+//     let { stdout }: ProcessResult = yield proc.expect();
+
+//     expect(stdout).toEqual("first | echo second\n");
+//   });
+// });
+
+// describe("handles env vars", () => {
+//   describe("when the `shell` option is `bash`", () => {
+//     let shell = "bash";
+
+//     it("can echo a passed in environment variable", function* () {
+//       let proc = exec("echo $EFFECTION_TEST_ENV_VAL", {
+//         shell,
+//         env: { EFFECTION_TEST_ENV_VAL: "boop" },
+//       });
+//       let { stdout, code }: ProcessResult = yield proc.expect();
+
+//       expect(stdout).toEqual("boop\n");
+//       expect(code).toBe(0);
+//     });
+
+//     it("can echo a passed in environment variable with curly brace syntax", function* () {
+//       let proc = exec("echo ${EFFECTION_TEST_ENV_VAL}", {
+//         shell,
+//         env: { EFFECTION_TEST_ENV_VAL: "boop" },
+//       });
+//       let { stdout, code }: ProcessResult = yield proc.expect();
+
+//       expect(stdout).toEqual("boop\n");
+//       expect(code).toBe(0);
+//     });
+//   });
+
+//   describe("when the `shell` option is `true`", () => {
+//     let shell = true;
+
+//     it("can echo a passed in environment variable", function* () {
+//       let proc = exec("echo $EFFECTION_TEST_ENV_VAL", {
+//         shell,
+//         env: { EFFECTION_TEST_ENV_VAL: "boop" },
+//       });
+//       let { stdout, code }: ProcessResult = yield proc.expect();
+
+//       // this fails on windows, this shell option doesn't work on windows
+//       // due to it generally running through cmd.exe which can't handle this syntax
+//       let result =
+//         process.platform !== "win32"
+//           ? "boop\n"
+//           : // note the additional \r that is added
+//             "$EFFECTION_TEST_ENV_VAL\r\n";
+//       expect(stdout).toEqual(result);
+//       expect(code).toBe(0);
+//     });
+
+//     it("can echo a passed in environment variable with curly brace syntax", function* () {
+//       let proc = exec("echo ${EFFECTION_TEST_ENV_VAL}", {
+//         shell,
+//         env: { EFFECTION_TEST_ENV_VAL: "boop" },
+//       });
+//       let { stdout, code }: ProcessResult = yield proc.expect();
+
+//       // this fails on windows, this shell option doesn't work on windows
+//       // due to it generally running through cmd.exe which can't handle this syntax
+//       let result =
+//         process.platform !== "win32"
+//           ? "boop\n"
+//           : // note the additional \r that is added
+//             "${EFFECTION_TEST_ENV_VAL}\r\n";
+//       expect(stdout).toEqual(result);
+//       expect(code).toBe(0);
+//     });
+//   });
+
+//   describe("when the `shell` option is `false`", () => {
+//     let shell = false;
+
+//     it("can echo a passed in environment variable", function* () {
+//       let proc = exec("echo $EFFECTION_TEST_ENV_VAL", {
+//         shell,
+//         env: { EFFECTION_TEST_ENV_VAL: "boop" },
+//       });
+//       let { stdout, code }: ProcessResult = yield proc.expect();
+
+//       expect(stdout).toEqual("$EFFECTION_TEST_ENV_VAL\n");
+//       expect(code).toBe(0);
+//     });
+
+//     it("can echo a passed in environment variable with curly brace syntax", function* () {
+//       let proc = exec("echo ${EFFECTION_TEST_ENV_VAL}", {
+//         shell,
+//         env: { EFFECTION_TEST_ENV_VAL: "boop" },
+//       });
+//       let { stdout, code }: ProcessResult = yield proc.expect();
+
+//       // note shellwords normalizes this from ${ENV} to $ENV on windows
+//       let result =
+//         process.platform !== "win32"
+//           ? "${EFFECTION_TEST_ENV_VAL}\n"
+//           : "$EFFECTION_TEST_ENV_VAL\n";
+//       expect(stdout).toEqual(result);
+//       expect(code).toBe(0);
+//     });
+//   });
+
+//   describe("when the `shell` option is `process.env.shell`", () => {
+//     let shell = process.env.shell;
+//     // This comes back undefined in linux, mac and windows (using the cmd.exe default).
+//     // When using git-bash on windows, this appears to be set.
+//     // We haven't found any other configurations where it is set by default.
+
+//     it("can echo a passed in environment variable", function* () {
+//       let proc = exec("echo $EFFECTION_TEST_ENV_VAL", {
+//         shell,
+//         env: { EFFECTION_TEST_ENV_VAL: "boop" },
+//       });
+//       let { stdout, code }: ProcessResult = yield proc.expect();
+
+//       let result = shell?.endsWith("bash.exe")
+//         ? "boop\n"
+//         : "$EFFECTION_TEST_ENV_VAL\n";
+//       expect(stdout).toEqual(result);
+//       expect(code).toBe(0);
+//     });
+
+//     it("can echo a passed in environment variable with curly brace syntax", function* () {
+//       let proc = exec("echo ${EFFECTION_TEST_ENV_VAL}", {
+//         shell,
+//         env: { EFFECTION_TEST_ENV_VAL: "boop" },
+//       });
+//       let { stdout, code }: ProcessResult = yield proc.expect();
+
+//       if (shell?.endsWith("bash.exe")) {
+//         expect(stdout).toEqual("boop\n");
+//       } else if (process.platform === "win32") {
+//         expect(stdout).toEqual("$EFFECTION_TEST_ENV_VAL\n");
+//       } else {
+//         expect(stdout).toEqual("${EFFECTION_TEST_ENV_VAL}\n");
+//       }
+//       expect(code).toBe(0);
+//     });
+//   });
+// });
+// });

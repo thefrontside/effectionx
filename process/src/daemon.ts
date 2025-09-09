@@ -1,12 +1,16 @@
-import { type Operation, resource, spawn } from "effection";
+import { type Operation, resource, spawn, suspend } from "effection";
 
 import {
   DaemonExitError,
   exec,
+  type Process,
   type ExecOptions,
   type ExitStatus,
-  type Process,
 } from "./exec.ts";
+
+export interface Daemon extends Operation<void>, Process {
+
+};
 
 /**
  * Start a long-running process, like a web server that run perpetually.
@@ -16,19 +20,17 @@ import {
 export function daemon(
   command: string,
   options: ExecOptions = {},
-): Operation<Process> {
+): Operation<Daemon> {
   return resource(function* (provide) {
+    // TODO: should we be able to terminate the process from here?
     let process = yield* exec(command, options);
 
-    const task = yield* spawn(function* failOnExit() {
-      let status: ExitStatus = yield* process.join();
-      throw new DaemonExitError(status, command, options);
+    yield* provide({
+      *[Symbol.iterator]() {
+        let status: ExitStatus = yield* process.join();
+        throw new DaemonExitError(status, command, options)
+      },
+      ...process,
     });
-
-    try {
-      yield* provide(process);
-    } finally {
-      task.halt();
-    }
   });
 }

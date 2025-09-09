@@ -6,7 +6,7 @@ import { exec, type Process, type ProcessResult } from "../mod.ts";
 import {
   captureError,
   expectMatch,
-  fetch,
+  fetchText,
   streamClose,
 } from "./helpers.ts";
 import process from "node:process";
@@ -108,14 +108,10 @@ describe("exec", () => {
 
     describe("when it succeeds", () => {
       beforeEach(function* () {
-        const response = yield* fetch("http://localhost:29000", {
+        yield* fetchText("http://localhost:29000", {
           method: "POST",
           body: "exit",
         });
-        if (!response.ok) {
-          throw new Error(response.statusText);
-        }
-        yield* until(response.text());
       });
 
       it("has a pid", function* () {
@@ -144,14 +140,10 @@ describe("exec", () => {
     describe("when it fails", () => {
       let error: Error;
       beforeEach(function* () {
-        const response = yield* fetch("http://localhost:29000", {
+        yield* fetchText("http://localhost:29000", {
           method: "POST",
           body: "fail",
         });
-        if (!response.ok) {
-          throw new Error(response.statusText);
-        }
-        yield* until(response.text());
       });
 
       it("joins successfully", function* () {

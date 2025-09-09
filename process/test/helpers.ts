@@ -53,8 +53,19 @@ export function expectStreamNotEmpty(
   };
 }
 
-export function fetch(input: RequestInfo | URL, init?: RequestInit) {
-  return until(globalThis.fetch(input, init));
+export function* fetchText(input: RequestInfo | URL, init?: RequestInit) {
+  try {
+    const response = yield* until(globalThis.fetch(input, init));
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+    return {
+      status: response.status,
+      text: yield* until(response.text())
+    }
+  } catch (e) {
+    throw new Error(`FetchError: ${(e as Error).message}`)
+  }
 }
 
 export function streamClose<TClose>(

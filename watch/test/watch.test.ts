@@ -1,5 +1,5 @@
 import type { Operation, Result, Stream } from "effection";
-import { call, each, Ok, run, sleep, spawn } from "effection";
+import { call, each, Ok, run, sleep, spawn, until } from "effection";
 import { describe, it as bddIt } from "bdd";
 import { expect } from "expect";
 import { assert } from "jsr:@std/assert";
@@ -14,6 +14,7 @@ function it(...args: Parameters<typeof bddIt>) {
   return bddIt(...args);
 }
 it.skip = bddIt.skip;
+it.only = bddIt.only;
 
 describe("watch", () => {
   it("restarts the specified process when files change.", async () => {
@@ -29,15 +30,13 @@ describe("watch", () => {
 
       let start = yield* processes.expectNext();
 
-      let exit = yield* start.process;
+      let exit = yield* start.process.join();
 
       expect(exit.code).toEqual(0);
 
       expect(start.stdout).toEqual("this is a source file");
 
-      yield* call(() =>
-        fixture.write("src/file.txt", "this source file is changed")
-      );
+      yield* fixture.write("src/file.txt", "this source file is changed");
 
       let next = yield* processes.expectNext();
 
@@ -78,7 +77,10 @@ describe("watch", () => {
       let processes = yield* inspector(
         watch({
           path: fixture.path,
-          cmd: `deno run -A watch/test/watch-graceful.ts`,
+          cmd: `deno run -A watch-graceful.ts`,
+          execOptions: {
+            cwd: import.meta.dirname
+          }
         }),
       );
 
@@ -102,7 +104,7 @@ describe("watch", () => {
 });
 
 import { type Start, watch } from "../watch.ts";
-import type { Process } from "../child-process.ts";
+import type { Process } from "@effectionx/process";
 import { cp, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
@@ -120,15 +122,16 @@ interface Fixture {
 function* useFixture(): Operation<Fixture> {
   let tmpDir = new URL("./temp", import.meta.url).pathname;
   let fixtureDir = new URL("./fixtures", import.meta.url).pathname;
-  let path = join(tmpDir, "fixtures");
-  yield* call(() => emptyDir(tmpDir));
+  // let path = join(tmpDir, "fixtures");
+  let path = tmpDir;
+  yield* until(emptyDir(tmpDir));
 
-  yield* call(() =>
+  yield* until(
     cp(fixtureDir, tmpDir, {
       recursive: true,
       preserveTimestamps: true,
       force: true,
-    })
+    }),
   );
 
   return {
@@ -136,15 +139,13 @@ function* useFixture(): Operation<Fixture> {
     getPath(filename): string {
       return join(path, filename);
     },
-    write(filename: string, content: string) {
-      return call(async () => {
-        const dest = join(path, filename);
-        await ensureDir(dirname(dest));
-        await writeFile(join(path, filename), content);
-      });
+    *write(filename: string, content: string) {
+      const dest = join(path, filename);
+      yield* until(ensureDir(dirname(dest)));
+      yield* until(writeFile(join(path, filename), content));
     },
     *read(name) {
-      return String(yield* call(() => readFile(join(path, name))));
+      return String(yield* until(readFile(join(path, name))));
     },
   };
 }

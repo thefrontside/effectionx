@@ -12,13 +12,15 @@ import {
   type Result,
   spawn,
   type Stream,
+  until,
   withResolvers,
 } from "effection";
 import { default as createIgnore } from "ignore";
 import { pipe } from "jsr:@gordonb/pipe@0.1.0";
 import { readFile } from "node:fs/promises";
+import { ExecOptions, type Process, exec } from "@effectionx/process";
+import { forEach } from "@effectionx/stream-helpers";
 
-import { type Process, useProcess } from "./child-process.ts";
 import { debounce } from "./stream-helpers.ts";
 
 /**
@@ -60,6 +62,11 @@ export interface WatchOptions {
    * @ignore
    */
   event?: "all" | "change";
+
+  /**
+   * Options passed to process exec
+   */
+  execOptions?: ExecOptions;
 }
 
 /**
@@ -119,13 +126,14 @@ export function watch(options: WatchOptions): Stream<Start, never> {
     });
 
     let changes = yield* pipe(input, debounce(100));
+    let subscription = yield* starts;
 
     yield* spawn(function* () {
       while (true) {
         let task = yield* spawn(function* () {
           let restarting = withResolvers<void>();
           try {
-            let process = yield* useProcess(options.cmd);
+            let process = yield* exec(options.cmd, options.execOptions);
             yield* starts.send({
               result: Ok(process),
               restarting: restarting.operation,
@@ -136,7 +144,6 @@ export function watch(options: WatchOptions): Stream<Start, never> {
               restarting: restarting.operation,
             });
           }
-
           yield* changes.next();
           restarting.resolve();
         });
@@ -145,9 +152,9 @@ export function watch(options: WatchOptions): Stream<Start, never> {
     });
 
     try {
-      yield* provide(yield* starts);
+      yield* provide(subscription);
     } finally {
-      yield* call(() => watcher.close());
+      yield* until(watcher.close());
     }
   });
 }
@@ -156,9 +163,7 @@ export function watch(options: WatchOptions): Stream<Start, never> {
  * locate a `.gitignore` file if it exists and use it to filter
  * out any change events against paths that are matched by it
  */
-function* findIgnores(path: string): Operation<
-  (path: string) => boolean
-> {
+function* findIgnores(path: string): Operation<(path: string) => boolean> {
   let gitignore = join(path, ".gitignore");
   if (yield* call(() => exists(gitignore))) {
     let ignores = createIgnore();
@@ -175,6 +180,6 @@ function* findIgnores(path: string): Operation<
 
 function fresh(staletime: number): (args: EmitArgsWithName) => boolean {
   return ([, , stats]) => {
-    return !stats || (Date.now() - stats.mtimeMs) < staletime;
+    return !stats || Date.now() - stats.mtimeMs < staletime;
   };
 }

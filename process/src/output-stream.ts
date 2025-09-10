@@ -5,6 +5,7 @@ import {
   resource,
   spawn,
   type Stream,
+  withResolvers,
 } from "effection";
 import type { Buffer } from "node:buffer";
 import { map } from "@effectionx/stream-helpers";
@@ -57,6 +58,7 @@ export function createOutputStreamFromEventEmitter(
 ): Operation<OutputStream> {
   return resource(function* (provide) {
     let signal = createSignal<Buffer<ArrayBufferLike>, void>();
+    let closed = withResolvers<void>();
 
     if (eventEmitter) {
       yield* spawn(
@@ -65,6 +67,7 @@ export function createOutputStreamFromEventEmitter(
 
       yield* spawn(function*() {
         yield* once(eventEmitter, "end");
+        closed.resolve();
         signal.close();
       });
 
@@ -78,6 +81,7 @@ export function createOutputStreamFromEventEmitter(
     try {
       yield* provide(createOutputStream(signal));
     } finally {
+      yield* closed.operation;
       signal.close();
     }
   });

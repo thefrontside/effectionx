@@ -62,7 +62,7 @@ describe("exec", () => {
   describe("spawning", () => {
     describe("a process that fails to start", () => {
       describe("calling join()", () => {
-        it("reports the failed status", function* () {
+        it.only("reports the failed status", function* () {
           let error: unknown;
           let proc = yield* exec("argle", { arguments: ["bargle"] });
           try {

@@ -3,6 +3,7 @@ import {
   each,
   type Operation,
   resource,
+  sleep,
   spawn,
   type Stream,
   withResolvers,
@@ -58,7 +59,8 @@ export function createOutputStreamFromEventEmitter(
 ): Operation<OutputStream> {
   return resource(function* (provide) {
     let signal = createSignal<Buffer<ArrayBufferLike>, void>();
-    let closed = withResolvers<void>();
+    // let closed = withResolvers<void>();
+    // let used = false;
 
     if (eventEmitter) {
       yield* spawn(
@@ -67,7 +69,6 @@ export function createOutputStreamFromEventEmitter(
 
       yield* spawn(function*() {
         yield* once(eventEmitter, "end");
-        closed.resolve();
         signal.close();
       });
 
@@ -81,7 +82,6 @@ export function createOutputStreamFromEventEmitter(
     try {
       yield* provide(createOutputStream(signal));
     } finally {
-      yield* closed.operation;
       signal.close();
     }
   });

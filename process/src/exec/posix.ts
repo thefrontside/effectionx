@@ -5,6 +5,7 @@ import { once, onceEmit } from "../eventemitter.ts";
 import { createOutputStreamFromEventEmitter } from "../output-stream.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
+import { join } from "node:path";
 
 type ProcessResultValue = [number?, string?];
 
@@ -13,25 +14,6 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
   options,
 ) {
   let processResult = withResolvers<Result<ProcessResultValue>>();
-
-  function* join() {
-    let result = yield* processResult.operation;
-    if (result.ok) {
-      let [code, signal] = result.value;
-      return { command, options, code, signal } as ExitStatus;
-    } else {
-      throw result.error;
-    }
-  }
-
-  function* expect() {
-    let status: ExitStatus = yield* join();
-    if (status.code != 0) {
-      throw new ExecError(status, command, options);
-    } else {
-      return status;
-    }
-  }
 
   // Killing all child processes started by this command is surprisingly
   // tricky. If a process spawns another processes and we kill the parent,
@@ -73,7 +55,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
     processResult.resolve(Err(error));
   });
 
-  yield* spawn(function*() {
+  yield* spawn(function* () {
     try {
       let value = yield* onceEmit<ProcessResultValue>(childProcess, "exit");
       processResult.resolve(Ok(value));
@@ -85,11 +67,41 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
         }
         childProcess.kill("SIGTERM");
         process.kill(-childProcess.pid, "SIGTERM");
+        if (childProcess.stdout) {
+          yield* once(childProcess.stdout, 'end');
+        }
       } catch (_e) {
         // do nothing, process is probably already dead
       }
     }
   });
 
-  return { pid: pid as number, stdin, stdout, stderr, join, expect };
+  function* join() {
+    let result = yield* processResult.operation;
+    if (result.ok) {
+      let [code, signal] = result.value;
+      return { command, options, code, signal } as ExitStatus;
+    } else {
+      throw result.error;
+    }
+  }
+
+  function* expect() {
+    let status: ExitStatus = yield* join();
+    if (status.code != 0) {
+      throw new ExecError(status, command, options);
+    } else {
+      return status;
+    }
+  }
+
+  // FYI: this function starts a process and returns without blocking
+  return {
+    pid: pid as number,
+    stdin,
+    stdout,
+    stderr,
+    join,
+    expect,
+  };
 };

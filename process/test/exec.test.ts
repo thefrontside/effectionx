@@ -15,7 +15,10 @@ describe("exec", () => {
   describe(".join", () => {
     it("runs successfully to completion", function* () {
       let result: ProcessResult = yield* exec(
-        "node './test/fixtures/hello-world.js'",
+        "node './fixtures/hello-world.js'",
+        {
+          cwd: import.meta.dirname
+        }
       ).join();
 
       expect(result).toMatchObject({
@@ -27,7 +30,10 @@ describe("exec", () => {
 
     it("runs failed process to completion", function* () {
       let result: ProcessResult = yield* exec(
-        "node './test/fixtures/hello-world-failed.js'",
+        "node './fixtures/hello-world-failed.js'",
+        {
+          cwd: import.meta.dirname
+        }
       ).join();
 
       expect(result.code).toEqual(37);
@@ -40,7 +46,10 @@ describe("exec", () => {
     expect.assertions(1);
     it("runs successfully to completion", function* () {
       let result: ProcessResult = yield* exec(
-        "node './test/fixtures/hello-world.js'",
+        "node './fixtures/hello-world.js'",
+        {
+          cwd: import.meta.dirname
+        }
       ).expect();
 
       expect(result).toMatchObject({
@@ -62,7 +71,7 @@ describe("exec", () => {
   describe("spawning", () => {
     describe("a process that fails to start", () => {
       describe("calling join()", () => {
-        it.only("reports the failed status", function* () {
+        it("reports the failed status", function* () {
           let error: unknown;
           let proc = yield* exec("argle", { arguments: ["bargle"] });
           try {

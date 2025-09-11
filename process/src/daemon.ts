@@ -1,4 +1,4 @@
-import { type Operation, resource, spawn, suspend } from "effection";
+import { type Operation, resource } from "effection";
 
 import {
   DaemonExitError,

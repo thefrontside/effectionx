@@ -1,9 +1,9 @@
 import type { Operation, Result, Stream } from "effection";
-import { call, each, Ok, run, sleep, spawn, until } from "effection";
+import { each, Ok, run, sleep, spawn, until } from "effection";
 import { describe, it as bddIt } from "bdd";
-import { expect } from "expect";
-import { assert } from "jsr:@std/assert";
-import { emptyDir } from "jsr:@std/fs/empty-dir";
+import { expect } from "@std/expect";
+import { assert } from "@std/assert";
+import { emptyDir } from "@std/fs/empty-dir";
 
 // temporariy disable watch tests on linux because of
 // https://github.com/denoland/deno/issues/28041

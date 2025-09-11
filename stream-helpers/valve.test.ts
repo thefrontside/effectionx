@@ -1,8 +1,8 @@
 import { each, run, sleep, spawn } from "effection";
-import { describe, it } from "jsr:@std/testing@^1/bdd";
-import { assertSpyCalls, spy } from "jsr:@std/testing@^1/mock";
+import { describe, it } from "@std/testing/bdd";
+import { assertSpyCalls, spy } from "@std/testing/mock";
 
-import { expect } from "jsr:@std/expect@^1";
+import { expect } from "@std/expect";
 import { valve } from "./valve.ts";
 import { useFaucet } from "./test-helpers/faucet.ts";
 import { createArraySignal, is } from "@effectionx/signals";

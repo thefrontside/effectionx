@@ -1,4 +1,4 @@
-import { spawn, type Task, until } from "effection";
+import { spawn, type Task } from "effection";
 import { expect } from "@std/expect";
 import { beforeEach, describe, it } from "@effectionx/deno-testing-bdd";
 

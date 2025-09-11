@@ -12,14 +12,13 @@ import {
   type Result,
   spawn,
   type Stream,
-  until,
   withResolvers,
+  until
 } from "effection";
 import { default as createIgnore } from "ignore";
-import { pipe } from "jsr:@gordonb/pipe@0.1.0";
+import { pipe } from "@gordonb/pipe";
 import { readFile } from "node:fs/promises";
-import { exec, ExecOptions, type Process } from "@effectionx/process";
-import { forEach } from "@effectionx/stream-helpers";
+import { exec, type ExecOptions, type Process } from "@effectionx/process";
 
 import { debounce } from "./stream-helpers.ts";
 

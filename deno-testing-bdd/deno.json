@@ -2,7 +2,7 @@
   "name": "@effectionx/deno-testing-bdd",
   "exports": "./mod.ts",
   "imports": {
-    "effection": "npm:effection@3.6.0",
+    "effection": "npm:effection@^3",
     "@std/testing": "jsr:@std/testing@1",
     "@effectionx/test-adapter": "file:///Users/tarasmankovski/Repositories/frontside/effectionx/test-adapter/mod.ts"
   }

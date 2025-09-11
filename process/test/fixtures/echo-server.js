@@ -1,3 +1,5 @@
+const { process } = globalThis;
+
 console.log("starting server");
 require("http").createServer((request, response) => {
   process.stderr.write(`got request\n`);
@@ -5,7 +7,7 @@ require("http").createServer((request, response) => {
   request.pipe(response);
 
   readCommand(request);
-}).listen(process.env.PORT, function (err, x) {
+}).listen(process.env.PORT, function () {
   console.log("listening");
 });
 process.on("message", function (message) {

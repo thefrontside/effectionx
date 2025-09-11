@@ -1,23 +1,22 @@
-import { pipe } from "npm:remeda@2.21.3";
+import { pipe } from "remeda";
 
-import { each, run, sleep, spawn, withResolvers } from "effection";
-import { describe, it } from "jsr:@std/testing@^1/bdd";
-import { expect } from "jsr:@std/expect@^1";
-import { assertSpyCalls, spy } from "jsr:@std/testing@^1/mock";
+import { run, sleep, spawn } from "effection";
+import { describe, it } from "@std/testing/bdd";
+import { expect } from "@std/expect";
+import { assertSpyCalls, spy } from "@std/testing/mock";
 
 import { batch } from "./batch.ts";
 import { map } from "./map.ts";
 import { valve } from "./valve.ts";
 import { useFaucet } from "./test-helpers/faucet.ts";
-import { createTracker } from "./tracker.ts";
+import { createArraySignal, is } from "@effectionx/signals";
+import { forEach } from "./for-each.ts";
 
 describe("batch, valve and map composition", () => {
   it("should process data through both batch and valve", async () => {
     await run(function* () {
       // Create a faucet as our data source
       const faucet = yield* useFaucet<number>({ open: true });
-
-      const tracker = yield* createTracker();
 
       // Create spies for valve operations
       const close = spy(function* () {
@@ -28,10 +27,13 @@ describe("batch, valve and map composition", () => {
         faucet.open();
       });
 
+      let results = yield* createArraySignal<
+        readonly { id: number; value: number }[]
+      >([]);
+
       // Compose the streams using pipe
       const composedStream = pipe(
         faucet,
-        tracker.passthrough(),
         valve({
           closeAt: 5,
           open,
@@ -45,23 +47,11 @@ describe("batch, valve and map composition", () => {
         batch({ maxSize: 3, maxTime: 20 }),
       );
 
-      let { resolve, operation } = withResolvers<void>();
-      let results: Readonly<{ id: number; value: number }[]>[] = [];
-
-      // Process the stream
-      yield* spawn(function* () {
-        let count = 0;
-        for (const items of yield* each(composedStream)) {
-          tracker.markMany(items.map((x) => x.id));
+      yield* spawn(() =>
+        forEach(function* (items: readonly {id: number; value: number }[]) {
           results.push(items);
-          count = count + items.length;
-          yield* sleep(1);
-          if (count >= 10) {
-            resolve();
-          }
-          yield* each.next();
-        }
-      });
+        })(composedStream),
+      );
 
       // Pour data into the faucet
       yield* faucet.pour(function* (send) {
@@ -71,11 +61,10 @@ describe("batch, valve and map composition", () => {
         }
       });
 
-      yield* tracker;
-      yield* operation;
+      yield* is(results, (list) => list.flat().length === 10);
 
       // Verify the results
-      const flatResults = results.flat();
+      const flatResults = results.valueOf().flat();
       expect(flatResults).toEqual([
         { id: 1, value: 2 },
         { id: 2, value: 4 },
@@ -94,7 +83,7 @@ describe("batch, valve and map composition", () => {
       assertSpyCalls(open, 1);
 
       // Verify the batching worked correctly
-      const batchSizes = results.map((batch) => batch.length);
+      const batchSizes = results.valueOf().map((batch) => batch.length);
       expect(batchSizes.every((size) => size <= 3)).toBe(true);
     });
   });

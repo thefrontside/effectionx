@@ -3,6 +3,8 @@ import { describe, it } from "jsr:@std/testing@^1/bdd";
 import { expect } from "jsr:@std/expect@^1";
 import { batch } from "./batch.ts";
 import { useFaucet } from "./test-helpers/faucet.ts";
+import { forEach } from "./for-each.ts";
+import { createArraySignal, is } from "@effectionx/signals";
 
 describe("batch", () => {
   it("creates a batch when maxTime expires", async () => {
@@ -51,19 +53,14 @@ describe("batch", () => {
     await run(function* () {
       const faucet = yield* useFaucet<number>({ open: true });
       const stream = batch({ maxSize: 8, maxTime: 10 })(faucet);
-      const finished = withResolvers<void>();
 
-      const batches: Readonly<number[]>[] = [];
+      const batches = yield* createArraySignal<readonly number[]>([]);
 
-      yield* spawn(function* () {
-        for (const batch of yield* each(stream)) {
+      yield* spawn(() =>
+        forEach<readonly number[], void>(function* (batch) {
           batches.push(batch);
-          if (batches.flat().length >= 10) {
-            finished.resolve();
-          }
-          yield* each.next();
-        }
-      });
+        })(stream)
+      );
 
       yield* faucet.pour(function* (send) {
         for (let i = 1; i <= 10; i++) {
@@ -72,9 +69,9 @@ describe("batch", () => {
         }
       });
 
-      yield* finished.operation;
+      yield* is(batches, (list) => list.flat().length >= 10);
 
-      expect(batches).toEqual([
+      expect(batches.valueOf()).toEqual([
         [1, 2, 3],
         [4, 5, 6],
         [7, 8, 9],
@@ -88,22 +85,19 @@ describe("batch", () => {
       const faucet = yield* useFaucet<number>({ open: true });
       const stream = batch({ maxSize: 5, maxTime: 3 })(faucet);
 
-      const batches: Readonly<number[]>[] = [];
+      const batches = yield* createArraySignal<readonly number[]>([]);
 
-      yield* spawn(function* () {
-        for (const batch of yield* each(stream)) {
+      yield* spawn(() =>
+        forEach<readonly number[], void>(function* (batch) {
           batches.push(batch);
-          yield* each.next();
-        }
-      });
+        })(stream)
+      );
 
       yield* faucet.pour([1, 2, 3, 4, 5, 6]);
-      yield* sleep(5);
 
-      expect(batches).toEqual([
-        [1, 2, 3, 4, 5],
-        [6],
-      ]);
+      yield* is(batches, (list) => list.length === 2);
+
+      expect(batches.valueOf()).toEqual([[1, 2, 3, 4, 5], [6]]);
     });
   });
 });

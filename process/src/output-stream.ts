@@ -3,10 +3,8 @@ import {
   each,
   type Operation,
   resource,
-  sleep,
   spawn,
   type Stream,
-  withResolvers,
 } from "effection";
 import type { Buffer } from "node:buffer";
 import { map } from "@effectionx/stream-helpers";

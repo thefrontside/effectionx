@@ -1,4 +1,4 @@
-import { createSignal, ensure, resource, withResolvers } from "effection";
+import { createSignal, resource, withResolvers } from "effection";
 import type { Operation, Stream, Subscription } from "effection";
 import type { EventEmitter } from "node:stream";
 

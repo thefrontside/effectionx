@@ -1,9 +1,9 @@
 import { each, run } from "effection";
-import { beforeEach, describe, it } from "jsr:@std/testing@1.0.5/bdd";
+import { beforeEach, describe, it } from "@std/testing/bdd";
 import { JSONLStore } from "./jsonl.ts";
 import type { Store } from "./types.ts";
-import { expect } from "jsr:@std/expect@1.0.8";
-import { dirname, join } from "jsr:@std/path@1.0.8";
+import { expect } from "@std/expect";
+import { dirname, join } from "@std/path";
 // using promisify there because Deno's ensure doesn't work
 // correctly in Node. We should run these tests in Node
 // to make sure that it'll work in Node too.

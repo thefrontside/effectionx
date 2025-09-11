@@ -1,6 +1,6 @@
 import { split } from "shellwords";
 
-import { type Operation, sleep, spawn, type Task } from "effection";
+import { type Operation, spawn } from "effection";
 import type {
   CreateOSProcess,
   ExecOptions,
@@ -9,7 +9,7 @@ import type {
   ProcessResult,
 } from "./exec/api.ts";
 import { createPosixProcess } from "./exec/posix.ts";
-// import { createWin32Process, isWin32 } from "./exec/win32.ts";
+import { createWin32Process, isWin32 } from "./exec/win32.ts";
 import { forEach } from "./for-each.ts";
 
 export * from "./exec/api.ts";
@@ -20,13 +20,13 @@ export interface Exec extends Operation<Process> {
   expect(): Operation<ProcessResult>;
 }
 
-// const createProcess: CreateOSProcess = (cmd, opts) => {
-//   if (isWin32()) {
-//     return createWin32Process(cmd, opts);
-//   } else {
-//     return createPosixProcess(cmd, opts);
-//   }
-// };
+const createProcess: CreateOSProcess = (cmd, opts) => {
+  if (isWin32()) {
+    return createWin32Process(cmd, opts);
+  } else {
+    return createPosixProcess(cmd, opts);
+  }
+};
 
 /**
  * Execute `command` with `options`. You should use this operation for processes
@@ -38,14 +38,12 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
   let [cmd, ...args] = options.shell ? [command] : split(command);
   let opts = { ...options, arguments: args.concat(options.arguments || []) };
 
-  // let process: Process = yield* createProcess(cmd, opts);
-
   return {
     *[Symbol.iterator]() {
-      return yield* createPosixProcess(cmd, opts);
+      return yield* createProcess(cmd, opts);
     },
     *join() {
-      let process = yield* createPosixProcess(cmd, opts);
+      const process = yield* createProcess(cmd, opts);
 
       let stdout = "";
       let stderr = "";
@@ -58,7 +56,7 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
       return { ...status, stdout, stderr };
     },
     *expect() {
-      let process: Process = yield* createPosixProcess(cmd, opts);
+      const process = yield* createProcess(cmd, opts);
 
       let stdout = "";
       let stderr = "";

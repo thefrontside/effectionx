@@ -1,6 +1,6 @@
 import { ctrlc } from "ctrlc-windows";
 import type { Process } from "../src/exec.ts";
-import { type Stream, until, type Operation } from "effection";
+import { type Operation, type Stream, until } from "effection";
 import { filter } from "@effectionx/stream-helpers";
 
 const isWin32 = globalThis.process.platform === "win32";
@@ -61,10 +61,10 @@ export function* fetchText(input: RequestInfo | URL, init?: RequestInit) {
     }
     return {
       status: response.status,
-      text: yield* until(response.text())
-    }
+      text: yield* until(response.text()),
+    };
   } catch (e) {
-    throw new Error(`FetchError: ${(e as Error).message}`)
+    throw new Error(`FetchError: ${(e as Error).message}`);
   }
 }
 

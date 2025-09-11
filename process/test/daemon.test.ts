@@ -1,9 +1,9 @@
 import { beforeEach, describe, it } from "@effectionx/deno-testing-bdd";
 import { expect } from "@std/expect";
-import { spawn, until, withResolvers, type Task } from "effection";
+import { spawn, type Task, until, withResolvers } from "effection";
 import process from "node:process";
 
-import { daemon, type Daemon } from "../mod.ts";
+import { type Daemon, daemon } from "../mod.ts";
 import { captureError, expectMatch, fetchText } from "./helpers.ts";
 
 describe("daemon", () => {
@@ -61,18 +61,18 @@ describe("daemon", () => {
     let task: Task<Error>;
     beforeEach(function* () {
       let proc = yield* daemon("node", {
-          arguments: ["./fixtures/echo-server.js"],
-          env: { PORT: "29000", PATH: process.env.PATH as string },
-          cwd: import.meta.dirname,
-        });
+        arguments: ["./fixtures/echo-server.js"],
+        env: { PORT: "29000", PATH: process.env.PATH as string },
+        cwd: import.meta.dirname,
+      });
 
-      task = yield* spawn(function*() {
+      task = yield* spawn(function* () {
         try {
           yield* proc;
         } catch (e) {
           return e as Error;
         }
-        return new Error(`this shouldn't happen`)
+        return new Error(`this shouldn't happen`);
       });
 
       yield* expectMatch(/listening/, proc.stdout.lines());
@@ -84,7 +84,9 @@ describe("daemon", () => {
     });
 
     it("throw an error because it was not expected to close", function* () {
-      yield* until(expect(task).resolves.toHaveProperty("name", "DaemonExitError"));
+      yield* until(
+        expect(task).resolves.toHaveProperty("name", "DaemonExitError"),
+      );
     });
   });
 });

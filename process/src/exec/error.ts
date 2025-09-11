@@ -1,14 +1,18 @@
-import type { ExitStatus, ExecOptions } from './api.ts';
+import type { ExecOptions, ExitStatus } from "./api.ts";
 
 export class ExecError extends Error {
-  constructor(public status: ExitStatus, public command: string, public options: ExecOptions) {
+  constructor(
+    public status: ExitStatus,
+    public command: string,
+    public options: ExecOptions,
+  ) {
     super();
   }
 
   override name = "ExecError";
 
   override get message(): string {
-    let code = this.status.code ? `code: ${this.status.code}`: null;
+    let code = this.status.code ? `code: ${this.status.code}` : null;
 
     let signal = this.status.signal ? `signal: ${this.status.signal}` : null;
 
@@ -18,9 +22,11 @@ export class ExecError extends Error {
 
     let cwd = this.options.cwd ? `cwd: ${this.options.cwd}` : null;
 
-    let command = `$ ${this.command} ${this.options.arguments?.join(" ")}`.trim();
+    let command = `$ ${this.command} ${this.options.arguments?.join(" ")}`
+      .trim();
 
-    return [code, signal, env, shell, cwd, command].filter(item => !!item).join("\n");
+    return [code, signal, env, shell, cwd, command].filter((item) => !!item)
+      .join("\n");
   }
 }
 

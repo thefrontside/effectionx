@@ -1,4 +1,4 @@
-import { type Task, spawn, until } from "effection";
+import { spawn, type Task, until } from "effection";
 import { expect } from "@std/expect";
 import { beforeEach, describe, it } from "@effectionx/deno-testing-bdd";
 
@@ -17,8 +17,8 @@ describe("exec", () => {
       let result: ProcessResult = yield* exec(
         "node './fixtures/hello-world.js'",
         {
-          cwd: import.meta.dirname
-        }
+          cwd: import.meta.dirname,
+        },
       ).join();
 
       expect(result).toMatchObject({
@@ -32,8 +32,8 @@ describe("exec", () => {
       let result: ProcessResult = yield* exec(
         "node './fixtures/hello-world-failed.js'",
         {
-          cwd: import.meta.dirname
-        }
+          cwd: import.meta.dirname,
+        },
       ).join();
 
       expect(result.code).toEqual(37);
@@ -48,8 +48,8 @@ describe("exec", () => {
       let result: ProcessResult = yield* exec(
         "node './fixtures/hello-world.js'",
         {
-          cwd: import.meta.dirname
-        }
+          cwd: import.meta.dirname,
+        },
       ).expect();
 
       expect(result).toMatchObject({
@@ -243,11 +243,10 @@ describe("handles env vars", () => {
 
       // this fails on windows, this shell option doesn't work on windows
       // due to it generally running through cmd.exe which can't handle this syntax
-      let result =
-        process.platform !== "win32"
-          ? "boop\n"
-          : // note the additional \r that is added
-            "$EFFECTION_TEST_ENV_VAL\r\n";
+      let result = process.platform !== "win32"
+        ? "boop\n"
+        // note the additional \r that is added
+        : "$EFFECTION_TEST_ENV_VAL\r\n";
       expect(stdout).toEqual(result);
       expect(code).toBe(0);
     });
@@ -261,11 +260,10 @@ describe("handles env vars", () => {
 
       // this fails on windows, this shell option doesn't work on windows
       // due to it generally running through cmd.exe which can't handle this syntax
-      let result =
-        process.platform !== "win32"
-          ? "boop\n"
-          : // note the additional \r that is added
-            "${EFFECTION_TEST_ENV_VAL}\r\n";
+      let result = process.platform !== "win32"
+        ? "boop\n"
+        // note the additional \r that is added
+        : "${EFFECTION_TEST_ENV_VAL}\r\n";
       expect(stdout).toEqual(result);
       expect(code).toBe(0);
     });
@@ -293,10 +291,9 @@ describe("handles env vars", () => {
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
       // note shellwords normalizes this from ${ENV} to $ENV on windows
-      let result =
-        process.platform !== "win32"
-          ? "${EFFECTION_TEST_ENV_VAL}\n"
-          : "$EFFECTION_TEST_ENV_VAL\n";
+      let result = process.platform !== "win32"
+        ? "${EFFECTION_TEST_ENV_VAL}\n"
+        : "$EFFECTION_TEST_ENV_VAL\n";
       expect(stdout).toEqual(result);
       expect(code).toBe(0);
     });

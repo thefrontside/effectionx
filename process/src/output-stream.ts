@@ -64,21 +64,23 @@ export function createOutputStreamFromEventEmitter(
 
     if (eventEmitter) {
       yield* spawn(
-        forEach(function* (chunk) { signal.send(chunk); }, on<Buffer<ArrayBufferLike>>(eventEmitter, event)),
+        forEach(function* (chunk) {
+          signal.send(chunk);
+        }, on<Buffer<ArrayBufferLike>>(eventEmitter, event)),
       );
 
-      yield* spawn(function*() {
+      yield* spawn(function* () {
         yield* once(eventEmitter, "end");
         signal.close();
       });
 
-      yield* spawn(function*() {
+      yield* spawn(function* () {
         const error = yield* once(eventEmitter, "error");
         console.error(`${event} encountered an error ${error}`);
         // TODO: what do we do here?
       });
     }
-    
+
     try {
       yield* provide(createOutputStream(signal));
     } finally {

@@ -37,6 +37,5 @@
     "./stream-helpers",
     "./signals",
     "./process"
-
   ]
 }

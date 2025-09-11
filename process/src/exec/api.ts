@@ -1,5 +1,5 @@
-import type { Operation } from 'effection';
-import type { OutputStream } from '../output-stream.ts';
+import type { Operation } from "effection";
+import type { OutputStream } from "../output-stream.ts";
 
 // TODO: import from subscription package once #236 is merged
 export interface Writable<T> {
@@ -11,7 +11,6 @@ export interface Writable<T> {
  * standard io handles, and methods for synchronizing on return.
  */
 export interface Process extends StdIO {
-
   readonly pid: number;
 
   /**

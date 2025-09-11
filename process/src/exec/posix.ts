@@ -67,7 +67,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
         childProcess.kill("SIGTERM");
         process.kill(-childProcess.pid, "SIGTERM");
         if (childProcess.stdout) {
-          yield* once(childProcess.stdout, 'end');
+          yield* once(childProcess.stdout, "end");
         }
       } catch (_e) {
         // do nothing, process is probably already dead

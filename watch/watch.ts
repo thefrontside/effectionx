@@ -18,7 +18,7 @@ import {
 import { default as createIgnore } from "ignore";
 import { pipe } from "jsr:@gordonb/pipe@0.1.0";
 import { readFile } from "node:fs/promises";
-import { ExecOptions, type Process, exec } from "@effectionx/process";
+import { exec, ExecOptions, type Process } from "@effectionx/process";
 import { forEach } from "@effectionx/stream-helpers";
 
 import { debounce } from "./stream-helpers.ts";

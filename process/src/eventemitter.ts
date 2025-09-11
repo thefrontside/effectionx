@@ -10,7 +10,7 @@ import type { EventEmitter } from "node:stream";
  * @returns an Operation that yields the next emitted event
  */
 export function once<
-  T
+  T,
 >(target: EventEmitter, eventName: string): Operation<T> {
   return {
     *[Symbol.iterator]() {
@@ -78,15 +78,18 @@ export function on<
  * @param eventName the name of the event to subscribe to
  * @typeParam TArgs the type of the array of arguments to the emitted event
  */
-export function onceEmit<TArgs extends unknown[] = unknown[]>(source: EventEmitter, eventName: string): Operation<TArgs> {
+export function onceEmit<TArgs extends unknown[] = unknown[]>(
+  source: EventEmitter,
+  eventName: string,
+): Operation<TArgs> {
   const result = withResolvers<TArgs>();
 
-  let listener = (...args: unknown[]) => { 
+  let listener = (...args: unknown[]) => {
     result.resolve(args as TArgs);
     source.off(eventName, listener);
   };
 
   source.on(eventName, listener);
-  
+
   return result.operation;
 }

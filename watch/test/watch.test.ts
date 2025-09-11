@@ -79,8 +79,8 @@ describe("watch", () => {
           path: fixture.path,
           cmd: `deno run -A watch-graceful.ts`,
           execOptions: {
-            cwd: import.meta.dirname
-          }
+            cwd: import.meta.dirname,
+          },
         }),
       );
 

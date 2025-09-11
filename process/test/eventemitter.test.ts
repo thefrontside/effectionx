@@ -8,67 +8,67 @@ import { onceEmit } from "../src/eventemitter.ts";
 describe("onceEmit", () => {
   it("resolves with single argument as array", async () => {
     expect.assertions(1);
-    await run(function*() {
+    await run(function* () {
       const emitter = new EventEmitter();
-      
+
       let result;
-      yield* spawn(function*() {
-        result = yield* onceEmit<[string]>(emitter, 'test')
+      yield* spawn(function* () {
+        result = yield* onceEmit<[string]>(emitter, "test");
       });
-      
-      emitter.emit('test', 'hello');
-      
-      expect(result).toEqual(['hello']);
+
+      emitter.emit("test", "hello");
+
+      expect(result).toEqual(["hello"]);
     });
   });
 
   it("resolves with multiple arguments as array", async () => {
     expect.assertions(1);
-    await run(function*() {
+    await run(function* () {
       const emitter = new EventEmitter();
 
       let result;
 
-      yield* spawn(function*() {
-        result = yield* onceEmit<[number, string]>(emitter, 'exit')
+      yield* spawn(function* () {
+        result = yield* onceEmit<[number, string]>(emitter, "exit");
       });
-      
-      emitter.emit('exit', 42, 'SIGTERM');
-      
-      expect(result).toEqual([42, 'SIGTERM']);
+
+      emitter.emit("exit", 42, "SIGTERM");
+
+      expect(result).toEqual([42, "SIGTERM"]);
     });
   });
 
   it("only resolves once even with multiple emissions", async () => {
-    await run(function*() {
+    await run(function* () {
       const emitter = new EventEmitter();
-      
+
       let first;
-      yield* spawn(function*() {
-        first = yield* onceEmit<[string]>(emitter, 'data');
+      yield* spawn(function* () {
+        first = yield* onceEmit<[string]>(emitter, "data");
       });
-      
-      emitter.emit('data', 'first');
-      emitter.emit('data', 'second');
-      
-      expect(first).toEqual(['first']);
+
+      emitter.emit("data", "first");
+      emitter.emit("data", "second");
+
+      expect(first).toEqual(["first"]);
     });
   });
 
   it("removes listener after resolving", async () => {
     expect.assertions(2);
-    await run(function*() {
+    await run(function* () {
       const emitter = new EventEmitter();
-      
-      yield* spawn(function*() {
-        yield* onceEmit<[string]>(emitter, 'test');
+
+      yield* spawn(function* () {
+        yield* onceEmit<[string]>(emitter, "test");
       });
-      
-      expect(emitter.listenerCount('test')).toBe(1);
-      
-      emitter.emit('test', 'hello');
-      
-      expect(emitter.listenerCount('test')).toBe(0);
+
+      expect(emitter.listenerCount("test")).toBe(1);
+
+      emitter.emit("test", "hello");
+
+      expect(emitter.listenerCount("test")).toBe(0);
     });
   });
 });

@@ -5,7 +5,6 @@ import { once, onceEmit } from "../eventemitter.ts";
 import { createOutputStreamFromEventEmitter } from "../output-stream.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
-import { join } from "node:path";
 
 type ProcessResultValue = [number?, string?];
 

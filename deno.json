@@ -4,7 +4,7 @@
     "bdd": "jsr:@std/testing@1/bdd",
     "expect": "jsr:@std/expect@1",
     "@deno/dnt": "jsr:@deno/dnt@0.42.3",
-    "@deno/path": "jsr:@std/path@^1.0.7/join",
+    "@deno/path": "jsr:@std/path@^1.0.7",
     "zod": "npm:zod@3.23.8"
   },
   "compilerOptions": {

@@ -1,6 +1,6 @@
 import { call, type Operation } from "effection";
 import { resolve } from "@std/path";
-import { z } from "zod@";
+import { z } from "zod";
 
 export const DenoJson = z.object({
   name: z.string(),

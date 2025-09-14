@@ -10,7 +10,7 @@ import type {
 } from "./exec/api.ts";
 import { createPosixProcess } from "./exec/posix.ts";
 import { createWin32Process, isWin32 } from "./exec/win32.ts";
-import { forEach } from "./for-each.ts";
+import { forEach } from "@effectionx/stream-helpers";
 
 export * from "./exec/api.ts";
 export * from "./exec/error.ts";
@@ -48,10 +48,10 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
       let stdout = "";
       let stderr = "";
 
-      yield* spawn(forEach(function* (chunk) {
+      yield* spawn(() => forEach(function* (chunk) {
         stdout += chunk;
       }, process.stdout));
-      yield* spawn(forEach(function* (chunk) {
+      yield* spawn(() => forEach(function* (chunk) {
         stderr += chunk;
       }, process.stderr));
 
@@ -65,10 +65,10 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
       let stdout = "";
       let stderr = "";
 
-      yield* spawn(forEach(function* (chunk) {
+      yield* spawn(() => forEach(function* (chunk) {
         stdout += chunk;
       }, process.stdout));
-      yield* spawn(forEach(function* (chunk) {
+      yield* spawn(() => forEach(function* (chunk) {
         stderr += chunk;
       }, process.stderr));
 

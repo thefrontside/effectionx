@@ -59,7 +59,7 @@ describe("batch", () => {
       yield* spawn(() =>
         forEach<readonly number[], void>(function* (batch) {
           batches.push(batch);
-        })(stream)
+        }, stream)
       );
 
       yield* faucet.pour(function* (send) {
@@ -90,7 +90,7 @@ describe("batch", () => {
       yield* spawn(() =>
         forEach<readonly number[], void>(function* (batch) {
           batches.push(batch);
-        })(stream)
+        }, stream)
       );
 
       yield* faucet.pour([1, 2, 3, 4, 5, 6]);

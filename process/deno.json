@@ -8,7 +8,7 @@
     "shellwords": "npm:shellwords@^1.1.1",
     "@std/testing": "jsr:@std/testing@1.0.15",
     "@std/expect": "jsr:@std/expect@1.0.17",
-    "@effectionx/stream-helpers": "npm:@effectionx/stream-helpers@0.2.0",
-    "@effectionx/deno-testing-bdd": "file:///Users/tarasmankovski/Repositories/frontside/effectionx/deno-testing-bdd/mod.ts"
+    "@effectionx/stream-helpers": "../stream-helpers/mod.ts",
+    "@effectionx/deno-testing-bdd": "../deno-testing-bdd/mod.ts"
   }
 }

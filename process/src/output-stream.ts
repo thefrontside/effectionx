@@ -7,8 +7,8 @@ import {
   type Stream,
 } from "effection";
 import type { Buffer } from "node:buffer";
+import type { Readable } from "node:stream";
 import { map } from "@effectionx/stream-helpers";
-import type { EventEmitter } from "node:stream";
 import { forEach } from "./for-each.ts";
 import { on, once } from "./eventemitter.ts";
 
@@ -51,29 +51,27 @@ export function createOutputStream(stream: Stream<Buffer, void>): OutputStream {
   };
 }
 
-export function createOutputStreamFromEventEmitter(
-  eventEmitter: EventEmitter,
+export function createOutputStreamFromReadable(
+  target: Readable,
   event: string,
 ): Operation<OutputStream> {
   return resource(function* (provide) {
     let signal = createSignal<Buffer<ArrayBufferLike>, void>();
-    // let closed = withResolvers<void>();
-    // let used = false;
 
-    if (eventEmitter) {
+    if (target) {
       yield* spawn(
         forEach(function* ([chunk]) {
           signal.send(chunk);
-        }, on<[Buffer<ArrayBufferLike>]>(eventEmitter, event)),
+        }, on<[Buffer<ArrayBufferLike>]>(target, event)),
       );
 
       yield* spawn(function* () {
-        yield* once(eventEmitter, "end");
+        yield* once(target, "end");
         signal.close();
       });
 
       yield* spawn(function* () {
-        const error = yield* once(eventEmitter, "error");
+        const error = yield* once(target, "error");
         console.error(`${event} encountered an error ${error}`);
         // TODO: what do we do here?
       });

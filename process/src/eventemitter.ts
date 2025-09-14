@@ -10,7 +10,7 @@ import type { EventEmitter } from "node:stream";
  * @returns an Operation that yields the next emitted event
  */
 export function once<
-  T,
+  T extends unknown[],
 >(target: EventEmitter, eventName: string): Operation<T> {
   return {
     *[Symbol.iterator]() {
@@ -32,12 +32,14 @@ export function once<
  * @returns a stream that will see one item for each event
  */
 export function on<
-  T,
+  T extends unknown[],
 >(target: EventEmitter, eventName: string): Stream<T, never> {
   return resource(function* (provide) {
-    let signal = createSignal<Event>();
+    let signal = createSignal<T, never>();
 
-    target.on(eventName, signal.send);
+    let listener = (...args: T) => signal.send(args);
+
+    target.on(eventName, listener);
 
     try {
       yield* provide(
@@ -46,7 +48,7 @@ export function on<
         >,
       );
     } finally {
-      target.off(eventName, signal.send);
+      target.off(eventName, listener);
     }
   });
 }

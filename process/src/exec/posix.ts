@@ -50,7 +50,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
   };
 
   yield* spawn(function* trapError() {
-    let error: Error = yield* once(childProcess, "error");
+    let [error] = yield* once<[Error]>(childProcess, "error");
     processResult.resolve(Err(error));
   });
 

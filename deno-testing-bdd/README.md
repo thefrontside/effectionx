@@ -41,22 +41,9 @@ describe("My async operations", () => {
 
   it("should increment counter", function* () {
     // Test function is a generator that can yield operations
-    yield* spawn(function* () {
-      counter.update(n => n + 1);
-    });
-    
-    // Wait for the counter to be incremented
+    counter.update(n => n + 1);
     yield* is(counter, (value) => value === 1);
     expect(counter.valueOf()).toBe(1);
-  });
-
-  it("should handle async operations", function* () {
-    const result = yield* spawn(function* () {
-      yield* sleep(50);
-      return "completed";
-    });
-    
-    expect(result).toBe("completed");
   });
 });
 ```

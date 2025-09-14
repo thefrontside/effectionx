@@ -1,7 +1,6 @@
-import { createSignal, run, sleep, spawn } from "effection";
+import { createSignal, run, spawn } from "effection";
 import { describe, it } from "@std/testing/bdd";
 import { expect } from "@std/expect";
-import { assertSpyCalls, spy } from "@std/testing/mock";
 
 import { forEach } from "./for-each.ts";
 
@@ -11,11 +10,11 @@ describe("forEach", () => {
       const stream = createSignal<number, void>();
       const processedItems: number[] = [];
 
-      yield* spawn(function* () {
-        yield* forEach(function* (item: number) {
+      yield* spawn(() =>
+        forEach(function* (item: number) {
           processedItems.push(item);
-        })(stream);
-      });
+        }, stream)
+      );
 
       stream.send(1);
       stream.send(2);
@@ -32,7 +31,7 @@ describe("forEach", () => {
       const result = yield* spawn(() =>
         forEach(function* () {
           // Just process the item
-        })(stream),
+        }, stream)
       );
 
       stream.send("hello");

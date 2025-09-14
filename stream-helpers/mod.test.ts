@@ -50,7 +50,7 @@ describe("batch, valve and map composition", () => {
       yield* spawn(() =>
         forEach(function* (items: readonly { id: number; value: number }[]) {
           results.push(items);
-        })(composedStream)
+        }, composedStream)
       );
 
       // Pour data into the faucet

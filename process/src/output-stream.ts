@@ -8,8 +8,7 @@ import {
 } from "effection";
 import type { Buffer } from "node:buffer";
 import type { Readable } from "node:stream";
-import { map } from "@effectionx/stream-helpers";
-import { forEach } from "./for-each.ts";
+import { forEach, map } from "@effectionx/stream-helpers";
 import { on, once } from "./eventemitter.ts";
 
 export interface OutputStream extends Stream<Buffer, void> {
@@ -60,9 +59,10 @@ export function createOutputStreamFromReadable(
 
     if (target) {
       yield* spawn(
-        forEach(function* ([chunk]) {
-          signal.send(chunk);
-        }, on<[Buffer<ArrayBufferLike>]>(target, event)),
+        () =>
+          forEach(function* ([chunk]) {
+            signal.send(chunk);
+          }, on<[Buffer<ArrayBufferLike>]>(target, event)),
       );
 
       yield* spawn(function* () {

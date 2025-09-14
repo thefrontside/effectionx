@@ -1,5 +1,5 @@
-import { each, run, sleep, spawn } from "effection";
-import { describe, it } from "@std/testing/bdd";
+import { each, sleep, spawn } from "effection";
+import { describe, it } from "@effectionx/deno-testing-bdd";
 import { assertSpyCalls, spy } from "@std/testing/mock";
 
 import { expect } from "@std/expect";
@@ -8,8 +8,7 @@ import { useFaucet } from "./test-helpers/faucet.ts";
 import { createArraySignal, is } from "@effectionx/signals";
 
 describe("valve", () => {
-  it("closes and opens the valve", async () => {
-    await run(function* () {
+  it("closes and opens the valve", function* () {
       const faucet = yield* useFaucet<number>({ open: true });
 
       const close = spy(function* () {
@@ -45,6 +44,5 @@ describe("valve", () => {
 
       assertSpyCalls(close, 1);
       assertSpyCalls(open, 1);
-    });
   });
 });

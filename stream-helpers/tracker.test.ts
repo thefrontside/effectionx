@@ -1,6 +1,6 @@
-import { each, run, sleep, spawn, withResolvers } from "effection";
+import { each, sleep, spawn, withResolvers } from "effection";
 import { expect } from "@std/expect";
-import { describe, it } from "@std/testing/bdd";
+import { describe, it } from "@effectionx/deno-testing-bdd";
 import { pipe } from "remeda";
 
 import { batch } from "./batch.ts";
@@ -9,9 +9,7 @@ import { useFaucet } from "./test-helpers/faucet.ts";
 import { createTracker } from "./tracker.ts";
 
 describe("tracker", () => {
-  it("waits for all items to be processed", async () => {
-    expect.assertions(1);
-    await run(function* () {
+  it("waits for all items to be processed", function* () {
       const { operation, resolve } = withResolvers<void>();
       const tracker = yield* createTracker();
       const faucet = yield* useFaucet<number>({ open: true });
@@ -53,11 +51,8 @@ describe("tracker", () => {
       yield* tracker;
 
       expect(received).toEqual([1, 2, 3]);
-    });
   });
-  it("tracks batched items", async () => {
-    expect.assertions(1);
-    await run(function* () {
+  it("tracks batched items", function* () {
       const { operation, resolve } = withResolvers<void>();
 
       const tracker = yield* createTracker();
@@ -113,6 +108,5 @@ describe("tracker", () => {
       yield* tracker;
 
       expect(received).toEqual([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
-    });
   });
 });

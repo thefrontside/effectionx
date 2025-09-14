@@ -1,7 +1,7 @@
 import { pipe } from "remeda";
 
-import { run, sleep, spawn } from "effection";
-import { describe, it } from "@std/testing/bdd";
+import { sleep, spawn } from "effection";
+import { describe, it } from "@effectionx/deno-testing-bdd";
 import { expect } from "@std/expect";
 import { assertSpyCalls, spy } from "@std/testing/mock";
 
@@ -13,8 +13,7 @@ import { createArraySignal, is } from "@effectionx/signals";
 import { forEach } from "./for-each.ts";
 
 describe("batch, valve and map composition", () => {
-  it("should process data through both batch and valve", async () => {
-    await run(function* () {
+  it("should process data through both batch and valve", function* () {
       // Create a faucet as our data source
       const faucet = yield* useFaucet<number>({ open: true });
 
@@ -85,6 +84,5 @@ describe("batch, valve and map composition", () => {
       // Verify the batching worked correctly
       const batchSizes = results.valueOf().map((batch) => batch.length);
       expect(batchSizes.every((size) => size <= 3)).toBe(true);
-    });
   });
 });

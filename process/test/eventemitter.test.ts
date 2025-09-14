@@ -3,9 +3,9 @@ import { run, spawn } from "effection";
 import { describe, it } from "@std/testing/bdd";
 import { EventEmitter } from "node:events";
 
-import { onceEmit } from "../src/eventemitter.ts";
+import { once } from "../src/eventemitter.ts";
 
-describe("onceEmit", () => {
+describe("once", () => {
   it("resolves with single argument as array", async () => {
     expect.assertions(1);
     await run(function* () {
@@ -13,7 +13,7 @@ describe("onceEmit", () => {
 
       let result;
       yield* spawn(function* () {
-        result = yield* onceEmit<[string]>(emitter, "test");
+        result = yield* once<[string]>(emitter, "test");
       });
 
       emitter.emit("test", "hello");
@@ -30,7 +30,7 @@ describe("onceEmit", () => {
       let result;
 
       yield* spawn(function* () {
-        result = yield* onceEmit<[number, string]>(emitter, "exit");
+        result = yield* once<[number, string]>(emitter, "exit");
       });
 
       emitter.emit("exit", 42, "SIGTERM");
@@ -45,7 +45,7 @@ describe("onceEmit", () => {
 
       let first;
       yield* spawn(function* () {
-        first = yield* onceEmit<[string]>(emitter, "data");
+        first = yield* once<[string]>(emitter, "data");
       });
 
       emitter.emit("data", "first");
@@ -61,7 +61,7 @@ describe("onceEmit", () => {
       const emitter = new EventEmitter();
 
       yield* spawn(function* () {
-        yield* onceEmit<[string]>(emitter, "test");
+        yield* once<[string]>(emitter, "test");
       });
 
       expect(emitter.listenerCount("test")).toBe(1);

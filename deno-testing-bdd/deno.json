@@ -1,6 +1,7 @@
 {
   "name": "@effectionx/deno-testing-bdd",
   "exports": "./mod.ts",
+  "version": "0.1.0",
   "imports": {
     "effection": "npm:effection@^3",
     "@std/testing": "jsr:@std/testing@1",

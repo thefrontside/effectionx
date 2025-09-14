@@ -1,7 +1,7 @@
 import { spawn as spawnProcess } from "node:child_process";
 import { Err, Ok, type Result, spawn, withResolvers } from "effection";
 import process from "node:process";
-import { once, onceEmit } from "../eventemitter.ts";
+import { once } from "../eventemitter.ts";
 import { createOutputStreamFromEventEmitter } from "../output-stream.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
@@ -56,7 +56,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
 
   yield* spawn(function* () {
     try {
-      let value = yield* onceEmit<ProcessResultValue>(childProcess, "exit");
+      let value = yield* once<ProcessResultValue>(childProcess, "exit");
       processResult.resolve(Ok(value));
     } finally {
       try {

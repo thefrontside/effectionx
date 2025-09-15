@@ -1,15 +1,14 @@
-import { pipe } from "npm:remeda@2.21.3";
-
+import { expect } from "@std/expect";
+import { describe, it } from "@std/testing/bdd";
+import { assertSpyCalls, spy } from "@std/testing/mock";
 import { each, run, sleep, spawn, withResolvers } from "effection";
-import { describe, it } from "jsr:@std/testing@^1/bdd";
-import { expect } from "jsr:@std/expect@^1";
-import { assertSpyCalls, spy } from "jsr:@std/testing@^1/mock";
+import { pipe } from "remeda";
 
 import { batch } from "./batch.ts";
 import { map } from "./map.ts";
-import { valve } from "./valve.ts";
 import { useFaucet } from "./test-helpers/faucet.ts";
 import { createTracker } from "./tracker.ts";
+import { valve } from "./valve.ts";
 
 describe("batch, valve and map composition", () => {
   it("should process data through both batch and valve", async () => {

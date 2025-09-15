@@ -1,6 +1,7 @@
-import { describe, it } from "jsr:@std/testing/bdd";
-import { expect } from "jsr:@std/expect";
+import { expect } from "@std/expect";
+import { describe, it } from "@std/testing/bdd";
 import { run, spawn } from "effection";
+
 import { createBooleanSignal } from "./boolean.ts";
 import { is } from "./helpers.ts";
 

@@ -1,6 +1,7 @@
-import { build, emptyDir } from "jsr:@deno/dnt@0.42.3";
+import { build, emptyDir } from "@deno/dnt";
+import { join } from "@std/path";
+
 import { DenoJson } from "./lib/read-packages.ts";
-import { join } from "jsr:@std/path@^1.0.7/join";
 
 let [workspace] = Deno.args;
 if (!workspace) {

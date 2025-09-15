@@ -1,8 +1,8 @@
 import { useFaucet } from "./faucet.ts";
 import { createArraySignal, is } from "@effectionx/signals";
 
-import { describe, it } from "jsr:@std/testing@^1/bdd";
-import { expect } from "jsr:@std/expect@^1";
+import { describe, it } from "@std/testing/bdd";
+import { expect } from "@std/expect";
 import { each, race, run, sleep, spawn } from "effection";
 
 describe("useFaucet", () => {

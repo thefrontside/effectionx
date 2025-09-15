@@ -4,6 +4,7 @@
   "exports": "./mod.ts",
   "license": "MIT",
   "imports": {
-    "effection": "npm:effection@^3"
+    "effection": "npm:effection@^3",
+    "@essentials/raf": "npm:@essentials/raf@^1.2.0"
   }
 }

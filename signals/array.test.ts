@@ -1,8 +1,8 @@
-import { describe, it } from "jsr:@std/testing@^1/bdd";
+import { expect } from "@std/expect";
+import { describe, it } from "@std/testing/bdd";
+import { each, run, sleep, spawn } from "effection";
 
 import { createArraySignal } from "./array.ts";
-import { each, run, sleep, spawn } from "effection";
-import { expect } from "@std/expect";
 
 describe("array signal", () => {
   it("accepts an initial value", async () => {

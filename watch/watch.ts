@@ -15,7 +15,7 @@ import {
   withResolvers,
 } from "effection";
 import { default as createIgnore } from "ignore";
-import { pipe } from "jsr:@gordonb/pipe@0.1.0";
+import { pipe } from "@gordonb/pipe";
 import { readFile } from "node:fs/promises";
 
 import { type Process, useProcess } from "./child-process.ts";

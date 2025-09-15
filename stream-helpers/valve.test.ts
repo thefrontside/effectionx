@@ -1,11 +1,11 @@
-import { each, run, sleep, spawn } from "effection";
-import { describe, it } from "jsr:@std/testing@^1/bdd";
-import { assertSpyCalls, spy } from "jsr:@std/testing@^1/mock";
-
-import { expect } from "jsr:@std/expect@^1";
-import { valve } from "./valve.ts";
-import { useFaucet } from "./test-helpers/faucet.ts";
 import { createArraySignal, is } from "@effectionx/signals";
+import { expect } from "@std/expect";
+import { describe, it } from "@std/testing/bdd";
+import { assertSpyCalls, spy } from "@std/testing/mock";
+import { each, run, sleep, spawn } from "effection";
+
+import { useFaucet } from "./test-helpers/faucet.ts";
+import { valve } from "./valve.ts";
 
 describe("valve", () => {
   it("closes and opens the valve", async () => {

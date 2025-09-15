@@ -1,7 +1,7 @@
 import { each, run, sleep, spawn, withResolvers } from "effection";
-import { expect } from "jsr:@std/expect@^1";
-import { describe, it } from "jsr:@std/testing@^1/bdd";
-import { pipe } from "npm:remeda@2.21.3";
+import { expect } from "@std/expect";
+import { describe, it } from "@std/testing/bdd";
+import { pipe } from "remeda";
 
 import { batch } from "./batch.ts";
 import { map } from "./map.ts";

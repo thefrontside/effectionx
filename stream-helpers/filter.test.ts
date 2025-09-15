@@ -1,6 +1,7 @@
+import { expect } from "@std/expect";
+import { describe, it } from "@std/testing/bdd";
 import { run, sleep } from "effection";
-import { describe, it } from "jsr:@std/testing@^1/bdd";
-import { expect } from "jsr:@std/expect@^1";
+
 import { filter } from "./filter.ts";
 import { useFaucet } from "./test-helpers/faucet.ts";
 

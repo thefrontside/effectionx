@@ -4,7 +4,10 @@
   "imports": {
     "effection": "npm:effection@^3",
     "immutable": "npm:immutable@^5",
-    "@effectionx/signals": "npm:@effectionx/signals@^0.1.0"
+    "@effectionx/signals": "npm:@effectionx/signals@^0.1.0",
+    "@std/expect": "jsr:@std/expect@^1",
+    "@std/testing": "jsr:@std/testing@^1",
+    "remeda": "npm:remeda@2.21.3"
   },
   "license": "MIT",
   "exports": {

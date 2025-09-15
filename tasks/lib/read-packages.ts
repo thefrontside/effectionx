@@ -1,6 +1,6 @@
-import { call, type Operation } from "npm:effection@3.2.1";
-import { resolve } from "jsr:@std/path@^1.0.6";
-import { z } from "npm:zod@3.23.8";
+import { call, type Operation } from "effection";
+import { resolve } from "@std/path";
+import { z } from "zod";
 
 export const DenoJson = z.object({
   name: z.string(),

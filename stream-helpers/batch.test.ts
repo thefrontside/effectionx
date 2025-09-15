@@ -1,6 +1,6 @@
 import { each, run, sleep, spawn, withResolvers } from "effection";
-import { describe, it } from "jsr:@std/testing@^1/bdd";
-import { expect } from "jsr:@std/expect@^1";
+import { describe, it } from "@std/testing/bdd";
+import { expect } from "@std/expect";
 import { batch } from "./batch.ts";
 import { useFaucet } from "./test-helpers/faucet.ts";
 

@@ -5,11 +5,11 @@
   "license": "MIT",
   "imports": {
     "effection": "npm:effection@4.0.0-beta.2",
-    "@std/json": "jsr:@std/json@1.0.1",
-    "@std/streams": "jsr:@std/streams@1.0.8",
-    "@std/fs": "jsr:@std/fs@1.0.4",
-    "@std/path": "jsr:@std/path@1.0.6",
-    "@std/testing": "jsr:@std/testing@1.0.5",
-    "@std/expect": "jsr:@std/expect@"
+    "@std/json": "jsr:@std/json@^1",
+    "@std/streams": "jsr:@std/streams@^1",
+    "@std/fs": "jsr:@std/fs@^1",
+    "@std/path": "jsr:@std/path@^1",
+    "@std/testing": "jsr:@std/testing@^1",
+    "@std/expect": "jsr:@std/expect@^1"
   }
 }

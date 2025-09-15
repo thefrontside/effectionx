@@ -1,7 +1,7 @@
 import {
   caf as cancelAnimationFrame,
   raf as requestAnimationFrame,
-} from "npm:@essentials/raf@^1.2.0";
+} from "@essentials/raf";
 
 import { each, run, sleep, spawn } from "effection";
 import { describe, it } from "bdd";

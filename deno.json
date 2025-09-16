@@ -27,7 +27,7 @@
   "workspace": [
     "./context-api",
     "./deno-deploy",
-    "./deno-testing-bdd",
+    "./bdd",
     "./jsonl-store",
     "./fx",
     "./raf",

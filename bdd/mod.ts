@@ -9,13 +9,9 @@ import {
 let current: TestAdapter | undefined;
 
 export function describe(name: string, body: () => void) {
-  const isTop = !current;
   const original = current;
   try {
     const child = current = createTestAdapter({ name, parent: original });
-    if (isTop) {
-      //
-    }
 
     $describe(name, () => {
       $afterAll(() => child.destroy());
@@ -33,12 +29,13 @@ export function beforeEach(body: () => Operation<void>) {
   current?.addSetup(body);
 }
 
-export function it(desc: string, body?: () => Operation<void>): Promise<void> {
+export function it(desc: string, body?: () => Operation<void>): void {
   const adapter = current!;
   if (!body) {
-    return $it.skip(desc, () => {});
+    $it.skip(desc, () => {});
+    return;
   }
-  return $it(desc, async () => {
+  $it(desc, async () => {
     const result = await adapter.runTest(body);
     if (!result.ok) {
       throw result.error;

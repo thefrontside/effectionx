@@ -1,16 +1,15 @@
-import { pipe } from "remeda";
-
-import { sleep, spawn } from "effection";
 import { describe, it } from "@effectionx/deno-testing-bdd";
+import { createArraySignal, is } from "@effectionx/signals";
 import { expect } from "@std/expect";
 import { assertSpyCalls, spy } from "@std/testing/mock";
+import { sleep, spawn } from "effection";
+import { pipe } from "remeda";
 
 import { batch } from "./batch.ts";
-import { map } from "./map.ts";
-import { valve } from "./valve.ts";
-import { useFaucet } from "./test-helpers/faucet.ts";
-import { createArraySignal, is } from "@effectionx/signals";
 import { forEach } from "./for-each.ts";
+import { map } from "./map.ts";
+import { useFaucet } from "./test-helpers/faucet.ts";
+import { valve } from "./valve.ts";
 
 describe("batch, valve and map composition", () => {
   it("should process data through both batch and valve", function* () {

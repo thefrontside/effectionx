@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+=======
+import { describe, it } from "@std/testing/bdd";
+import { expect } from "@std/expect";
+import { createTestAdapter } from "../mod.ts";
+>>>>>>> main
 import { createContext } from "effection";
 import { describe, it } from "@std/testing/bdd";
 import { expect } from "@std/expect";

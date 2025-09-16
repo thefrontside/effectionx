@@ -1,8 +1,8 @@
 import { describe, it } from "@effectionx/deno-testing-bdd";
+import { expect } from "@std/expect";
+import { each, sleep, spawn } from "effection";
 
 import { createArraySignal } from "./array.ts";
-import { each, sleep, spawn } from "effection";
-import { expect } from "@std/expect";
 
 describe("array signal", () => {
   it("accepts an initial value", function* () {

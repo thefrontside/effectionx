@@ -1,12 +1,6 @@
-<<<<<<< HEAD
-=======
-import { describe, it } from "@std/testing/bdd";
 import { expect } from "@std/expect";
-import { createTestAdapter } from "../mod.ts";
->>>>>>> main
+import { describe, it } from "@std/testing/bdd";
 import { createContext } from "effection";
-import { describe, it } from "@std/testing/bdd";
-import { expect } from "@std/expect";
 import { createTestAdapter } from "../mod.ts";
 
 describe("TestAdapter", () => {

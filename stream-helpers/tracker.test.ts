@@ -1,6 +1,6 @@
-import { each, sleep, spawn, withResolvers } from "effection";
-import { expect } from "@std/expect";
 import { describe, it } from "@effectionx/deno-testing-bdd";
+import { expect } from "@std/expect";
+import { each, sleep, spawn, withResolvers } from "effection";
 import { pipe } from "remeda";
 
 import { batch } from "./batch.ts";

@@ -1,6 +1,7 @@
-import { sleep } from "effection";
 import { describe, it } from "@effectionx/deno-testing-bdd";
 import { expect } from "@std/expect";
+import { sleep } from "effection";
+
 import { map } from "./map.ts";
 import { useFaucet } from "./test-helpers/faucet.ts";
 

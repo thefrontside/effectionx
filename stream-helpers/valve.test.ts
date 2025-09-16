@@ -1,11 +1,11 @@
-import { each, sleep, spawn } from "effection";
 import { describe, it } from "@effectionx/deno-testing-bdd";
-import { assertSpyCalls, spy } from "@std/testing/mock";
-
-import { expect } from "@std/expect";
-import { valve } from "./valve.ts";
-import { useFaucet } from "./test-helpers/faucet.ts";
 import { createArraySignal, is } from "@effectionx/signals";
+import { expect } from "@std/expect";
+import { assertSpyCalls, spy } from "@std/testing/mock";
+import { each, sleep, spawn } from "effection";
+import { valve } from "./valve.ts";
+
+import { useFaucet } from "./test-helpers/faucet.ts";
 
 describe("valve", () => {
   it("closes and opens the valve", function* () {

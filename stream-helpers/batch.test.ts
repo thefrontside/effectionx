@@ -1,10 +1,11 @@
-import { sleep, spawn } from "effection";
 import { describe, it } from "@effectionx/deno-testing-bdd";
-import { expect } from "@std/expect";
-import { batch } from "./batch.ts";
-import { useFaucet } from "./test-helpers/faucet.ts";
-import { forEach } from "./for-each.ts";
 import { createArraySignal, is } from "@effectionx/signals";
+import { expect } from "@std/expect";
+import { sleep, spawn } from "effection";
+
+import { batch } from "./batch.ts";
+import { forEach } from "./for-each.ts";
+import { useFaucet } from "./test-helpers/faucet.ts";
 
 describe("batch", () => {
   it("creates a batch when maxTime expires", function* () {

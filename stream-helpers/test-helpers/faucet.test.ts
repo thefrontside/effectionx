@@ -1,9 +1,9 @@
-import { useFaucet } from "./faucet.ts";
-import { createArraySignal, is } from "@effectionx/signals";
-
 import { describe, it } from "@effectionx/deno-testing-bdd";
+import { createArraySignal, is } from "@effectionx/signals";
 import { expect } from "@std/expect";
 import { each, race, sleep, spawn } from "effection";
+
+import { useFaucet } from "./faucet.ts";
 
 describe("useFaucet", () => {
   it("creates a faucet that can pour items", function* () {

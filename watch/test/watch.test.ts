@@ -1,9 +1,9 @@
+import { assert } from "@std/assert";
+import { expect } from "@std/expect";
+import { emptyDir } from "@std/fs/empty-dir";
+import { it as bddIt, describe } from "bdd";
 import type { Operation, Result, Stream } from "effection";
 import { each, Ok, run, sleep, spawn, until } from "effection";
-import { describe, it as bddIt } from "bdd";
-import { expect } from "@std/expect";
-import { assert } from "@std/assert";
-import { emptyDir } from "@std/fs/empty-dir";
 
 // temporariy disable watch tests on linux because of
 // https://github.com/denoland/deno/issues/28041
@@ -103,11 +103,11 @@ describe("watch", () => {
   });
 });
 
-import { type Start, watch } from "../watch.ts";
 import type { Process } from "@effectionx/process";
-import { cp, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
+import { dirname, join } from "@std/path";
+import { cp, readFile, writeFile } from "node:fs/promises";
+import { type Start, watch } from "../watch.ts";
 
 interface Fixture {
   path: string;

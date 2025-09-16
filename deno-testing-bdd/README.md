@@ -1,4 +1,4 @@
-# @effectionx/deno-testing-bdd
+# @effectionx/bdd
 
 A BDD (Behavior-Driven Development) testing harness for Deno that integrates
 seamlessly with [Effection](https://github.com/thefrontside/effection)
@@ -24,7 +24,7 @@ Add to your `deno.json` imports:
 ```json
 {
   "imports": {
-    "@effectionx/deno-testing-bdd": "jsr:@effectionx/deno-testing-bdd"
+    "@effectionx/bdd": "npm:@effectionx/bdd"
   }
 }
 ```
@@ -32,7 +32,7 @@ Add to your `deno.json` imports:
 ## Basic Usage
 
 ```typescript
-import { beforeEach, describe, it } from "@effectionx/deno-testing-bdd";
+import { beforeEach, describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import { sleep, spawn } from "effection";
 import { createSignal, is } from "@effectionx/signals";
@@ -57,47 +57,20 @@ describe("My async operations", () => {
 
 ## Real-World Examples
 
-The following packages have been migrated to use `@effectionx/deno-testing-bdd`
-and provide excellent examples of testing patterns:
+The following packages have been migrated to use `@effectionx/bdd` and provide
+excellent examples of testing patterns:
 
-### Stream Operations
-
-- **stream-helpers**: See
-  [`for-each.test.ts`](../stream-helpers/for-each.test.ts) for testing stream
-  processing with `forEach`
 - **stream-helpers**: See [`batch.test.ts`](../stream-helpers/batch.test.ts) for
   testing stream batching with time and size limits
-- **stream-helpers**: See [`filter.test.ts`](../stream-helpers/filter.test.ts)
-  for testing async stream filtering
-- **stream-helpers**: See [`map.test.ts`](../stream-helpers/map.test.ts) for
-  testing stream transformations
-
-### Signal Operations
-
 - **signals**: See [`array.test.ts`](../signals/array.test.ts) for testing array
   signal operations like push, set, and update
-- **signals**: See [`boolean.test.ts`](../signals/boolean.test.ts) for testing
-  boolean signal state changes
-- **signals**: See [`helpers.test.ts`](../signals/helpers.test.ts) for testing
-  the `is` helper with signal predicates
-- **signals**: See [`set.test.ts`](../signals/set.test.ts) for testing set
-  signal operations
-
-### Timed Operations
-
 - **timebox**: See [`timebox.test.ts`](../timebox/timebox.test.ts) for testing
   timeout scenarios with both success and timeout cases
 - **task-buffer**: See
   [`task-buffer.test.ts`](../task-buffer/task-buffer.test.ts) for testing task
   queuing and buffer management
-
-### WebSocket Communication
-
 - **websocket**: See [`websocket.test.ts`](../websocket/websocket.test.ts) for
   testing bidirectional WebSocket communication and connection lifecycle
-
-### Worker Operations
-
 - **worker**: See [`worker.test.ts`](../worker/worker.test.ts) for testing web
   worker communication, error handling, and lifecycle management
 
@@ -180,7 +153,7 @@ describe("my tests", () => {
 **After:**
 
 ```typescript
-import { describe, it } from "@effectionx/deno-testing-bdd";
+import { describe, it } from "@effectionx/bdd";
 // No need to import 'run'
 
 describe("my tests", () => {
@@ -190,53 +163,6 @@ describe("my tests", () => {
   });
 });
 ```
-
-## Error Handling
-
-The framework automatically handles errors in Effection operations and presents
-them as test failures:
-
-```typescript
-describe("error handling", () => {
-  it("should handle operation errors", function* () {
-    try {
-      yield* someOperationThatMightFail();
-    } catch (error) {
-      expect(error.message).toContain("expected error");
-    }
-  });
-});
-```
-
-## Best Practices
-
-1. **Use `beforeEach` for setup**: Initialize state and resources in
-   `beforeEach` to ensure clean test isolation.
-
-2. **Leverage Effection's resource management**: Use `spawn`, `resource`, and
-   other Effection patterns for proper cleanup.
-
-3. **Test async operations naturally**: Generator functions make testing async
-   operations feel synchronous.
-
-4. **Use descriptive test names**: Follow BDD conventions with clear,
-   descriptive test descriptions.
-
-5. **Group related tests**: Use nested `describe` blocks to organize related
-   functionality.
-
-6. **Handle errors explicitly**: Use try/catch blocks for testing error
-   conditions rather than async rejection patterns.
-
-## Integration with Standard Deno Testing
-
-This package is built on top of Deno's standard testing framework
-(`@std/testing/bdd`) and is fully compatible with:
-
-- `deno test` command
-- Test filtering and reporting
-- VS Code Deno extension
-- Other Deno testing tools
 
 ## Contributing
 

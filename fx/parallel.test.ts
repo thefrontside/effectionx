@@ -1,5 +1,5 @@
-import { describe, it } from "bdd";
-import { expect } from "expect";
+import { describe, it } from "@std/testing/bdd";
+import { expect } from "@std/expect";
 import { each, Err, Ok, run, sleep, spawn } from "effection";
 
 import { parallel } from "./parallel.ts";

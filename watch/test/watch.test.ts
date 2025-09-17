@@ -1,7 +1,7 @@
 import { assert } from "@std/assert";
 import { expect } from "@std/expect";
 import { emptyDir } from "@std/fs/empty-dir";
-import { it as bddIt, describe } from "bdd";
+import { it as bddIt, describe } from "@std/testing/bdd";
 import type { Operation, Result, Stream } from "effection";
 import { each, Ok, run, sleep, spawn, until } from "effection";
 

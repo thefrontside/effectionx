@@ -1,4 +1,4 @@
-import { describe, it } from "bdd";
+import { describe, it } from "@std/testing/bdd";
 import { expect } from "@std/expect";
 import { type Operation, run, scoped } from "effection";
 import { createApi } from "@effectionx/context-api";

@@ -1,7 +1,7 @@
 import { run } from "effection";
 import { describe, it } from "@std/testing/bdd";
 import { useStore } from "./mod.ts";
-import { expect } from "expect";
+import { expect } from "@std/expect";
 
 describe("StoreContext", () => {
   it("allows accessing context without initializing", async () => {

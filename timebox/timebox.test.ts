@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/deno-testing-bdd";
+import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import { timebox } from "./mod.ts";
 import { type Operation, sleep, suspend } from "effection";

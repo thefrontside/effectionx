@@ -1,4 +1,4 @@
-import { beforeEach, describe, it } from "@effectionx/deno-testing-bdd";
+import { beforeEach, describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import { spawn, type Task, until, withResolvers } from "effection";
 import process from "node:process";

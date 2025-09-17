@@ -1,6 +1,6 @@
 import { spawn, type Task } from "effection";
 import { expect } from "@std/expect";
-import { beforeEach, describe, it } from "@effectionx/deno-testing-bdd";
+import { beforeEach, describe, it } from "@effectionx/bdd";
 
 import { exec, type Process, type ProcessResult } from "../mod.ts";
 import {

@@ -1,4 +1,4 @@
-# @effectionx/deno-testing-bdd
+# @effectionx/bdd
 
 A BDD (Behavior-Driven Development) testing harness for Deno that integrates seamlessly with [Effection](https://github.com/thefrontside/effection) operations. This package provides a familiar `describe`/`it`/`beforeEach` API that works natively with Effection's generator-based operations.
 
@@ -17,7 +17,7 @@ Add to your `deno.json` imports:
 ```json
 {
   "imports": {
-    "@effectionx/deno-testing-bdd": "jsr:@effectionx/deno-testing-bdd"
+    "@effectionx/bdd": "jsr:@effectionx/bdd"
   }
 }
 ```
@@ -25,7 +25,7 @@ Add to your `deno.json` imports:
 ## Basic Usage
 
 ```typescript
-import { describe, it, beforeEach } from "@effectionx/deno-testing-bdd";
+import { describe, it, beforeEach } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import { spawn, sleep } from "effection";
 import { createSignal, is } from "@effectionx/signals";
@@ -63,7 +63,7 @@ describe("My async operations", () => {
 
 ## Real-World Examples
 
-The following packages have been migrated to use `@effectionx/deno-testing-bdd` and provide excellent examples of testing patterns:
+The following packages have been migrated to use `@effectionx/bdd` and provide excellent examples of testing patterns:
 
 ### Stream Operations
 - **stream-helpers**: See [`for-each.test.ts`](../stream-helpers/for-each.test.ts) for testing stream processing with `forEach`
@@ -152,7 +152,7 @@ describe("my tests", () => {
 
 **After:**
 ```typescript
-import { describe, it } from "@effectionx/deno-testing-bdd";
+import { describe, it } from "@effectionx/bdd";
 // No need to import 'run'
 
 describe("my tests", () => {

@@ -6,6 +6,6 @@
   "imports": {
     "effection": "npm:effection@^3",
     "@std/expect": "jsr:@std/expect@^1",
-    "@effectionx/deno-testing-bdd": "../deno-testing-bdd/mod.ts"
+    "@effectionx/bdd": "../deno-testing-bdd/mod.ts"
   }
 }

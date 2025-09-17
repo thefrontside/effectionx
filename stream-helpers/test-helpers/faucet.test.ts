@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/deno-testing-bdd";
+import { describe, it } from "@effectionx/bdd";
 import { createArraySignal, is } from "@effectionx/signals";
 import { expect } from "@std/expect";
 import { each, race, sleep, spawn } from "effection";

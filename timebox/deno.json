@@ -7,6 +7,6 @@
     "effection": "npm:effection@^3",
     "@std/expect": "jsr:@std/expect@1",
     "bdd": "jsr:@std/testing@^1/bdd",
-    "@effectionx/deno-testing-bdd": "../deno-testing-bdd/mod.ts"
+    "@effectionx/bdd": "../deno-testing-bdd/mod.ts"
   }
 }

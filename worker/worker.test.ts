@@ -1,5 +1,5 @@
-import { describe, it } from "bdd";
-import { expect } from "expect";
+import { describe, it } from "@std/testing/bdd";
+import { expect } from "@std/expect";
 import { emptyDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import { timebox } from "@effectionx/timebox";

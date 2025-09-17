@@ -11,6 +11,6 @@
     "@std/testing": "jsr:@std/testing@1.0.15",
     "@std/expect": "jsr:@std/expect@1.0.17",
     "@effectionx/stream-helpers": "../stream-helpers/mod.ts",
-    "@effectionx/bdd": "npm:@effectionx/bdd@0.1.0"
+    "@effectionx/bdd": "jsr:@effectionx/bdd@0.1.0"
   }
 }

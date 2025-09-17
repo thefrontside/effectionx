@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "imports": {
     "effection": "npm:effection@^3",
-    "@effectionx/test-adapter": "npm:@effectionx/test-adapter@0.4.0",
+    "@effectionx/test-adapter": "jsr:@effectionx/test-adapter@0.4.0",
     "@std/testing": "jsr:@std/testing@^1"
   }
 }

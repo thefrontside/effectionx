@@ -4,6 +4,8 @@
   "exports": "./mod.ts",
   "license": "MIT",
   "imports": {
-    "effection": "npm:effection@4.0.0-beta.2"
+    "effection": "npm:effection@4.0.0-beta.2",
+    "@std/testing": "jsr:@std/testing@^1",
+    "@std/expect": "jsr:@std/expect@^1"
   }
 }

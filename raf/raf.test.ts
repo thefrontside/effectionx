@@ -4,7 +4,7 @@ import {
 } from "@essentials/raf";
 
 import { each, run, sleep, spawn } from "effection";
-import { describe, it } from "bdd";
+import { describe, it } from "@std/testing/bdd";
 import { expect } from "@std/expect";
 import { raf } from "./raf.ts";
 

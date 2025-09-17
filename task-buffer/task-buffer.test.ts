@@ -1,5 +1,5 @@
 import { sleep, spawn, type Task } from "effection";
-import { describe, it } from "@effectionx/deno-testing-bdd";
+import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import { useTaskBuffer } from "./task-buffer.ts";
 

@@ -6,7 +6,7 @@
     "immutable": "npm:immutable@^5",
     "@std/testing": "jsr:@std/testing@^1",
     "@std/expect": "jsr:@std/expect@^1",
-    "@effectionx/deno-testing-bdd": "../deno-testing-bdd/mod.ts"
+    "@effectionx/bdd": "../deno-testing-bdd/mod.ts"
   },
   "license": "MIT",
   "exports": {

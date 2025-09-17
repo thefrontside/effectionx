@@ -1,5 +1,5 @@
 {
-  "name": "@effectionx/deno-testing-bdd",
+  "name": "@effectionx/bdd",
   "exports": "./mod.ts",
   "version": "0.1.0",
   "imports": {

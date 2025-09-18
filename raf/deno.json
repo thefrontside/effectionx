@@ -7,6 +7,6 @@
     "effection": "npm:effection@^3",
     "@essentials/raf": "npm:@essentials/raf@^1.2.0",
     "@std/expect": "jsr:@std/expect@^1",
-    "@std/testing": "jsr:@std/testing@^1"
+    "@effectionx/bdd": "jsr:@effectionx/bdd@0.1.0"
   }
 }

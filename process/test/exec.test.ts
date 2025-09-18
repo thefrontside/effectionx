@@ -12,7 +12,7 @@ import {
 import process from "node:process";
 
 describe("exec", () => {
-  describe.only(".join", () => {
+  describe(".join", () => {
     it("runs successfully to completion", function* () {
       let result: ProcessResult = yield* exec(
         "node './fixtures/hello-world.js'",

@@ -1,5 +1,5 @@
 import { suspend, until } from "effection";
-import { workerMain } from "../worker.ts";
+import { workerMain } from "../worker-main.ts";
 
 export interface ShutdownWorkerParams {
   startFile: string;

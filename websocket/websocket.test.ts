@@ -1,4 +1,4 @@
-import { describe, it } from "@std/testing/bdd";
+import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import {
   call,
@@ -14,59 +14,52 @@ import {
 import { useWebSocket, type WebSocketResource } from "./websocket.ts";
 
 describe("WebSocket", () => {
-  it("can send messages from the client to the server", async () => {
-    await run(function* () {
-      let [client, server] = yield* useTestingPair();
+  it("can send messages from the client to the server", function* () {
+    let [client, server] = yield* useTestingPair();
 
-      let subscription = yield* server.socket;
+    let subscription = yield* server.socket;
 
-      client.socket.send("hello from client");
+    client.socket.send("hello from client");
 
-      let { value } = yield* subscription.next();
+    let { value } = yield* subscription.next();
 
-      expect(value).toMatchObject({ data: "hello from client" });
-    });
+    expect(value).toMatchObject({ data: "hello from client" });
   });
 
-  it("can send messages from the server to the client", async () => {
-    await run(function* () {
-      let [client, server] = yield* useTestingPair();
+  it("can send messages from the server to the client", function* () {
+    let [client, server] = yield* useTestingPair();
 
-      let subscription = yield* client.socket;
+    let subscription = yield* client.socket;
 
-      server.socket.send("hello from server");
+    server.socket.send("hello from server");
 
-      let { value } = yield* subscription.next();
+    let { value } = yield* subscription.next();
 
-      expect(value).toMatchObject({ data: "hello from server" });
-    });
+    expect(value).toMatchObject({ data: "hello from server" });
   });
 
-  it("closes the client when the server closes", async () => {
-    await run(function* () {
-      let [client, server] = yield* useTestingPair();
-      let messages = yield* client.socket;
+  it("closes the client when the server closes", function* () {
+    let [client, server] = yield* useTestingPair();
+    let messages = yield* client.socket;
 
-      server.close();
+    server.close();
 
-      let event = yield* drain(messages);
+    let event = yield* drain(messages);
 
-      expect(event.type).toEqual("close");
-      expect(event.wasClean).toEqual(true);
-    });
+    expect(event.type).toEqual("close");
+    expect(event.wasClean).toEqual(true);
   });
-  it("closes the server when the client closes", async () => {
-    await run(function* () {
-      let [client, server] = yield* useTestingPair();
-      let messages = yield* server.socket;
 
-      client.close();
+  it("closes the server when the client closes", function* () {
+    let [client, server] = yield* useTestingPair();
+    let messages = yield* server.socket;
 
-      let event = yield* drain(messages);
+    client.close();
 
-      expect(event.type).toEqual("close");
-      expect(event.wasClean).toEqual(true);
-    });
+    let event = yield* drain(messages);
+
+    expect(event.type).toEqual("close");
+    expect(event.wasClean).toEqual(true);
   });
 });
 
@@ -79,36 +72,39 @@ export interface TestingPairOptions {
   fail?: Response;
 }
 
-function useTestingPair(
-  { fail }: TestingPairOptions = {},
-): Operation<[TestSocket, TestSocket]> {
+function useTestingPair({ fail }: TestingPairOptions = {}): Operation<
+  [TestSocket, TestSocket]
+> {
   return resource(function* (provide) {
     let sockets = createQueue<TestSocket, never>();
 
     let scope = yield* useScope();
 
     let server = yield* call(() =>
-      Deno.serve({
-        port: 9901,
-        onListen() {},
-      }, (req) => {
-        if (req.headers.get("upgrade") != "websocket") {
-          return new Response(null, { status: 501 });
-        } else if (fail) {
-          return fail;
-        }
-        const { socket, response } = Deno.upgradeWebSocket(req);
+      Deno.serve(
+        {
+          port: 9901,
+          onListen() {},
+        },
+        (req) => {
+          if (req.headers.get("upgrade") != "websocket") {
+            return new Response(null, { status: 501 });
+          } else if (fail) {
+            return fail;
+          }
+          const { socket, response } = Deno.upgradeWebSocket(req);
 
-        scope.run(function* () {
-          sockets.add({
-            close: () => socket.close(),
-            socket: yield* useWebSocket(() => socket),
+          scope.run(function* () {
+            sockets.add({
+              close: () => socket.close(),
+              socket: yield* useWebSocket(() => socket),
+            });
+            yield* suspend();
           });
-          yield* suspend();
-        });
 
-        return response;
-      })
+          return response;
+        },
+      ),
     );
 
     let client = new WebSocket(

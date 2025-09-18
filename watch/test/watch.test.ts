@@ -1,102 +1,86 @@
+import { describe, it } from "@effectionx/bdd";
 import { assert } from "@std/assert";
 import { expect } from "@std/expect";
 import { emptyDir } from "@std/fs/empty-dir";
-import { it as bddIt, describe } from "@std/testing/bdd";
-import type { Operation, Result, Stream } from "effection";
-import { each, Ok, run, sleep, spawn, until } from "effection";
 
-// temporariy disable watch tests on linux because of
-// https://github.com/denoland/deno/issues/28041
-function it(...args: Parameters<typeof bddIt>) {
-  if (Deno.build.os === "linux") {
-    return bddIt.skip(...args);
-  }
-  return bddIt(...args);
-}
-it.skip = bddIt.skip;
-it.only = bddIt.only;
+import type { Operation, Result, Stream } from "effection";
+import { each, Ok, sleep, spawn, until } from "effection";
 
 describe("watch", () => {
-  it("restarts the specified process when files change.", async () => {
-    await run(function* () {
-      let fixture = yield* useFixture();
-      let processes = yield* inspector(
-        watch({
-          path: fixture.path,
-          cmd: `cat ${fixture.getPath("src/file.txt")}`,
-          event: "change",
-        }),
-      );
+  it("restarts the specified process when files change.", function* () {
+    let fixture = yield* useFixture();
+    let processes = yield* inspector(
+      watch({
+        path: fixture.path,
+        cmd: `cat ${fixture.getPath("src/file.txt")}`,
+        event: "change",
+      }),
+    );
 
-      let start = yield* processes.expectNext();
+    let start = yield* processes.expectNext();
 
-      let exit = yield* start.process.join();
+    let exit = yield* start.process.join();
 
-      expect(exit.code).toEqual(0);
+    expect(exit.code).toEqual(0);
 
-      expect(start.stdout).toEqual("this is a source file");
+    expect(start.stdout).toEqual("this is a source file");
 
-      yield* fixture.write("src/file.txt", "this source file is changed");
+    yield* fixture.write("src/file.txt", "this source file is changed");
 
-      let next = yield* processes.expectNext();
+    let next = yield* processes.expectNext();
 
-      expect(next.stdout).toEqual("this source file is changed");
-    });
+    expect(next.stdout).toEqual("this source file is changed");
   });
 
-  it("ignores files in .gitignore", async () => {
-    await run(function* () {
-      let fixture = yield* useFixture();
+  it("ignores files in .gitignore", function* () {
+    let fixture = yield* useFixture();
 
-      let processes = yield* inspector(
-        watch({
-          path: fixture.path,
-          cmd: `echo hello`,
-          event: "change",
-        }),
-      );
+    let processes = yield* inspector(
+      watch({
+        path: fixture.path,
+        cmd: `echo hello`,
+        event: "change",
+      }),
+    );
 
-      //it starts the first time
-      yield* processes.expectNext();
+    //it starts the first time
+    yield* processes.expectNext();
 
-      yield* fixture.write("dist/artifact.txt", "this file was built again");
+    yield* fixture.write("dist/artifact.txt", "this file was built again");
 
-      yield* processes.expectNoRestart();
-    });
+    yield* processes.expectNoRestart();
   });
 
-  it.skip("ignores files in a .gitignore that is in a parent directory", () => {
+  it.skip("ignores files in a .gitignore that is in a parent directory", function*() {
     // start an example in a nested directory than the git ignore
     // touch a change in an ignored file within the directory
     // enuser that there was no restart;
   });
 
-  it("waits until stdout is closed before restarting", async () => {
-    await run(function* () {
-      let fixture = yield* useFixture();
-      let processes = yield* inspector(
-        watch({
-          path: fixture.path,
-          cmd: `deno run -A watch-graceful.ts`,
-          execOptions: {
-            cwd: import.meta.dirname,
-          },
-        }),
-      );
+  it("waits until stdout is closed before restarting", function* () {
+    let fixture = yield* useFixture();
+    let processes = yield* inspector(
+      watch({
+        path: fixture.path,
+        cmd: `deno run -A watch-graceful.ts`,
+        execOptions: {
+          cwd: import.meta.dirname,
+        },
+      }),
+    );
 
-      let first = yield* processes.expectNext();
+    let first = yield* processes.expectNext();
 
-      yield* fixture.write("src/file.txt", "hello planet");
+    yield* fixture.write("src/file.txt", "hello planet");
 
-      yield* processes.expectNext();
+    yield* processes.expectNext();
 
-      expect(first.stdout).toEqual("done\n");
-    });
-
-    // start an example that prints "done" to the console upon SIGINT
+    expect(first.stdout).toEqual("done\n");
   });
 
-  it.skip("allows for a hard kill ", () => {
+  // start an example that prints "done" to the console upon SIGINT);
+
+  it.skip("allows for a hard kill ", function* () {
     // start an example that will suspend asked to exit and so will
     // never exit.
     // send the command to exit the watch and the main returns
@@ -227,12 +211,3 @@ function* inspector(stream: Stream<Start, never>) {
   };
   return inspector;
 }
-
-// function* ntimeout<T>(op: () => Operation<T>): Operation<T> {
-//   let result = yield* timebox<T>(1000, op);
-//   if (result.timeout) {
-//     throw new Error(`timeout`);
-//   } else {
-//     return result.value;
-//   }
-// };

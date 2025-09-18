@@ -5,7 +5,7 @@
   "license": "MIT",
   "imports": {
     "effection": "npm:effection@^3",
-    "@std/testing": "jsr:@std/testing@^1",
-    "@std/expect": "jsr:@std/expect@^1"
+    "@std/expect": "jsr:@std/expect@^1",
+    "@effectionx/bdd": "jsr:@effectionx/bdd@0.1.0"
   }
 }

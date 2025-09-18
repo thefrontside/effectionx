@@ -303,7 +303,7 @@ function settled<T>(operation: Operation<T>): Operation<Result<void>> {
     *[Symbol.iterator]() {
       try {
         yield* operation;
-        return Ok();
+        return Ok(void 0);
       } catch (error) {
         return Err(error as Error);
       }

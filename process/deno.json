@@ -8,7 +8,6 @@
     "ctrlc-windows": "npm:ctrlc-windows@2.1.0",
     "effection": "npm:effection@^3",
     "shellwords": "npm:shellwords@^1.1.1",
-    "@std/testing": "jsr:@std/testing@1.0.15",
     "@std/expect": "jsr:@std/expect@1.0.17",
     "@effectionx/stream-helpers": "../stream-helpers/mod.ts",
     "@effectionx/bdd": "jsr:@effectionx/bdd@0.1.0"

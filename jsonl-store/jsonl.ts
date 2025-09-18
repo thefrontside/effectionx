@@ -90,7 +90,7 @@ export class JSONLStore implements Store {
    * Returns content of a file as a stream
    *
    * ```ts
-   * import { each } from "npm:effection@4.0.0-alpha.3";
+   * import { each } from "npm:effection@^3";
    * import { useStore } from "jsr:@effectionx/jsonl-store";
    *
    * const store = yield* useStore();
@@ -204,7 +204,7 @@ export class JSONLStore implements Store {
    * Returns a stream of content from all files matching a glob
    *
    * ```ts
-   * import { each } from "npm:effection@4.0.0-alpha.3";
+   * import { each } from "npm:effection@^3";
    * import { useStore } from "jsr:@effectionx/jsonl-store";
    *
    * const store = yield* useStore();

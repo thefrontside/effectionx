@@ -1,11 +1,11 @@
 import { beforeEach, describe, it } from "@effectionx/bdd";
 import { timebox } from "@effectionx/timebox";
+import { assert } from "@std/assert";
 import { expect } from "@std/expect";
 import { emptyDir, exists } from "@std/fs";
 import { join } from "@std/path";
-import { call, scoped, sleep, spawn, suspend, until } from "effection";
+import { scoped, sleep, spawn, suspend, until } from "effection";
 
-import { assert } from "@std/assert";
 import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
 import { useWorker } from "./worker.ts";
 

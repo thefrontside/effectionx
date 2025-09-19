@@ -3,7 +3,7 @@ import { Err, Ok, type Result, spawn, withResolvers } from "effection";
 import { spawn as spawnProcess } from "cross-spawn";
 import { ctrlc } from "ctrlc-windows";
 import { once } from "../eventemitter.ts";
-import { createOutputStreamFromReadable } from "../output-stream.ts";
+import { createOutputStream } from "../output-stream.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
 
@@ -37,12 +37,12 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
 
   let { pid } = childProcess;
 
-  let stdout = yield* createOutputStreamFromReadable(
+  let stdout = createOutputStream(
     childProcess.stdout,
     "data",
   );
 
-  let stderr = yield* createOutputStreamFromReadable(
+  let stderr = createOutputStream(
     childProcess.stderr,
     "data",
   );

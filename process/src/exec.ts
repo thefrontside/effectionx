@@ -50,6 +50,7 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
 
       yield* spawn(() =>
         forEach(function* (chunk) {
+          console.log(`got chunk ${chunk}`);
           stdout += chunk;
         }, process.stdout)
       );

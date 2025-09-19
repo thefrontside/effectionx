@@ -1,6 +1,6 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
-import { call, run } from "effection";
+import { call } from "effection";
 
 describe("call()", () => {
   it("should call the generator function", function* () {

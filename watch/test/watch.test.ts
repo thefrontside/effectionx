@@ -51,7 +51,7 @@ describe("watch", () => {
     yield* processes.expectNoRestart();
   });
 
-  it.skip("ignores files in a .gitignore that is in a parent directory", function*() {
+  it.skip("ignores files in a .gitignore that is in a parent directory", function* () {
     // start an example in a nested directory than the git ignore
     // touch a change in an ignored file within the directory
     // enuser that there was no restart;

@@ -1,5 +1,13 @@
 import { platform } from "node:os";
-import { createSignal, Err, Ok, race, type Result, spawn, withResolvers } from "effection";
+import {
+  createSignal,
+  Err,
+  Ok,
+  race,
+  type Result,
+  spawn,
+  withResolvers,
+} from "effection";
 import { spawn as spawnProcess } from "cross-spawn";
 import { ctrlc } from "ctrlc-windows";
 import { once } from "../eventemitter.ts";
@@ -52,26 +60,26 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
 
   const io = {
     stdout: yield* useReadable(childProcess.stdout),
-    stderr: yield* useReadable(childProcess.stderr)
-  }
+    stderr: yield* useReadable(childProcess.stderr),
+  };
 
   const stdout = createSignal<Uint8Array, void>();
   const stderr = createSignal<Uint8Array, void>();
 
-  yield* spawn(function*() {
+  yield* spawn(function* () {
     let next = yield* io.stdout.next();
     while (!next.done) {
       stdout.send(next.value);
-      next = yield* io.stdout.next(); 
+      next = yield* io.stdout.next();
     }
     stdout.close();
   });
 
-  yield* spawn(function*() {
+  yield* spawn(function* () {
     let next = yield* io.stderr.next();
     while (!next.done) {
       stderr.send(next.value);
-      next = yield* io.stderr.next(); 
+      next = yield* io.stderr.next();
     }
     stderr.close();
   });

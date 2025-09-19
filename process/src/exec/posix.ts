@@ -44,6 +44,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
 
   yield* spawn(function* trapError() {
     let [error] = yield* once<[Error]>(childProcess, "error");
+    console.log(`posix>error: ${error}`)
     processResult.resolve(Err(error));
   });
 

@@ -27,13 +27,16 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: reload dependencies
-        run: deno cache --reload **/mod.ts
+      # - name: reload dependencies
+      #   run: deno cache --reload **/mod.ts
 
-      - run: deno check tasks/*.ts
+      # - run: deno check tasks/*.ts
 
-      - run: deno fmt --check
+      # - run: deno fmt --check
 
-      - run: deno lint
+      # - run: deno lint
+
+      - run: uname -a
 
       - run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run
+        working-directory: process

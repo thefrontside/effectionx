@@ -1,8 +1,17 @@
 import { spawn as spawnProcess } from "node:child_process";
-import { Err, Ok, type Result, spawn, withResolvers } from "effection";
+import {
+  createSignal,
+  Err,
+  Ok,
+  type Operation,
+  race,
+  type Result,
+  spawn,
+  withResolvers,
+} from "effection";
 import process from "node:process";
 import { once } from "../eventemitter.ts";
-import { createOutputStreamFromReadable } from "../output-stream.ts";
+import { box, useReadable } from "../helpers.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
 
@@ -29,30 +38,55 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
     shell: options.shell,
     env: options.env,
     cwd: options.cwd,
+    stdio: "pipe",
   });
 
   let { pid } = childProcess;
 
-  let stdout = yield* createOutputStreamFromReadable(
-    childProcess.stdout,
-    "data",
-  );
+  yield* spawn(function* trapError() {
+    let [error] = yield* once<[Error]>(childProcess, "error");
+    processResult.resolve(Err(error));
+  });
 
-  let stderr = yield* createOutputStreamFromReadable(
-    childProcess.stderr,
-    "data",
-  );
+  let result = yield* race([
+    processResult.operation,
+    box(() => once(childProcess, "spawn")),
+  ]);
+  if (!result.ok) {
+    throw result.error;
+  }
+
+  let io = {
+    stdout: yield* useReadable(childProcess.stdout),
+    stderr: yield* useReadable(childProcess.stderr),
+  };
+
+  let stdout = createSignal<Uint8Array, void>();
+  let stderr = createSignal<Uint8Array, void>();
+
+  yield* spawn(function* () {
+    let next = yield* io.stdout.next();
+    while (!next.done) {
+      stdout.send(next.value);
+      next = yield* io.stdout.next();
+    }
+    stdout.close();
+  });
+
+  yield* spawn(function* () {
+    let next = yield* io.stderr.next();
+    while (!next.done) {
+      stderr.send(next.value);
+      next = yield* io.stderr.next();
+    }
+    stderr.close();
+  });
 
   let stdin: Writable<string> = {
     send(data: string) {
       childProcess.stdin.write(data);
     },
   };
-
-  yield* spawn(function* trapError() {
-    let [error] = yield* once<[Error]>(childProcess, "error");
-    processResult.resolve(Err(error));
-  });
 
   yield* spawn(function* () {
     try {

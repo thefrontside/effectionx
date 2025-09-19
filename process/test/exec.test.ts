@@ -10,6 +10,7 @@ import {
   streamClose,
 } from "./helpers.ts";
 import process from "node:process";
+import { lines } from "../src/helpers.ts";
 
 describe("exec", () => {
   describe(".join", () => {
@@ -69,36 +70,17 @@ describe("exec", () => {
   });
 
   describe("spawning", () => {
-    describe("a process that fails to start", () => {
-      describe("calling join()", () => {
-        it("reports the failed status", function* () {
-          let error: unknown;
-          let proc = yield* exec("argle", { arguments: ["bargle"] });
-          try {
-            yield* proc.join();
-          } catch (e) {
-            error = e;
-          }
-          expect(error).toBeInstanceOf(Error);
-        });
-      });
-
-      describe("calling expect()", () => {
-        it("fails", function* () {
-          let error: unknown;
-          let proc = yield* exec("argle", { arguments: ["bargle"] });
-          try {
-            yield* proc.expect();
-          } catch (e) {
-            error = e;
-          }
-
-          expect(error).toBeDefined();
-        });
-      });
+    it("throws an exception if process fails to start", function* () {
+      let error: unknown;
+      try {
+        yield* exec("argle", { arguments: ["bargle"] });
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeInstanceOf(Error);
     });
   });
-  describe("a process that starts successfully", () => {
+  describe("successfully", () => {
     let proc: Process;
     let joinStdout: Task<unknown>;
     let joinStderr: Task<unknown>;
@@ -112,7 +94,7 @@ describe("exec", () => {
       joinStdout = yield* spawn(streamClose(proc.stdout));
       joinStderr = yield* spawn(streamClose(proc.stderr));
 
-      yield* expectMatch(/listening/, proc.stdout.lines());
+      yield* expectMatch(/listening/, lines()(proc.stdout));
     });
 
     describe("when it succeeds", () => {

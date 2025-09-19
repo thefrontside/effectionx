@@ -2,7 +2,7 @@ import { spawn as spawnProcess } from "node:child_process";
 import { Err, Ok, type Result, spawn, withResolvers } from "effection";
 import process from "node:process";
 import { once } from "../eventemitter.ts";
-import { createOutputStream } from "../output-stream.ts";
+import { useOutputStream } from "../output-stream.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
 
@@ -33,12 +33,12 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
 
   let { pid } = childProcess;
 
-  let stdout = createOutputStream(
+  let stdout = yield* useOutputStream(
     childProcess.stdout,
     "data",
   );
 
-  let stderr = createOutputStream(
+  let stderr = yield* useOutputStream(
     childProcess.stderr,
     "data",
   );

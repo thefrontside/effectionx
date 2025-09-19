@@ -10,7 +10,6 @@ import type {
 } from "./exec/api.ts";
 import { createPosixProcess } from "./exec/posix.ts";
 import { createWin32Process, isWin32 } from "./exec/win32.ts";
-import { forEach } from "@effectionx/stream-helpers";
 
 export * from "./exec/api.ts";
 export * from "./exec/error.ts";
@@ -48,16 +47,23 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
       let stdout = "";
       let stderr = "";
 
-      yield* spawn(() =>
-        forEach(function* (chunk) {
-          stdout += chunk;
-        }, process.stdout)
-      );
-      yield* spawn(() =>
-        forEach(function* (chunk) {
-          stderr += chunk;
-        }, process.stderr)
-      );
+      yield* spawn(function* () {
+        let subscription = yield* process.stdout;
+        let next = yield* subscription.next();
+        while (!next.done) {
+          stdout += next.value;
+          next = yield* subscription.next();
+        }
+      });
+
+      yield* spawn(function* () {
+        let subscription = yield* process.stderr;
+        let next = yield* subscription.next();
+        while (!next.done) {
+          stderr += next.value;
+          next = yield* subscription.next();
+        }
+      });
 
       let status: ExitStatus = yield* process.join();
 
@@ -69,16 +75,23 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
       let stdout = "";
       let stderr = "";
 
-      yield* spawn(() =>
-        forEach(function* (chunk) {
-          stdout += chunk;
-        }, process.stdout)
-      );
-      yield* spawn(() =>
-        forEach(function* (chunk) {
-          stderr += chunk;
-        }, process.stderr)
-      );
+      yield* spawn(function* () {
+        let subscription = yield* process.stdout;
+        let next = yield* subscription.next();
+        while (!next.done) {
+          stdout += next.value;
+          next = yield* subscription.next();
+        }
+      });
+
+      yield* spawn(function* () {
+        let subscription = yield* process.stderr;
+        let next = yield* subscription.next();
+        while (!next.done) {
+          stderr += next.value;
+          next = yield* subscription.next();
+        }
+      });
 
       let status: ExitStatus = yield* process.expect();
 

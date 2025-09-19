@@ -1,5 +1,5 @@
 import type { Operation } from "effection";
-import type { OutputStream } from "../output-stream.ts";
+import type { OutputStream } from "../helpers.ts";
 
 // TODO: import from subscription package once #236 is merged
 export interface Writable<T> {

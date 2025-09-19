@@ -5,6 +5,7 @@ import process from "node:process";
 
 import { type Daemon, daemon } from "../mod.ts";
 import { captureError, expectMatch, fetchText } from "./helpers.ts";
+import { lines } from "../src/helpers.ts";
 
 describe("daemon", () => {
   let task: Task<void>;
@@ -25,7 +26,7 @@ describe("daemon", () => {
 
       proc = yield* result.operation;
 
-      yield* expectMatch(/listening/, proc.stdout.lines());
+      yield* expectMatch(/listening/, lines()(proc.stdout));
     });
 
     it("starts the given child", function* () {
@@ -75,7 +76,7 @@ describe("daemon", () => {
         return new Error(`this shouldn't happen`);
       });
 
-      yield* expectMatch(/listening/, proc.stdout.lines());
+      yield* expectMatch(/listening/, lines()(proc.stdout));
 
       yield* fetchText("http://localhost:29000", {
         method: "POST",

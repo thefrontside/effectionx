@@ -17,7 +17,10 @@ export function useReadable(
   return resource(function* (provide) {
     let signal = createSignal<Uint8Array, void>();
 
-    let listener = (chunk: Uint8Array) => signal.send(chunk);
+    let listener = (chunk: Uint8Array) => {
+      console.log(`process>helpers>listener: ${chunk}`);
+      signal.send(chunk);
+    };
 
     target.on("data", listener);
 

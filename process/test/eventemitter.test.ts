@@ -1,5 +1,5 @@
 import { expect } from "@std/expect";
-import { run, spawn } from "effection";
+import { spawn } from "effection";
 import { describe, it } from "@effectionx/bdd";
 import { EventEmitter } from "node:events";
 

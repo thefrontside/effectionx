@@ -25,7 +25,7 @@ describe("raceMap()", () => {
       expect(Object.keys(results)).toEqual(["first"]);
     },
   );
-  
+
   it("should halt other operations when one completes", function* () {
     let winner;
     let secondCompleted = false;
@@ -46,10 +46,9 @@ describe("raceMap()", () => {
         }
       },
     });
-  
+
     expect(winner).toBe("first");
     expect(Object.keys(results)).toEqual(["first"]);
     expect(secondCompleted).toBe(false);
   });
 });
-

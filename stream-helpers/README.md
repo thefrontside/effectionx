@@ -146,7 +146,11 @@ function* example() {
 
 ### ForEach
 
-The `forEach` helper invokes a function for each item passing through a stream. This is useful when you need to perform side effects or operations on each item without transforming the stream itself. Unlike other stream helpers that return transformed streams, `forEach` consumes the entire stream and returns the stream's close value.
+The `forEach` helper invokes a function for each item passing through a stream.
+This is useful when you need to perform side effects or operations on each item
+without transforming the stream itself. Unlike other stream helpers that return
+transformed streams, `forEach` consumes the entire stream and returns the
+stream's close value.
 
 ```typescript
 import { forEach } from "@effectionx/stream-helpers";
@@ -154,13 +158,15 @@ import { createSignal, spawn } from "effection";
 
 function* example() {
   const stream = createSignal<number, void>();
-  
+
   // Process each item in the stream
-  yield* spawn(() => forEach(function*(item) {
-    console.log(`Processing: ${item}`);
-    // Perform any side effects here
-  }, stream));
-  
+  yield* spawn(() =>
+    forEach(function* (item) {
+      console.log(`Processing: ${item}`);
+      // Perform any side effects here
+    }, stream)
+  );
+
   stream.send(1);
   stream.send(2);
   stream.send(3);
@@ -170,15 +176,17 @@ function* example() {
 // Example: Handling stream close value
 function* exampleWithCloseValue() {
   const stream = createSignal<string, number>();
-  
-  const result = yield* spawn(() => forEach(function*(item) {
-    console.log(`Item: ${item}`);
-  }, stream));
-  
+
+  const result = yield* spawn(() =>
+    forEach(function* (item) {
+      console.log(`Item: ${item}`);
+    }, stream)
+  );
+
   stream.send("hello");
   stream.send("world");
   stream.close(42); // Close with value 42
-  
+
   const closeValue = yield* result;
   console.log(`Stream closed with: ${closeValue}`); // 42
 }

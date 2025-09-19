@@ -5,7 +5,6 @@ import {
   createQueue,
   type Operation,
   resource,
-  run,
   type Subscription,
   suspend,
   useScope,
@@ -104,7 +103,7 @@ function useTestingPair({ fail }: TestingPairOptions = {}): Operation<
 
           return response;
         },
-      ),
+      )
     );
 
     let client = new WebSocket(

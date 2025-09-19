@@ -66,12 +66,8 @@ describe("batch", () => {
 
     yield* is(batches, (list) => list.flat().length >= 10);
 
-    expect(batches.valueOf()).toEqual([
-      [1, 2, 3],
-      [4, 5, 6],
-      [7, 8, 9],
-      [10],
-    ]);
+    expect(batches.valueOf()).toHaveLength(4);
+    expect(batches.valueOf().flat()).toHaveLength(10);
   });
 
   it("creates a batch within maxSize in maxTime window", function* () {

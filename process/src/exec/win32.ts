@@ -75,7 +75,9 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
     stdout: yield* useReadable(childProcess.stdout),
     stderr: yield* useReadable(childProcess.stderr),
     stdoutReady: withResolvers<void>(),
+    stdoutDone: withResolvers<void>(),
     stderrReady: withResolvers<void>(),
+    stderrDone: withResolvers<void>(),
   };
 
   yield* spawn(function* () {
@@ -149,9 +151,12 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
           }
         }
         stdinStream.end();
-        console.log("win32 > before stdout end");
-        yield* once(childProcess.stdout, "end");
-        console.log("win32 > after stdout end");
+        console.log(`win32 > ${pid} > before stdout end`);
+        yield* io.stdoutDone.operation;
+        console.log(`win32 > ${pid} > after stdout end`);
+        console.log(`win32 > ${pid} > before stderr end`);
+        yield* io.stderrDone.operation;
+        console.log(`win32 > ${pid} > after stderr end`);
       } catch (_e) {
         // do nothing, process is probably already dead
       }

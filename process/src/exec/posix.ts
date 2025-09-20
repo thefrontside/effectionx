@@ -73,19 +73,27 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
     stdout: yield* useReadable(childProcess.stdout),
     stderr: yield* useReadable(childProcess.stderr),
     stdoutReady: withResolvers<void>(),
+    stdoutDone: withResolvers<void>(),
     stderrReady: withResolvers<void>(),
+    stderrDone: withResolvers<void>(),
   };
 
   yield* spawn(function*() {
     yield* once(childProcess.stdout, 'readable');
     console.log("posix > stdout is readable");
     io.stdoutReady.resolve();
+    yield* once(childProcess.stdout, 'end');
+    console.log("posix > stdout is done");
+    io.stdoutDone.resolve();
   });
 
   yield* spawn(function*() {
     yield* once(childProcess.stderr, 'readable');
     console.log("posix > stderr is readable");
     io.stderrReady.resolve();
+    yield* once(childProcess.stderr, 'end');
+    console.log("posix > err is done");
+    io.stderrDone.resolve();
   });
 
   let stdout = createSignal<Uint8Array, void>();
@@ -128,8 +136,11 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
         }
         process.kill(-childProcess.pid, "SIGTERM");
         console.log(`posix > ${pid} > before stdout end`);
-        yield* once(childProcess.stdout, "end");
+        yield* io.stdoutDone.operation;
         console.log(`posix > ${pid} > after stdout end`);
+        console.log(`posix > ${pid} > before stderr end`);
+        yield* io.stderrDone.operation;
+        console.log(`posix > ${pid} > after stderr end`);
       } catch (_e) {
         // do nothing, process is probably already dead
       }

@@ -93,8 +93,8 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   }
 
   yield* spawn(function* () {
-    yield* once(childProcess.stdout, "readable");
-    console.log(`win32 > ${pid} > stdout is readable`);
+    yield* once(childProcess.stdout, "data");
+    console.log(`win32 > ${pid} > stdout is producing data`);
     io.stdoutReady.resolve("stdout");
   });
 
@@ -188,7 +188,8 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   }
 
   const winner = yield* race([
-    all([io.stdoutReady.operation, io.stderrReady.operation]),
+    io.stdoutReady.operation,
+    io.stderrReady.operation,
     once(childProcess, "exit"),
   ]);
 

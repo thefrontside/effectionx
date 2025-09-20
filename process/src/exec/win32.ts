@@ -50,6 +50,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
 
   yield* spawn(function* trapError() {
     let [error] = yield* once<[Error]>(childProcess, "error");
+    console.log(`win32 > trapError > ${error.message}`)
     processResult.resolve(Err(error));
   });
 

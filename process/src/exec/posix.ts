@@ -1,5 +1,6 @@
 import { spawn as spawnProcess } from "node:child_process";
 import {
+all,
   createSignal,
   Err,
   Ok,
@@ -117,9 +118,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
   yield* spawn(function* () {
     try {
       let value = yield* once<ProcessResultValue>(childProcess, "exit");
-      yield* io.stdoutReady.operation;
-      yield* io.stderrReady.operation;
-      yield* sleep(1);
+      yield* all([io.stdoutReady.operation, io.stderrReady.operation, sleep(1)]);
       processResult.resolve(Ok(value));
     } finally {
       try {

@@ -71,14 +71,21 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
   let io = {
     stdout: yield* useReadable(childProcess.stdout),
     stderr: yield* useReadable(childProcess.stderr),
-    stdoutReady: withResolvers<void>()
+    stdoutReady: withResolvers<void>(),
+    stderrReady: withResolvers<void>(),
   };
 
   yield* spawn(function*() {
     yield* once(childProcess.stdout, 'readable');
     console.log("posix > stdout is readable");
     io.stdoutReady.resolve();
-  })
+  });
+
+  yield* spawn(function*() {
+    yield* once(childProcess.stderr, 'readable');
+    console.log("posix > stderr is readable");
+    io.stderrReady.resolve();
+  });
 
   let stdout = createSignal<Uint8Array, void>();
   let stderr = createSignal<Uint8Array, void>();
@@ -111,6 +118,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
     try {
       let value = yield* once<ProcessResultValue>(childProcess, "exit");
       yield* io.stdoutReady.operation;
+      yield* io.stderrReady.operation;
       processResult.resolve(Ok(value));
     } finally {
       try {

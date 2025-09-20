@@ -52,7 +52,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
 
   yield* spawn(function* trapError() {
     let [error] = yield* once<[Error]>(childProcess, "error");
-    console.log(`win32 > trapError > ${error.message}`)
+    console.log(`win32 > trapError: ${error.message}`)
     processResult.resolve(Err(error));
   });
 
@@ -68,11 +68,11 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
 
   childProcess.stdout.on(
     "data",
-    (d) => console.log(`posix > ${pid} > stdout > on('data'): ${d}`),
+    (d) => console.log(`win32 > ${pid} > stdout > on('data'): ${d}`),
   );
   childProcess.stderr.on(
     "data",
-    (d) => console.log(`posix > ${pid} > stderr > on('data'): ${d}`),
+    (d) => console.log(`win32 > ${pid} > stderr > on('data'): ${d}`),
   );
 
   let io = {
@@ -86,13 +86,13 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
 
   yield* spawn(function* () {
     yield* once(childProcess.stdout, "readable");
-    console.log("posix > stdout is readable");
+    console.log("win32 > stdout is readable");
     io.stdoutReady.resolve();
   });
 
   yield* spawn(function* () {
     yield* once(childProcess.stderr, "readable");
-    console.log("posix > stderr is readable");
+    console.log("win32 > stderr is readable");
     io.stderrReady.resolve();
   });
 
@@ -166,6 +166,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
       let [code, signal] = result.value;
       return { command, options, code, signal } as ExitStatus;
     } else {
+      console.log(`win32 > join: throwing ${result.error.message}`)
       throw result.error;
     }
   }

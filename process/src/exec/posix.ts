@@ -64,7 +64,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
     "data",
     (d) => console.log(`posix > ${pid} > stdout > on('data'): ${d}`),
   );
-  childProcess.stdout.on(
+  childProcess.stderr.on(
     "data",
     (d) => console.log(`posix > ${pid} > stderr > on('data'): ${d}`),
   );

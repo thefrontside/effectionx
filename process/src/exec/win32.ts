@@ -60,6 +60,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   ]);
 
   if (!result.ok) {
+    console.log(`win32 > failed to start: ${result.error.message}`)
     throw result.error;
   }
 
@@ -67,7 +68,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
     "data",
     (d) => console.log(`posix > ${pid} > stdout > on('data'): ${d}`),
   );
-  childProcess.stdout.on(
+  childProcess.stderr.on(
     "data",
     (d) => console.log(`posix > ${pid} > stderr > on('data'): ${d}`),
   );

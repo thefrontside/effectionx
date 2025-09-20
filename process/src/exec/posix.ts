@@ -135,12 +135,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
           throw new Error("no pid for childProcess");
         }
         process.kill(-childProcess.pid, "SIGTERM");
-        console.log(`posix > ${pid} > before stdout end`);
-        yield* io.stdoutDone.operation;
-        console.log(`posix > ${pid} > after stdout end`);
-        console.log(`posix > ${pid} > before stderr end`);
-        yield* io.stderrDone.operation;
-        console.log(`posix > ${pid} > after stderr end`);
+        yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
       } catch (_e) {
         // do nothing, process is probably already dead
       }

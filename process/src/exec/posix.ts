@@ -56,7 +56,9 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
     throw result.error;
   }
 
-  childProcess.stdout.on("data", (d) => console.log(`posix>on('data'): ${d}`));
+  childProcess.stdout.on("data", (d) => console.log(`posix > stdout > on('data'): ${d}`));
+  childProcess.stdout.on("data", (d) => console.log(`posix > stderr > on('data'): ${d}`));
+
 
   let io = {
     stdout: yield* useReadable(childProcess.stdout),

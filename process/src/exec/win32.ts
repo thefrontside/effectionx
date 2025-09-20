@@ -63,10 +63,10 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   let io = {
     stdout: yield* useReadable(childProcess.stdout),
     stderr: yield* useReadable(childProcess.stderr),
-    stdoutReady: withResolvers<void>(),
-    stdoutDone: withResolvers<void>(),
-    stderrReady: withResolvers<void>(),
-    stderrDone: withResolvers<void>(),
+    stdoutReady: withResolvers<"stdout">(),
+    stdoutDone: withResolvers<"stdout">(),
+    stderrReady: withResolvers<"stderr">(),
+    stderrDone: withResolvers<"stderr">(),
   };
 
   yield* spawn(function* trapError() {
@@ -96,13 +96,13 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   yield* spawn(function* () {
     yield* once(childProcess.stdout, "readable");
     console.log(`win32 > ${pid} > stdout is readable`);
-    io.stdoutReady.resolve();
+    io.stdoutReady.resolve("stdout");
   });
 
   yield* spawn(function* () {
     yield* once(childProcess.stderr, "readable");
     console.log(`win32 > ${pid} > stderr is readable`);
-    io.stderrReady.resolve();
+    io.stderrReady.resolve("stderr");
   });
 
   const stdout = createSignal<Uint8Array, void>();
@@ -136,11 +136,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
     try {
       let value = yield* once<ProcessResultValue>(childProcess, "exit");
       console.log(`win32 > ${pid} > complete: ${JSON.stringify(value)}`);
-      yield* all([
-        io.stdoutReady.operation,
-        io.stderrReady.operation,
-        sleep(1),
-      ]);
+      yield* sleep(1);
       processResult.resolve(Ok(value));
     } finally {
       try {
@@ -191,6 +187,14 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
       return status;
     }
   }
+
+  const winner = yield* race([
+    io.stdoutReady.operation,
+    io.stderrReady.operation,
+    once(childProcess, "exit")
+  ]);
+
+  console.log(`win32 > winner: ${JSON.stringify(winner)}`)
 
   // FYI: this function starts a process and returns without blocking
   return {

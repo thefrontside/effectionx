@@ -5,6 +5,7 @@ import {
   Ok,
   race,
   type Result,
+  sleep,
   spawn,
   withResolvers,
 } from "effection";
@@ -59,7 +60,6 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
   childProcess.stdout.on("data", (d) => console.log(`posix > ${pid} > stdout > on('data'): ${d}`));
   childProcess.stdout.on("data", (d) => console.log(`posix > ${pid} > stderr > on('data'): ${d}`));
 
-
   let io = {
     stdout: yield* useReadable(childProcess.stdout),
     stderr: yield* useReadable(childProcess.stderr),
@@ -102,6 +102,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
           // deno-lint-ignore no-unsafe-finally
           throw new Error("no pid for childProcess");
         }
+        yield* sleep(1);
         process.kill(-childProcess.pid, "SIGTERM");
         console.log(`posix > ${pid} > before stdout end`)
         yield* once(childProcess.stdout, "end");

@@ -125,8 +125,8 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
 
   yield* spawn(function* () {
     try {
-      let value = yield* once<ProcessResultValue>(childProcess, "error");
-      console.log({ value })
+      let value = yield* once<ProcessResultValue>(childProcess, "exit");
+      console.log(`win32 > complete: ${JSON.stringify(value)}`)
       yield* all([
         io.stdoutReady.operation,
         io.stderrReady.operation,

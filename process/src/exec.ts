@@ -67,6 +67,8 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
 
       let status: ExitStatus = yield* process.join();
 
+      console.log(`exec > join: ${JSON.stringify({ stdout, stderr, ...status })}`)
+
       return { ...status, stdout, stderr };
     },
     *expect() {
@@ -94,6 +96,8 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
       });
 
       let status: ExitStatus = yield* process.expect();
+
+      console.log(`exec > expect: ${JSON.stringify({ stdout, stderr, ...status })}`)
 
       return { ...status, stdout, stderr };
     },

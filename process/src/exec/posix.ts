@@ -1,5 +1,6 @@
 import { spawn as spawnProcess } from "node:child_process";
 import {
+all,
   createSignal,
   Err,
   Ok,
@@ -43,33 +44,32 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
 
   let { pid } = childProcess;
 
-  yield* spawn(function* trapError() {
-    let [error] = yield* once<[Error]>(childProcess, "error");
-    console.log(`posix>error: ${error}`);
-    processResult.resolve(Err(error));
-  });
-
-  let result = yield* race([
-    processResult.operation,
-    box(() => once(childProcess, "spawn")),
-  ]);
-  if (!result.ok) {
-    throw result.error;
-  }
-
-  childProcess.stdout.on(
-    "data",
-    (d) => console.log(`posix > ${pid} > stdout > on('data'): ${d}`),
-  );
-  childProcess.stdout.on(
-    "data",
-    (d) => console.log(`posix > ${pid} > stderr > on('data'): ${d}`),
-  );
-
   let io = {
     stdout: yield* useReadable(childProcess.stdout),
     stderr: yield* useReadable(childProcess.stderr),
+    stdoutReady: withResolvers<void>(),
+    stdoutDone: withResolvers<void>(),
+    stderrReady: withResolvers<void>(),
+    stderrDone: withResolvers<void>(),
   };
+
+  yield* spawn(function*() {
+    yield* once(childProcess.stdout, 'readable');
+    console.log("posix > stdout is readable");
+    io.stdoutReady.resolve();
+    yield* once(childProcess.stdout, 'end');
+    console.log("posix > stdout is done");
+    io.stdoutDone.resolve();
+  });
+
+  yield* spawn(function*() {
+    yield* once(childProcess.stderr, 'readable');
+    console.log("posix > stderr is readable");
+    io.stderrReady.resolve();
+    yield* once(childProcess.stderr, 'end');
+    console.log("posix > err is done");
+    io.stderrDone.resolve();
+  });
 
   let stdout = createSignal<Uint8Array, void>();
   let stderr = createSignal<Uint8Array, void>();
@@ -92,16 +92,22 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
     stderr.close();
   });
 
+  yield* spawn(function* trapError() {
+    let [error] = yield* once<[Error]>(childProcess, "error");
+    console.log(`posix > ${pid} > error: ${error}`);
+    processResult.resolve(Err(error));
+  });
+
   let stdin: Writable<string> = {
     send(data: string) {
       childProcess.stdin.write(data);
     },
   };
-
+  
   yield* spawn(function* () {
     try {
-      let value = yield* once<ProcessResultValue>(childProcess, "exit");
-      yield* sleep(1);
+      let value = yield* once<ProcessResultValue>(childProcess, "close");
+      yield* all([io.stdoutReady.operation, io.stderrReady.operation, sleep(1)]);
       processResult.resolve(Ok(value));
     } finally {
       try {
@@ -110,9 +116,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
           throw new Error("no pid for childProcess");
         }
         process.kill(-childProcess.pid, "SIGTERM");
-        console.log(`posix > ${pid} > before stdout end`);
-        yield* once(childProcess.stdout, "end");
-        console.log(`posix > ${pid} > after stdout end`);
+        yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
       } catch (_e) {
         // do nothing, process is probably already dead
       }

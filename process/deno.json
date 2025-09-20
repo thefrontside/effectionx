@@ -4,7 +4,8 @@
   "version": "0.5.0",
   "license": "MIT",
   "imports": {
-    "cross-spawn": "npm:cross-spawn@7.0.3",
+    "@types/cross-spawn": "npm:@types/cross-spawn@6.0.6",
+    "cross-spawn": "npm:cross-spawn@7.0.6",
     "ctrlc-windows": "npm:ctrlc-windows@2.1.0",
     "effection": "npm:effection@^3",
     "shellwords": "npm:shellwords@^1.1.1",

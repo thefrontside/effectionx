@@ -12,25 +12,24 @@ import type { Readable } from "node:stream";
 export type OutputStream = Stream<Uint8Array, void>;
 
 export function useReadable(
-  target: Readable,
+  target: Readable | null,
 ): Stream<Uint8Array, void> {
   return resource(function* (provide) {
     let signal = createSignal<Uint8Array, void>();
 
     let listener = (chunk: Uint8Array) => {
-      console.log(`process>helpers>listener: ${chunk}`);
       signal.send(chunk);
     };
 
-    target.on("data", listener);
+    target?.on("data", listener);
 
-    target.on("end", signal.close);
+    target?.on("end", signal.close);
 
     try {
       yield* provide(yield* signal);
     } finally {
-      target.off("data", listener);
-      target.off("end", signal.close);
+      target?.off("data", listener);
+      target?.off("end", signal.close);
       signal.close();
     }
   });

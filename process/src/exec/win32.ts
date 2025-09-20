@@ -48,6 +48,8 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
 
   let { pid } = childProcess;
 
+  console.log(`win32 > ${pid}`)
+
   yield* spawn(function* trapError() {
     let [error] = yield* once<[Error]>(childProcess, "error");
     console.log(`win32 > trapError > ${error.message}`)
@@ -121,14 +123,10 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
     },
   };
 
-  yield* spawn(function* trapError() {
-    let [error] = yield* once<[Error]>(childProcess, "error");
-    processResult.resolve(Err(error));
-  });
-
   yield* spawn(function* () {
     try {
-      let value = yield* once<ProcessResultValue>(childProcess, "close");
+      let value = yield* once<ProcessResultValue>(childProcess, "error");
+      console.log({ value })
       yield* all([
         io.stdoutReady.operation,
         io.stderrReady.operation,

@@ -3,16 +3,16 @@ import {
   createSignal,
   Err,
   Ok,
-  race,
   type Result,
   sleep,
   spawn,
   withResolvers,
 } from "effection";
+// @ts-types="npm:@types/cross-spawn"
 import { spawn as spawnProcess } from "cross-spawn";
 import { ctrlc } from "ctrlc-windows";
 import { once } from "../eventemitter.ts";
-import { box, useReadable } from "../helpers.ts";
+import { useReadable } from "../helpers.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
 
@@ -46,20 +46,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
 
   let { pid } = childProcess;
 
-  yield* spawn(function* trapError() {
-    let [error] = yield* once<[Error]>(childProcess, "error");
-    processResult.resolve(Err(error));
-  });
-
-  let result = yield* race([
-    processResult.operation,
-    box(() => once(childProcess, "spawn")),
-  ]);
-  if (!result.ok) {
-    throw result.error;
-  }
-
-  const io = {
+  let io = {
     stdout: yield* useReadable(childProcess.stdout),
     stderr: yield* useReadable(childProcess.stderr),
   };
@@ -85,16 +72,17 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
     stderr.close();
   });
 
+  yield* spawn(function* trapError() {
+    const [error] = yield* once<Error[]>(childProcess, "error");    
+    processResult.resolve(Err(error));
+  });
+
+
   let stdin: Writable<string> = {
     send(data: string) {
       childProcess.stdin.write(data);
     },
   };
-
-  yield* spawn(function* trapError() {
-    let [error] = yield* once<[Error]>(childProcess, "error");
-    processResult.resolve(Err(error));
-  });
 
   yield* spawn(function* () {
     try {
@@ -119,7 +107,6 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
           }
         }
         stdinStream.end();
-        yield* once(childProcess.stdout, "end");
       } catch (_e) {
         // do nothing, process is probably already dead
       }
@@ -137,7 +124,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   }
 
   function* expect() {
-    let status: ExitStatus = yield* join();
+    let status = yield* join();
     if (status.code != 0) {
       throw new ExecError(status, command, options);
     } else {

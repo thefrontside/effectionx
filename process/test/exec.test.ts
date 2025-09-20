@@ -72,14 +72,28 @@ describe("exec", () => {
   });
 
   describe("spawning", () => {
-    it("throws an exception if process fails to start", function* () {
-      let error: unknown;
-      try {
-        yield* exec("argle", { arguments: ["bargle"] });
-      } catch (e) {
-        error = e;
-      }
-      expect(error).toBeInstanceOf(Error);
+    describe("a process that fails to start because executable is not found", () => {
+      it("calling join() throws an exception", function* () {
+        let error: unknown;
+        let proc = yield* exec("argle", { arguments: ["bargle"] });
+        try {
+          yield* proc.join();
+        } catch (e) {
+          error = e;
+        }
+        expect(error).toBeInstanceOf(Error);
+      });
+      it("calling expect() throws an exception", function* () {
+        let error: unknown;
+        let proc = yield* exec("argle", { arguments: ["bargle"] });
+        try {
+          yield* proc.expect();
+        } catch (e) {
+          error = e;
+        }
+
+        expect(error).toBeDefined();
+      });
     });
   });
   describe("successfully", () => {
@@ -89,10 +103,10 @@ describe("exec", () => {
 
     beforeEach(function* () {
       proc = yield* exec("deno run -A './fixtures/echo-server.ts'", {
-        env: { 
-          PORT: "29000", 
+        env: {
+          PORT: "29000",
           PATH: process.env.PATH as string,
-          ... SystemRoot ? { SystemRoot } : {}
+          ...SystemRoot ? { SystemRoot } : {},
         },
         cwd: import.meta.dirname,
       });
@@ -114,6 +128,8 @@ describe("exec", () => {
       it("has a pid", function* () {
         expect(typeof proc.pid).toBe("number");
         expect(proc.pid).not.toBeNaN();
+        // make sure it completes
+        yield* proc.join();
       });
 
       it("joins successfully", function* () {

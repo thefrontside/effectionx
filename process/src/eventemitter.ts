@@ -14,13 +14,13 @@ import type { EventEmitter } from "node:stream";
  */
 export function on<
   T extends unknown[],
->(target: EventEmitter, eventName: string): Stream<T, never> {
+>(target: EventEmitter | null, eventName: string): Stream<T, never> {
   return resource(function* (provide) {
     let signal = createSignal<T, never>();
 
     let listener = (...args: T) => signal.send(args);
 
-    target.on(eventName, listener);
+    target?.on(eventName, listener);
 
     try {
       yield* provide(
@@ -29,7 +29,7 @@ export function on<
         >,
       );
     } finally {
-      target.off(eventName, listener);
+      target?.off(eventName, listener);
     }
   });
 }
@@ -42,17 +42,17 @@ export function on<
  * @returns an Operation that yields the next emitted event
  */
 export function once<TArgs extends unknown[] = unknown[]>(
-  source: EventEmitter,
+  source: EventEmitter | null,
   eventName: string,
 ): Operation<TArgs> {
   const result = withResolvers<TArgs>();
 
   let listener = (...args: unknown[]) => {
     result.resolve(args as TArgs);
-    source.off(eventName, listener);
+    source?.off(eventName, listener);
   };
 
-  source.on(eventName, listener);
+  source?.on(eventName, listener);
 
   return result.operation;
 }

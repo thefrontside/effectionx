@@ -1,111 +1,98 @@
-import type { Operation, Result, Stream } from "effection";
-import { call, each, Ok, run, sleep, spawn } from "effection";
-import { describe, it as bddIt } from "bdd";
-import { expect } from "expect";
+import { describe, it } from "@effectionx/bdd";
 import { assert } from "@std/assert";
-import { emptyDir } from "@std/fs";
+import { expect } from "@std/expect";
+import { emptyDir } from "@std/fs/empty-dir";
 
-// temporariy disable watch tests on linux because of
-// https://github.com/denoland/deno/issues/28041
-function it(...args: Parameters<typeof bddIt>) {
-  if (Deno.build.os === "linux") {
-    return bddIt.skip(...args);
-  }
-  return bddIt(...args);
-}
-it.skip = bddIt.skip;
+import type { Operation, Result, Stream } from "effection";
+import { each, Ok, sleep, spawn, until } from "effection";
 
 describe("watch", () => {
-  it("restarts the specified process when files change.", async () => {
-    await run(function* () {
-      let fixture = yield* useFixture();
-      let processes = yield* inspector(
-        watch({
-          path: fixture.path,
-          cmd: `cat ${fixture.getPath("src/file.txt")}`,
-          event: "change",
-        }),
-      );
+  it("restarts the specified process when files change.", function* () {
+    let fixture = yield* useFixture();
+    let processes = yield* inspector(
+      watch({
+        path: fixture.path,
+        cmd: `cat ${fixture.getPath("src/file.txt")}`,
+        event: "change",
+      }),
+    );
 
-      let start = yield* processes.expectNext();
+    let start = yield* processes.expectNext();
 
-      let exit = yield* start.process;
+    let exit = yield* start.process.join();
 
-      expect(exit.code).toEqual(0);
+    expect(exit.code).toEqual(0);
 
-      expect(start.stdout).toEqual("this is a source file");
+    expect(start.stdout).toEqual("this is a source file");
 
-      yield* call(() =>
-        fixture.write("src/file.txt", "this source file is changed")
-      );
+    yield* fixture.write("src/file.txt", "this source file is changed");
 
-      let next = yield* processes.expectNext();
+    let next = yield* processes.expectNext();
 
-      expect(next.stdout).toEqual("this source file is changed");
-    });
+    expect(next.stdout).toEqual("this source file is changed");
   });
 
-  it("ignores files in .gitignore", async () => {
-    await run(function* () {
-      let fixture = yield* useFixture();
+  it("ignores files in .gitignore", function* () {
+    let fixture = yield* useFixture();
 
-      let processes = yield* inspector(
-        watch({
-          path: fixture.path,
-          cmd: `echo hello`,
-          event: "change",
-        }),
-      );
+    let processes = yield* inspector(
+      watch({
+        path: fixture.path,
+        cmd: `echo hello`,
+        event: "change",
+      }),
+    );
 
-      //it starts the first time
-      yield* processes.expectNext();
+    //it starts the first time
+    yield* processes.expectNext();
 
-      yield* fixture.write("dist/artifact.txt", "this file was built again");
+    yield* fixture.write("dist/artifact.txt", "this file was built again");
 
-      yield* processes.expectNoRestart();
-    });
+    yield* processes.expectNoRestart();
   });
 
-  it.skip("ignores files in a .gitignore that is in a parent directory", () => {
+  it.skip("ignores files in a .gitignore that is in a parent directory", function* () {
     // start an example in a nested directory than the git ignore
     // touch a change in an ignored file within the directory
     // enuser that there was no restart;
   });
 
-  it("waits until stdout is closed before restarting", async () => {
-    await run(function* () {
-      let fixture = yield* useFixture();
-      let processes = yield* inspector(
-        watch({
-          path: fixture.path,
-          cmd: `deno run -A watch/test/watch-graceful.ts`,
-        }),
-      );
+  it("waits until stdout is closed before restarting", function* () {
+    let fixture = yield* useFixture();
+    let processes = yield* inspector(
+      watch({
+        path: fixture.path,
+        cmd: `deno run -A watch-graceful.ts`,
+        execOptions: {
+          cwd: import.meta.dirname,
+          shell: true,
+        },
+      }),
+    );
 
-      let first = yield* processes.expectNext();
+    let first = yield* processes.expectNext();
 
-      yield* fixture.write("src/file.txt", "hello planet");
+    yield* fixture.write("src/file.txt", "hello planet");
 
-      yield* processes.expectNext();
+    yield* processes.expectNext();
 
-      expect(first.stdout).toEqual("done\n");
-    });
-
-    // start an example that prints "done" to the console upon SIGINT
+    expect(first.stdout).toEqual("done\n");
   });
 
-  it.skip("allows for a hard kill ", () => {
+  // start an example that prints "done" to the console upon SIGINT);
+
+  it.skip("allows for a hard kill ", function* () {
     // start an example that will suspend asked to exit and so will
     // never exit.
     // send the command to exit the watch and the main returns
   });
 });
 
-import { type Start, watch } from "../watch.ts";
-import type { Process } from "../child-process.ts";
-import { cp, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "@std/path";
+import type { Process } from "@effectionx/process";
 import { ensureDir } from "@std/fs/ensure-dir";
+import { dirname, join } from "@std/path";
+import { cp, readFile, writeFile } from "node:fs/promises";
+import { type Start, watch } from "../watch.ts";
 
 interface Fixture {
   path: string;
@@ -120,15 +107,16 @@ interface Fixture {
 function* useFixture(): Operation<Fixture> {
   let tmpDir = new URL("./temp", import.meta.url).pathname;
   let fixtureDir = new URL("./fixtures", import.meta.url).pathname;
-  let path = join(tmpDir, "fixtures");
-  yield* call(() => emptyDir(tmpDir));
+  // let path = join(tmpDir, "fixtures");
+  let path = tmpDir;
+  yield* until(emptyDir(tmpDir));
 
-  yield* call(() =>
+  yield* until(
     cp(fixtureDir, tmpDir, {
       recursive: true,
       preserveTimestamps: true,
       force: true,
-    })
+    }),
   );
 
   return {
@@ -136,15 +124,13 @@ function* useFixture(): Operation<Fixture> {
     getPath(filename): string {
       return join(path, filename);
     },
-    write(filename: string, content: string) {
-      return call(async () => {
-        const dest = join(path, filename);
-        await ensureDir(dirname(dest));
-        await writeFile(join(path, filename), content);
-      });
+    *write(filename: string, content: string) {
+      const dest = join(path, filename);
+      yield* until(ensureDir(dirname(dest)));
+      yield* until(writeFile(join(path, filename), content));
     },
     *read(name) {
-      return String(yield* call(() => readFile(join(path, name))));
+      return String(yield* until(readFile(join(path, name))));
     },
   };
 }
@@ -174,6 +160,7 @@ function* inspector(stream: Stream<Start, never>) {
         starts.push(Ok(start));
         yield* spawn(function* () {
           for (let chunk of yield* each(process.stdout)) {
+            console.log({ chunk: String(chunk) });
             start.stdout += String(chunk);
             yield* each.next();
           }
@@ -226,12 +213,3 @@ function* inspector(stream: Stream<Start, never>) {
   };
   return inspector;
 }
-
-// function* ntimeout<T>(op: () => Operation<T>): Operation<T> {
-//   let result = yield* timebox<T>(1000, op);
-//   if (result.timeout) {
-//     throw new Error(`timeout`);
-//   } else {
-//     return result.value;
-//   }
-// };

@@ -14,7 +14,7 @@ export interface ArraySignal<T> extends ValueSignal<T[]> {
    * @param item - The value to push onto the array.
    * @returns The new length of the array.
    */
-  push(item: T): number;
+  push(...args: T[]): number;
   /**
    * Removes the first value from the array and returns it.
    * If the array is empty, the operation will block until a value is available.

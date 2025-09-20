@@ -1,7 +1,7 @@
-import { describe, it } from "@std/testing/bdd";
 import { expect } from "@std/expect";
-import { createTestAdapter } from "../mod.ts";
+import { describe, it } from "@std/testing/bdd";
 import { createContext } from "effection";
+import { createTestAdapter } from "../mod.ts";
 
 describe("TestAdapter", () => {
   it("can run a test", async () => {

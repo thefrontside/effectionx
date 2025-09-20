@@ -50,6 +50,16 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
 
   console.log(`win32 > ${pid}`);
 
+  childProcess.stdout.on(
+    "data",
+    (d) => console.log(`win32 > ${pid} > stdout: ${d}`),
+  );
+  childProcess.stderr.on(
+    "data",
+    (d) => console.log(`win32 > ${pid} > stderr: ${d}`),
+  );
+
+
   let io = {
     stdout: yield* useReadable(childProcess.stdout),
     stderr: yield* useReadable(childProcess.stderr),

@@ -59,7 +59,6 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
     (d) => console.log(`win32 > ${pid} > stderr: ${d}`),
   );
 
-
   let io = {
     stdout: yield* useReadable(childProcess.stdout),
     stderr: yield* useReadable(childProcess.stderr),
@@ -189,12 +188,11 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   }
 
   const winner = yield* race([
-    io.stdoutReady.operation,
-    io.stderrReady.operation,
-    once(childProcess, "exit")
+    all([io.stdoutReady.operation, io.stderrReady.operation]),
+    once(childProcess, "exit"),
   ]);
 
-  console.log(`win32 > winner: ${JSON.stringify(winner)}`)
+  console.log(`win32 > winner: ${JSON.stringify(winner)}`);
 
   // FYI: this function starts a process and returns without blocking
   return {

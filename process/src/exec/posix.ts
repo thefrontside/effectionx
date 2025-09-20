@@ -22,6 +22,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
   options,
 ) {
   let processResult = withResolvers<Result<ProcessResultValue>>();
+  
 
   // Killing all child processes started by this command is surprisingly
   // tricky. If a process spawns another processes and we kill the parent,
@@ -53,6 +54,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
     processResult.operation,
     box(() => once(childProcess, "spawn")),
   ]);
+
   if (!result.ok) {
     throw result.error;
   }
@@ -69,7 +71,14 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
   let io = {
     stdout: yield* useReadable(childProcess.stdout),
     stderr: yield* useReadable(childProcess.stderr),
+    stdoutReady: withResolvers<void>()
   };
+
+  yield* spawn(function*() {
+    yield* once(childProcess.stdout, 'readable');
+    console.log("posix > stdout is readable");
+    io.stdoutReady.resolve();
+  })
 
   let stdout = createSignal<Uint8Array, void>();
   let stderr = createSignal<Uint8Array, void>();
@@ -101,7 +110,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
   yield* spawn(function* () {
     try {
       let value = yield* once<ProcessResultValue>(childProcess, "exit");
-      yield* sleep(1);
+      yield* io.stdoutReady.operation;
       processResult.resolve(Ok(value));
     } finally {
       try {

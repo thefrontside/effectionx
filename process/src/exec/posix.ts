@@ -95,6 +95,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
   yield* spawn(function* () {
     try {
       let value = yield* once<ProcessResultValue>(childProcess, "exit");
+      yield* sleep(1);
       processResult.resolve(Ok(value));
     } finally {
       try {
@@ -102,7 +103,6 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
           // deno-lint-ignore no-unsafe-finally
           throw new Error("no pid for childProcess");
         }
-        yield* sleep(15);
         process.kill(-childProcess.pid, "SIGTERM");
         console.log(`posix > ${pid} > before stdout end`)
         yield* once(childProcess.stdout, "end");

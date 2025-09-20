@@ -150,9 +150,9 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
           }
         }
         stdinStream.end();
-        console.log(`win32 > ${pid} > before waiting for close`);
-        yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
-        console.log(`win32 > ${pid} > after waiting for close`);
+        // console.log(`win32 > ${pid} > before waiting for close`);
+        // yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
+        // console.log(`win32 > ${pid} > after waiting for close`);
       } catch (_e) {
         // do nothing, process is probably already dead
       }

@@ -36,7 +36,8 @@ jobs:
 
       # - run: deno lint
 
-      - run: uname -a
+      - run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run
+        working-directory: process
 
       - run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run
-        # working-directory: process
+        working-directory: watch

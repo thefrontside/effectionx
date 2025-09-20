@@ -5,6 +5,7 @@ import {
   Ok,
   race,
   type Result,
+  sleep,
   spawn,
   withResolvers,
 } from "effection";
@@ -98,6 +99,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   yield* spawn(function* () {
     try {
       let value = yield* once<ProcessResultValue>(childProcess, "exit");
+      yield* sleep(1);
       processResult.resolve(Ok(value));
     } finally {
       try {
@@ -117,9 +119,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
           }
         }
         stdinStream.end();
-        if (childProcess.stdout) {
-          yield* once(childProcess.stdout, "end");
-        }
+        yield* once(childProcess.stdout, "end");
       } catch (_e) {
         // do nothing, process is probably already dead
       }

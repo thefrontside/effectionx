@@ -36,8 +36,8 @@ jobs:
 
       # - run: deno lint
 
-      - run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run
+      - run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi
         working-directory: process
 
-      - run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run
+      - run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi
         working-directory: watch

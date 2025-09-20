@@ -15,8 +15,8 @@ describe("daemon", () => {
     beforeEach(function* () {
       const result = withResolvers<Daemon>();
       task = yield* spawn<void>(function* () {
-        let proc = yield* daemon("node", {
-          arguments: ["./fixtures/echo-server.js"],
+        let proc = yield* daemon("deno", {
+          arguments: ["run", "-A", "./fixtures/echo-server.ts"],
           env: { PORT: "29000", PATH: process.env.PATH as string },
           cwd: import.meta.dirname,
         });
@@ -61,8 +61,8 @@ describe("daemon", () => {
   describe("shutting down the daemon process prematurely", () => {
     let task: Task<Error>;
     beforeEach(function* () {
-      let proc = yield* daemon("node", {
-        arguments: ["./fixtures/echo-server.js"],
+      let proc = yield* daemon("deno", {
+        arguments: ["run", "-A", "./fixtures/echo-server.ts"],
         env: { PORT: "29000", PATH: process.env.PATH as string },
         cwd: import.meta.dirname,
       });

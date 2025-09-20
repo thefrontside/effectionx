@@ -86,7 +86,7 @@ describe("exec", () => {
     let joinStderr: Task<unknown>;
 
     beforeEach(function* () {
-      proc = yield* exec("node './fixtures/echo-server.js'", {
+      proc = yield* exec("deno run -A './fixtures/echo-server.ts'", {
         env: { PORT: "29000", PATH: process.env.PATH as string },
         cwd: import.meta.dirname,
       });

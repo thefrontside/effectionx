@@ -50,6 +50,15 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
 
   console.log(`win32 > ${pid}`);
 
+  let io = {
+    stdout: yield* useReadable(childProcess.stdout),
+    stderr: yield* useReadable(childProcess.stderr),
+    stdoutReady: withResolvers<void>(),
+    stdoutDone: withResolvers<void>(),
+    stderrReady: withResolvers<void>(),
+    stderrDone: withResolvers<void>(),
+  };
+
   yield* spawn(function* trapError() {
     console.log(`win32 > ${pid} > trapError waiting for error`);
     let [error] = yield* once<[Error]>(childProcess, "error");
@@ -60,14 +69,6 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   let result = yield* race([
     processResult.operation,
     box(function* () {
-      childProcess.stdout.on(
-        "data",
-        (d) => console.log(`win32 > ${pid} > stdout: ${d}`),
-      );
-      childProcess.stderr.on(
-        "data",
-        (d) => console.log(`win32 > ${pid} > stderr: ${d}`),
-      );
       console.log(`win32 > ${pid} > waiting for spawn`);
       yield* once(childProcess, "spawn");
       console.log(`win32 > ${pid} > spawned`);
@@ -81,15 +82,6 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
     console.log(`win32 > ${pid} > failed to start: ${result.error.message}`);
     throw result.error;
   }
-
-  let io = {
-    stdout: yield* useReadable(childProcess.stdout),
-    stderr: yield* useReadable(childProcess.stderr),
-    stdoutReady: withResolvers<void>(),
-    stdoutDone: withResolvers<void>(),
-    stderrReady: withResolvers<void>(),
-    stderrDone: withResolvers<void>(),
-  };
 
   yield* spawn(function* () {
     yield* once(childProcess.stdout, "readable");
@@ -158,9 +150,9 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
           }
         }
         stdinStream.end();
-        // console.log(`win32 > ${pid} > before waiting for close`);
-        // yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
-        // console.log(`win32 > ${pid} > after waiting for close`);
+        console.log(`win32 > ${pid} > before waiting for close`);
+        yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
+        console.log(`win32 > ${pid} > after waiting for close`);
       } catch (_e) {
         // do nothing, process is probably already dead
       }

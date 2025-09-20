@@ -45,7 +45,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
 
   yield* spawn(function* trapError() {
     let [error] = yield* once<[Error]>(childProcess, "error");
-    console.log(`posix>error: ${error}`)
+    console.log(`posix>error: ${error}`);
     processResult.resolve(Err(error));
   });
 
@@ -57,8 +57,14 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
     throw result.error;
   }
 
-  childProcess.stdout.on("data", (d) => console.log(`posix > ${pid} > stdout > on('data'): ${d}`));
-  childProcess.stdout.on("data", (d) => console.log(`posix > ${pid} > stderr > on('data'): ${d}`));
+  childProcess.stdout.on(
+    "data",
+    (d) => console.log(`posix > ${pid} > stdout > on('data'): ${d}`),
+  );
+  childProcess.stdout.on(
+    "data",
+    (d) => console.log(`posix > ${pid} > stderr > on('data'): ${d}`),
+  );
 
   let io = {
     stdout: yield* useReadable(childProcess.stdout),
@@ -104,9 +110,9 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
           throw new Error("no pid for childProcess");
         }
         process.kill(-childProcess.pid, "SIGTERM");
-        console.log(`posix > ${pid} > before stdout end`)
+        console.log(`posix > ${pid} > before stdout end`);
         yield* once(childProcess.stdout, "end");
-        console.log(`posix > ${pid} > after stdout end`)
+        console.log(`posix > ${pid} > after stdout end`);
       } catch (_e) {
         // do nothing, process is probably already dead
       }
@@ -125,7 +131,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
 
   function* expect() {
     let status: ExitStatus = yield* join();
-    console.log(`posix > ${pid} > expect: ${JSON.stringify(status)}`)
+    console.log(`posix > ${pid} > expect: ${JSON.stringify(status)}`);
     if (status.code != 0) {
       throw new ExecError(status, command, options);
     } else {

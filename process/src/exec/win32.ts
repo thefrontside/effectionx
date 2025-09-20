@@ -119,7 +119,9 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
           }
         }
         stdinStream.end();
+        console.log("win32 > before stdout end");
         yield* once(childProcess.stdout, "end");
+        console.log("win32 > after stdout end")
       } catch (_e) {
         // do nothing, process is probably already dead
       }
@@ -137,7 +139,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   }
 
   function* expect() {
-    let status: ExitStatus = yield* join();
+    let status = yield* join();
     if (status.code != 0) {
       throw new ExecError(status, command, options);
     } else {

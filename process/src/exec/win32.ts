@@ -51,36 +51,36 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   console.log(`win32 > ${pid}`);
 
   yield* spawn(function* trapError() {
-    console.log(`win32 > ${pid} > trapError waiting for error`)
+    console.log(`win32 > ${pid} > trapError waiting for error`);
     let [error] = yield* once<[Error]>(childProcess, "error");
-    console.log(`win32 > ${pid} > trapError: ${error.message}`)
+    console.log(`win32 > ${pid} > trapError: ${error.message}`);
     processResult.resolve(Err(error));
   });
 
   let result = yield* race([
     processResult.operation,
-    box(function*() {
-      console.log(`win32 > ${pid} > waiting for spawn`)      
+    box(function* () {
+      childProcess.stdout.on(
+        "data",
+        (d) => console.log(`win32 > ${pid} > stdout: ${d}`),
+      );
+      childProcess.stderr.on(
+        "data",
+        (d) => console.log(`win32 > ${pid} > stderr: ${d}`),
+      );
+      console.log(`win32 > ${pid} > waiting for spawn`);
       yield* once(childProcess, "spawn");
-      console.log(`win32 > ${pid} > spawned`)
+      console.log(`win32 > ${pid} > spawned`);
     }),
   ]);
 
-  console.log(`win32 > ${pid} > after result: ${JSON.stringify(result)}`)
+  console.log(`win32 > ${pid} > after result`);
+  console.dir(result, { depth: 10 });
 
   if (!result.ok) {
-    console.log(`win32 > ${pid} > failed to start: ${result.error.message}`)
+    console.log(`win32 > ${pid} > failed to start: ${result.error.message}`);
     throw result.error;
   }
-
-  childProcess.stdout.on(
-    "data",
-    (d) => console.log(`win32 > ${pid} > stdout > on('data'): ${d}`),
-  );
-  childProcess.stderr.on(
-    "data",
-    (d) => console.log(`win32 > ${pid} > stderr > on('data'): ${d}`),
-  );
 
   let io = {
     stdout: yield* useReadable(childProcess.stdout),
@@ -133,7 +133,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   yield* spawn(function* () {
     try {
       let value = yield* once<ProcessResultValue>(childProcess, "exit");
-      console.log(`win32 > ${pid} > complete: ${JSON.stringify(value)}`)
+      console.log(`win32 > ${pid} > complete: ${JSON.stringify(value)}`);
       yield* all([
         io.stdoutReady.operation,
         io.stderrReady.operation,
@@ -176,7 +176,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
       let [code, signal] = result.value;
       return { command, options, code, signal } as ExitStatus;
     } else {
-      console.log(`win32 > ${pid} > join: throwing ${result.error.message}`)
+      console.log(`win32 > ${pid} > join: throwing ${result.error.message}`);
       throw result.error;
     }
   }

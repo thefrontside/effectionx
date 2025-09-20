@@ -49,9 +49,9 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   let { pid } = childProcess;
 
   console.log(`win32 > ${pid}`);
-  console.log(childProcess)
 
   yield* spawn(function* trapError() {
+    console.log(`win32 > trapError waiting for error`)
     let [error] = yield* once<[Error]>(childProcess, "error");
     console.log(`win32 > trapError: ${error.message}`)
     processResult.resolve(Err(error));
@@ -59,8 +59,14 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
 
   let result = yield* race([
     processResult.operation,
-    box(() => once(childProcess, "spawn")),
+    box(function*() {
+      console.log(`win32 > waiting for spawn`)      
+      yield* once(childProcess, "spawn");
+      console.log(`win32 > spawned`)
+    }),
   ]);
+
+  console.log(`win32 > after result: ${JSON.stringify(result)}`)
 
   if (!result.ok) {
     console.log(`win32 > failed to start: ${result.error.message}`)

@@ -12,6 +12,8 @@ import {
 import process from "node:process";
 import { lines } from "../src/helpers.ts";
 
+const SystemRoot = Deno.env.get("SystemRoot");
+
 describe("exec", () => {
   describe(".join", () => {
     it("runs successfully to completion", function* () {
@@ -87,7 +89,11 @@ describe("exec", () => {
 
     beforeEach(function* () {
       proc = yield* exec("deno run -A './fixtures/echo-server.ts'", {
-        env: { PORT: "29000", PATH: process.env.PATH as string },
+        env: { 
+          PORT: "29000", 
+          PATH: process.env.PATH as string,
+          ... SystemRoot ? { SystemRoot } : {}
+        },
         cwd: import.meta.dirname,
       });
 

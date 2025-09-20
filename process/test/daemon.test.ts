@@ -7,6 +7,8 @@ import { type Daemon, daemon } from "../mod.ts";
 import { captureError, expectMatch, fetchText } from "./helpers.ts";
 import { lines } from "../src/helpers.ts";
 
+const SystemRoot = Deno.env.get("SystemRoot");
+
 describe("daemon", () => {
   let task: Task<void>;
   let proc: Daemon;
@@ -17,7 +19,11 @@ describe("daemon", () => {
       task = yield* spawn<void>(function* () {
         let proc = yield* daemon("deno", {
           arguments: ["run", "-A", "./fixtures/echo-server.ts"],
-          env: { PORT: "29000", PATH: process.env.PATH as string },
+          env: { 
+            PORT: "29000", 
+            PATH: process.env.PATH as string,
+            ... SystemRoot ? { SystemRoot } : {}
+          },
           cwd: import.meta.dirname,
         });
         result.resolve(proc);
@@ -63,7 +69,11 @@ describe("daemon", () => {
     beforeEach(function* () {
       let proc = yield* daemon("deno", {
         arguments: ["run", "-A", "./fixtures/echo-server.ts"],
-        env: { PORT: "29000", PATH: process.env.PATH as string },
+        env: { 
+          PORT: "29000", 
+          PATH: process.env.PATH as string,
+          ... SystemRoot ? { SystemRoot } : {} 
+        },
         cwd: import.meta.dirname,
       });
 

@@ -171,7 +171,6 @@ function* inspector(stream: Stream<Start, never>) {
         starts.push(Ok(start));
         yield* spawn(function* () {
           for (let chunk of yield* each(process.stdout)) {
-            console.log({ chunk: String(chunk) });
             start.stdout += String(chunk);
             yield* each.next();
           }

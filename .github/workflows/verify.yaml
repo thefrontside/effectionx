@@ -37,7 +37,3 @@ jobs:
       # - run: deno lint
 
       - run: deno test --trace-leaks --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi
-        working-directory: watch
-
-      # - run: deno test --trace-leaks --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi
-      #   working-directory: watch

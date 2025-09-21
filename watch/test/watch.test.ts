@@ -2,6 +2,7 @@ import { describe, it } from "@effectionx/bdd";
 import { assert } from "@std/assert";
 import { expect } from "@std/expect";
 import { emptyDir } from "@std/fs/empty-dir";
+import { fromFileUrl } from "@std/path";
 
 import type { Operation, Result, Stream } from "effection";
 import { each, Ok, sleep, spawn, until } from "effection";
@@ -105,8 +106,8 @@ interface Fixture {
 }
 
 function* useFixture(): Operation<Fixture> {
-  let tmpDir = new URL("./temp", import.meta.url).pathname;
-  let fixtureDir = new URL("./fixtures", import.meta.url).pathname;
+  let tmpDir = fromFileUrl(new URL("./temp", import.meta.url));
+  let fixtureDir = fromFileUrl(new URL("./fixtures", import.meta.url));
   // let path = join(tmpDir, "fixtures");
   let path = tmpDir;
   try {

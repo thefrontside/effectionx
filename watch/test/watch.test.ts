@@ -9,6 +9,7 @@ import { each, Ok, sleep, spawn, until } from "effection";
 describe("watch", () => {
   it("restarts the specified process when files change.", function* () {
     let fixture = yield* useFixture();
+    console.log(`cat ${fixture.getPath("src/file.txt")}`);
     let processes = yield* inspector(
       watch({
         path: fixture.path,

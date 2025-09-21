@@ -1,4 +1,4 @@
-name: Verify
+name: Verify (Bash)
 
 on:
   push:
@@ -28,11 +28,16 @@ jobs:
           deno-version: v2.x
       - name: reload dependencies
         run: deno cache --reload **/mod.ts
+        shell: bash
 
       - run: deno check tasks/*.ts
+        shell: bash
 
       - run: deno fmt --check
+        shell: bash
 
       - run: deno lint
+        shell: bash
 
       - run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi
+        shell: bash

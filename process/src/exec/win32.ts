@@ -73,10 +73,9 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   });
 
   yield* spawn(function* trapError() {
-    const [error] = yield* once<Error[]>(childProcess, "error");    
+    const [error] = yield* once<Error[]>(childProcess, "error");
     processResult.resolve(Err(error));
   });
-
 
   let stdin: Writable<string> = {
     send(data: string) {

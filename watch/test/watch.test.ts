@@ -113,7 +113,7 @@ function* useFixture(): Operation<Fixture> {
   try {
     yield* until(emptyDir(tmpDir));
   } catch (e) {
-    console.log(`Encountered error clearing ${tmpDir}`)
+    console.log(`Encountered error clearing ${tmpDir}`);
     console.error(e);
   }
 
@@ -126,8 +126,8 @@ function* useFixture(): Operation<Fixture> {
       }),
     );
   } catch (e) {
-    console.log(`Encountered error copying from ${fixtureDir} to ${tmpDir}`)
-    console.error(e)
+    console.log(`Encountered error copying from ${fixtureDir} to ${tmpDir}`);
+    console.error(e);
   }
 
   return {
@@ -198,7 +198,6 @@ function* inspector(stream: Stream<Start, never>) {
           yield* sleep(10);
           expected = starts.length;
           let result = inspector.starts[inspector.starts.length - 1];
-          console.log(result)
           if (result.ok) {
             return result.value;
           } else {

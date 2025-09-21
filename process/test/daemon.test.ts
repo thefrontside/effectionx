@@ -19,10 +19,10 @@ describe("daemon", () => {
       task = yield* spawn<void>(function* () {
         let proc = yield* daemon("deno", {
           arguments: ["run", "-A", "./fixtures/echo-server.ts"],
-          env: { 
-            PORT: "29000", 
+          env: {
+            PORT: "29000",
             PATH: process.env.PATH as string,
-            ... SystemRoot ? { SystemRoot } : {}
+            ...SystemRoot ? { SystemRoot } : {},
           },
           cwd: import.meta.dirname,
         });
@@ -69,10 +69,10 @@ describe("daemon", () => {
     beforeEach(function* () {
       let proc = yield* daemon("deno", {
         arguments: ["run", "-A", "./fixtures/echo-server.ts"],
-        env: { 
-          PORT: "29000", 
+        env: {
+          PORT: "29000",
           PATH: process.env.PATH as string,
-          ... SystemRoot ? { SystemRoot } : {} 
+          ...SystemRoot ? { SystemRoot } : {},
         },
         cwd: import.meta.dirname,
       });

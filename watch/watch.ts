@@ -120,7 +120,6 @@ export function watch(options: WatchOptions): Stream<Start, never> {
       }
       let [, path] = args;
       if (fresh(500)(args) && !gitignored(path)) {
-        console.log(`received updated: ${JSON.stringify(args)}`)
         input.send(args);
       }
     });

@@ -1,10 +1,9 @@
 import { spawn as spawnProcess } from "node:child_process";
 import {
-all,
+  all,
   createSignal,
   Err,
   Ok,
-  race,
   type Result,
   sleep,
   spawn,
@@ -12,7 +11,7 @@ all,
 } from "effection";
 import process from "node:process";
 import { once } from "../eventemitter.ts";
-import { box, useReadable } from "../helpers.ts";
+import { useReadable } from "../helpers.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
 
@@ -53,20 +52,20 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
     stderrDone: withResolvers<void>(),
   };
 
-  yield* spawn(function*() {
-    yield* once(childProcess.stdout, 'readable');
+  yield* spawn(function* () {
+    yield* once(childProcess.stdout, "readable");
     console.log("posix > stdout is readable");
     io.stdoutReady.resolve();
-    yield* once(childProcess.stdout, 'end');
+    yield* once(childProcess.stdout, "end");
     console.log("posix > stdout is done");
     io.stdoutDone.resolve();
   });
 
-  yield* spawn(function*() {
-    yield* once(childProcess.stderr, 'readable');
+  yield* spawn(function* () {
+    yield* once(childProcess.stderr, "readable");
     console.log("posix > stderr is readable");
     io.stderrReady.resolve();
-    yield* once(childProcess.stderr, 'end');
+    yield* once(childProcess.stderr, "end");
     console.log("posix > err is done");
     io.stderrDone.resolve();
   });
@@ -103,11 +102,15 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
       childProcess.stdin.write(data);
     },
   };
-  
+
   yield* spawn(function* () {
     try {
       let value = yield* once<ProcessResultValue>(childProcess, "close");
-      yield* all([io.stdoutReady.operation, io.stderrReady.operation, sleep(1)]);
+      yield* all([
+        io.stdoutReady.operation,
+        io.stderrReady.operation,
+        sleep(1),
+      ]);
       processResult.resolve(Ok(value));
     } finally {
       try {

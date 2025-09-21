@@ -9,7 +9,6 @@ import { each, Ok, sleep, spawn, until } from "effection";
 describe("watch", () => {
   it("restarts the specified process when files change.", function* () {
     let fixture = yield* useFixture();
-    console.log(`cat ${fixture.getPath("src/file.txt")}`);
     let processes = yield* inspector(
       watch({
         path: fixture.path,
@@ -110,15 +109,25 @@ function* useFixture(): Operation<Fixture> {
   let fixtureDir = new URL("./fixtures", import.meta.url).pathname;
   // let path = join(tmpDir, "fixtures");
   let path = tmpDir;
-  yield* until(emptyDir(tmpDir));
+  try {
+    yield* until(emptyDir(tmpDir));
+  } catch (e) {
+    console.log(`Encountered error clearing ${tmpDir}`)
+    console.error(e);
+  }
 
-  yield* until(
-    cp(fixtureDir, tmpDir, {
-      recursive: true,
-      preserveTimestamps: true,
-      force: true,
-    }),
-  );
+  try {
+    yield* until(
+      cp(fixtureDir, tmpDir, {
+        recursive: true,
+        preserveTimestamps: true,
+        force: true,
+      }),
+    );
+  } catch (e) {
+    console.log(`Encountered error copying from ${fixtureDir} to ${tmpDir}`)
+    console.error(e)
+  }
 
   return {
     path,

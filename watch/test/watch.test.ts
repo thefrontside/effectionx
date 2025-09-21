@@ -198,6 +198,7 @@ function* inspector(stream: Stream<Start, never>) {
           yield* sleep(10);
           expected = starts.length;
           let result = inspector.starts[inspector.starts.length - 1];
+          console.log(result)
           if (result.ok) {
             return result.value;
           } else {

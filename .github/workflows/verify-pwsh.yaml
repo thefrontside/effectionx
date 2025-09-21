@@ -1,0 +1,40 @@
+name: Verify (PowerShell)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: reload dependencies
+        run: deno cache --reload **/mod.ts
+        shell: pwsh
+
+      - run: deno check tasks/*.ts
+        shell: pwsh
+
+      - run: deno fmt --check
+        shell: pwsh
+
+      - run: deno lint
+        shell: pwsh
+
+      - run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi
+        shell: pwsh

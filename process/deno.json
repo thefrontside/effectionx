@@ -6,7 +6,7 @@
   "imports": {
     "@types/cross-spawn": "npm:@types/cross-spawn@6.0.6",
     "cross-spawn": "npm:cross-spawn@7.0.6",
-    "ctrlc-windows": "npm:ctrlc-windows@2.1.0",
+    "ctrlc-windows": "npm:ctrlc-windows@2.2.0",
     "effection": "npm:effection@^3",
     "shellwords": "npm:shellwords@^1.1.1",
     "@std/expect": "jsr:@std/expect@1.0.17",

@@ -15,7 +15,7 @@ Deno.serve({
   // Handle the command asynchronously to allow response to be sent first
   setTimeout(() => {
     readCommand(command);
-  }, 0);
+  }, 1);
 
   // Echo the request body back
   return new Response(command, {

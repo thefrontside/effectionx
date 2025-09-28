@@ -295,7 +295,6 @@ describe("handles env vars", () => {
       });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-
       const expected = isPowerShell()
         ? `"$EFFECTION_TEST_ENV_VAL"` + EOL // PowerShell: quotes + CRLF
         : "$EFFECTION_TEST_ENV_VAL" + "\n"; // Everything else: no quotes + LF
@@ -317,7 +316,9 @@ describe("handles env vars", () => {
       // Note: Shellwords parsing preserves braces on all platforms, but bash execution normalizes them
       const expected = isPowerShell()
         ? `"` + "${EFFECTION_TEST_ENV_VAL}" + `"` + EOL // PowerShell: quotes + CRLF
-        : (process.platform === "win32" ? "$EFFECTION_TEST_ENV_VAL" + "\n" : "${EFFECTION_TEST_ENV_VAL}" + "\n"); // Windows bash: normalized, Unix: keeps braces
+        : (process.platform === "win32"
+          ? "$EFFECTION_TEST_ENV_VAL" + "\n"
+          : "${EFFECTION_TEST_ENV_VAL}" + "\n"); // Windows bash: normalized, Unix: keeps braces
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
     });

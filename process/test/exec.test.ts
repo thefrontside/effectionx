@@ -15,8 +15,44 @@ import { lines } from "../src/helpers.ts";
 
 const SystemRoot = Deno.env.get("SystemRoot");
 
-const isPowerShell = () =>
-  process.platform === "win32" && !process.env.shell?.endsWith("bash.exe");
+// Validate SHELL environment variable is set for proper test execution
+if (process.platform === "win32" && !process.env.SHELL) {
+  throw new Error(
+    "SHELL environment variable is required for Windows tests.\n" +
+    "Please set SHELL using one of these commands:\n" +
+    "  PowerShell: $env:SHELL = 'powershell'\n" +
+    "  pwsh: $env:SHELL = 'pwsh'\n" +
+    "  CMD: set SHELL=cmd\n" +
+    "  Git Bash: export SHELL=bash"
+  );
+}
+
+const isPowerShell = () => {
+  if (process.platform !== "win32") return false;
+
+  // Use explicit SHELL environment variable
+  const shell = process.env.SHELL?.toLowerCase();
+  return shell === "powershell" || shell === "pwsh";
+};
+
+const isCMD = () => {
+  if (process.platform !== "win32") return false;
+
+  // Use explicit SHELL environment variable (required on Windows)
+  const shell = process.env.SHELL?.toLowerCase();
+  return shell === "cmd";
+};
+
+const isBash = () => {
+  // On POSIX systems, SHELL is undefined so default to bash
+  if (process.platform !== "win32") return true;
+
+  // On Windows, SHELL is required and set, check it or fallback to process.env.shell
+  const shell = process.env.SHELL?.toLowerCase();
+  const processShell = process.env.shell;
+
+  return shell === "bash" || processShell?.endsWith("bash.exe");
+};
 
 describe("exec", () => {
   describe(".join", () => {
@@ -211,8 +247,8 @@ describe("when the `shell` option is `false`", () => {
     // The shellwords parser correctly splits the command into ["echo", "first", "|", "echo", "second"]
     // However, the echo command behaves differently across shells:
     // - bash/Unix shells: outputs all arguments on one line separated by spaces, strips quotes: "first | echo second\n"
-    // - PowerShell: outputs all arguments on one line separated by spaces, preserves quotes: `"first" "|" "echo" "second"\r\n`
-    const expected = isPowerShell()
+    // - PowerShell/CMD: outputs all arguments on one line separated by spaces, preserves quotes: `"first" "|" "echo" "second"\r\n`
+    const expected = isPowerShell() || isCMD()
       ? `"first" "|" "echo" "second"\r\n`
       : "first | echo second\n";
 
@@ -295,8 +331,8 @@ describe("handles env vars", () => {
       });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      const expected = isPowerShell()
-        ? `"$EFFECTION_TEST_ENV_VAL"` + EOL // PowerShell: quotes + CRLF
+      const expected = isPowerShell() || isCMD()
+        ? `"$EFFECTION_TEST_ENV_VAL"` + EOL // PowerShell/CMD: quotes + CRLF
         : "$EFFECTION_TEST_ENV_VAL" + "\n"; // Everything else: no quotes + LF
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -310,12 +346,12 @@ describe("handles env vars", () => {
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
       // Platform behavior differences with shell: false:
-      // - PowerShell: Preserves quotes around arguments and keeps curly braces: "${EFFECTION_TEST_ENV_VAL}" + CRLF
+      // - PowerShell/CMD: Preserves quotes around arguments and keeps curly braces: "${EFFECTION_TEST_ENV_VAL}" + CRLF
       // - Bash (Windows): Normalizes ${VAR} to $VAR during argument processing: $EFFECTION_TEST_ENV_VAL + LF
       // - Bash (Unix): Keeps curly braces intact: ${EFFECTION_TEST_ENV_VAL} + LF
       // Note: Shellwords parsing preserves braces on all platforms, but bash execution normalizes them
-      const expected = isPowerShell()
-        ? `"` + "${EFFECTION_TEST_ENV_VAL}" + `"` + EOL // PowerShell: quotes + CRLF
+      const expected = isPowerShell() || isCMD()
+        ? `"` + "${EFFECTION_TEST_ENV_VAL}" + `"` + EOL // PowerShell/CMD: quotes + CRLF
         : (process.platform === "win32"
           ? "$EFFECTION_TEST_ENV_VAL" + "\n"
           : "${EFFECTION_TEST_ENV_VAL}" + "\n"); // Windows bash: normalized, Unix: keeps braces
@@ -324,11 +360,10 @@ describe("handles env vars", () => {
     });
   });
 
-  describe("when the `shell` option is `process.env.shell`", () => {
+if (process.platform === "win32" && isBash()) {
+  describe("when the `shell` option is `process.env.shell` (Windows bash only)", () => {
     let shell = process.env.shell;
-    // This comes back undefined in linux, mac and windows (using the cmd.exe default).
-    // When using git-bash on windows, this appears to be set.
-    // We haven't found any other configurations where it is set by default.
+    // This tests Git Bash on Windows where process.env.shell is set to bash.exe
 
     it("can echo a passed in environment variable", function* () {
       let proc = exec("echo $EFFECTION_TEST_ENV_VAL", {
@@ -337,12 +372,8 @@ describe("handles env vars", () => {
       });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      let result = shell?.endsWith("bash.exe")
-        ? "boop\n" // Bash resolves env vars even with process.env.shell
-        : (isPowerShell()
-          ? `"$EFFECTION_TEST_ENV_VAL"` + EOL
-          : "$EFFECTION_TEST_ENV_VAL" + "\n");
-      expect(stdout).toEqual(result);
+      // Windows bash should resolve environment variables
+      expect(stdout).toEqual("boop\n");
       expect(code).toBe(0);
     });
 
@@ -353,14 +384,12 @@ describe("handles env vars", () => {
       });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      if (shell?.endsWith("bash.exe")) {
-        expect(stdout).toEqual("boop\n"); // Bash resolves env vars
-      } else if (isPowerShell()) {
-        expect(stdout).toEqual(`"` + "${EFFECTION_TEST_ENV_VAL}" + `"` + EOL); // PowerShell: quotes + CRLF
-      } else {
-        expect(stdout).toEqual("${EFFECTION_TEST_ENV_VAL}" + "\n"); // Everything else: no quotes + LF
-      }
+      // Windows bash should resolve environment variables with curly brace syntax
+      expect(stdout).toEqual("boop\n");
       expect(code).toBe(0);
     });
   });
+}
+
+// Close the main "handles env vars" describe block
 });

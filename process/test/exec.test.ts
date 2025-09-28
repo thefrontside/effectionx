@@ -295,16 +295,6 @@ describe("handles env vars", () => {
       });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      console.log(
-        "shell false test - platform:",
-        process.platform,
-        "shell:",
-        process.env.shell,
-        "condition result:",
-        process.platform === "win32" &&
-          !process.env.shell?.endsWith("bash.exe"),
-      );
-      console.log("shell false test - actual stdout:", JSON.stringify(stdout));
 
       const expected = isPowerShell()
         ? `"$EFFECTION_TEST_ENV_VAL"` + EOL // PowerShell: quotes + CRLF
@@ -320,11 +310,14 @@ describe("handles env vars", () => {
       });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      // PowerShell preserves quotes around the output and keeps curly braces
-      // Shellwords normalizes ${VAR} to $VAR on all platforms
+      // Platform behavior differences with shell: false:
+      // - PowerShell: Preserves quotes around arguments and keeps curly braces: "${EFFECTION_TEST_ENV_VAL}" + CRLF
+      // - Bash (Windows): Normalizes ${VAR} to $VAR during argument processing: $EFFECTION_TEST_ENV_VAL + LF
+      // - Bash (Unix): Keeps curly braces intact: ${EFFECTION_TEST_ENV_VAL} + LF
+      // Note: Shellwords parsing preserves braces on all platforms, but bash execution normalizes them
       const expected = isPowerShell()
         ? `"` + "${EFFECTION_TEST_ENV_VAL}" + `"` + EOL // PowerShell: quotes + CRLF
-        : "$EFFECTION_TEST_ENV_VAL" + "\n"; // Everything else: normalized to $VAR + LF
+        : (process.platform === "win32" ? "$EFFECTION_TEST_ENV_VAL" + "\n" : "${EFFECTION_TEST_ENV_VAL}" + "\n"); // Windows bash: normalized, Unix: keeps braces
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
     });

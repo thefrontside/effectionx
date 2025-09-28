@@ -1,4 +1,4 @@
-name: Verify (Bash)
+name: Verify (POSIX)
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -28,16 +28,11 @@ jobs:
           deno-version: v2.x
       - name: reload dependencies
         run: deno cache --reload **/mod.ts
-        shell: bash
 
       - run: deno check tasks/*.ts
-        shell: bash
 
       - run: deno fmt --check
-        shell: bash
 
       - run: deno lint
-        shell: bash
 
       - run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi
-        shell: bash

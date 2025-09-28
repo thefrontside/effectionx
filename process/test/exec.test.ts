@@ -10,9 +10,13 @@ import {
   streamClose,
 } from "./helpers.ts";
 import process from "node:process";
+import { EOL } from "node:os";
 import { lines } from "../src/helpers.ts";
 
 const SystemRoot = Deno.env.get("SystemRoot");
+
+const isPowerShell = () =>
+  process.platform === "win32" && !process.env.shell?.endsWith("bash.exe");
 
 describe("exec", () => {
   describe(".join", () => {
@@ -181,21 +185,21 @@ describe("exec", () => {
   });
 });
 
-// // running shell scripts in windows is not well supported, our windows
-// // process stuff sets shell to `false` and so you probably shouldn't do this
-// // in windows at all.
-// if (process.platform !== "win32") {
-//   describe("when the `shell` option is true", () => {
-//     it("lets the shell do all of the shellword parsing", function* () {
-//       let proc = exec('echo "first" | echo "second"', {
-//         shell: true,
-//       });
-//       let { stdout }: ProcessResult = yield proc.expect();
+// running shell scripts in windows is not well supported, our windows
+// process stuff sets shell to `false` and so you probably shouldn't do this
+// in windows at all.
+if (process.platform !== "win32") {
+  describe("when the `shell` option is true", () => {
+    it("lets the shell do all of the shellword parsing", function* () {
+      let proc = exec('echo "first" | echo "second"', {
+        shell: true,
+      });
+      let { stdout }: ProcessResult = yield* proc.expect();
 
-//       expect(stdout).toEqual("second\n");
-//     });
-//   });
-// }
+      expect(stdout).toEqual("second\n");
+    });
+  });
+}
 
 describe("when the `shell` option is `false`", () => {
   it("automatically parses the command argumens using shellwords", function* () {
@@ -204,7 +208,15 @@ describe("when the `shell` option is `false`", () => {
     });
     let { stdout }: ProcessResult = yield* proc.expect();
 
-    expect(stdout).toEqual("first | echo second\n");
+    // The shellwords parser correctly splits the command into ["echo", "first", "|", "echo", "second"]
+    // However, the echo command behaves differently across shells:
+    // - bash/Unix shells: outputs all arguments on one line separated by spaces, strips quotes: "first | echo second\n"
+    // - PowerShell: outputs all arguments on one line separated by spaces, preserves quotes: `"first" "|" "echo" "second"\r\n`
+    const expected = isPowerShell()
+      ? `"first" "|" "echo" "second"\r\n`
+      : "first | echo second\n";
+
+    expect(stdout).toEqual(expected);
   });
 });
 
@@ -283,7 +295,21 @@ describe("handles env vars", () => {
       });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      expect(stdout).toEqual("$EFFECTION_TEST_ENV_VAL\n");
+      console.log(
+        "shell false test - platform:",
+        process.platform,
+        "shell:",
+        process.env.shell,
+        "condition result:",
+        process.platform === "win32" &&
+          !process.env.shell?.endsWith("bash.exe"),
+      );
+      console.log("shell false test - actual stdout:", JSON.stringify(stdout));
+
+      const expected = isPowerShell()
+        ? `"$EFFECTION_TEST_ENV_VAL"` + EOL // PowerShell: quotes + CRLF
+        : "$EFFECTION_TEST_ENV_VAL" + "\n"; // Everything else: no quotes + LF
+      expect(stdout).toEqual(expected);
       expect(code).toBe(0);
     });
 
@@ -294,11 +320,12 @@ describe("handles env vars", () => {
       });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      // note shellwords normalizes this from ${ENV} to $ENV on windows
-      let result = process.platform !== "win32"
-        ? "${EFFECTION_TEST_ENV_VAL}\n"
-        : "$EFFECTION_TEST_ENV_VAL\n";
-      expect(stdout).toEqual(result);
+      // PowerShell preserves quotes around the output and keeps curly braces
+      // Shellwords normalizes ${VAR} to $VAR on all platforms
+      const expected = isPowerShell()
+        ? `"` + "${EFFECTION_TEST_ENV_VAL}" + `"` + EOL // PowerShell: quotes + CRLF
+        : "$EFFECTION_TEST_ENV_VAL" + "\n"; // Everything else: normalized to $VAR + LF
+      expect(stdout).toEqual(expected);
       expect(code).toBe(0);
     });
   });
@@ -317,8 +344,10 @@ describe("handles env vars", () => {
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
       let result = shell?.endsWith("bash.exe")
-        ? "boop\n"
-        : "$EFFECTION_TEST_ENV_VAL\n";
+        ? "boop\n" // Bash resolves env vars even with process.env.shell
+        : (isPowerShell()
+          ? `"$EFFECTION_TEST_ENV_VAL"` + EOL
+          : "$EFFECTION_TEST_ENV_VAL" + "\n");
       expect(stdout).toEqual(result);
       expect(code).toBe(0);
     });
@@ -331,11 +360,11 @@ describe("handles env vars", () => {
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
       if (shell?.endsWith("bash.exe")) {
-        expect(stdout).toEqual("boop\n");
-      } else if (process.platform === "win32") {
-        expect(stdout).toEqual("$EFFECTION_TEST_ENV_VAL\n");
+        expect(stdout).toEqual("boop\n"); // Bash resolves env vars
+      } else if (isPowerShell()) {
+        expect(stdout).toEqual(`"` + "${EFFECTION_TEST_ENV_VAL}" + `"` + EOL); // PowerShell: quotes + CRLF
       } else {
-        expect(stdout).toEqual("${EFFECTION_TEST_ENV_VAL}\n");
+        expect(stdout).toEqual("${EFFECTION_TEST_ENV_VAL}" + "\n"); // Everything else: no quotes + LF
       }
       expect(code).toBe(0);
     });

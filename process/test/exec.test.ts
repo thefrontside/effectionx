@@ -19,11 +19,11 @@ const SystemRoot = Deno.env.get("SystemRoot");
 if (process.platform === "win32" && !process.env.SHELL) {
   throw new Error(
     "SHELL environment variable is required for Windows tests.\n" +
-    "Please set SHELL using one of these commands:\n" +
-    "  PowerShell: $env:SHELL = 'powershell'\n" +
-    "  pwsh: $env:SHELL = 'pwsh'\n" +
-    "  CMD: set SHELL=cmd\n" +
-    "  Git Bash: export SHELL=bash"
+      "Please set SHELL using one of these commands:\n" +
+      "  PowerShell: $env:SHELL = 'powershell'\n" +
+      "  pwsh: $env:SHELL = 'pwsh'\n" +
+      "  CMD: set SHELL=cmd\n" +
+      "  Git Bash: export SHELL=bash",
   );
 }
 
@@ -360,36 +360,36 @@ describe("handles env vars", () => {
     });
   });
 
-if (process.platform === "win32" && isBash()) {
-  describe("when the `shell` option is `process.env.shell` (Windows bash only)", () => {
-    let shell = process.env.shell;
-    // This tests Git Bash on Windows where process.env.shell is set to bash.exe
+  if (process.platform === "win32" && isBash()) {
+    describe("when the `shell` option is `process.env.shell` (Windows bash only)", () => {
+      let shell = process.env.shell;
+      // This tests Git Bash on Windows where process.env.shell is set to bash.exe
 
-    it("can echo a passed in environment variable", function* () {
-      let proc = exec("echo $EFFECTION_TEST_ENV_VAL", {
-        shell,
-        env: { EFFECTION_TEST_ENV_VAL: "boop" },
+      it("can echo a passed in environment variable", function* () {
+        let proc = exec("echo $EFFECTION_TEST_ENV_VAL", {
+          shell,
+          env: { EFFECTION_TEST_ENV_VAL: "boop" },
+        });
+        let { stdout, code }: ProcessResult = yield* proc.expect();
+
+        // Windows bash should resolve environment variables
+        expect(stdout).toEqual("boop\n");
+        expect(code).toBe(0);
       });
-      let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      // Windows bash should resolve environment variables
-      expect(stdout).toEqual("boop\n");
-      expect(code).toBe(0);
-    });
+      it("can echo a passed in environment variable with curly brace syntax", function* () {
+        let proc = exec("echo ${EFFECTION_TEST_ENV_VAL}", {
+          shell,
+          env: { EFFECTION_TEST_ENV_VAL: "boop" },
+        });
+        let { stdout, code }: ProcessResult = yield* proc.expect();
 
-    it("can echo a passed in environment variable with curly brace syntax", function* () {
-      let proc = exec("echo ${EFFECTION_TEST_ENV_VAL}", {
-        shell,
-        env: { EFFECTION_TEST_ENV_VAL: "boop" },
+        // Windows bash should resolve environment variables with curly brace syntax
+        expect(stdout).toEqual("boop\n");
+        expect(code).toBe(0);
       });
-      let { stdout, code }: ProcessResult = yield* proc.expect();
-
-      // Windows bash should resolve environment variables with curly brace syntax
-      expect(stdout).toEqual("boop\n");
-      expect(code).toBe(0);
     });
-  });
-}
+  }
 
-// Close the main "handles env vars" describe block
+  // Close the main "handles env vars" describe block
 });

@@ -15,7 +15,7 @@ jobs:
   test:
     runs-on: windows-latest
     strategy:
-      matrix: 
+      matrix:
         shell: [powershell, pwsh, bash, cmd]
     defaults:
       run:

@@ -238,21 +238,38 @@ if (process.platform !== "win32") {
 }
 
 describe("when the `shell` option is `false`", () => {
-  it("automatically parses the command argumens using shellwords", function* () {
-    let proc = exec('echo "first" | echo "second"', {
+  it("correctly receives literal arguments when shell: false", function* () {
+    // Arguments are passed literally as parsed by shellwords
+    let proc = exec(`deno run -A test/fixtures/dump-args.js first | echo second`, {
       shell: false,
     });
     let { stdout }: ProcessResult = yield* proc.expect();
 
-    // The shellwords parser correctly splits the command into ["echo", "first", "|", "echo", "second"]
-    // However, the echo command behaves differently across shells:
-    // - bash/Unix shells: outputs all arguments on one line separated by spaces, strips quotes: "first | echo second\n"
-    // - PowerShell/CMD: outputs all arguments on one line separated by spaces, preserves quotes: `"first" "|" "echo" "second"\r\n`
-    const expected = isPowerShell() || isCMD()
-      ? `"first" "|" "echo" "second"\r\n`
-      : "first | echo second\n";
+    // Node's console.log uses a single LF (\n) line ending.
+    const expected = JSON.stringify({
+      args: ['first', '|', 'echo', 'second'], // Arguments received by Node
+      envVar: undefined
+    }) + "\n";
 
     expect(stdout).toEqual(expected);
+  });
+
+  it("verifies environment variable handling and literal argument passing", function* () {
+    // Execute the custom script with the literal argument
+    let proc = exec(`deno run -A test/fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL`, {
+      shell: false, // Ensures the argument is passed literally
+      env: { EFFECTION_TEST_ENV_VAL: "boop" }, // Sets the environment variable
+    });
+    let { stdout, code }: ProcessResult = yield* proc.expect();
+
+    // The argument is passed literally, and the env var is available in the child process's env.
+    const expected = JSON.stringify({
+      args: ['$EFFECTION_TEST_ENV_VAL'], // Argument is passed literally
+      envVar: 'boop'                     // Env variable is read from process.env
+    }) + "\n";
+
+    expect(stdout).toEqual(expected);
+    expect(code).toBe(0);
   });
 });
 

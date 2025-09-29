@@ -241,9 +241,10 @@ describe("when the `shell` option is `false`", () => {
   it("correctly receives literal arguments when shell: false", function* () {
     // Arguments are passed literally as parsed by shellwords
     let proc = exec(
-      `deno run -A test/fixtures/dump-args.js first | echo second`,
+      `deno run -A ./fixtures/dump-args.js first | echo second`,
       {
         shell: false,
+        cwd: import.meta.dirname,
       },
     );
     let { stdout }: ProcessResult = yield* proc.expect();
@@ -260,10 +261,11 @@ describe("when the `shell` option is `false`", () => {
   it("verifies environment variable handling and literal argument passing", function* () {
     // Execute the custom script with the literal argument
     let proc = exec(
-      `deno run -A test/fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL`,
+      `deno run -A ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL`,
       {
         shell: false, // Ensures the argument is passed literally
         env: { EFFECTION_TEST_ENV_VAL: "boop" }, // Sets the environment variable
+        cwd: import.meta.dirname,
       },
     );
     let { stdout, code }: ProcessResult = yield* proc.expect();

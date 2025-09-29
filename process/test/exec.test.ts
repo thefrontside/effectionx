@@ -240,15 +240,18 @@ if (process.platform !== "win32") {
 describe("when the `shell` option is `false`", () => {
   it("correctly receives literal arguments when shell: false", function* () {
     // Arguments are passed literally as parsed by shellwords
-    let proc = exec(`deno run -A test/fixtures/dump-args.js first | echo second`, {
-      shell: false,
-    });
+    let proc = exec(
+      `deno run -A test/fixtures/dump-args.js first | echo second`,
+      {
+        shell: false,
+      },
+    );
     let { stdout }: ProcessResult = yield* proc.expect();
 
     // Node's console.log uses a single LF (\n) line ending.
     const expected = JSON.stringify({
-      args: ['first', '|', 'echo', 'second'], // Arguments received by Node
-      envVar: undefined
+      args: ["first", "|", "echo", "second"], // Arguments received by Node
+      envVar: undefined,
     }) + "\n";
 
     expect(stdout).toEqual(expected);
@@ -256,16 +259,19 @@ describe("when the `shell` option is `false`", () => {
 
   it("verifies environment variable handling and literal argument passing", function* () {
     // Execute the custom script with the literal argument
-    let proc = exec(`deno run -A test/fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL`, {
-      shell: false, // Ensures the argument is passed literally
-      env: { EFFECTION_TEST_ENV_VAL: "boop" }, // Sets the environment variable
-    });
+    let proc = exec(
+      `deno run -A test/fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL`,
+      {
+        shell: false, // Ensures the argument is passed literally
+        env: { EFFECTION_TEST_ENV_VAL: "boop" }, // Sets the environment variable
+      },
+    );
     let { stdout, code }: ProcessResult = yield* proc.expect();
 
     // The argument is passed literally, and the env var is available in the child process's env.
     const expected = JSON.stringify({
-      args: ['$EFFECTION_TEST_ENV_VAL'], // Argument is passed literally
-      envVar: 'boop'                     // Env variable is read from process.env
+      args: ["$EFFECTION_TEST_ENV_VAL"], // Argument is passed literally
+      envVar: "boop", // Env variable is read from process.env
     }) + "\n";
 
     expect(stdout).toEqual(expected);

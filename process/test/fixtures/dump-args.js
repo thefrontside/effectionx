@@ -1,4 +1,4 @@
-import process from 'node:process';
+import process from "node:process";
 
 // This script is executed via Node: 'node dump-args.js arg1 arg2 ...'
 // process.argv[0] is the node executable path

@@ -107,7 +107,7 @@ function useTestingPair({ fail }: TestingPairOptions = {}): Operation<
     );
 
     let client = new WebSocket(
-      `ws://${server.addr.hostname}:${server.addr.port}`,
+      `ws://localhost:${server.addr.port}`,
     );
 
     let next = yield* sockets.next();

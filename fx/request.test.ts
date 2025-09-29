@@ -17,7 +17,7 @@ describe("request() and json()", () => {
         }),
     );
 
-    url = `http://${server.addr.hostname}:${server.addr.port}/todos/1`,
+    url = `http://localhost:${server.addr.port}/todos/1`,
       yield* ensure(() => until(server.shutdown()));
   });
 

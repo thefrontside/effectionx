@@ -20,8 +20,6 @@ jobs:
     defaults:
       run:
         shell: ${{matrix.shell}}
-        env:
-          SHELL: ${{matrix.shell}}
 
     steps:
       - name: checkout
@@ -36,4 +34,6 @@ jobs:
 
       - run: deno lint
 
-      - run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi
+      - name: "Test SHELL=${{matrix.shell}}"
+        run: |
+          SHELL=${{matrix.shell}} deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi

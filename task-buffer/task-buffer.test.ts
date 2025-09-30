@@ -1,4 +1,4 @@
-import { FakeTime } from "jsr:@std/testing/time";
+import { FakeTime } from "@std/testing/time";
 import { sleep, spawn, type Task } from "effection";
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";

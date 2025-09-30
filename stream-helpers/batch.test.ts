@@ -47,7 +47,7 @@ describe("batch", () => {
 
   it("creates a batch within maxTime when maxSize is never reached", function* () {
     const faucet = yield* useFaucet<number>({ open: true });
-    const stream = batch({ maxSize: 8, maxTime: 10 })(faucet);
+    const stream = batch({ maxSize: 8, maxTime: 50 })(faucet);
 
     const batches = yield* createArraySignal<readonly number[]>([]);
 
@@ -60,7 +60,7 @@ describe("batch", () => {
     yield* faucet.pour(function* (send) {
       for (let i = 1; i <= 10; i++) {
         yield* send(i);
-        yield* sleep(3);
+        yield* sleep(20);
       }
     });
 

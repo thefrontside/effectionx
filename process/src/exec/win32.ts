@@ -29,11 +29,12 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
     // We lose exit information and events if this is detached in windows
     // and it opens a window in windows+powershell.
     detached: false,
-    // When windows shell is true, it runs with cmd.exe by default, but
-    // node has trouble with PATHEXT and exe. It can't run exe directly for example.
-    // `cross-spawn` handles running it with the shell in windows if needed.
-    // Neither mac nor linux need shell and we run it detached.
-    shell: typeof options.shell === "string" ? options.shell : false,
+    // The `shell` option is passed to `cross-spawn` to control whether a shell is used.
+    // On Windows, `shell: true` is necessary to run command strings, as it uses
+    // `cmd.exe` to parse the command and find executables in the PATH.
+    // Using a boolean `true` was previously disabled, causing ENOENT errors for
+    // commands that were not a direct path to an executable.
+    shell: options.shell || false,
     // With stdio as pipe, windows gets stuck where neither the child nor the
     // parent wants to close the stream, so we call it ourselves in the exit event.
     stdio: "pipe",

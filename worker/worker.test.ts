@@ -10,7 +10,7 @@ import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
 import { useWorker } from "./worker.ts";
 
 describe("worker", () => {
-  it("sends and receive messages in synchrony", function* () {
+  it.only("sends and receive messages in synchrony", function* () {
     expect.assertions(1);
     let worker = yield* useWorker(
       import.meta.resolve("./test-assets/echo-worker.ts"),

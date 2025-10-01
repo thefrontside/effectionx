@@ -1,14 +1,14 @@
-import { call, type Operation, useAbortSignal } from "effection";
+import { type Operation, until, useAbortSignal } from "effection";
 
 export function* request(
   url: string | URL | Request,
   opts?: RequestInit,
 ): Operation<Response> {
   const signal = yield* useAbortSignal();
-  const response = yield* call(() => fetch(url, { signal, ...opts }));
+  const response = yield* until(fetch(url, { signal, ...opts }));
   return response;
 }
 
-export function* json(response: Response): Operation<unknown> {
-  return yield* call(() => response.json());
+export function json(response: Response): Operation<unknown> {
+  return until(response.json());
 }

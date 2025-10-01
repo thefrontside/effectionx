@@ -144,6 +144,54 @@ function* example() {
 }
 ```
 
+### ForEach
+
+The `forEach` helper invokes a function for each item passing through a stream.
+This is useful when you need to perform side effects or operations on each item
+without transforming the stream itself. Unlike other stream helpers that return
+transformed streams, `forEach` consumes the entire stream and returns the
+stream's close value.
+
+```typescript
+import { forEach } from "@effectionx/stream-helpers";
+import { createSignal, spawn } from "effection";
+
+function* example() {
+  const stream = createSignal<number, void>();
+
+  // Process each item in the stream
+  yield* spawn(() =>
+    forEach(function* (item) {
+      console.log(`Processing: ${item}`);
+      // Perform any side effects here
+    }, stream)
+  );
+
+  stream.send(1);
+  stream.send(2);
+  stream.send(3);
+  stream.close();
+}
+
+// Example: Handling stream close value
+function* exampleWithCloseValue() {
+  const stream = createSignal<string, number>();
+
+  const result = yield* spawn(() =>
+    forEach(function* (item) {
+      console.log(`Item: ${item}`);
+    }, stream)
+  );
+
+  stream.send("hello");
+  stream.send("world");
+  stream.close(42); // Close with value 42
+
+  const closeValue = yield* result;
+  console.log(`Stream closed with: ${closeValue}`); // 42
+}
+```
+
 ### Passthrough Tracker
 
 Passthrough Tracker stream helper provides a way to know if all items that
@@ -183,8 +231,7 @@ You can use a simple `pipe()` to compose a series of stream helpers together. In
 this example, we use one from [remeda](https://remedajs.com/docs/#pipe),
 
 ```typescript
-import { batch, filter, map, valve } from "@effectionx/stream-helpers";
-import { each } from "effection";
+import { batch, filter, forEach, map, valve } from "@effectionx/stream-helpers";
 // any standard pipe function should work
 import { pipe } from "remeda";
 
@@ -202,10 +249,10 @@ function* example(source: Stream<number, unknown>) {
     batch({ maxSize: 50 }),
   );
 
-  for (const value of yield* each(stream)) {
+  // Use forEach to process each value in the composed stream
+  yield* forEach(function* (value) {
     console.log(value);
-    yield* each.next();
-  }
+  }, stream);
 }
 ```
 

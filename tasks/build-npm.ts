@@ -1,6 +1,5 @@
 import { build, emptyDir } from "@deno/dnt";
 import { join } from "@std/path";
-
 import { DenoJson } from "./lib/read-packages.ts";
 
 let [workspace] = Deno.args;

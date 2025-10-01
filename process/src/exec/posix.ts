@@ -54,19 +54,15 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
 
   yield* spawn(function* () {
     yield* once(childProcess.stdout, "readable");
-    console.log("posix > stdout is readable");
     io.stdoutReady.resolve();
     yield* once(childProcess.stdout, "end");
-    console.log("posix > stdout is done");
     io.stdoutDone.resolve();
   });
 
   yield* spawn(function* () {
     yield* once(childProcess.stderr, "readable");
-    console.log("posix > stderr is readable");
     io.stderrReady.resolve();
     yield* once(childProcess.stderr, "end");
-    console.log("posix > err is done");
     io.stderrDone.resolve();
   });
 
@@ -93,7 +89,6 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
 
   yield* spawn(function* trapError() {
     let [error] = yield* once<[Error]>(childProcess, "error");
-    console.log(`posix > ${pid} > error: ${error}`);
     processResult.resolve(Err(error));
   });
 
@@ -138,7 +133,6 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
 
   function* expect() {
     let status: ExitStatus = yield* join();
-    console.log(`posix > ${pid} > expect: ${JSON.stringify(status)}`);
     if (status.code != 0) {
       throw new ExecError(status, command, options);
     } else {

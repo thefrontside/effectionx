@@ -1,5 +1,5 @@
 import type { Future, Operation, Result, Scope } from "effection";
-import { createScope, Err, Ok } from "effection";
+import { Err, Ok, run, suspend, useScope, withResolvers } from "effection";
 
 export interface TestOperation {
   (): Operation<void>;
@@ -24,12 +24,6 @@ export interface TestAdapter {
   readonly fullname: string;
 
   /**
-   * Every test adapter has its own Effection `Scope` which holds the resources necessary
-   * to run this test.
-   */
-  readonly scope: Scope;
-
-  /**
    * A list of this test adapter and every adapter that it descends from.
    */
   readonly lineage: Array<TestAdapter>;
@@ -38,13 +32,19 @@ export interface TestAdapter {
    * The setup operations that will be run by this test adapter. It only includes those
    * setups that are associated with this adapter, not those of its ancestors.
    */
-  readonly setups: TestOperation[];
+  readonly setup: { all: TestOperation[]; each: TestOperation[] };
 
   /**
    * Add a setup operation to every test that is part of this adapter. In BDD integrations,
    * this is usually called by `beforEach()`
    */
   addSetup(op: TestOperation): void;
+
+  /**
+   * Add a setup operation that will run exactly once before any tests that are run in this
+   * adapter. In BDD integrations, this is usually called by beforeAll()
+   */
+  addOnetimeSetup(op: TestOperation): void;
 
   /**
    * Actually run a test. This evaluates all setup operations, and then after those have completed
@@ -57,6 +57,13 @@ export interface TestAdapter {
    * This basically destroys the Effection `Scope` associated with this adapter.
    */
   destroy(): Future<void>;
+
+  /**
+   * Used internally to prepare adapters to run test
+   *
+   * @ignore
+   */
+  ["@@init@@"](): Operation<Scope>;
 }
 
 export interface TestAdapterOptions {
@@ -87,16 +94,18 @@ const anonymousNames: Iterator<string, never> = (function* () {
 export function createTestAdapter(
   options: TestAdapterOptions = {},
 ): TestAdapter {
-  const setups: TestOperation[] = [];
+  const setup = {
+    all: [] as TestOperation[],
+    each: [] as TestOperation[],
+  };
   const { parent, name = anonymousNames.next().value } = options;
 
-  const [scope, destroy] = createScope(parent?.scope);
+  let scope: Scope | undefined = undefined;
 
   const adapter: TestAdapter = {
     parent,
     name,
-    scope,
-    setups,
+    setup,
     get lineage() {
       const lineage = [adapter];
       for (let current = parent; current; current = current.parent) {
@@ -108,27 +117,69 @@ export function createTestAdapter(
       return adapter.lineage.map((adapter) => adapter.name).join(" > ");
     },
     addSetup(op) {
-      setups.push(op);
+      setup.each.push(op);
+    },
+    addOnetimeSetup(op) {
+      setup.all.push(op);
     },
     runTest(op) {
-      return scope.run(function* () {
-        const allSetups = adapter.lineage.reduce(
-          (all, adapter) => all.concat(adapter.setups),
-          [] as TestOperation[],
-        );
-        try {
-          for (const setup of allSetups) {
-            yield* setup();
-          }
-          yield* op();
-          return Ok<void>(void 0);
-        } catch (error) {
-          return Err(error as Error);
-        }
-      });
+      return run(() =>
+        box(function* () {
+          const setups = adapter.lineage.reduce(
+            (all, adapter) => all.concat(adapter.setup.each),
+            [] as TestOperation[],
+          );
+
+          let scope = yield* adapter["@@init@@"]();
+
+          let test = yield* scope.spawn(function* () {
+            for (const setup of setups) {
+              yield* setup();
+            }
+            yield* op();
+          });
+
+          yield* test;
+        }())
+      );
     },
-    destroy,
+
+    // no-op that will be replaced once initialze
+    destroy: () => run(function* () {}),
+
+    *["@@init@@"]() {
+      if (scope) {
+        return scope;
+      }
+
+      let parentScope = parent
+        ? yield* parent["@@init@@"]()
+        : yield* useScope();
+
+      let initialized = withResolvers<Scope>();
+
+      let task = yield* parentScope.spawn(function* () {
+        scope = yield* useScope();
+        for (let op of setup.all) {
+          yield* op();
+        }
+        initialized.resolve(scope);
+        yield* suspend();
+      });
+
+      adapter.destroy = () => run(task.halt);
+
+      return yield* initialized.operation;
+    },
   };
 
   return adapter;
+}
+
+function* box<T>(op: Operation<T>): Operation<Result<T>> {
+  try {
+    return Ok(yield* op);
+  } catch (error) {
+    return Err(error as Error);
+  }
 }

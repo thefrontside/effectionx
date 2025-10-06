@@ -55,7 +55,14 @@ describe("TestAdapter", () => {
     });
 
     grandparent.addSetup(function* () {
-      sequence.push("grandparent/setup:each");
+      yield* resource<void>(function* (provide) {
+        try {
+          sequence.push("grandparent/setup:each");
+          yield* provide();
+        } finally {
+          sequence.push("grandparent/teardown:each");
+        }
+      });
     });
 
     let parent = createTestAdapter({ name: "parent", parent: grandparent });
@@ -72,12 +79,38 @@ describe("TestAdapter", () => {
       })
     );
 
-    let child = createTestAdapter({ name: "child", parent });
+    parent.addSetup(() =>
+      resource(function* (provide) {
+        try {
+          sequence.push("parent/setup:each");
+          yield* provide();
+        } finally {
+          sequence.push("parent/teardown:each");
+        }
+      })
+    );
 
-    await child.runTest(function* () {
-      sequence.push("child/run");
-      contexts["child"] = yield* context.expect();
+    let first = createTestAdapter({ name: "child", parent });
+
+    let result = await first.runTest(function* () {
+      sequence.push("first-child/run");
+      contexts["first-child/run"] = yield* context.expect();
     });
+
+    if (!result.ok) {
+      throw result.error;
+    }
+
+    let second = createTestAdapter({ name: "child", parent });
+
+    result = await second.runTest(function* () {
+      sequence.push("second-child/run");
+      contexts["second-child/run"] = yield* context.expect();
+    });
+
+    if (!result.ok) {
+      throw result.error;
+    }
 
     await grandparent.destroy();
 
@@ -85,11 +118,26 @@ describe("TestAdapter", () => {
       "grandparent/setup:once",
       "parent/setup:once",
       "grandparent/setup:each",
-      "child/run",
+      "parent/setup:each",
+      "first-child/run",
+      "parent/teardown:each",
+      "grandparent/teardown:each",
+      "grandparent/setup:each",
+      "parent/setup:each",
+      "second-child/run",
+      "parent/teardown:each",
+      "grandparent/teardown:each",
       "parent/teardown:once",
       "grandparent/teardown:once",
     ]);
 
-    expect(contexts).toEqual({ parent: "initialized", child: "initialized" });
+    expect(contexts).toEqual({
+      parent: "initialized",
+      "first-child/run": "initialized",
+      "second-child/run": "initialized",
+    });
+  });
+
+  it("can run multiple tests", async () => {
   });
 });

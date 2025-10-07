@@ -129,7 +129,6 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
             // not much we can do here
           }
         }
-        stdinStream.end();
         yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
       } catch (_e) {
         // do nothing, process is probably already dead

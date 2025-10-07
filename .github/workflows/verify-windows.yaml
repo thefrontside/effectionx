@@ -39,7 +39,11 @@ jobs:
         run: |
           $env:SHELL = "${{matrix.shell}}"
           deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi --trace-leaks
-          exit $LASTEXITCODE
+          $exitCode = $LASTEXITCODE
+          $lastSuccess = $?
+          echo "LASTEXITCODE: $exitCode"
+          echo "? variable: $lastSuccess"
+          exit $exitCode
 
       - name: "Test (${{matrix.shell}})"
         if: matrix.shell == 'cmd'

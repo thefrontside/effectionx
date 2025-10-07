@@ -1,4 +1,4 @@
-import { spawn, type Task } from "effection";
+import { sleep, spawn, type Task } from "effection";
 import { expect } from "@std/expect";
 import { beforeEach, describe, it } from "@effectionx/bdd";
 
@@ -7,6 +7,7 @@ import {
   captureError,
   expectMatch,
   fetchText,
+  interrupt,
   streamClose,
 } from "./helpers.ts";
 import process from "node:process";
@@ -479,4 +480,27 @@ describe("handles env vars", () => {
   }
 
   // Close the main "handles env vars" describe block
+});
+
+describe("graceful shutdown", () => {
+  it("waits until stdout is closed before process exits", function* () {
+    let proc = yield* exec("deno run -A ./fixtures/graceful-shutdown.ts", {
+      cwd: import.meta.dirname,
+      env: {
+        PATH: process.env.PATH as string,
+      },
+    });
+
+    yield* spawn(function*() {
+      yield* sleep(10);
+  
+      // Send interrupt signal
+      interrupt(proc);
+    });
+
+    // Wait for process to finish and collect result
+    yield* proc.join();
+
+    yield* expectMatch(/done/, lines()(proc.stdout));
+  });
 });

@@ -57,39 +57,31 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
     stderrDone: withResolvers<void>(),
   };
 
-  yield* spawn(function* () {
-    yield* once(childProcess.stdout, "readable");
-    io.stdoutReady.resolve();
-    yield* once(childProcess.stdout, "end");
-    io.stdoutDone.resolve();
-  });
-
-  yield* spawn(function* () {
-    yield* once(childProcess.stderr, "readable");
-    io.stderrReady.resolve();
-    yield* once(childProcess.stderr, "end");
-    io.stderrDone.resolve();
-  });
-
   const stdout = createSignal<Uint8Array, void>();
   const stderr = createSignal<Uint8Array, void>();
 
   yield* spawn(function* () {
+    yield* once(childProcess.stdout, "readable");
+    io.stdoutReady.resolve();
     let next = yield* io.stdout.next();
     while (!next.done) {
       stdout.send(next.value);
       next = yield* io.stdout.next();
     }
     stdout.close();
+    io.stdoutDone.resolve();
   });
 
   yield* spawn(function* () {
+    yield* once(childProcess.stderr, "readable");
+    io.stderrReady.resolve();
     let next = yield* io.stderr.next();
     while (!next.done) {
       stderr.send(next.value);
       next = yield* io.stderr.next();
     }
     stderr.close();
+    io.stderrDone.resolve();
   });
 
   yield* spawn(function* trapError() {

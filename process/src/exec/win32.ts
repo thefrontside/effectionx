@@ -95,28 +95,34 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
       processResult.resolve(Ok(value));
     } finally {
       try {
-        if (typeof childProcess.pid === "undefined") {
-          // deno-lint-ignore no-unsafe-finally
-          throw new Error("no pid for childProcess");
-        }
-        // Windows-specific cleanup using ctrlc
-        ctrlc(childProcess.pid);
-        let stdinStream = childProcess.stdin;
-        if (stdinStream.writable) {
-          try {
-            // Terminate batch process (Y/N)
-            stdinStream.write("Y\n");
-          } catch (_err) {
-            // not much we can do here
+        // Only try to kill the process if it hasn't exited yet
+        if (
+          childProcess.exitCode === null && childProcess.signalCode === null
+        ) {
+          if (typeof childProcess.pid === "undefined") {
+            // deno-lint-ignore no-unsafe-finally
+            throw new Error("no pid for childProcess");
           }
+          // Windows-specific cleanup using ctrlc
+          ctrlc(childProcess.pid);
+          let stdinStream = childProcess.stdin;
+          if (stdinStream.writable) {
+            try {
+              // Terminate batch process (Y/N)
+              stdinStream.write("Y\n");
+            } catch (_err) {
+              // not much we can do here
+            }
+          }
+          // Close stdin to allow process to exit cleanly
+          try {
+            stdinStream.end();
+          } catch (_err) {
+            // stdin might already be closed
+          }
+          // Wait for streams to finish after terminating
+          yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
         }
-        // Close stdin to allow process to exit cleanly
-        try {
-          stdinStream.end();
-        } catch (_err) {
-          // stdin might already be closed
-        }
-        yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
       } catch (_e) {
         // do nothing, process is probably already dead
       }

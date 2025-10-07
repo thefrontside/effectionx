@@ -1,5 +1,6 @@
 import { platform } from "node:os";
 import {
+  all,
   createSignal,
   Err,
   Ok,
@@ -50,7 +51,25 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   let io = {
     stdout: yield* useReadable(childProcess.stdout),
     stderr: yield* useReadable(childProcess.stderr),
+    stdoutReady: withResolvers<void>(),
+    stdoutDone: withResolvers<void>(),
+    stderrReady: withResolvers<void>(),
+    stderrDone: withResolvers<void>(),
   };
+
+  yield* spawn(function* () {
+    yield* once(childProcess.stdout, "readable");
+    io.stdoutReady.resolve();
+    yield* once(childProcess.stdout, "end");
+    io.stdoutDone.resolve();
+  });
+
+  yield* spawn(function* () {
+    yield* once(childProcess.stderr, "readable");
+    io.stderrReady.resolve();
+    yield* once(childProcess.stderr, "end");
+    io.stderrDone.resolve();
+  });
 
   const stdout = createSignal<Uint8Array, void>();
   const stderr = createSignal<Uint8Array, void>();
@@ -86,8 +105,12 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
 
   yield* spawn(function* () {
     try {
-      let value = yield* once<ProcessResultValue>(childProcess, "exit");
-      yield* sleep(1);
+      let value = yield* once<ProcessResultValue>(childProcess, "close");
+      yield* all([
+        io.stdoutReady.operation,
+        io.stderrReady.operation,
+        sleep(1),
+      ]);
       processResult.resolve(Ok(value));
     } finally {
       try {
@@ -107,6 +130,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
           }
         }
         stdinStream.end();
+        yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
       } catch (_e) {
         // do nothing, process is probably already dead
       }

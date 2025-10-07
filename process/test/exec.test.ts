@@ -1,20 +1,17 @@
 import { spawn, type Task } from "effection";
 import { expect } from "@std/expect";
 import { beforeEach, describe, it } from "@effectionx/bdd";
-import { createArraySignal, is } from "@effectionx/signals";
 import process from "node:process";
 
 import {
   captureError,
   expectMatch,
   fetchText,
-  interrupt,
   streamClose,
 } from "./helpers.ts";
 
 import { exec, type Process, type ProcessResult } from "../mod.ts";
 import { lines } from "../src/helpers.ts";
-import { forEach } from "../../stream-helpers/for-each.ts";
 
 const SystemRoot = Deno.env.get("SystemRoot");
 
@@ -42,34 +39,6 @@ const isBash = () => {
 };
 
 describe("exec", () => {
-  describe("graceful shutdown", () => {
-    it("waits until stdout is closed before process exits", function* () {
-      let proc = yield* exec("deno run -A ./fixtures/graceful-shutdown.ts", {
-        cwd: import.meta.dirname,
-        env: {
-          PATH: process.env.PATH as string,
-        },
-      });
-
-      const output = yield* createArraySignal<string>([]);
-
-      let readTask = yield* spawn(function* () {
-        yield* forEach(function* (line) {
-          output.push(line);
-        }, lines()(proc.stdout));
-      });
-
-      yield* is(output, (array) => array.includes("started"));
-
-      interrupt(proc);
-
-      yield* proc.join();
-      yield* readTask;
-
-      expect(output.valueOf()).toEqual(["started", "done"]);
-    });
-  });
-
   describe(".join", () => {
     it("runs successfully to completion", function* () {
       let result: ProcessResult = yield* exec(

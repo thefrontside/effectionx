@@ -129,6 +129,12 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
             // not much we can do here
           }
         }
+        // Close stdin to allow process to exit cleanly
+        try {
+          stdinStream.end();
+        } catch (_err) {
+          // stdin might already be closed
+        }
         yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
       } catch (_e) {
         // do nothing, process is probably already dead

@@ -1,8 +1,9 @@
-import { sleep, spawn, type Task } from "effection";
+import { spawn, type Task } from "effection";
 import { expect } from "@std/expect";
 import { beforeEach, describe, it } from "@effectionx/bdd";
+import { createArraySignal, is } from "@effectionx/signals";
+import process from "node:process";
 
-import { exec, type Process, type ProcessResult } from "../mod.ts";
 import {
   captureError,
   expectMatch,
@@ -10,9 +11,10 @@ import {
   interrupt,
   streamClose,
 } from "./helpers.ts";
-import process from "node:process";
 
+import { exec, type Process, type ProcessResult } from "../mod.ts";
 import { lines } from "../src/helpers.ts";
+import { forEach } from "../../stream-helpers/for-each.ts";
 
 const SystemRoot = Deno.env.get("SystemRoot");
 
@@ -40,6 +42,35 @@ const isBash = () => {
 };
 
 describe("exec", () => {
+  describe("graceful shutdown", () => {
+    it("waits until stdout is closed before process exits", function* () {
+      let proc = yield* exec("deno run -A ./fixtures/graceful-shutdown.ts", {
+        cwd: import.meta.dirname,
+        env: {
+          PATH: process.env.PATH as string,
+        },
+      });
+
+      const output = yield* createArraySignal<string>([]);
+
+      yield* spawn(function* () {
+        yield* forEach(function* (line) {
+          output.push(line);
+        }, lines()(proc.stdout));
+      });
+
+      yield* is(output, (array) => array.includes("started"));
+
+      interrupt(proc);
+
+      yield* proc.join();
+
+      yield* is(output, (array) => array.includes("done"));
+
+      expect(output.valueOf()).toEqual(["started", "done"]);
+    });
+  });
+
   describe(".join", () => {
     it("runs successfully to completion", function* () {
       let result: ProcessResult = yield* exec(
@@ -131,7 +162,7 @@ describe("exec", () => {
         env: {
           PORT: "29000",
           PATH: process.env.PATH as string,
-          ...SystemRoot ? { SystemRoot } : {},
+          ...(SystemRoot ? { SystemRoot } : {}),
         },
         cwd: import.meta.dirname,
       });
@@ -225,20 +256,18 @@ if (process.platform !== "win32") {
 describe("when the `shell` option is `false`", () => {
   it("correctly receives literal arguments when shell: false", function* () {
     // Arguments are passed literally as parsed by shellwords
-    let proc = exec(
-      `deno run -A ./fixtures/dump-args.js first | echo second`,
-      {
-        shell: false,
-        cwd: import.meta.dirname,
-      },
-    );
+    let proc = exec(`deno run -A ./fixtures/dump-args.js first | echo second`, {
+      shell: false,
+      cwd: import.meta.dirname,
+    });
     let { stdout }: ProcessResult = yield* proc.expect();
 
     // Node's console.log uses a single LF (\n) line ending.
-    const expected = JSON.stringify({
-      args: ["first", "|", "echo", "second"], // Arguments received by Node
-      envVar: undefined,
-    }) + "\n";
+    const expected =
+      JSON.stringify({
+        args: ["first", "|", "echo", "second"], // Arguments received by Node
+        envVar: undefined,
+      }) + "\n";
 
     expect(stdout).toEqual(expected);
   });
@@ -256,10 +285,11 @@ describe("when the `shell` option is `false`", () => {
     let { stdout, code }: ProcessResult = yield* proc.expect();
 
     // The argument is passed literally, and the env var is available in the child process's env.
-    const expected = JSON.stringify({
-      args: ["$EFFECTION_TEST_ENV_VAL"], // Argument is passed literally
-      envVar: "boop", // Env variable is read from process.env
-    }) + "\n";
+    const expected =
+      JSON.stringify({
+        args: ["$EFFECTION_TEST_ENV_VAL"], // Argument is passed literally
+        envVar: "boop", // Env variable is read from process.env
+      }) + "\n";
 
     expect(stdout).toEqual(expected);
     expect(code).toBe(0);
@@ -284,10 +314,11 @@ describe("handles env vars", () => {
       );
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      const expected = JSON.stringify({
-        args: ["boop"],
-        envVar: "boop",
-      }) + "\n";
+      const expected =
+        JSON.stringify({
+          args: ["boop"],
+          envVar: "boop",
+        }) + "\n";
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -307,10 +338,11 @@ describe("handles env vars", () => {
       );
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      const expected = JSON.stringify({
-        args: ["boop"],
-        envVar: "boop",
-      }) + "\n";
+      const expected =
+        JSON.stringify({
+          args: ["boop"],
+          envVar: "boop",
+        }) + "\n";
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -336,13 +368,14 @@ describe("handles env vars", () => {
 
       // this fails on windows, this shell option doesn't work on windows
       // due to it generally running through cmd.exe which can't handle this syntax
-      let expected = process.platform !== "win32"
-        ? JSON.stringify({ args: ["boop"], envVar: "boop" }) + "\n"
-        // note the additional \r that is added
-        : JSON.stringify({
-          args: ["$EFFECTION_TEST_ENV_VAL"],
-          envVar: "boop",
-        }) + "\n";
+      let expected =
+        process.platform !== "win32"
+          ? JSON.stringify({ args: ["boop"], envVar: "boop" }) + "\n"
+          : // note the additional \r that is added
+            JSON.stringify({
+              args: ["$EFFECTION_TEST_ENV_VAL"],
+              envVar: "boop",
+            }) + "\n";
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -364,13 +397,14 @@ describe("handles env vars", () => {
 
       // this fails on windows, this shell option doesn't work on windows
       // due to it generally running through cmd.exe which can't handle this syntax
-      let expected = process.platform !== "win32"
-        ? JSON.stringify({ args: ["boop"], envVar: "boop" }) + "\n"
-        // note the additional \r that is added
-        : JSON.stringify({
-          args: ["${EFFECTION_TEST_ENV_VAL}"],
-          envVar: "boop",
-        }) + "\n";
+      let expected =
+        process.platform !== "win32"
+          ? JSON.stringify({ args: ["boop"], envVar: "boop" }) + "\n"
+          : // note the additional \r that is added
+            JSON.stringify({
+              args: ["${EFFECTION_TEST_ENV_VAL}"],
+              envVar: "boop",
+            }) + "\n";
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -391,10 +425,11 @@ describe("handles env vars", () => {
       );
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      const expected = JSON.stringify({
-        args: ["$EFFECTION_TEST_ENV_VAL"],
-        envVar: "boop",
-      }) + "\n";
+      const expected =
+        JSON.stringify({
+          args: ["$EFFECTION_TEST_ENV_VAL"],
+          envVar: "boop",
+        }) + "\n";
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -416,10 +451,11 @@ describe("handles env vars", () => {
       // - Bash (Windows): Normalizes ${VAR} to $VAR during argument processing: $EFFECTION_TEST_ENV_VAL + LF
       // - Bash (Unix): Keeps curly braces intact: ${EFFECTION_TEST_ENV_VAL} + LF
       // Note: Shellwords parsing preserves braces on all platforms, but bash execution normalizes them
-      const expected = JSON.stringify({
-        args: ["${EFFECTION_TEST_ENV_VAL}"],
-        envVar: "boop",
-      }) + "\n";
+      const expected =
+        JSON.stringify({
+          args: ["${EFFECTION_TEST_ENV_VAL}"],
+          envVar: "boop",
+        }) + "\n";
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -446,10 +482,11 @@ describe("handles env vars", () => {
         let { stdout, code }: ProcessResult = yield* proc.expect();
 
         // Windows bash should resolve environment variables
-        const expected = JSON.stringify({
-          args: ["boop"],
-          envVar: "boop",
-        }) + "\n";
+        const expected =
+          JSON.stringify({
+            args: ["boop"],
+            envVar: "boop",
+          }) + "\n";
         expect(stdout).toEqual(expected);
         expect(code).toBe(0);
       });
@@ -469,10 +506,11 @@ describe("handles env vars", () => {
         let { stdout, code }: ProcessResult = yield* proc.expect();
 
         // Windows bash should resolve environment variables with curly brace syntax
-        const expected = JSON.stringify({
-          args: ["boop"],
-          envVar: "boop",
-        }) + "\n";
+        const expected =
+          JSON.stringify({
+            args: ["boop"],
+            envVar: "boop",
+          }) + "\n";
         expect(stdout).toEqual(expected);
         expect(code).toBe(0);
       });
@@ -480,27 +518,4 @@ describe("handles env vars", () => {
   }
 
   // Close the main "handles env vars" describe block
-});
-
-describe("graceful shutdown", () => {
-  it("waits until stdout is closed before process exits", function* () {
-    let proc = yield* exec("deno run -A ./fixtures/graceful-shutdown.ts", {
-      cwd: import.meta.dirname,
-      env: {
-        PATH: process.env.PATH as string,
-      },
-    });
-
-    yield* spawn(function*() {
-      yield* sleep(10);
-  
-      // Send interrupt signal
-      interrupt(proc);
-    });
-
-    // Wait for process to finish and collect result
-    yield* proc.join();
-
-    yield* expectMatch(/done/, lines()(proc.stdout));
-  });
 });

@@ -120,7 +120,8 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
           } catch (_err) {
             // stdin might already be closed
           }
-          // Wait for streams to finish after terminating
+          // Wait for process to actually exit and streams to finish
+          yield* once<ProcessResultValue>(childProcess, "close");
           yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
         }
       } catch (_e) {

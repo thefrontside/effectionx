@@ -25,9 +25,14 @@ describe("something", () => {
   
   adapter.addSetup(function*() {
     /* do some setup. equivalent of beforeEach() */
-	/* contexts set here will be visible in the test */*
+	/* contexts set here will be visible in the test */
   });
   
+  adapter.addOnetimeSetup(function*() {
+    /* do some setup that will only happen once. equivalent of beforeAll() */
+	/* contexts set here will be visible in the test */
+  });
+
   it("does a thing", async () => {
     await adapter.runTest(function*() {
 	  /* ... the body of the test */

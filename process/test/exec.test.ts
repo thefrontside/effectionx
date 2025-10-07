@@ -53,7 +53,7 @@ describe("exec", () => {
 
       const output = yield* createArraySignal<string>([]);
 
-      yield* spawn(function* () {
+      let readTask = yield* spawn(function* () {
         yield* forEach(function* (line) {
           output.push(line);
         }, lines()(proc.stdout));
@@ -64,8 +64,7 @@ describe("exec", () => {
       interrupt(proc);
 
       yield* proc.join();
-
-      yield* is(output, (array) => array.includes("done"));
+      yield* readTask;
 
       expect(output.valueOf()).toEqual(["started", "done"]);
     });

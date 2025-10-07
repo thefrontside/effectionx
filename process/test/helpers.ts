@@ -11,7 +11,7 @@ export function terminate(process: Process): void {
     //Terminate batch process? (Y/N)
     process.stdin.send("Y\n");
   } else {
-    globalThis.process.kill(process.pid, "SIGTERM");
+    globalThis.process.kill(-process.pid, "SIGTERM");
   }
 }
 
@@ -24,7 +24,7 @@ export function interrupt(process: Process): void {
     //Terminate batch process? (Y/N)
     process.stdin.send("Y\n");
   } else {
-    globalThis.process.kill(process.pid, "SIGINT");
+    globalThis.process.kill(-process.pid, "SIGINT");
   }
 }
 

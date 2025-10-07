@@ -11,6 +11,7 @@
     "shellwords": "npm:shellwords@^1.1.1",
     "@std/expect": "jsr:@std/expect@1.0.17",
     "@effectionx/stream-helpers": "../stream-helpers/mod.ts",
-    "@effectionx/bdd": "jsr:@effectionx/bdd@0.1.0"
+    "@effectionx/bdd": "jsr:@effectionx/bdd@0.1.0",
+    "@effectionx/signals": "npm:@effectionx/signals@0.3.0"
   }
 }

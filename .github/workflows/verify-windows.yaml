@@ -38,11 +38,12 @@ jobs:
         if: matrix.shell == 'powershell' || matrix.shell == 'pwsh'
         run: |
           $env:SHELL = "${{matrix.shell}}"
-          deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi --trace-leaks
+          $ErrorActionPreference = "Continue"
+          deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi --trace-leaks 2>&1
           $exitCode = $LASTEXITCODE
           $lastSuccess = $?
-          echo "LASTEXITCODE: $exitCode"
-          echo "? variable: $lastSuccess"
+          Write-Host "LASTEXITCODE: $exitCode"
+          Write-Host "? variable: $lastSuccess"
           exit $exitCode
 
       - name: "Test (${{matrix.shell}})"

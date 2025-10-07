@@ -1,5 +1,5 @@
-import { call, suspend } from "effection";
-import { workerMain } from "../worker.ts";
+import { suspend, until } from "effection";
+import { workerMain } from "../worker-main.ts";
 
 export interface ShutdownWorkerParams {
   startFile: string;
@@ -11,9 +11,9 @@ await workerMain(function* ({ data }) {
   let params = data as ShutdownWorkerParams;
   let { startFile, endFile, endText } = params;
   try {
-    yield* call(() => Deno.writeTextFile(startFile, "started"));
+    yield* until(Deno.writeTextFile(startFile, "started"));
     yield* suspend();
   } finally {
-    yield* call(() => Deno.writeTextFile(endFile, endText));
+    yield* until(Deno.writeTextFile(endFile, endText));
   }
 });

@@ -1,4 +1,4 @@
-import { workerMain } from "../worker.ts";
+import { workerMain } from "../worker-main.ts";
 
 await workerMain<number, number, number, number>(
   function* ({ messages, data: initial }) {

@@ -1,12 +1,10 @@
-import { describe, it } from "bdd";
-import { expect } from "expect";
-import { each, Err, Ok, run, sleep, spawn } from "effection";
+import { describe, it } from "@effectionx/bdd";
+import { expect } from "@std/expect";
+import { each, Err, Ok, sleep, spawn } from "effection";
 
 import { parallel } from "./parallel.ts";
 
 import type { Operation, Result } from "effection";
-
-const test = describe("parallel()");
 
 interface Defer<T> {
   promise: Promise<T>;
@@ -25,138 +23,109 @@ function defer<T>(): Defer<T> {
   return { resolve, reject, promise };
 }
 
-it(
-  test,
-  "should return an immediate channel with results as they are completed",
-  async () => {
-    const result = await run(function* () {
-      const results = yield* parallel([
-        function* () {
-          yield* sleep(20);
-          return "second";
-        },
-        function* () {
-          yield* sleep(10);
-          return "first";
-        },
-      ]);
+describe("parallel()", () => {
+  it("should return an immediate channel with results as they are completed", function* () {
+    const results = yield* parallel([
+      function* () {
+        yield* sleep(20);
+        return "second";
+      },
+      function* () {
+        yield* sleep(10);
+        return "first";
+      },
+    ]);
 
-      const res: Result<string>[] = [];
-      for (const val of yield* each(results.immediate)) {
-        res.push(val);
-        yield* each.next();
-      }
+    const res: Result<string>[] = [];
+    for (const val of yield* each(results.immediate)) {
+      res.push(val);
+      yield* each.next();
+    }
 
-      yield* results;
-      return res;
-    });
+    yield* results;
 
-    expect(result).toEqual([Ok("first"), Ok("second")]);
-  },
-);
-
-it(
-  test,
-  "should return a sequence channel with results preserving array order as results",
-  async () => {
-    const result = await run(function* () {
-      const results = yield* parallel([
-        function* () {
-          yield* sleep(20);
-          return "second";
-        },
-        function* () {
-          yield* sleep(10);
-          return "first";
-        },
-      ]);
-
-      const res: Result<string>[] = [];
-      for (const val of yield* each(results.sequence)) {
-        res.push(val);
-        yield* each.next();
-      }
-
-      yield* results;
-      return res;
-    });
-
-    expect(result).toEqual([Ok("second"), Ok("first")]);
-  },
-);
-
-it(
-  test,
-  "should return all the result in an array, preserving order",
-  async () => {
-    const result = await run(function* () {
-      const para = yield* parallel([
-        function* () {
-          yield* sleep(20);
-          return "second";
-        },
-        function* () {
-          yield* sleep(10);
-          return "first";
-        },
-      ]);
-
-      return yield* para;
-    });
-
-    expect(result).toEqual([Ok("second"), Ok("first")]);
-  },
-);
-
-it(test, "should return empty array", async () => {
-  let actual;
-  await run(function* (): Operation<void> {
-    const results = yield* parallel([]);
-    actual = yield* results;
+    expect(res).toEqual([Ok("first"), Ok("second")]);
   });
-  expect(actual).toEqual([]);
-});
 
-it(test, "should resolve all async items", async () => {
-  const two = defer();
+  it("should return a sequence channel with results preserving array order as results", function* () {
+    const results = yield* parallel([
+      function* () {
+        yield* sleep(20);
+        return "second";
+      },
+      function* () {
+        yield* sleep(10);
+        return "first";
+      },
+    ]);
 
-  function* one() {
-    yield* sleep(5);
-    return 1;
-  }
+    const res: Result<string>[] = [];
+    for (const val of yield* each(results.sequence)) {
+      res.push(val);
+      yield* each.next();
+    }
 
-  const result = await run(function* () {
+    yield* results;
+
+    expect(res).toEqual([Ok("second"), Ok("first")]);
+  });
+
+  it("should return all the result in an array, preserving order", function* () {
+    const para = yield* parallel([
+      function* () {
+        yield* sleep(20);
+        return "second";
+      },
+      function* () {
+        yield* sleep(10);
+        return "first";
+      },
+    ]);
+
+    expect(yield* para).toEqual([Ok("second"), Ok("first")]);
+  });
+
+  it("should return empty array", function* (): Operation<void> {
+    const results = yield* parallel([]);
+    expect(yield* results).toEqual([]);
+  });
+
+  it("should resolve all async items", function* () {
+    const two = defer();
+
+    function* one() {
+      yield* sleep(5);
+      return 1;
+    }
     yield* spawn(function* () {
       yield* sleep(15);
       two.resolve(2);
     });
     const results = yield* parallel([one, () => two.promise]);
-    return yield* results;
+    expect(yield* results).toEqual([Ok(1), Ok(2)]);
   });
 
-  expect(result).toEqual([Ok(1), Ok(2)]);
-});
+  it("should stop all operations when there is an error", function* () {
+    let actual: Result<number>[] = [];
+    const one = defer<number>();
+    const two = defer<number>();
 
-it(test, "should stop all operations when there is an error", async () => {
-  let actual: Result<number>[] = [];
-  const one = defer<number>();
-  const two = defer<number>();
-
-  function* genFn() {
-    try {
-      const results = yield* parallel([() => one.promise, () => two.promise]);
-      actual = yield* results;
-    } catch (_) {
-      actual = [Err(new Error("should not get hit"))];
+    function* genFn() {
+      try {
+        const results = yield* parallel([() => one.promise, () => two.promise]);
+        actual = yield* results;
+      } catch (_) {
+        actual = [Err(new Error("should not get hit"))];
+      }
     }
-  }
 
-  const err = new Error("error");
-  one.reject(err);
-  two.resolve(1);
+    const err = new Error("error");
+    one.reject(err);
+    two.resolve(1);
 
-  await run(genFn);
+    yield* genFn();
 
-  const expected = [Err(err), Ok(1)];
-  expect(actual).toEqual(expected);
+    const expected = [Err(err), Ok(1)];
+    expect(actual).toEqual(expected);
+  });
 });

@@ -1,7 +1,7 @@
 import { JsonParseStream } from "@std/json";
 import { TextLineStream } from "@std/streams";
 import { emptyDir, exists, walk } from "@std/fs";
-import { basename, dirname, globToRegExp, join, toFileUrl } from "@std/path";
+import { dirname, fromFileUrl, globToRegExp, join, toFileUrl } from "@std/path";
 
 import {
   call,
@@ -90,7 +90,7 @@ export class JSONLStore implements Store {
    * Returns content of a file as a stream
    *
    * ```ts
-   * import { each } from "npm:effection@4.0.0-alpha.3";
+   * import { each } from "npm:effection@^3";
    * import { useStore } from "jsr:@effectionx/jsonl-store";
    *
    * const store = yield* useStore();
@@ -151,7 +151,7 @@ export class JSONLStore implements Store {
   *write(key: string, data: unknown): Operation<void> {
     const location = new URL(`./${key}.jsonl`, this.location);
 
-    yield* mkdir(dirname(location.pathname), { recursive: true });
+    yield* mkdir(dirname(fromFileUrl(location)), { recursive: true });
 
     const file = yield* call(() =>
       Deno.open(location, {
@@ -204,7 +204,7 @@ export class JSONLStore implements Store {
    * Returns a stream of content from all files matching a glob
    *
    * ```ts
-   * import { each } from "npm:effection@4.0.0-alpha.3";
+   * import { each } from "npm:effection@^3";
    * import { useStore } from "jsr:@effectionx/jsonl-store";
    *
    * const store = yield* useStore();
@@ -219,13 +219,13 @@ export class JSONLStore implements Store {
    * @returns Stream<T, void>
    */
   find<T>(glob: string): Stream<T, void> {
-    const { pathname } = this.location;
+    const root = fromFileUrl(this.location);
 
-    const reg = globToRegExp(`${pathname}/${glob}`, {
+    const reg = globToRegExp(join(root, glob), {
       globstar: true,
     });
 
-    const files = walk(this.location, {
+    const files = walk(root, {
       includeDirs: false,
       includeFiles: true,
       match: [
@@ -240,10 +240,10 @@ export class JSONLStore implements Store {
 
       yield* spawn(function* () {
         for (const file of yield* each(stream(files))) {
-          const key = join(
-            dirname(file.path.replace(pathname, "")),
-            basename(file.name, ".jsonl"),
-          );
+          const key = file.path
+            .replace(root, "")
+            .replaceAll(`\\`, `/`)
+            .replace(/\.jsonl$/, "");
 
           for (const item of yield* each(read<T>(key))) {
             queue.add(item);

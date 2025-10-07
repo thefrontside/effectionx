@@ -1,14 +1,10 @@
-import { run } from "effection";
-import { describe, it } from "@std/testing/bdd";
+import { describe, it } from "@effectionx/bdd";
 import { useStore } from "./mod.ts";
-import { expect } from "expect";
+import { expect } from "@std/expect";
 
 describe("StoreContext", () => {
-  it("allows accessing context without initializing", async () => {
-    let store;
-    await run(function* () {
-      store = yield* useStore();
-    });
+  it("allows accessing context without initializing", function* () {
+    let store = yield* useStore();
     expect(store).toBeDefined();
   });
 });

@@ -1,6 +1,6 @@
 import { main, sleep } from "effection";
 
-console.log("started")
+console.log("started");
 
 await main(function* () {
   try {

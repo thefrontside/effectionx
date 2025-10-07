@@ -1,10 +1,9 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import { createArraySignal, is } from "@effectionx/signals";
-import { forEach, map } from "@effectionx/stream-helpers";
+import { forEach } from "@effectionx/stream-helpers";
 
 import process from "node:process";
-import { expectMatch } from "../../process/test/helpers.ts";
 import { watch } from "../watch.ts";
 import { inspector, useFixture } from "./helpers.ts";
 import { spawn } from "effection";

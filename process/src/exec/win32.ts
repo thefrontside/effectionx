@@ -50,9 +50,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   let io = {
     stdout: yield* useReadable(childProcess.stdout),
     stderr: yield* useReadable(childProcess.stderr),
-    stdoutReady: withResolvers<void>(),
     stdoutDone: withResolvers<void>(),
-    stderrReady: withResolvers<void>(),
     stderrDone: withResolvers<void>(),
   };
 
@@ -60,8 +58,6 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   const stderr = createSignal<Uint8Array, void>();
 
   yield* spawn(function* () {
-    yield* once(childProcess.stdout, "readable");
-    io.stdoutReady.resolve();
     let next = yield* io.stdout.next();
     while (!next.done) {
       stdout.send(next.value);
@@ -72,8 +68,6 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
   });
 
   yield* spawn(function* () {
-    yield* once(childProcess.stderr, "readable");
-    io.stderrReady.resolve();
     let next = yield* io.stderr.next();
     while (!next.done) {
       stderr.send(next.value);

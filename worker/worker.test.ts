@@ -3,7 +3,7 @@ import { timebox } from "@effectionx/timebox";
 import { assert } from "@std/assert";
 import { expect } from "@std/expect";
 import { emptyDir, exists } from "@std/fs";
-import { join } from "@std/path";
+import { fromFileUrl, join } from "@std/path";
 import { scoped, sleep, spawn, suspend, until } from "effection";
 
 import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
@@ -64,7 +64,7 @@ describe("worker", () => {
     let url: string;
 
     beforeEach(function* () {
-      let dir = new URL(import.meta.resolve("./test-tmp")).pathname;
+      let dir = fromFileUrl(import.meta.resolve("./test-tmp"));
       yield* until(emptyDir(dir));
       startFile = join(dir, "started.txt");
       endFile = join(dir, "ended.txt");

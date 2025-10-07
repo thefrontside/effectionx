@@ -19,7 +19,8 @@
     "zod-opts": "npm:zod-opts@0.1.8",
     "@effectionx/bdd": "jsr:@effectionx/bdd@0.1.0",
     "@effectionx/process": "../process/mod.ts",
-    "@effectionx/stream-helpers": "../stream-helpers/mod.ts"
+    "@effectionx/stream-helpers": "../stream-helpers/mod.ts",
+    "@effectionx/signals": "npm:@effectionx/signals@0.3.0"
   },
   "lint": {
     "rules": {

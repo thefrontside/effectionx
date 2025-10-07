@@ -1,12 +1,13 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
+import { createArraySignal, is } from "@effectionx/signals";
+import { forEach, map } from "@effectionx/stream-helpers";
 
-import { map } from "@effectionx/stream-helpers";
-import { sleep } from "effection";
 import process from "node:process";
 import { expectMatch } from "../../process/test/helpers.ts";
 import { watch } from "../watch.ts";
 import { inspector, useFixture } from "./helpers.ts";
+import { spawn } from "effection";
 
 describe("watch", () => {
   it("restarts the specified process when files change.", function* () {
@@ -72,38 +73,41 @@ describe("watch", () => {
     // enuser that there was no restart;
   });
 
-  if (process.platform !== "win32") {
-    it("waits until stdout is closed before restarting", function* () {
-      let fixture = yield* useFixture();
-      let processes = yield* inspector(
-        watch({
-          path: fixture.path,
-          cmd: `deno run -A watch-graceful.ts`,
-          execOptions: {
-            cwd: import.meta.dirname,
-            env: {
-              PATH: process.env.PATH!,
-            },
+  it("waits until stdout is closed before restarting", function* () {
+    let fixture = yield* useFixture();
+    let processes = yield* inspector(
+      watch({
+        path: fixture.path,
+        cmd: `deno run -A watch-graceful.ts`,
+        execOptions: {
+          cwd: import.meta.dirname,
+          env: {
+            PATH: process.env.PATH!,
           },
-        }),
-      );
+        },
+      }),
+    );
 
-      let first = yield* processes.expectNext();
+    const output = yield* createArraySignal<string>([]);
 
-      yield* sleep(200);
+    let first = yield* processes.expectNext();
 
-      yield* fixture.write("src/file.txt", "hello planet");
-
-      yield* processes.expectNext();
-
-      yield* expectMatch(
-        /done/,
-        map(function* (v) {
-          return String(v);
-        })(first.process.stdout),
-      );
+    yield* spawn(function* () {
+      yield* forEach(function* (line) {
+        output.push(`${line}`.trim());
+      }, first.process.stdout);
     });
-  }
+
+    yield* is(output, (array) => array.includes("started"));
+
+    yield* fixture.write("src/file.txt", "hello planet");
+
+    yield* is(output, (array) => array.includes("done"));
+
+    yield* processes.expectNext();
+
+    expect(output.valueOf()).toEqual(["started", "done"]);
+  });
 
   // start an example that prints "done" to the console upon SIGINT);
 

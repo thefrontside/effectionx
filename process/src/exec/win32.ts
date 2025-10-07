@@ -103,25 +103,40 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
             // deno-lint-ignore no-unsafe-finally
             throw new Error("no pid for childProcess");
           }
-          // Windows-specific cleanup using ctrlc
-          ctrlc(childProcess.pid);
+
           let stdinStream = childProcess.stdin;
-          if (stdinStream.writable) {
-            try {
-              // Terminate batch process (Y/N)
-              stdinStream.write("Y\n");
-            } catch (_err) {
-              // not much we can do here
+
+          // Try graceful shutdown with ctrlc
+          try {
+            ctrlc(childProcess.pid);
+            if (stdinStream.writable) {
+              try {
+                // Terminate batch process (Y/N)
+                stdinStream.write("Y\n");
+              } catch (_err) {
+                // not much we can do here
+              }
             }
+          } catch (_err) {
+            // ctrlc might fail
           }
+
           // Close stdin to allow process to exit cleanly
           try {
             stdinStream.end();
           } catch (_err) {
             // stdin might already be closed
           }
-          // Wait for process to actually exit and streams to finish
-          yield* once<ProcessResultValue>(childProcess, "close");
+
+          // Force kill the process to ensure it exits
+          // This is necessary because ctrlc may not work in all scenarios (e.g., bash on Windows)
+          try {
+            childProcess.kill();
+          } catch (_err) {
+            // process might already be dead
+          }
+
+          // Wait for streams to finish
           yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
         }
       } catch (_e) {

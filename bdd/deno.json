@@ -5,7 +5,7 @@
   "license": "MIT",
   "imports": {
     "effection": "npm:effection@^3",
-    "@effectionx/test-adapter": "npm:@effectionx/test-adapter@^0.5.1",
+    "@effectionx/test-adapter": "npm:@effectionx/test-adapter@^0.1.0",
     "@std/testing": "jsr:@std/testing@^1"
   }
 }

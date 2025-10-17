@@ -7,7 +7,7 @@
     "effection": "npm:effection@^3",
     "@std/assert": "jsr:@std/assert@^1",
     "@std/expect": "jsr:@std/expect@^1",
-    "@effectionx/timebox": "jsr:@effectionx/timebox@^0.2.0",
+    "@effectionx/timebox": "jsr:@effectionx/timebox@^0.1.0",
     "@std/path": "jsr:@std/path@^1",
     "@std/fs": "jsr:@std/fs@^1",
     "@effectionx/bdd": "jsr:@effectionx/bdd@0.1.0",

@@ -124,3 +124,17 @@ Versions lower than the lowest published version for each package:
 8. **raf** - Current lowest: 1.0.0-alpha.0 → **Suggested: 0.0.1** ✓ Not published
 
 **Verification Status:** All suggested versions confirmed to NOT exist on JSR (verified on 2025-10-17)
+
+---
+
+# Dependency Updates Required
+
+Packages that depend on downgraded packages needed their dependency versions updated:
+
+1. **worker** (`@effectionx/worker`)
+   - Depends on: `@effectionx/timebox`
+   - Updated from: `^0.2.0` → `^0.1.0`
+
+2. **bdd** (`@effectionx/bdd`)
+   - Depends on: `@effectionx/test-adapter`
+   - Updated from: `^0.5.1` → `^0.1.0`

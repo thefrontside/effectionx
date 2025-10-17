@@ -4,7 +4,9 @@ import {
   createSignal,
   Err,
   Ok,
+  race,
   type Result,
+  sleep,
   spawn,
   withResolvers,
 } from "effection";
@@ -17,6 +19,19 @@ import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
 
 type ProcessResultValue = [number?, string?];
+
+function* killTree(pid: number) {
+  try {
+    const killer = spawnProcess(
+      "cmd.exe",
+      ["/c", "taskkill", "/PID", String(pid), "/T", "/F"],
+      { windowsHide: true, stdio: "ignore" },
+    );
+    yield* once(killer, "close");
+  } catch (_) {
+    // best-effort; ignore errors
+  }
+}
 
 export const createWin32Process: CreateOSProcess = function* createWin32Process(
   command,
@@ -97,7 +112,8 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
       try {
         // Only try to kill the process if it hasn't exited yet
         if (
-          childProcess.exitCode === null && childProcess.signalCode === null
+          childProcess.exitCode === null &&
+          childProcess.signalCode === null
         ) {
           if (typeof childProcess.pid === "undefined") {
             // deno-lint-ignore no-unsafe-finally
@@ -128,12 +144,30 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
             // stdin might already be closed
           }
 
-          // Force kill the process to ensure it exits
-          // This is necessary because ctrlc may not work in all scenarios (e.g., bash on Windows)
-          try {
-            childProcess.kill();
-          } catch (_err) {
-            // process might already be dead
+          // Wait for graceful exit with a timeout
+          yield* race([processResult.operation, sleep(300)]);
+
+          // If process still hasn't exited, escalate
+          if (
+            childProcess.exitCode === null &&
+            childProcess.signalCode === null
+          ) {
+            // Try regular kill first
+            try {
+              childProcess.kill();
+            } catch (_err) {
+              // process might already be dead
+            }
+
+            // If still alive after kill, force-kill entire process tree
+            // This is necessary for bash on Windows where ctrlc doesn't work
+            // and child.kill() only kills the shell, leaving grandchildren alive
+            if (
+              childProcess.exitCode === null &&
+              childProcess.signalCode === null
+            ) {
+              yield* killTree(childProcess.pid);
+            }
           }
 
           // Wait for streams to finish

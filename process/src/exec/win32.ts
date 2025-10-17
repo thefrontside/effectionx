@@ -8,7 +8,7 @@ import {
   spawn,
   withResolvers,
 } from "effection";
-// @ts-types="npm:@types/cross-spawn"
+// @ts-types="npm:@types/cross-spawn@6.0.6"
 import { spawn as spawnProcess } from "cross-spawn";
 import { ctrlc } from "ctrlc-windows";
 import { once } from "../eventemitter.ts";

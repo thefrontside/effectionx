@@ -1,8 +1,9 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
-import { each, sleep, spawn } from "effection";
+import { each, sleep, spawn, withResolvers } from "effection";
 
 import { createArraySignal } from "./array.ts";
+import { is } from "./helpers.ts";
 
 describe("array signal", () => {
   it("accepts an initial value", function* () {
@@ -23,6 +24,8 @@ describe("array signal", () => {
     it("does not send a value to the stream when the set value is the same as the current value", function* () {
       const array = yield* createArraySignal<number>([]);
 
+      const { resolve, operation } = withResolvers<void>();
+
       const updates: number[][] = [];
 
       yield* spawn(function* () {
@@ -32,13 +35,18 @@ describe("array signal", () => {
         }
       });
 
-      array.set([1, 2, 3]);
+      yield* spawn(function* () {
+        array.set([1, 2, 3]);
 
-      expect(updates).toEqual([[1, 2, 3]]);
+        expect(updates).toEqual([[1, 2, 3]]);
 
-      array.set([1, 2, 3]);
+        array.set([1, 2, 3]);
 
-      expect(updates).toEqual([[1, 2, 3]]);
+        expect(updates).toEqual([[1, 2, 3]]);
+        resolve();
+      });
+
+      yield* operation;
     });
   });
 

@@ -2,7 +2,7 @@ import { beforeEach, describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 
 import { json, request } from "./request.ts";
-import { call, ensure } from "effection";
+import { call, ensure, withResolvers } from "effection";
 import { createServer } from "node:http";
 
 // Ensure to run tests with --allow-net permission
@@ -14,9 +14,10 @@ describe("request() and json()", () => {
       res.end(JSON.stringify({ id: 1, title: "do things" }));
     });
 
-    yield* call(() =>
-      new Promise<void>((resolve) => server.listen(0, resolve))
-    );
+    const ready = withResolvers<void>();
+    server.listen(0, () => ready.resolve());
+    yield* ready.operation;
+
     const addr = server.address();
     const port = typeof addr === "object" && addr ? addr.port : 0;
 

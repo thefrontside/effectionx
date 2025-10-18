@@ -39,5 +39,8 @@
     "./stream-helpers",
     "./signals",
     "./process"
-  ]
+  ],
+  "tasks": {
+    "generate-importmap": "deno run --allow-read --allow-write tasks/generate-importmap.ts"
+  }
 }

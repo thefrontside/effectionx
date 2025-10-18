@@ -16,7 +16,7 @@ import {
   withResolvers,
 } from "effection";
 import { default as createIgnore } from "ignore";
-import { pipe } from "@gordonb/pipe";
+import { pipe } from "remeda";
 import { readFile } from "node:fs/promises";
 import { exec, type ExecOptions, type Process } from "@effectionx/process";
 

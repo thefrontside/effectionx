@@ -1,18 +1,14 @@
-import { describe, it } from "bdd";
-import { expect } from "expect";
-import { run, sleep } from "effection";
+import { describe, it } from "@effectionx/bdd";
+import { expect } from "@std/expect";
+import { sleep } from "effection";
 
 import { raceMap } from "./race.ts";
 
-const test = describe("raceMap()");
-
-it(
-  test,
-  "should return the result of the first completed operation",
-  async () => {
-    let winner;
-
-    const result = await run(function* () {
+describe("raceMap()", () => {
+  it(
+    "should return the result of the first completed operation",
+    function* () {
+      let winner;
       const results = yield* raceMap({
         first: function* () {
           yield* sleep(10);
@@ -25,19 +21,14 @@ it(
           return "second";
         },
       });
-      return results;
-    });
+      expect(winner).toBe("first");
+      expect(Object.keys(results)).toEqual(["first"]);
+    },
+  );
 
-    expect(winner).toBe("first");
-    expect(Object.keys(result)).toEqual(["first"]);
-  },
-);
-
-it(test, "should halt other operations when one completes", async () => {
-  let winner;
-  let secondCompleted = false;
-
-  const result = await run(function* () {
+  it("should halt other operations when one completes", function* () {
+    let winner;
+    let secondCompleted = false;
     const results = yield* raceMap({
       first: function* () {
         yield* sleep(10);
@@ -56,10 +47,8 @@ it(test, "should halt other operations when one completes", async () => {
       },
     });
 
-    return results;
+    expect(winner).toBe("first");
+    expect(Object.keys(results)).toEqual(["first"]);
+    expect(secondCompleted).toBe(false);
   });
-
-  expect(winner).toBe("first");
-  expect(Object.keys(result)).toEqual(["first"]);
-  expect(secondCompleted).toBe(false);
 });

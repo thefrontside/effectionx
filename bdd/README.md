@@ -24,7 +24,7 @@ Add to your `deno.json` imports:
 ```json
 {
   "imports": {
-    "@effectionx/bdd": "npm:@effectionx/bdd"
+    "@effectionx/bdd": "jsr:@effectionx/bdd"
   }
 }
 ```

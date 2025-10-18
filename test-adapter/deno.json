@@ -1,6 +1,6 @@
 {
   "name": "@effectionx/test-adapter",
-  "version": "0.5.1",
+  "version": "0.1.0",
   "license": "MIT",
   "exports": "./mod.ts",
   "imports": {

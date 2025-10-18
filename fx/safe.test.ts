@@ -1,47 +1,38 @@
-import { describe, it } from "bdd";
-import { expect } from "expect";
-import { call, run } from "effection";
+import { describe, it } from "@effectionx/bdd";
+import { expect } from "@std/expect";
+import { call } from "effection";
 
-const tests = describe("call()");
-
-it(tests, "should call the generator function", async () => {
-  expect.assertions(1);
-  function* me() {
-    return "valid";
-  }
-
-  await run(function* () {
+describe("call()", () => {
+  it("should call the generator function", function* () {
+    expect.assertions(1);
+    function* me() {
+      return "valid";
+    }
     const result = yield* call(me);
     expect(result).toBe("valid");
   });
-});
 
-it(tests, "should return an Err()", async () => {
-  expect.assertions(1);
-  const err = new Error("bang!");
-  function* me() {
-    throw err;
-  }
-
-  await run(function* () {
+  it("should return an Err()", function* () {
+    expect.assertions(1);
+    const err = new Error("bang!");
+    function* me() {
+      throw err;
+    }
     try {
       yield* call(me);
     } catch (err) {
       expect(err).toEqual(err);
     }
   });
-});
 
-it(tests, "should call a promise", async () => {
-  expect.assertions(1);
-  const me = () =>
-    new Promise<string>((resolve) => {
-      setTimeout(() => {
-        resolve("valid");
-      }, 10);
-    });
-
-  await run(function* () {
+  it("should call a promise", function* () {
+    expect.assertions(1);
+    const me = () =>
+      new Promise<string>((resolve) => {
+        setTimeout(() => {
+          resolve("valid");
+        }, 10);
+      });
     const result = yield* call(me);
     expect(result).toEqual("valid");
   });

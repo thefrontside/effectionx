@@ -1,33 +1,31 @@
-import { describe, it } from "bdd";
-import { expect } from "expect";
-import { run } from "effection";
+import { beforeEach, describe, it } from "@effectionx/bdd";
+import { expect } from "@std/expect";
 
 import { json, request } from "./request.ts";
+import { ensure, until } from "effection";
 
 // Ensure to run tests with --allow-net permission
-const test = describe("request() and json()");
-
-it(test, "should fetch a URL and return a response", async () => {
-  const result = await run(function* () {
-    const response = yield* request(
-      "https://jsonplaceholder.typicode.com/todos/1",
+describe("request() and json()", () => {
+  let url: string;
+  beforeEach(function* () {
+    let server = Deno.serve(
+      () =>
+        new Response(JSON.stringify({ id: 1, title: "do things" }), {
+          headers: new Headers({
+            "Content-Type": "application/json",
+          }),
+        }),
     );
-    return response;
+
+    url = `http://localhost:${server.addr.port}/todos/1`,
+      yield* ensure(() => until(server.shutdown()));
   });
 
-  expect(result.ok).toBe(true);
-  expect(result.status).toBe(200);
-});
-
-it(test, "should parse JSON from a response", async () => {
-  const result = await run(function* () {
-    const response = yield* request(
-      "https://jsonplaceholder.typicode.com/todos/1",
-    );
+  it("returns a response that can be parsed with json", function* () {
+    const response = yield* request(url);
     const data = yield* json(response);
-    return data;
-  });
 
-  expect(result).toHaveProperty("id", 1);
-  expect(result).toHaveProperty("title");
+    expect(data).toHaveProperty("id", 1);
+    expect(data).toHaveProperty("title");
+  });
 });

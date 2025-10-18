@@ -14,7 +14,7 @@ You can use the default store client which will write store to
 `join(import.meta.dirname ?? Deno.cwd(), ".store")`.
 
 ```ts
-import { run } from "npm:effection@4.0.0-alpha.3";
+import { run } from "npm:effection@^3";
 import { useStore } from "jsr:@effectionx/jsonl-store";
 
 await run(function* () {
@@ -30,7 +30,7 @@ You can create a custom store location by using `JSONLStore.from` function. It
 ensures that you do not forget to add a trailing forward slash to the path.
 
 ```ts
-import { run } from "npm:effection@4.0.0-alpha.3";
+import { run } from "npm:effection@^3";
 import {
   JSONLStore,
   StoreContext,
@@ -50,7 +50,7 @@ await run(function* () {
 You can write to the store at a given key and append to the same key.
 
 ```ts
-import { run } from "npm:effection@4.0.0-alpha.3";
+import { run } from "npm:effection@^3";
 import { useStore } from "jsr:@effectionx/jsonl-store";
 
 await run(function* () {
@@ -71,7 +71,7 @@ content to the same file makes it easy to collocate relevant entities.
 Reading values from a key produces a stream of all values from the given key.
 
 ```ts
-import { run } from "npm:effection@4.0.0-alpha.3";
+import { run } from "npm:effection@^3";
 import { useStore } from "jsr:@effectionx/jsonl-store";
 
 await run(function* () {

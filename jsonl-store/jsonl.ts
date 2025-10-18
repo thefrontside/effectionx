@@ -17,7 +17,8 @@ import {
 import type { Store, StoreConstructorOptions } from "./types.ts";
 
 import fs from "node:fs";
-import { promisify } from "node:util";
+import * as fsp from "node:fs/promises";
+import { Readable } from "node:stream";
 
 function* mkdir(
   path: fs.PathLike,
@@ -25,7 +26,7 @@ function* mkdir(
     recursive: true;
   },
 ): Operation<string | undefined> {
-  return yield* call(() => promisify(fs.mkdir)(path, options));
+  return yield* call(() => fsp.mkdir(path, options));
 }
 
 export class JSONLStore implements Store {
@@ -110,10 +111,11 @@ export class JSONLStore implements Store {
     return resource(function* (provide) {
       const channel = createChannel<T, void>();
 
-      const file = yield* call(() => Deno.open(location, { read: true }));
+      const fileStream = fs.createReadStream(fromFileUrl(location));
+      const webStream = Readable.toWeb(fileStream);
 
-      const lines = file
-        .readable
+      // deno-lint-ignore no-explicit-any
+      const lines = (webStream as any)
         .pipeThrough(new TextDecoderStream())
         .pipeThrough(new TextLineStream())
         .pipeThrough(new JsonParseStream());
@@ -153,20 +155,13 @@ export class JSONLStore implements Store {
 
     yield* mkdir(dirname(fromFileUrl(location)), { recursive: true });
 
-    const file = yield* call(() =>
-      Deno.open(location, {
-        create: true,
-        write: true,
-      })
+    yield* call(() =>
+      fsp.writeFile(
+        fromFileUrl(location),
+        `${JSON.stringify(data)}\n`,
+        { encoding: "utf-8" },
+      )
     );
-
-    try {
-      yield* call(() =>
-        file.write(new TextEncoder().encode(`${JSON.stringify(data)}\n`))
-      );
-    } finally {
-      file.close();
-    }
   }
 
   /**
@@ -185,19 +180,13 @@ export class JSONLStore implements Store {
   *append(key: string, data: unknown): Operation<void> {
     const location = new URL(`./${key}.jsonl`, this.location);
 
-    const file = yield* call(() =>
-      Deno.open(location, {
-        append: true,
-      })
+    yield* call(() =>
+      fsp.appendFile(
+        fromFileUrl(location),
+        `${JSON.stringify(data)}\n`,
+        { encoding: "utf-8" },
+      )
     );
-
-    try {
-      yield* call(() =>
-        file.write(new TextEncoder().encode(`${JSON.stringify(data)}\n`))
-      );
-    } finally {
-      file.close();
-    }
   }
 
   /**

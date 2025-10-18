@@ -1,14 +1,16 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import {
-  call,
   createQueue,
   type Operation,
   resource,
   type Subscription,
   suspend,
   useScope,
+  withResolvers,
 } from "effection";
+import { createServer } from "node:http";
+import { type WebSocket as WsWebSocket, WebSocketServer } from "ws";
 
 import { useWebSocket, type WebSocketResource } from "./websocket.ts";
 
@@ -71,7 +73,7 @@ export interface TestingPairOptions {
   fail?: Response;
 }
 
-function useTestingPair({ fail }: TestingPairOptions = {}): Operation<
+function useTestingPair(_options: TestingPairOptions = {}): Operation<
   [TestSocket, TestSocket]
 > {
   return resource(function* (provide) {
@@ -79,36 +81,31 @@ function useTestingPair({ fail }: TestingPairOptions = {}): Operation<
 
     let scope = yield* useScope();
 
-    let server = yield* call(() =>
-      Deno.serve(
-        {
-          port: 9901,
-          onListen() {},
-        },
-        (req) => {
-          if (req.headers.get("upgrade") != "websocket") {
-            return new Response(null, { status: 501 });
-          } else if (fail) {
-            return fail;
-          }
-          const { socket, response } = Deno.upgradeWebSocket(req);
+    const httpServer = createServer();
+    const wss = new WebSocketServer({ server: httpServer });
 
-          scope.run(function* () {
-            sockets.add({
-              close: () => socket.close(),
-              socket: yield* useWebSocket(() => socket),
-            });
-            yield* suspend();
-          });
+    wss.on("connection", (ws: WsWebSocket) =>
+      scope.run(function* () {
+        // The ws library WebSocket is already open, so we need to manually emit 'open' event
+        // Since useWebSocket waits for 'open', we emit it asynchronously
+        queueMicrotask(() => {
+          ws.emit("open");
+        });
+        const socket = yield* useWebSocket(() => ws);
+        sockets.add({
+          close: () => ws.close(),
+          socket,
+        });
+        yield* suspend();
+      }));
 
-          return response;
-        },
-      )
-    );
+    const listening = withResolvers<void>();
+    httpServer.listen(9901, listening.resolve);
+    yield* listening.operation;
 
-    let client = new WebSocket(
-      `ws://localhost:${server.addr.port}`,
-    );
+    const port = 9901;
+
+    let client = new WebSocket(`ws://localhost:${port}`);
 
     let next = yield* sockets.next();
 
@@ -122,7 +119,10 @@ function useTestingPair({ fail }: TestingPairOptions = {}): Operation<
     try {
       yield* provide([local, remote]);
     } finally {
-      yield* call(() => server.shutdown());
+      wss.close();
+      const closed = withResolvers<void>();
+      httpServer.close(() => closed.resolve());
+      yield* closed.operation;
     }
   });
 }

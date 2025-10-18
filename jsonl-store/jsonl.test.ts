@@ -1,41 +1,36 @@
 import { expect } from "@std/expect";
 import { dirname, join } from "@std/path";
 import { beforeEach, describe, it } from "@effectionx/bdd";
-import { each, stream, until } from "effection";
-import { mkdir } from "node:fs";
-import { promisify } from "node:util";
+import { each, until } from "effection";
+import * as fsp from "node:fs/promises";
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
 
 import { JSONLStore } from "./jsonl.ts";
 import type { Store } from "./types.ts";
-
-// using promisify there because Deno's ensure doesn't work
-// correctly in Node. We should run these tests in Node
-// to make sure that it'll work in Node too.
 
 describe("JSONLStore", () => {
   let store: Store;
   let tmpDir: string;
 
   async function readTmpFile(fileName: string) {
-    return await Deno.readTextFile(`${tmpDir}/${fileName}`);
+    return await fsp.readFile(`${tmpDir}/${fileName}`, "utf-8");
   }
 
   async function writeTmpFile(fileName: string, data: string) {
-    await promisify(mkdir)(join(tmpDir, dirname(fileName)), {
+    await fsp.mkdir(join(tmpDir, dirname(fileName)), {
       recursive: true,
     });
-    await Deno.writeTextFile(join(tmpDir, fileName), data);
+    await fsp.writeFile(join(tmpDir, fileName), data, "utf-8");
   }
 
   async function appendTmpFile(fileName: string, data: string) {
     const destination = join(tmpDir, fileName);
-    const file = await Deno.open(destination, { append: true });
-    await file.write(new TextEncoder().encode(data));
-    file.close();
+    await fsp.appendFile(destination, data, "utf-8");
   }
 
   beforeEach(function* () {
-    tmpDir = yield* until(Deno.makeTempDir());
+    tmpDir = yield* until(mkdtemp(join(tmpdir(), "jsonl-test-")));
     store = JSONLStore.from({ location: tmpDir });
   });
 
@@ -69,18 +64,16 @@ describe("JSONLStore", () => {
     });
     it("clears store when called clear", function* () {
       yield* store.clear();
-      const entries = [];
-      for (const dirEntry of yield* each(stream(Deno.readDir(tmpDir)))) {
-        entries.push(dirEntry);
-        yield* each.next();
-      }
+      const entries = yield* until(fsp.readdir(tmpDir));
       expect(entries).toHaveLength(0);
     });
   });
 
   describe("reading content of a file", () => {
     beforeEach(function* () {
-      yield* until(Deno.writeTextFile(join(tmpDir, "test.jsonl"), `1\n2\n3\n`));
+      yield* until(
+        fsp.writeFile(join(tmpDir, "test.jsonl"), `1\n2\n3\n`, "utf-8"),
+      );
     });
     it("streams multiple items", function* () {
       const items: number[] = [];

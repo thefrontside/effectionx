@@ -1,10 +1,11 @@
 import { type Context, createContext, type Operation } from "effection";
 import { join } from "@std/path";
+import process from "node:process";
 import type { Store } from "./types.ts";
 import { JSONLStore } from "./jsonl.ts";
 
 const DEFAULT_STORE: Store = JSONLStore.from({
-  location: join(import.meta.dirname ?? Deno.cwd(), ".store"),
+  location: join(import.meta.dirname ?? process.cwd(), ".store"),
 });
 
 export const StoreContext: Context<Store> = createContext<Store>(

@@ -10,6 +10,6 @@ try {
   const encoder = new TextEncoder();
   await Deno.stdout.write(encoder.encode(content));
 } catch (error) {
-  console.error(`Error reading file "${filename}":`, error.message);
+  console.error(`Error reading file "${filename}":`, (error as Error).message);
   Deno.exit(1);
 }

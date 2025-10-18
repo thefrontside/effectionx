@@ -7,7 +7,7 @@ import { type Daemon, daemon } from "../mod.ts";
 import { captureError, expectMatch, fetchText } from "./helpers.ts";
 import { lines } from "../src/helpers.ts";
 
-const SystemRoot = Deno.env.get("SystemRoot");
+const SystemRoot = process.env.SystemRoot;
 
 describe("daemon", () => {
   let task: Task<void>;

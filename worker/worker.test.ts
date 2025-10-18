@@ -5,6 +5,7 @@ import { expect } from "@std/expect";
 import { emptyDir, exists } from "@std/fs";
 import { fromFileUrl, join } from "@std/path";
 import { scoped, sleep, spawn, suspend, until } from "effection";
+import { readFile } from "node:fs/promises";
 
 import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
 import { useWorker } from "./worker.ts";
@@ -97,7 +98,7 @@ describe("worker", () => {
       yield* task.halt();
 
       expect(yield* until(exists(endFile))).toEqual(true);
-      expect(yield* until(Deno.readTextFile(endFile))).toEqual(
+      expect(yield* until(readFile(endFile, 'utf-8'))).toEqual(
         "goodbye cruel world!",
       );
     });

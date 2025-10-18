@@ -1,4 +1,4 @@
-import { each, spawn } from "effection";
+import { each, spawn, withResolvers } from "effection";
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import { createBooleanSignal } from "./boolean.ts";
@@ -20,6 +20,8 @@ describe("boolean", () => {
     it("does not send a value to the stream when the set value is the same as the current value", function* () {
       const boolean = yield* createBooleanSignal(true);
 
+      const { resolve, operation } = withResolvers<void>();
+
       const updates: boolean[] = [];
 
       yield* spawn(function* () {
@@ -29,13 +31,18 @@ describe("boolean", () => {
         }
       });
 
-      boolean.set(true);
+      yield* spawn(function*() {
+        boolean.set(true);
 
-      expect(updates).toEqual([]);
+        expect(updates).toEqual([]);
 
-      boolean.set(false);
+        boolean.set(false);
 
-      expect(updates).toEqual([false]);
+        expect(updates).toEqual([false]);
+        resolve();
+      });
+
+      yield* operation;
     });
   });
   describe("update", () => {

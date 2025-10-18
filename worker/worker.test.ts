@@ -98,7 +98,7 @@ describe("worker", () => {
       yield* task.halt();
 
       expect(yield* until(exists(endFile))).toEqual(true);
-      expect(yield* until(readFile(endFile, 'utf-8'))).toEqual(
+      expect(yield* until(readFile(endFile, "utf-8"))).toEqual(
         "goodbye cruel world!",
       );
     });

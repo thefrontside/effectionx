@@ -14,23 +14,23 @@ describe("JSONLStore", () => {
   let tmpDir: string;
 
   async function readTmpFile(fileName: string) {
-    return await fsp.readFile(`${tmpDir}/${fileName}`, 'utf-8');
+    return await fsp.readFile(`${tmpDir}/${fileName}`, "utf-8");
   }
 
   async function writeTmpFile(fileName: string, data: string) {
     await fsp.mkdir(join(tmpDir, dirname(fileName)), {
       recursive: true,
     });
-    await fsp.writeFile(join(tmpDir, fileName), data, 'utf-8');
+    await fsp.writeFile(join(tmpDir, fileName), data, "utf-8");
   }
 
   async function appendTmpFile(fileName: string, data: string) {
     const destination = join(tmpDir, fileName);
-    await fsp.appendFile(destination, data, 'utf-8');
+    await fsp.appendFile(destination, data, "utf-8");
   }
 
   beforeEach(function* () {
-    tmpDir = yield* until(mkdtemp(join(tmpdir(), 'jsonl-test-')));
+    tmpDir = yield* until(mkdtemp(join(tmpdir(), "jsonl-test-")));
     store = JSONLStore.from({ location: tmpDir });
   });
 
@@ -71,7 +71,9 @@ describe("JSONLStore", () => {
 
   describe("reading content of a file", () => {
     beforeEach(function* () {
-      yield* until(fsp.writeFile(join(tmpDir, "test.jsonl"), `1\n2\n3\n`, 'utf-8'));
+      yield* until(
+        fsp.writeFile(join(tmpDir, "test.jsonl"), `1\n2\n3\n`, "utf-8"),
+      );
     });
     it("streams multiple items", function* () {
       const items: number[] = [];

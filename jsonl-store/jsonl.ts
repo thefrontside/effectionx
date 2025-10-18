@@ -159,7 +159,7 @@ export class JSONLStore implements Store {
       fsp.writeFile(
         fromFileUrl(location),
         `${JSON.stringify(data)}\n`,
-        { encoding: 'utf-8' }
+        { encoding: "utf-8" },
       )
     );
   }
@@ -184,7 +184,7 @@ export class JSONLStore implements Store {
       fsp.appendFile(
         fromFileUrl(location),
         `${JSON.stringify(data)}\n`,
-        { encoding: 'utf-8' }
+        { encoding: "utf-8" },
       )
     );
   }

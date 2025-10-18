@@ -14,12 +14,16 @@ describe("request() and json()", () => {
       res.end(JSON.stringify({ id: 1, title: "do things" }));
     });
 
-    yield* call(() => new Promise<void>((resolve) => server.listen(0, resolve)));
+    yield* call(() =>
+      new Promise<void>((resolve) => server.listen(0, resolve))
+    );
     const addr = server.address();
-    const port = typeof addr === 'object' && addr ? addr.port : 0;
+    const port = typeof addr === "object" && addr ? addr.port : 0;
 
     url = `http://localhost:${port}/todos/1`;
-    yield* ensure(() => call(() => new Promise<void>((resolve) => server.close(() => resolve()))));
+    yield* ensure(() =>
+      call(() => new Promise<void>((resolve) => server.close(() => resolve())))
+    );
   });
 
   it("returns a response that can be parsed with json", function* () {

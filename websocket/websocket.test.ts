@@ -10,7 +10,7 @@ import {
   withResolvers,
 } from "effection";
 import { createServer } from "node:http";
-import { WebSocketServer, type WebSocket as WsWebSocket } from "ws";
+import { type WebSocket as WsWebSocket, WebSocketServer } from "ws";
 
 import { useWebSocket, type WebSocketResource } from "./websocket.ts";
 

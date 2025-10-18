@@ -11,6 +11,6 @@
     "@std/path": "jsr:@std/path@^1",
     "@std/fs": "jsr:@std/fs@^1",
     "@effectionx/bdd": "jsr:@effectionx/bdd@0.2.2",
-    "@effection/signals": "npm:@effectionx/signals@0.3.0"
+    "@effectionx/signals": "npm:@effectionx/signals@0.3.0"
   }
 }

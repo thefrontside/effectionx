@@ -1,7 +1,6 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import {
-  all,
   createChannel,
   each,
   race,
@@ -11,7 +10,6 @@ import {
 } from "effection";
 
 import { createArraySignal } from "./array.ts";
-import { is } from "./helpers.ts";
 
 describe("array signal", () => {
   it("accepts an initial value", function* () {

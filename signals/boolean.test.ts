@@ -2,7 +2,6 @@ import { createChannel, each, race, sleep, spawn, withResolvers } from "effectio
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import { createBooleanSignal } from "./boolean.ts";
-import { update } from "immutable";
 
 describe("boolean", () => {
   it("takes an initial value", function* () {

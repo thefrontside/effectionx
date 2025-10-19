@@ -1,6 +1,5 @@
 import {
   createChannel,
-  createSignal,
   sleep,
   spawn,
   withResolvers,

@@ -48,7 +48,7 @@ describe("TaskBuffer", () => {
 
       expect(finished).toEqual(0);
 
-      time.tick(10);
+      yield* until(time.tickAsync(10));
       yield* buffer;
 
       expect(finished).toEqual(3);

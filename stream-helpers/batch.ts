@@ -1,9 +1,19 @@
-import { each, race, sleep, spawn, type Stream } from "effection";
-import { createArraySignal, is } from "@effectionx/signals";
+import {
+  spawn,
+  type Task,
+  type Stream,
+  Operation,
+  WithResolvers,
+  withResolvers,
+  lift,
+} from "effection";
+import { timebox } from "@effectionx/timebox";
 
-type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
-  & Pick<T, Exclude<keyof T, Keys>>
-  & {
+type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<
+  T,
+  Exclude<keyof T, Keys>
+> &
+  {
     [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>;
   }[Keys];
 
@@ -28,41 +38,72 @@ export function batch(
   return function <T>(stream: Stream<T, never>): Stream<Readonly<T[]>, never> {
     return {
       *[Symbol.iterator]() {
-        let batch = yield* createArraySignal<T>([]);
-
-        yield* spawn(function* () {
-          for (let item of yield* each(stream)) {
-            batch.push(item);
-            if (options.maxSize && batch.length >= options.maxSize) {
-              // wait until it's drained
-              yield* is(batch, (batch) => batch.length === 0);
-            }
-            yield* each.next();
-          }
-        });
-
-        function drain() {
-          let value = batch.valueOf();
-          batch.set([]);
-          return value;
-        }
+        const subscription = yield* stream;
+        let lastPull: Task<IteratorResult<T, never>> | undefined;
 
         return {
           *next() {
-            yield* is(batch, (batch) => batch.length >= 1);
+            let start: DOMHighResTimeStamp = performance.now();
+            const batch: T[] = [];
+            if (lastPull) {
+              batch.push((yield* lastPull).value);
+              lastPull = undefined;
+            }
+            // iterate incoming stream
+            let next = yield* subscription.next();
+            // push the next value into the batch
+            while (!next.done) {
+              batch.push(next.value);
+              const now = performance.now();
+              if (options.maxSize && batch.length >= options.maxSize) {
+                return {
+                  done: false as const,
+                  value: batch,
+                };
+              } else if (options.maxTime && start + options.maxTime <= now) {
+                return {
+                  done: false as const,
+                  value: batch,
+                };
+              } else if (options.maxTime) {
+                lastPull = yield* spawn(function* () {
+                  const next = yield* subscription.next();
+                  return next;
+                });
 
-            if (options.maxTime && options.maxSize) {
-              yield* race([
-                is(batch, (batch) => batch.length === options.maxSize),
-                sleep(options.maxTime),
-              ]);
-            } else if (options.maxTime) {
-              yield* sleep(options.maxTime);
-            } else if (options.maxSize) {
-              yield* is(batch, (batch) => batch.length === options.maxSize);
+                const timeout = yield* timebox(
+                  start + options.maxTime - performance.now(),
+                  () =>
+                    lastPull!,
+                );
+
+                if (timeout.timeout) {
+                  // produce the batch that we have
+                  return {
+                    done: false as const,
+                    value: batch,
+                  };
+                } else {
+                  lastPull = undefined;
+                  next = timeout.value;
+                }
+              } else {
+                next = yield* subscription.next();
+              }
             }
 
-            return { done: false, value: drain() };
+            // Stream is done, return any remaining batch
+            if (batch.length > 0) {
+              return {
+                done: false as const,
+                value: batch,
+              };
+            }
+
+            return {
+              done: true as const,
+              value: undefined as never,
+            };
           },
         };
       },

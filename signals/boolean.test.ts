@@ -1,7 +1,8 @@
-import { each, spawn, withResolvers } from "effection";
+import { createChannel, each, race, sleep, spawn, withResolvers } from "effection";
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import { createBooleanSignal } from "./boolean.ts";
+import { update } from "immutable";
 
 describe("boolean", () => {
   it("takes an initial value", function* () {
@@ -18,15 +19,17 @@ describe("boolean", () => {
       expect(boolean.valueOf()).toEqual(false);
     });
     it("does not send a value to the stream when the set value is the same as the current value", function* () {
+      expect.assertions(2);
       const boolean = yield* createBooleanSignal(true);
 
       const { resolve, operation } = withResolvers<void>();
 
-      const updates: boolean[] = [];
+      const updates = createChannel<boolean>();
+      const subscription = yield* updates;
 
       yield* spawn(function* () {
         for (const update of yield* each(boolean)) {
-          updates.push(update);
+          yield* updates.send(update);
           yield* each.next();
         }
       });
@@ -34,11 +37,21 @@ describe("boolean", () => {
       yield* spawn(function*() {
         boolean.set(true);
 
-        expect(updates).toEqual([]);
+        let next = yield* race([
+          subscription.next(),
+          function*() {
+            yield* sleep(1);
+            return `sleep won; update not received`;
+          }()
+        ]);
+
+        expect(next).toEqual(`sleep won; update not received`);
 
         boolean.set(false);
 
-        expect(updates).toEqual([false]);
+        next = yield* subscription.next();
+
+        expect(next.value).toEqual(false);
         resolve();
       });
 

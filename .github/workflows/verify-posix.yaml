@@ -34,5 +34,10 @@ jobs:
       - run: deno fmt --check
 
       - run: deno lint
+      - run: deno task generate-importmap
 
-      - run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi
+      - name: V3 Tests
+        run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi
+
+      - name: V4 Tests
+        run: deno test --import-map v4.importmap.json --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi --trace-leaks

@@ -1,6 +1,7 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write
 
 import { expandGlob } from "@std/fs";
+import { fromFileUrl } from "@std/path";
 
 interface DenoConfig {
   name?: string;
@@ -8,7 +9,7 @@ interface DenoConfig {
   imports?: Record<string, string>;
 }
 
-const rootDir = new URL("..", import.meta.url).pathname;
+const rootDir = fromFileUrl(new URL("..", import.meta.url));
 const imports = new Map<string, string>();
 const workspacePackages = new Map<string, string>();
 
@@ -33,8 +34,12 @@ for await (
     }
 
     // Get package directory relative to root
-    const packageDir = file.path.replace(rootDir, "").replace("/deno.json", "");
-    const fullExportPath = `./${packageDir}/${exportPath.replace("./", "")}`;
+    const packageDir = file.path.replace(rootDir, "").replace(
+      /[\/\\]deno\.json$/,
+      "",
+    );
+    const fullExportPath = `./${packageDir}/${exportPath.replace("./", "")}`
+      .replace(/\\/g, "/");
 
     workspacePackages.set(config.name, fullExportPath);
   }

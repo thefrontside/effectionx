@@ -1,15 +1,43 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write
 
-import { expandGlob } from "jsr:@std/fs@^1";
+import { expandGlob } from "@std/fs";
 
 interface DenoConfig {
+  name?: string;
+  exports?: string | Record<string, string>;
   imports?: Record<string, string>;
 }
 
 const rootDir = new URL("..", import.meta.url).pathname;
 const imports = new Map<string, string>();
+const workspacePackages = new Map<string, string>();
 
-// Walk through all deno.json files
+// First pass: collect all workspace package names and their exports
+for await (const file of expandGlob("**/deno.json", {
+  root: rootDir,
+  exclude: ["node_modules", "build"],
+})) {
+  const content = await Deno.readTextFile(file.path);
+  const config: DenoConfig = JSON.parse(content);
+
+  if (config.name?.startsWith("@effectionx/")) {
+    // Get the default export path
+    let exportPath = "./mod.ts"; // fallback
+    if (typeof config.exports === "string") {
+      exportPath = config.exports;
+    } else if (config.exports && typeof config.exports === "object") {
+      exportPath = config.exports["."] || config.exports["default"] || "./mod.ts";
+    }
+
+    // Get package directory relative to root
+    const packageDir = file.path.replace(rootDir, "").replace("/deno.json", "");
+    const fullExportPath = `./${packageDir}/${exportPath.replace("./", "")}`;
+
+    workspacePackages.set(config.name, fullExportPath);
+  }
+}
+
+// Second pass: collect external dependencies and convert workspace packages to local paths
 for await (const file of expandGlob("**/deno.json", {
   root: rootDir,
   exclude: ["node_modules", "build"],
@@ -19,8 +47,14 @@ for await (const file of expandGlob("**/deno.json", {
 
   if (config.imports) {
     for (const [key, value] of Object.entries(config.imports)) {
-      // Skip internal @effectionx packages unless they use npm:
-      if (key.startsWith("@effectionx/") && !value.startsWith("npm:")) {
+      // Convert workspace packages to local paths using their actual export
+      if (workspacePackages.has(key)) {
+        imports.set(key, workspacePackages.get(key)!);
+        continue;
+      }
+
+      // Skip other internal @effectionx packages
+      if (key.startsWith("@effectionx/")) {
         continue;
       }
 
@@ -35,14 +69,22 @@ for await (const file of expandGlob("**/deno.json", {
 // Add effection v4
 imports.set("effection", "npm:effection@^4.0.0-0");
 
+// Add @std/testing sub-packages if @std/testing is present
+if (imports.has("@std/testing")) {
+  const testingSpec = imports.get("@std/testing")!;
+  // Extract version from "jsr:@std/testing@^1" -> "^1"
+  const version = testingSpec.split("@std/testing@")[1];
+  imports.set("@std/testing/bdd", `jsr:@std/testing@${version}/bdd`);
+  imports.set("@std/testing/mock", `jsr:@std/testing@${version}/mock`);
+  imports.set("@std/testing/time", `jsr:@std/testing@${version}/time`);
+}
+
 // Sort by key
 const sortedImports = Object.fromEntries(
   Array.from(imports.entries()).sort(([a], [b]) => a.localeCompare(b))
 );
 
 const output = {
-  "// To regenerate this file": "run: deno task generate-importmap",
-  "// Description": "Collects all unique external dependencies from workspace packages' deno.json files",
   imports: sortedImports,
 };
 

@@ -18,8 +18,11 @@ describe("useFaucet", () => {
       }
     });
 
-    // Pour an array of items
-    yield* faucet.pour([1, 2, 3]);
+    yield* spawn(function* () {
+      yield* sleep(1);
+      // Pour an array of items
+      yield* faucet.pour([1, 2, 3]);
+    });
 
     // Wait for processing
     yield* is(results, (results) => results.length === 3);
@@ -28,6 +31,7 @@ describe("useFaucet", () => {
   });
 
   it("respects the open state", function* () {
+    expect.assertions(2);
     const faucet = yield* useFaucet<number>({ open: false });
     const results = yield* createArraySignal<number>([]);
 
@@ -48,6 +52,8 @@ describe("useFaucet", () => {
 
     yield* faucet.pour([4, 5, 6]);
 
+    yield* is(results, (results) => results.length === 3);
+
     expect(results.valueOf()).toEqual([4, 5, 6]);
   });
 
@@ -65,6 +71,7 @@ describe("useFaucet", () => {
 
     // Pour using a generator function
     yield* spawn(function* () {
+      yield* sleep(1);
       yield* faucet.pour(function* (send) {
         yield* send(1);
         yield* sleep(10);
@@ -93,6 +100,7 @@ describe("useFaucet", () => {
 
     // Start pouring with a generator
     yield* spawn(function* () {
+      yield* sleep(1);
       yield* faucet.pour(function* (send) {
         yield* send(1);
         yield* sleep(10);
@@ -105,8 +113,7 @@ describe("useFaucet", () => {
       });
     });
 
-    // Wait for the first item
-    yield* sleep(50);
+    yield* is(results, results => results.length === 2);
 
     expect(results.valueOf()).toEqual([1, 2]);
   });

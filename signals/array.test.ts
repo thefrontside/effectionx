@@ -1,6 +1,14 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
-import { each, sleep, spawn, withResolvers } from "effection";
+import {
+  all,
+  createChannel,
+  each,
+  race,
+  sleep,
+  spawn,
+  withResolvers,
+} from "effection";
 
 import { createArraySignal } from "./array.ts";
 import { is } from "./helpers.ts";
@@ -22,27 +30,42 @@ describe("array signal", () => {
     });
 
     it("does not send a value to the stream when the set value is the same as the current value", function* () {
+      expect.assertions(2);
+
       const array = yield* createArraySignal<number>([]);
 
       const { resolve, operation } = withResolvers<void>();
 
-      const updates: number[][] = [];
+      const updates = createChannel<number[]>();
+      const subscription = yield* updates;
 
       yield* spawn(function* () {
         for (const update of yield* each(array)) {
-          updates.push(update);
+          yield* updates.send(update);
           yield* each.next();
         }
       });
 
       yield* spawn(function* () {
-        array.set([1, 2, 3]);
-
-        expect(updates).toEqual([[1, 2, 3]]);
+        yield* sleep(1);
 
         array.set([1, 2, 3]);
 
-        expect(updates).toEqual([[1, 2, 3]]);
+        const firstUpdate = yield* subscription.next();
+
+        expect(firstUpdate.value).toEqual([1, 2, 3]);
+
+        array.set([1, 2, 3]);
+
+        const result = yield* race([
+          subscription.next(),
+          (function* () {
+            yield* sleep(1);
+            return "sleep won; update not received";
+          })(),
+        ]);
+
+        expect(result).toEqual("sleep won; update not received");
         resolve();
       });
 

@@ -7,10 +7,12 @@ interface DenoConfig {
   imports?: Record<string, string>;
 }
 
-for await (const file of expandGlob("**/deno.json", {
-  root: rootDir,
-  exclude: ["node_modules", "build"],
-})) {
+for await (
+  const file of expandGlob("**/deno.json", {
+    root: rootDir,
+    exclude: ["node_modules", "build"],
+  })
+) {
   const content = await Deno.readTextFile(file.path);
   const config: DenoConfig = JSON.parse(content);
 

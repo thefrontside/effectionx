@@ -21,7 +21,10 @@
         "prefer-const",
         "require-yield"
       ]
-    }
+    },
+    "exclude": [
+      "tasks"
+    ]
   },
   "workspace": [
     "./context-api",

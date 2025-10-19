@@ -1,9 +1,4 @@
-import {
-  createChannel,
-  sleep,
-  spawn,
-  withResolvers,
-} from "effection";
+import { createChannel, sleep, spawn, withResolvers } from "effection";
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 
@@ -46,7 +41,7 @@ describe("forEach", () => {
       }, stream)
     );
 
-    yield* spawn(function*() {
+    yield* spawn(function* () {
       yield* sleep(1);
       yield* stream.send("hello");
       yield* stream.send("world");

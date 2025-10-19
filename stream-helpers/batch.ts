@@ -1,19 +1,12 @@
-import {
-  spawn,
-  type Task,
-  type Stream,
-  Operation,
-  WithResolvers,
-  withResolvers,
-  lift,
-} from "effection";
+import { spawn, type Stream, type Task } from "effection";
 import { timebox } from "@effectionx/timebox";
 
-type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<
-  T,
-  Exclude<keyof T, Keys>
-> &
-  {
+type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
+  & Pick<
+    T,
+    Exclude<keyof T, Keys>
+  >
+  & {
     [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>;
   }[Keys];
 
@@ -45,12 +38,22 @@ export function batch(
           *next() {
             let start: DOMHighResTimeStamp = performance.now();
             const batch: T[] = [];
-            if (lastPull) {
-              batch.push((yield* lastPull).value);
-              lastPull = undefined;
+            let next: IteratorResult<T, never> = {
+              done: true as const,
+              value: undefined as never,
+            };
+            if (lastPull && options.maxTime) {
+              const timeout = yield* timebox(options.maxTime, () => lastPull!);
+              if (timeout.timeout) {
+                yield* lastPull.halt();
+                lastPull = undefined;
+              } else {
+                next = timeout.value;
+                lastPull = undefined;
+              }
+            } else {
+              next = yield* subscription.next();
             }
-            // iterate incoming stream
-            let next = yield* subscription.next();
             // push the next value into the batch
             while (!next.done) {
               batch.push(next.value);
@@ -66,25 +69,21 @@ export function batch(
                   value: batch,
                 };
               } else if (options.maxTime) {
-                lastPull = yield* spawn(function* () {
-                  const next = yield* subscription.next();
-                  return next;
-                });
+                const task = yield* spawn(() => subscription.next());
 
                 const timeout = yield* timebox(
                   start + options.maxTime - performance.now(),
-                  () =>
-                    lastPull!,
+                  () => task!,
                 );
 
                 if (timeout.timeout) {
-                  // produce the batch that we have
+                  // produce the batch that we have, save task for next batch
+                  lastPull = task;
                   return {
                     done: false as const,
                     value: batch,
                   };
                 } else {
-                  lastPull = undefined;
                   next = timeout.value;
                 }
               } else {
@@ -100,10 +99,7 @@ export function batch(
               };
             }
 
-            return {
-              done: true as const,
-              value: undefined as never,
-            };
+            return next;
           },
         };
       },

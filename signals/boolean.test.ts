@@ -1,4 +1,11 @@
-import { createChannel, each, race, sleep, spawn, withResolvers } from "effection";
+import {
+  createChannel,
+  each,
+  race,
+  sleep,
+  spawn,
+  withResolvers,
+} from "effection";
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import { createBooleanSignal } from "./boolean.ts";
@@ -33,15 +40,15 @@ describe("boolean", () => {
         }
       });
 
-      yield* spawn(function*() {
+      yield* spawn(function* () {
         boolean.set(true);
 
         let next = yield* race([
           subscription.next(),
-          function*() {
+          function* () {
             yield* sleep(1);
             return `sleep won; update not received`;
-          }()
+          }(),
         ]);
 
         expect(next).toEqual(`sleep won; update not received`);

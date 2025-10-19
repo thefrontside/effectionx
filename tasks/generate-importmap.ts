@@ -13,10 +13,12 @@ const imports = new Map<string, string>();
 const workspacePackages = new Map<string, string>();
 
 // First pass: collect all workspace package names and their exports
-for await (const file of expandGlob("**/deno.json", {
-  root: rootDir,
-  exclude: ["node_modules", "build"],
-})) {
+for await (
+  const file of expandGlob("**/deno.json", {
+    root: rootDir,
+    exclude: ["node_modules", "build"],
+  })
+) {
   const content = await Deno.readTextFile(file.path);
   const config: DenoConfig = JSON.parse(content);
 
@@ -26,7 +28,8 @@ for await (const file of expandGlob("**/deno.json", {
     if (typeof config.exports === "string") {
       exportPath = config.exports;
     } else if (config.exports && typeof config.exports === "object") {
-      exportPath = config.exports["."] || config.exports["default"] || "./mod.ts";
+      exportPath = config.exports["."] || config.exports["default"] ||
+        "./mod.ts";
     }
 
     // Get package directory relative to root
@@ -38,10 +41,12 @@ for await (const file of expandGlob("**/deno.json", {
 }
 
 // Second pass: collect external dependencies and convert workspace packages to local paths
-for await (const file of expandGlob("**/deno.json", {
-  root: rootDir,
-  exclude: ["node_modules", "build"],
-})) {
+for await (
+  const file of expandGlob("**/deno.json", {
+    root: rootDir,
+    exclude: ["node_modules", "build"],
+  })
+) {
   const content = await Deno.readTextFile(file.path);
   const config: DenoConfig = JSON.parse(content);
 
@@ -81,7 +86,7 @@ if (imports.has("@std/testing")) {
 
 // Sort by key
 const sortedImports = Object.fromEntries(
-  Array.from(imports.entries()).sort(([a], [b]) => a.localeCompare(b))
+  Array.from(imports.entries()).sort(([a], [b]) => a.localeCompare(b)),
 );
 
 const output = {
@@ -91,7 +96,7 @@ const output = {
 const outputPath = `${rootDir}/v4.importmap.json`;
 await Deno.writeTextFile(
   outputPath,
-  JSON.stringify(output, null, 2) + "\n"
+  JSON.stringify(output, null, 2) + "\n",
 );
 
 console.log(`Generated ${outputPath} with ${imports.size} dependencies`);

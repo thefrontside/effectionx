@@ -50,9 +50,16 @@ describe("batch", () => {
     const stream = batch({ maxSize: 8, maxTime: 50 })(faucet);
 
     const batches = yield* createArraySignal<readonly number[]>([]);
+    const windows: number[] = [];
+
+    let last = performance.now();
 
     yield* spawn(() =>
       forEach<readonly number[], void>(function* (batch) {
+        const now = performance.now();
+        windows.push(now - last);
+        last = now;
+
         batches.push(batch);
       }, stream)
     );
@@ -68,7 +75,12 @@ describe("batch", () => {
 
     yield* is(batches, (list) => list.flat().length >= 10);
 
-    expect(batches.valueOf()).toHaveLength(4);
+    expect(windows.length).toBeGreaterThanOrEqual(3);
+
+    const avg = average(windows);
+    const percentDiff = Math.abs((avg - 50) / 50) * 100;
+    expect(percentDiff).toBeLessThanOrEqual(20);
+
     expect(batches.valueOf().flat()).toHaveLength(10);
   });
 
@@ -85,12 +97,23 @@ describe("batch", () => {
     );
 
     yield* sleep(1);
-    
+
     yield* faucet.pour([1, 2, 3, 4, 5, 6]);
 
-    yield* is(batches, batches => batches.flat().length >= 6);
+    yield* is(batches, (batches) => batches.flat().length >= 6);
 
     expect(batches.length).toBeGreaterThan(1);
-    expect(batches.valueOf().every(batch => batch.length <= 5)).toBe(true);
+    expect(batches.valueOf().every((batch) => batch.length <= 5)).toBe(true);
   });
 });
+
+function average(arr: number[]) {
+  if (arr.length === 0) {
+    return 0;
+  }
+  const sum = arr.reduce(
+    (accumulator, currentValue) => accumulator + currentValue,
+    0,
+  );
+  return sum / arr.length;
+}

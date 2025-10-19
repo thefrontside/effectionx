@@ -45,7 +45,7 @@ describe("tracker", () => {
 
     yield* tracker;
 
-    yield* is(received, received => received.length === 3);
+    yield* is(received, (received) => received.length === 3);
 
     expect(received.valueOf()).toEqual([1, 2, 3]);
   });
@@ -97,7 +97,7 @@ describe("tracker", () => {
       yield* send(9);
     });
 
-    yield* is(received, received => received.flat().length >= 9);
+    yield* is(received, (received) => received.flat().length >= 9);
     yield* tracker;
 
     expect(received.valueOf()).toEqual([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);

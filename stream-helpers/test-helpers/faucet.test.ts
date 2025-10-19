@@ -113,7 +113,7 @@ describe("useFaucet", () => {
       });
     });
 
-    yield* is(results, results => results.length === 2);
+    yield* is(results, (results) => results.length === 2);
 
     expect(results.valueOf()).toEqual([1, 2]);
   });

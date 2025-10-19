@@ -9,7 +9,7 @@ describe("is", () => {
   it("waits until the value of the stream matches the predicate", function* () {
     const open = yield* createBooleanSignal(false);
     const update: string[] = [];
-    
+
     const { resolve, operation } = withResolvers<void>();
 
     yield* spawn(function* () {

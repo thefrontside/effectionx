@@ -84,7 +84,7 @@ describe("array signal", () => {
       });
 
       array.push(1);
-      yield* sleep(1);
+      yield* sleep(0);
 
       expect(ops).toEqual(["before shift", "got 1", "after shift"]);
       expect(array.valueOf()).toEqual([]);

@@ -1,13 +1,6 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
-import {
-  createChannel,
-  each,
-  race,
-  sleep,
-  spawn,
-  withResolvers,
-} from "effection";
+import { race, sleep, spawn, withResolvers } from "effection";
 
 import { createArraySignal } from "./array.ts";
 
@@ -33,20 +26,9 @@ describe("array signal", () => {
       const array = yield* createArraySignal<number>([]);
 
       const { resolve, operation } = withResolvers<void>();
-
-      const updates = createChannel<number[]>();
-      const subscription = yield* updates;
+      const subscription = yield* array;
 
       yield* spawn(function* () {
-        for (const update of yield* each(array)) {
-          yield* updates.send(update);
-          yield* each.next();
-        }
-      });
-
-      yield* spawn(function* () {
-        yield* sleep(1);
-
         array.set([1, 2, 3]);
 
         const firstUpdate = yield* subscription.next();

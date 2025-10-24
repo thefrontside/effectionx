@@ -10,7 +10,7 @@
     "effection": "npm:effection@^3",
     "shellwords": "npm:shellwords@^1.1.1",
     "@std/expect": "jsr:@std/expect@1.0.17",
-    "@effectionx/stream-helpers": "jsr:@effectionx/stream-helpers@0.3.0",
+    "@effectionx/stream-helpers": "npm:@effectionx/stream-helpers@0.3.0",
     "@effectionx/bdd": "jsr:@effectionx/bdd@0.2.2",
     "@effectionx/signals": "npm:@effectionx/signals@0.3.0"
   }

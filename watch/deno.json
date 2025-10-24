@@ -18,8 +18,8 @@
     "zod": "npm:zod@^3.20.2",
     "zod-opts": "npm:zod-opts@0.1.8",
     "@effectionx/bdd": "jsr:@effectionx/bdd@0.2.2",
-    "@effectionx/process": "jsr:@effectionx/process@0.5.0",
-    "@effectionx/stream-helpers": "jsr:@effectionx/stream-helpers@0.3.0",
+    "@effectionx/process": "npm:@effectionx/process@0.5.0",
+    "@effectionx/stream-helpers": "npm:@effectionx/stream-helpers@0.3.0",
     "@effectionx/signals": "npm:@effectionx/signals@0.3.0"
   },
   "lint": {

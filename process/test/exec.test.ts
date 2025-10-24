@@ -13,7 +13,7 @@ import {
 import { exec, type Process, type ProcessResult } from "../mod.ts";
 import { lines } from "../src/helpers.ts";
 
-const SystemRoot = Deno.env.get("SystemRoot");
+const SystemRoot = process.env.SystemRoot;
 
 // Validate SHELL environment variable is set for proper test execution
 if (process.platform === "win32" && !process.env.SHELL) {

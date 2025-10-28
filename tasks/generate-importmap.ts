@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write
 
 import { expandGlob } from "@std/fs";
-import { fromFileUrl } from "@std/path";
+import { fromFileUrl, join } from "@std/path";
 
 interface DenoConfig {
   name?: string;
@@ -98,7 +98,7 @@ const output = {
   imports: sortedImports,
 };
 
-const outputPath = `${rootDir}/v4.importmap.json`;
+const outputPath = join(rootDir, 'v4.importmap.json');
 await Deno.writeTextFile(
   outputPath,
   JSON.stringify(output, null, 2) + "\n",

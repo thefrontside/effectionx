@@ -113,7 +113,10 @@ describe("parallel()", () => {
 
     function* genFn() {
       try {
-        const results = yield* parallel([() => until(one.promise), () => until(two.promise)]);
+        const results = yield* parallel([
+          () => until(one.promise),
+          () => until(two.promise),
+        ]);
         actual = yield* results;
       } catch (_) {
         actual = [Err(new Error("should not get hit"))];

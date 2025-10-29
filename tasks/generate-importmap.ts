@@ -98,7 +98,7 @@ const output = {
   imports: sortedImports,
 };
 
-const outputPath = join(rootDir, 'v4.importmap.json');
+const outputPath = join(rootDir, "v4.importmap.json");
 await Deno.writeTextFile(
   outputPath,
   JSON.stringify(output, null, 2) + "\n",

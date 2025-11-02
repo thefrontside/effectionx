@@ -52,6 +52,9 @@ await build({
       node: ">= 16",
     },
     sideEffects: false,
+    dependencies: {
+      "effection": "^3 || ^4",
+    },
   },
 });
 

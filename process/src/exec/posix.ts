@@ -86,7 +86,7 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
   yield* spawn(function* () {
     try {
       let value = yield* once<ProcessResultValue>(childProcess, "close");
-      yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
+      // yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
       processResult.resolve(Ok(value));
     } finally {
       try {

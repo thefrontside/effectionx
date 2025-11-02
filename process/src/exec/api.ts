@@ -24,6 +24,11 @@ export interface Process extends StdIO {
    * not complete successfully, it will raise an ExecError.
    */
   expect(): Operation<ExitStatus>;
+
+  /**
+   * Kill the child process
+   */
+  kill(): Operation<void>;
 }
 
 export interface ExecOptions {
@@ -77,6 +82,7 @@ export interface ProcessResult extends ExitStatus {
   stdout: string;
   stderr: string;
 }
+
 export interface CreateOSProcess {
   (command: string, options: ExecOptions): Operation<Process>;
 }

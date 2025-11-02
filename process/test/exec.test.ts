@@ -477,3 +477,33 @@ describe("handles env vars", () => {
 
   // Close the main "handles env vars" describe block
 });
+
+describe("kill", () => {
+  it("can explicitly kill a running process", function* () {
+    let proc: Process = yield* exec("deno run -A './fixtures/echo-server.ts'", {
+      env: {
+        PORT: "29001",
+        PATH: process.env.PATH as string,
+        ...(SystemRoot ? { SystemRoot } : {}),
+      },
+      cwd: import.meta.dirname,
+    });
+
+    // Wait for the server to start
+    yield* expectMatch(/listening/, lines()(proc.stdout));
+
+    // Kill the process
+    yield* proc.kill();
+
+    // Join should complete after kill
+    let status = yield* proc.join();
+
+    // On POSIX systems, a killed process should have a signal set
+    if (process.platform !== "win32") {
+      expect(status.signal).toBeDefined();
+    } else {
+      // On Windows, it might be an exit code instead
+      expect(status.code !== 0 || status.signal).toBeTruthy();
+    }
+  });
+});

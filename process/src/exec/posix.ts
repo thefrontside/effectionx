@@ -90,17 +90,20 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
       processResult.resolve(Ok(value));
     } finally {
       try {
-        if (typeof childProcess.pid === "undefined") {
-          // deno-lint-ignore no-unsafe-finally
-          throw new Error("no pid for childProcess");
-        }
-        process.kill(-childProcess.pid, "SIGTERM");
-        yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
+        yield* kill();
       } catch (_e) {
         // do nothing, process is probably already dead
       }
     }
   });
+
+  function* kill() {
+    if (typeof childProcess.pid === "undefined") {
+      throw new Error("no pid for childProcess");
+    }
+    process.kill(-childProcess.pid, "SIGTERM");
+    yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
+  }
 
   function* join() {
     let result = yield* processResult.operation;
@@ -129,5 +132,6 @@ export const createPosixProcess: CreateOSProcess = function* createPosixProcess(
     stderr,
     join,
     expect,
+    kill,
   };
 };

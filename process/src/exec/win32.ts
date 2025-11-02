@@ -4,9 +4,7 @@ import {
   createSignal,
   Err,
   Ok,
-  race,
   type Result,
-  sleep,
   spawn,
   withResolvers,
 } from "effection";
@@ -110,74 +108,74 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
       processResult.resolve(Ok(value));
     } finally {
       try {
-        // Only try to kill the process if it hasn't exited yet
-        if (
-          childProcess.exitCode === null &&
-          childProcess.signalCode === null
-        ) {
-          if (typeof childProcess.pid === "undefined") {
-            // deno-lint-ignore no-unsafe-finally
-            throw new Error("no pid for childProcess");
-          }
-
-          let stdinStream = childProcess.stdin;
-
-          // Try graceful shutdown with ctrlc
-          try {
-            ctrlc(childProcess.pid);
-            if (stdinStream.writable) {
-              try {
-                // Terminate batch process (Y/N)
-                stdinStream.write("Y\n");
-              } catch (_err) {
-                // not much we can do here
-              }
-            }
-          } catch (_err) {
-            // ctrlc might fail
-          }
-
-          // Close stdin to allow process to exit cleanly
-          try {
-            stdinStream.end();
-          } catch (_err) {
-            // stdin might already be closed
-          }
-
-          // Wait for graceful exit with a timeout
-          yield* race([processResult.operation, sleep(300)]);
-
-          // If process still hasn't exited, escalate
-          if (
-            childProcess.exitCode === null &&
-            childProcess.signalCode === null
-          ) {
-            // Try regular kill first
-            try {
-              childProcess.kill();
-            } catch (_err) {
-              // process might already be dead
-            }
-
-            // If still alive after kill, force-kill entire process tree
-            // This is necessary for bash on Windows where ctrlc doesn't work
-            // and child.kill() only kills the shell, leaving grandchildren alive
-            if (
-              childProcess.exitCode === null &&
-              childProcess.signalCode === null
-            ) {
-              yield* killTree(childProcess.pid);
-            }
-          }
-
-          // Wait for streams to finish
-          yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
-        }
+        yield* kill();
       } catch (_e) {
         // do nothing, process is probably already dead
       }
     }
   });
+
+  function* kill() {
+    // Only try to kill the process if it hasn't exited yet
+    if (
+      childProcess.exitCode === null &&
+      childProcess.signalCode === null
+    ) {
+      if (typeof childProcess.pid === "undefined") {
+        throw new Error("no pid for childProcess");
+      }
+
+      let stdinStream = childProcess.stdin;
+
+      // Try graceful shutdown with ctrlc
+      try {
+        ctrlc(childProcess.pid);
+        if (stdinStream.writable) {
+          try {
+            // Terminate batch process (Y/N)
+            stdinStream.write("Y\n");
+          } catch (_err) {
+            // not much we can do here
+          }
+        }
+      } catch (_err) {
+        // ctrlc might fail
+      }
+
+      // Close stdin to allow process to exit cleanly
+      try {
+        stdinStream.end();
+      } catch (_err) {
+        // stdin might already be closed
+      }
+
+      // If process still hasn't exited, escalate
+      if (
+        childProcess.exitCode === null &&
+        childProcess.signalCode === null
+      ) {
+        // Try regular kill first
+        try {
+          childProcess.kill();
+        } catch (_err) {
+          // process might already be dead
+        }
+
+        // If still alive after kill, force-kill entire process tree
+        // This is necessary for bash on Windows where ctrlc doesn't work
+        // and child.kill() only kills the shell, leaving grandchildren alive
+        if (
+          childProcess.exitCode === null &&
+          childProcess.signalCode === null
+        ) {
+          yield* killTree(childProcess.pid);
+        }
+      }
+
+      // Wait for streams to finish
+      yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
+    }
+  }
 
   function* join() {
     let result = yield* processResult.operation;
@@ -206,6 +204,7 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
     stderr,
     join,
     expect,
+    kill,
   };
 };
 

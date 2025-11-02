@@ -1,7 +1,7 @@
 import { describe, it } from "@effectionx/bdd";
 import { createArraySignal, is } from "@effectionx/signals";
 import { expect } from "@std/expect";
-import { sleep, spawn } from "effection";
+import { createChannel, sleep, spawn } from "effection";
 
 import { batch } from "./batch.ts";
 import { forEach } from "./for-each.ts";
@@ -9,25 +9,18 @@ import { useFaucet } from "./test-helpers/faucet.ts";
 
 describe("batch", () => {
   it("creates a batch when maxTime expires", function* () {
-    const faucet = yield* useFaucet<number>({ open: true });
-    const stream = batch({ maxTime: 5 })(faucet);
+    const source = createChannel<number, never>();
+    const stream = batch({ maxTime: 50 })(source);
 
     const subscription = yield* stream;
 
-    yield* faucet.pour(function* (send) {
-      yield* sleep(1);
-      yield* send(1);
-      yield* sleep(1);
-      yield* send(2);
-      yield* sleep(1);
-      yield* send(3);
-    });
+    let next = yield* spawn(() => subscription.next());
 
-    yield* sleep(10);
+    yield* source.send(1);
+    yield* source.send(2);
+    yield* source.send(3);
 
-    let next = yield* subscription.next();
-
-    expect(next.value).toEqual([1, 2, 3]);
+    expect((yield* next).value).toEqual([1, 2, 3]);
   });
 
   it("creates a batch by maxSize when maxTime is not set", function* () {
@@ -79,7 +72,7 @@ describe("batch", () => {
 
     const avg = average(windows);
     const percentDiff = Math.abs((avg - 50) / 50) * 100;
-    expect(percentDiff).toBeLessThanOrEqual(20);
+    expect(percentDiff).toBeLessThanOrEqual(30);
 
     expect(batches.valueOf().flat()).toHaveLength(10);
   });

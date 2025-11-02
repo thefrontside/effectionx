@@ -144,9 +144,6 @@ export const createWin32Process: CreateOSProcess = function* createWin32Process(
             // stdin might already be closed
           }
 
-          // Wait for graceful exit with a timeout
-          yield* race([processResult.operation, sleep(300)]);
-
           // If process still hasn't exited, escalate
           if (
             childProcess.exitCode === null &&

@@ -3,7 +3,7 @@ import { assert } from "@std/assert";
 import { emptyDir, ensureDir } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
 import type { Operation, Result, Stream } from "effection";
-import { all, each, Ok, resource, sleep, spawn, until } from "effection";
+import { each, Ok, resource, sleep, spawn, until } from "effection";
 import { cp, readFile, writeFile } from "node:fs/promises";
 
 import type { Start } from "../watch.ts";

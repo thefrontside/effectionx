@@ -20,12 +20,12 @@ export class Effectionx {
   source: Directory
 
   constructor(
-    @argument({ defaultPath: ".", ignore: [".dagger/**/*"] })
+    @argument({ defaultPath: ".", ignore: ["**/.dagger/**/*"] })
     source: Directory,
   ) {
     this.source = source
   }
-  
+
   @func()
   ubuntu(): Container {
     return dag

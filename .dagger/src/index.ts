@@ -37,12 +37,13 @@ export class Effectionx {
       .withMountedDirectory("/effectionx", this.source)
       .withEnvVariable("PATH", "$PATH:/root/.deno/bin", { expand: true })
       .withWorkdir("/effectionx")
+      .withExec(["deno", "task", "generate-importmap"])
   }
 
   @func()
   windows(): Container {
     return dag
       .container()
-      .from("mcr.microsoft.com/windows/nanoserver:ltsc2022")
+      .from("dockurr/windows")
   }
 }

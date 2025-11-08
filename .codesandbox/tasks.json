@@ -1,0 +1,18 @@
+{
+  // These tasks will run in order when initializing your CodeSandbox project.
+  "setupTasks": [
+    {
+      "name": "curl -fsSL https://deno.land/install.sh | sh",
+      "command": "curl -fsSL https://deno.land/install.sh | sh"
+    }
+  ],
+
+  // These tasks can be run from CodeSandbox. Running one will open a log in the app.
+  "tasks": {
+    "generate-importmap": {
+      "name": "Generate importmap",
+      "command": "deno task generate-importmap",
+      "runAtStart": true
+    }
+  }
+}

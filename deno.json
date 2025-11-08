@@ -45,6 +45,8 @@
     "./process"
   ],
   "tasks": {
-    "generate-importmap": "deno run --allow-read --allow-write tasks/generate-importmap.ts"
+    "generate-importmap": "deno run --allow-read --allow-write tasks/generate-importmap.ts",
+    "test": "deno test -A",
+    "test:v4": "deno test -A --import-map=v4.importmap.json"
   }
 }

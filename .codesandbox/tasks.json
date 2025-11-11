@@ -9,10 +9,5 @@
 
   // These tasks can be run from CodeSandbox. Running one will open a log in the app.
   "tasks": {
-    "generate-importmap": {
-      "name": "Generate importmap",
-      "command": "deno task generate-importmap",
-      "runAtStart": true
-    }
   }
 }

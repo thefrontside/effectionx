@@ -31,19 +31,17 @@ export class Effectionx {
     return dag
       .container()
       .from("ubuntu:latest")
-      .withExec(["apt", "update"])
-      .withExec(["apt", "install", "-y", "curl", "unzip", "nodejs"])
+      .withEnvVariable("PATH", "$PATH:/usr/bin", { expand: true })
+      .withExec(["apt-get", "update"])
+      .withExec(["apt-get", "install", "-y", "software-properties-common"])
+      .withExec(["add-apt-repository", "-y", "ppa:colin-king/stress-ng"])
+      .withExec(["apt-get", "update"])
+      .withExec(["apt-get", "install", "-y", "curl", "unzip", "nodejs", "stress-ng"])
       .withExec(["sh", "-c", "curl -fsSL https://deno.land/install.sh | sh"])
       .withMountedDirectory("/effectionx", this.source)
       .withEnvVariable("PATH", "$PATH:/root/.deno/bin", { expand: true })
       .withWorkdir("/effectionx")
+      .withExec(["deno", "install", "--allow-scripts"])
       .withExec(["deno", "task", "generate-importmap"])
-  }
-
-  @func()
-  windows(): Container {
-    return dag
-      .container()
-      .from("dockurr/windows")
   }
 }

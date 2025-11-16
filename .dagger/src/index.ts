@@ -13,7 +13,7 @@
  * rest is a long description with more detail on the module's purpose or usage,
  * if appropriate. All modules should have a short description.
  */
-import { dag, Container, Directory, object, func, argument } from "@dagger.io/dagger"
+import { dag, Container, Directory, File, object, func, argument } from "@dagger.io/dagger"
 
 @object()
 export class Effectionx {
@@ -31,7 +31,6 @@ export class Effectionx {
     return dag
       .container()
       .from("ubuntu:latest")
-      .withEnvVariable("PATH", "$PATH:/usr/bin", { expand: true })
       .withExec(["apt-get", "update"])
       .withExec(["apt-get", "install", "-y", "software-properties-common"])
       .withExec(["add-apt-repository", "-y", "ppa:colin-king/stress-ng"])
@@ -43,5 +42,37 @@ export class Effectionx {
       .withWorkdir("/effectionx")
       .withExec(["deno", "install", "--allow-scripts"])
       .withExec(["deno", "task", "generate-importmap"])
+  }
+
+  @func()
+  async testV3Stress(
+    @argument({ defaultValue: 100 })
+    rounds: number
+  ): Promise<File> {
+    const container = this.ubuntu()
+      .withExec(["bash", "run-test-v3-stress.sh", rounds.toString()])
+
+    // Get the filename
+    const filename = await container
+      .withExec(["sh", "-c", "ls /effectionx/test-summary-v3_*.log"])
+      .stdout()
+
+    return container.file(filename.trim())
+  }
+
+  @func()
+  async testV4Stress(
+    @argument({ defaultValue: 100 })
+    rounds: number
+  ): Promise<File> {
+    const container = this.ubuntu()
+      .withExec(["bash", "run-test-v4-stress.sh", rounds.toString()])
+
+    // Get the filename
+    const filename = await container
+      .withExec(["sh", "-c", "ls /effectionx/test-summary-v4_*.log"])
+      .stdout()
+
+    return container.file(filename.trim())
   }
 }

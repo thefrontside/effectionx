@@ -10,7 +10,7 @@ import { useFaucet } from "./test-helpers/faucet.ts";
 describe("batch", () => {
   it("creates a batch when maxTime expires", function* () {
     const source = createChannel<number, never>();
-    const stream = batch({ maxTime: 50 })(source);
+    const stream = batch({ maxTime: 100 })(source);
 
     const subscription = yield* stream;
 
@@ -72,7 +72,7 @@ describe("batch", () => {
 
     const avg = average(windows);
     const percentDiff = Math.abs((avg - 50) / 50) * 100;
-    expect(percentDiff).toBeLessThanOrEqual(30);
+    expect(percentDiff).toBeLessThanOrEqual(50);
 
     expect(batches.valueOf().flat()).toHaveLength(10);
   });

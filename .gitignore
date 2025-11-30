@@ -1,5 +1,12 @@
 /deno.lock
 /**/build/
 /v4.importmap.json
+node_modules
 
 .vscode
+
+.codemachine/logs
+.codemachine/memory
+.codemachine/prompts
+.codemachine/agents
+.codemachine/template.json

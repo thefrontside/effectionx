@@ -1,6 +1,5 @@
 import { JsonParseStream } from "@std/json";
 import { TextLineStream } from "@std/streams";
-import { emptyDir, exists, walk } from "@std/fs";
 import { dirname, fromFileUrl, globToRegExp, join, toFileUrl } from "@std/path";
 
 import {
@@ -20,6 +19,70 @@ import fs from "node:fs";
 import * as fsp from "node:fs/promises";
 import { Readable } from "node:stream";
 
+// Node.js replacements for @std/fs functions
+async function exists(path: string | URL): Promise<boolean> {
+  try {
+    await fsp.access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function emptyDir(path: string | URL): Promise<void> {
+  const pathStr = path instanceof URL ? fromFileUrl(path) : path;
+  await fsp.rm(pathStr, { recursive: true, force: true });
+  await fsp.mkdir(pathStr, { recursive: true });
+}
+
+interface WalkEntry {
+  path: string;
+  name: string;
+  isFile: boolean;
+  isDirectory: boolean;
+}
+
+interface WalkOptions {
+  includeDirs?: boolean;
+  includeFiles?: boolean;
+  match?: RegExp[];
+}
+
+async function* walk(
+  root: string,
+  options: WalkOptions = {},
+): AsyncGenerator<WalkEntry> {
+  const { includeDirs = true, includeFiles = true, match } = options;
+
+  async function* walkDir(dir: string): AsyncGenerator<WalkEntry> {
+    const entries = await fsp.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name);
+      const walkEntry: WalkEntry = {
+        path: fullPath,
+        name: entry.name,
+        isFile: entry.isFile(),
+        isDirectory: entry.isDirectory(),
+      };
+
+      if (entry.isDirectory()) {
+        if (includeDirs) {
+          if (!match || match.some((r) => r.test(fullPath))) {
+            yield walkEntry;
+          }
+        }
+        yield* walkDir(fullPath);
+      } else if (entry.isFile() && includeFiles) {
+        if (!match || match.some((r) => r.test(fullPath))) {
+          yield walkEntry;
+        }
+      }
+    }
+  }
+
+  yield* walkDir(root);
+}
+
 function* mkdir(
   path: fs.PathLike,
   options: fs.MakeDirectoryOptions & {
@@ -30,7 +93,11 @@ function* mkdir(
 }
 
 export class JSONLStore implements Store {
-  constructor(public location: URL) {}
+  location: URL;
+
+  constructor(location: URL) {
+    this.location = location;
+  }
 
   /**
    * Creates a store with a location that has a trailing slash.

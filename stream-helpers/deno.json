@@ -6,7 +6,6 @@
     "immutable": "npm:immutable@^5",
     "@effectionx/signals": "npm:@effectionx/signals@0.3.0",
     "expect": "npm:expect@^29",
-    "@std/testing": "jsr:@std/testing@^1",
     "@effectionx/timebox": "npm:@effectionx/timebox@0.1.0",
     "@effectionx/bdd": "jsr:@effectionx/bdd@0.2.2",
     "remeda": "npm:remeda@^2"

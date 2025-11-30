@@ -1,10 +1,9 @@
 import type { Process } from "@effectionx/process";
 import { assert } from "@std/assert";
-import { emptyDir, ensureDir } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
 import type { Operation, Result, Stream } from "effection";
 import { each, Ok, resource, sleep, spawn, until } from "effection";
-import { cp, readFile, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 
 import type { Start } from "../watch.ts";
 
@@ -24,7 +23,11 @@ export function* useFixture(): Operation<Fixture> {
   // let path = join(tmpDir, "fixtures");
   let path = tmpDir;
   try {
-    yield* until(emptyDir(tmpDir));
+    yield* until(
+      rm(tmpDir, { recursive: true, force: true }).then(() =>
+        mkdir(tmpDir, { recursive: true })
+      ),
+    );
   } catch (e) {
     console.log(`Encountered error clearing ${tmpDir}`);
     console.error(e);
@@ -50,7 +53,7 @@ export function* useFixture(): Operation<Fixture> {
     },
     *write(filename: string, content: string) {
       const dest = join(path, filename);
-      yield* until(ensureDir(dirname(dest)));
+      yield* until(mkdir(dirname(dest), { recursive: true }));
       yield* until(writeFile(join(path, filename), content));
     },
     *read(name) {

@@ -2,10 +2,24 @@ import { beforeEach, describe, it } from "@effectionx/bdd";
 import { timebox } from "@effectionx/timebox";
 import { assert } from "@std/assert";
 import { expect } from "expect";
-import { emptyDir, exists } from "@std/fs";
 import { fromFileUrl, join } from "@std/path";
 import { scoped, sleep, spawn, suspend, until } from "effection";
-import { readFile } from "node:fs/promises";
+import { access, mkdir, readFile, rm } from "node:fs/promises";
+
+// Node.js replacements for @std/fs functions
+async function exists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function emptyDir(path: string): Promise<void> {
+  await rm(path, { recursive: true, force: true });
+  await mkdir(path, { recursive: true });
+}
 
 import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
 import { useWorker } from "./worker.ts";

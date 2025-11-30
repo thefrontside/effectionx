@@ -1,27 +1,33 @@
-const { process } = globalThis;
+import { createServer } from "node:http";
+import process from "node:process";
 
 console.log("starting server");
-Deno.serve({
-  port: parseInt(process.env.PORT || "29000"),
-  onListen: () => {
-    console.log("listening");
-  },
-}, async (request: Request) => {
+
+const port = parseInt(process.env.PORT || "29000");
+
+const server = createServer((req, res) => {
   process.stderr.write(`got request\n`);
 
   // Read the entire request body
-  const command = await request.text();
-
-  // Handle the command asynchronously to allow response to be sent first
-  setTimeout(() => {
-    readCommand(command);
-  }, 100);
-
-  // Echo the request body back
-  return new Response(command, {
-    status: 200,
-    headers: { "Content-Type": "text/plain" },
+  let body = "";
+  req.on("data", (chunk) => {
+    body += chunk.toString();
   });
+
+  req.on("end", () => {
+    // Handle the command asynchronously to allow response to be sent first
+    setTimeout(() => {
+      readCommand(body);
+    }, 100);
+
+    // Echo the request body back
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end(body);
+  });
+});
+
+server.listen(port, () => {
+  console.log("listening");
 });
 
 process.on("message", function (message: unknown) {

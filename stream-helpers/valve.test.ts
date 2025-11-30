@@ -1,7 +1,7 @@
 import { describe, it } from "@effectionx/bdd";
 import { createArraySignal, is } from "@effectionx/signals";
 import { expect } from "expect";
-import { assertSpyCalls, spy } from "@std/testing/mock";
+import { mock } from "node:test";
 import { each, sleep, spawn } from "effection";
 
 import { valve } from "./valve.ts";
@@ -11,11 +11,11 @@ describe("valve", () => {
   it("closes and opens the valve", function* () {
     const faucet = yield* useFaucet<number>({ open: true });
 
-    const close = spy(function* () {
+    const close = mock.fn(function* () {
       faucet.close();
     });
 
-    const open = spy(function* () {
+    const open = mock.fn(function* () {
       faucet.open();
     });
 
@@ -44,7 +44,7 @@ describe("valve", () => {
 
     expect(values.valueOf()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
-    assertSpyCalls(close, 1);
-    assertSpyCalls(open, 1);
+    expect(close.mock.callCount()).toEqual(1);
+    expect(open.mock.callCount()).toEqual(1);
   });
 });

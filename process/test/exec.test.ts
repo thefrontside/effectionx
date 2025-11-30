@@ -126,14 +126,17 @@ describe("exec", () => {
     let joinStderr: Task<unknown>;
 
     beforeEach(function* () {
-      proc = yield* exec("deno run -A './fixtures/echo-server.ts'", {
-        env: {
-          PORT: "29000",
-          PATH: process.env.PATH as string,
-          ...(SystemRoot ? { SystemRoot } : {}),
+      proc = yield* exec(
+        "node --experimental-strip-types './fixtures/echo-server.ts'",
+        {
+          env: {
+            PORT: "29000",
+            PATH: process.env.PATH as string,
+            ...(SystemRoot ? { SystemRoot } : {}),
+          },
+          cwd: import.meta.dirname,
         },
-        cwd: import.meta.dirname,
-      });
+      );
 
       joinStdout = yield* spawn(streamClose(proc.stdout));
       joinStderr = yield* spawn(streamClose(proc.stderr));
@@ -224,7 +227,7 @@ if (process.platform !== "win32") {
 describe("when the `shell` option is `false`", () => {
   it("correctly receives literal arguments when shell: false", function* () {
     // Arguments are passed literally as parsed by shellwords
-    let proc = exec(`deno run -A ./fixtures/dump-args.js first | echo second`, {
+    let proc = exec(`node ./fixtures/dump-args.js first | echo second`, {
       shell: false,
       cwd: import.meta.dirname,
     });
@@ -242,10 +245,13 @@ describe("when the `shell` option is `false`", () => {
   it("verifies environment variable handling and literal argument passing", function* () {
     // Execute the custom script with the literal argument
     let proc = exec(
-      `deno run -A ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL`,
+      `node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL`,
       {
         shell: false, // Ensures the argument is passed literally
-        env: { EFFECTION_TEST_ENV_VAL: "boop" }, // Sets the environment variable
+        env: {
+          EFFECTION_TEST_ENV_VAL: "boop",
+          PATH: process.env.PATH as string,
+        }, // Sets the environment variable
         cwd: import.meta.dirname,
       },
     );
@@ -268,7 +274,7 @@ describe("handles env vars", () => {
 
     it("can pass in an environment variable", function* () {
       let proc = exec(
-        "deno run -A ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
+        "node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
         {
           shell,
           env: {
@@ -291,7 +297,7 @@ describe("handles env vars", () => {
 
     it("can pass in an environment variable with curly brace syntax", function* () {
       let proc = exec(
-        "deno run -A ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
+        "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
         {
           shell,
           env: {
@@ -318,7 +324,7 @@ describe("handles env vars", () => {
 
     it("can pass in an environment variable", function* () {
       let proc = exec(
-        "deno run -A ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
+        "node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
         {
           shell,
           env: {
@@ -346,7 +352,7 @@ describe("handles env vars", () => {
 
     it("can pass in an environment variable with curly brace syntax", function* () {
       let proc = exec(
-        "deno run -A ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
+        "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
         {
           shell,
           env: {
@@ -378,10 +384,13 @@ describe("handles env vars", () => {
 
     it("can pass in an environment variable", function* () {
       let proc = exec(
-        "deno run -A ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
+        "node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
         {
           shell,
-          env: { EFFECTION_TEST_ENV_VAL: "boop" },
+          env: {
+            EFFECTION_TEST_ENV_VAL: "boop",
+            PATH: process.env.PATH as string,
+          },
           cwd: import.meta.dirname,
         },
       );
@@ -398,10 +407,13 @@ describe("handles env vars", () => {
 
     it("can pass in an environment variable with curly brace syntax", function* () {
       let proc = exec(
-        "deno run -A ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
+        "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
         {
           shell,
-          env: { EFFECTION_TEST_ENV_VAL: "boop" },
+          env: {
+            EFFECTION_TEST_ENV_VAL: "boop",
+            PATH: process.env.PATH as string,
+          },
           cwd: import.meta.dirname,
         },
       );
@@ -429,7 +441,7 @@ describe("handles env vars", () => {
 
       it("can pass in an environment variable", function* () {
         let proc = exec(
-          "deno run -A ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
+          "node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
           {
             shell,
             env: {
@@ -452,7 +464,7 @@ describe("handles env vars", () => {
 
       it("can pass in an environment variable with curly brace syntax", function* () {
         let proc = exec(
-          "deno run -A ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
+          "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
           {
             shell,
             env: {

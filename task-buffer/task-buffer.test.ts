@@ -1,13 +1,19 @@
-import { FakeTime } from "@std/testing/time";
+import { mock } from "node:test";
 import { sleep, spawn, type Task, until } from "effection";
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
 import { useTaskBuffer } from "./task-buffer.ts";
 
+function tickAsync(ms: number) {
+  return new Promise<void>((resolve) => {
+    mock.timers.tick(ms);
+    setImmediate(resolve);
+  });
+}
+
 describe("TaskBuffer", () => {
   it("queues up tasks when the buffer fills up", function* () {
-    const time = new FakeTime();
-
+    mock.timers.enable({ apis: ["setTimeout"] });
     try {
       const buffer = yield* useTaskBuffer(2);
 
@@ -19,23 +25,22 @@ describe("TaskBuffer", () => {
         third = yield* yield* buffer.spawn(() => sleep(10));
       });
 
-      yield* until(time.tickAsync(5));
+      yield* until(tickAsync(5));
 
       // right now the third spawn is queued up, but not spawned.
       expect(third).toBeUndefined();
 
-      yield* until(time.tickAsync(10));
+      yield* until(tickAsync(10));
 
       // the other tasks finished and so the third task is active.
       expect(third).toBeDefined();
     } finally {
-      time.restore();
+      mock.timers.reset();
     }
   });
 
   it("allows to wait until buffer is drained", function* () {
-    const time = new FakeTime();
-
+    mock.timers.enable({ apis: ["setTimeout"] });
     try {
       let finished = 0;
       const buffer = yield* useTaskBuffer(5);
@@ -48,12 +53,12 @@ describe("TaskBuffer", () => {
 
       expect(finished).toEqual(0);
 
-      yield* until(time.tickAsync(10));
+      yield* until(tickAsync(10));
       yield* buffer;
 
       expect(finished).toEqual(3);
     } finally {
-      time.restore();
+      mock.timers.reset();
     }
   });
 });

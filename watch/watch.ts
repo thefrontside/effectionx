@@ -1,4 +1,3 @@
-import { exists } from "@std/fs";
 import { join, relative } from "@std/path";
 import chokidar, { type EmitArgsWithName } from "chokidar";
 import {
@@ -17,7 +16,7 @@ import {
 } from "effection";
 import { default as createIgnore } from "ignore";
 import { pipe } from "remeda";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { exec, type ExecOptions, type Process } from "@effectionx/process";
 
 import { debounce } from "./stream-helpers.ts";
@@ -164,7 +163,9 @@ export function watch(options: WatchOptions): Stream<Start, never> {
  */
 function* findIgnores(path: string): Operation<(path: string) => boolean> {
   let gitignore = join(path, ".gitignore");
-  if (yield* call(() => exists(gitignore))) {
+  if (
+    yield* call(() => access(gitignore).then(() => true).catch(() => false))
+  ) {
     let ignores = createIgnore();
     let buffer = yield* call(() => readFile(gitignore));
     ignores.add(buffer.toString());

@@ -9,7 +9,8 @@
     "@std/assert": "npm:@jsr/std__assert@^1",
     "@std/path": "npm:@jsr/std__path@^1",
     "@effectionx/timebox": "workspace:*",
-    "@effectionx/signals": "workspace:*"
+    "@effectionx/signals": "workspace:*",
+    "web-worker": "^1.3.0"
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*"

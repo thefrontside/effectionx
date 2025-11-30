@@ -1,4 +1,5 @@
 import { type Operation, resource } from "effection";
+import { MessageChannel } from "node:worker_threads";
 
 export function useMessageChannel(): Operation<MessageChannel> {
   return resource(function* (provide) {

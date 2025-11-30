@@ -10,6 +10,7 @@ import {
   spawn,
   withResolvers,
 } from "effection";
+import Worker from "web-worker";
 
 import { useMessageChannel } from "./message-channel.ts";
 

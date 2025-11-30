@@ -11,8 +11,29 @@ import {
   spawn,
   type Task,
 } from "effection";
+import { parentPort } from "node:worker_threads";
 
 import type { WorkerControl, WorkerMainOptions } from "./types.ts";
+
+interface WorkerPort extends EventTarget {
+  postMessage(message: unknown): void;
+  close(): void;
+}
+
+// Get the appropriate worker port for the current environment as a resource
+function useWorkerPort(): Operation<WorkerPort> {
+  return resource(function* (provide) {
+    const port = parentPort
+      ? (parentPort as unknown as WorkerPort) // Node.js worker_threads
+      : (self as unknown as WorkerPort); // Browser/Deno Web Worker
+
+    try {
+      yield* provide(port);
+    } finally {
+      port.close();
+    }
+  });
+}
 
 /**
  * Entrypoint used in the worker that estaliblishes communication
@@ -68,11 +89,12 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
   body: (options: WorkerMainOptions<TSend, TRecv, TData>) => Operation<TReturn>,
 ): Promise<void> {
   await main(function* () {
+    const port = yield* useWorkerPort();
     let sent = createSignal<{ value: TSend; response: MessagePort }>();
     let worker = yield* createWorkerStatesSignal();
 
     yield* spawn(function* () {
-      for (const message of yield* each(on(self, "message"))) {
+      for (const message of yield* each(on(port, "message"))) {
         const control: WorkerControl<TSend, TData> = message.data;
         switch (control.type) {
           case "init": {
@@ -126,11 +148,13 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
 
     for (const state of yield* each(worker)) {
       if (state.type === "new") {
-        postMessage({ type: "open" });
+        port.postMessage({ type: "open" });
       } else if (state.type === "interrupted" || state.type === "error") {
-        postMessage({ type: "close", result: Err(state.error) });
+        port.postMessage({ type: "close", result: Err(state.error) });
+        break;
       } else if (state.type === "complete") {
-        postMessage({ type: "close", result: Ok(state.value) });
+        port.postMessage({ type: "close", result: Ok(state.value) });
+        break;
       }
       yield* each.next();
     }
@@ -221,6 +245,3 @@ export function createWorkerStatesSignal(): Operation<WorkerStateSignal> {
   });
 }
 
-function postMessage(message: unknown): void {
-  self.postMessage(message);
-}

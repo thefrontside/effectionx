@@ -1,7 +1,7 @@
 import { beforeEach, describe, it } from "@effectionx/bdd";
 import { timebox } from "@effectionx/timebox";
 import { assert } from "@std/assert";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { emptyDir, exists } from "@std/fs";
 import { fromFileUrl, join } from "@std/path";
 import { scoped, sleep, spawn, suspend, until } from "effection";

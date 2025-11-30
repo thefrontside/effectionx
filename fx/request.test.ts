@@ -1,5 +1,5 @@
 import { beforeEach, describe, it } from "@effectionx/bdd";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 
 import { call, ensure, withResolvers } from "effection";
 import { createServer } from "node:http";

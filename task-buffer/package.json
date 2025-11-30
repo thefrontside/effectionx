@@ -1,9 +1,9 @@
 {
-  "name": "@effectionx/fx",
-  "version": "0.2.0",
+  "name": "@effectionx/task-buffer",
+  "version": "1.0.1",
   "type": "module",
-  "exports": "./mod.ts",
   "license": "MIT",
+  "exports": "./mod.ts",
   "dependencies": {
     "effection": "^3"
   },

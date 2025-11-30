@@ -4,7 +4,7 @@
   "imports": {
     "effection": "npm:effection@^3",
     "immutable": "npm:immutable@^5",
-    "@std/expect": "jsr:@std/expect@^1",
+    "expect": "npm:expect@^29",
     "@effectionx/bdd": "jsr:@effectionx/bdd@0.2.2"
   },
   "license": "MIT",

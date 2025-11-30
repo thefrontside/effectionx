@@ -1,4 +1,4 @@
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { describe, it } from "@std/testing/bdd";
 import { createContext, resource } from "effection";
 import { createTestAdapter } from "../mod.ts";

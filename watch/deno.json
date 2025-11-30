@@ -9,7 +9,7 @@
   "imports": {
     "effection": "npm:effection@^3",
     "ignore": "npm:ignore@^7.0.3",
-    "@std/expect": "jsr:@std/expect@^1",
+    "expect": "npm:expect@^29",
     "@std/assert": "jsr:@std/assert@^1",
     "remeda": "npm:remeda@^2",
     "@std/fs": "jsr:@std/fs@^1",

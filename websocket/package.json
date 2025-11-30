@@ -1,11 +1,12 @@
 {
-  "name": "@effectionx/fx",
-  "version": "0.2.0",
+  "name": "@effectionx/websocket",
+  "version": "2.0.0",
   "type": "module",
-  "exports": "./mod.ts",
   "license": "MIT",
+  "exports": "./mod.ts",
   "dependencies": {
-    "effection": "^3"
+    "effection": "^3",
+    "ws": "^8"
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*"

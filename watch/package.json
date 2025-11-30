@@ -1,0 +1,27 @@
+{
+  "name": "@effectionx/watch",
+  "version": "0.1.1",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./main.ts",
+    "./lib": "./mod.ts"
+  },
+  "dependencies": {
+    "effection": "^3",
+    "ignore": "^7.0.3",
+    "remeda": "^2",
+    "chokidar": "^4.0.3",
+    "zod": "^3.20.2",
+    "zod-opts": "^0.1.8",
+    "@std/fs": "npm:@jsr/std__fs@^1",
+    "@std/path": "npm:@jsr/std__path@^1",
+    "@std/assert": "npm:@jsr/std__assert@^1",
+    "@effectionx/process": "workspace:*",
+    "@effectionx/stream-helpers": "workspace:*",
+    "@effectionx/signals": "workspace:*"
+  },
+  "devDependencies": {
+    "@effectionx/bdd": "workspace:*"
+  }
+}

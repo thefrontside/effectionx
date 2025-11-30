@@ -1,7 +1,7 @@
 import { FakeTime } from "@std/testing/time";
 import { sleep, spawn, type Task, until } from "effection";
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { useTaskBuffer } from "./task-buffer.ts";
 
 describe("TaskBuffer", () => {

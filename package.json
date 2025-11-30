@@ -4,10 +4,23 @@
   "type": "module",
   "workspaces": [
     "bdd",
+    "context-api",
     "fx",
-    "test-adapter"
+    "jsonl-store",
+    "process",
+    "raf",
+    "signals",
+    "stream-helpers",
+    "task-buffer",
+    "test-adapter",
+    "timebox",
+    "tinyexec",
+    "watch",
+    "websocket",
+    "worker"
   ],
   "devDependencies": {
+    "expect": "^29",
     "tsx": "^4.19.0"
   }
 }

@@ -1,4 +1,4 @@
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { dirname, join } from "@std/path";
 import { beforeEach, describe, it } from "@effectionx/bdd";
 import { each, until } from "effection";

@@ -1,4 +1,4 @@
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { spawn, withResolvers } from "effection";
 import { describe, it } from "@effectionx/bdd";
 import { EventEmitter } from "node:events";

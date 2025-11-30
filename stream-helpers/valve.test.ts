@@ -1,6 +1,6 @@
 import { describe, it } from "@effectionx/bdd";
 import { createArraySignal, is } from "@effectionx/signals";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { assertSpyCalls, spy } from "@std/testing/mock";
 import { each, sleep, spawn } from "effection";
 

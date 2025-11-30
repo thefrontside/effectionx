@@ -1,0 +1,18 @@
+{
+  "name": "@effectionx/worker",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "exports": "./mod.ts",
+  "dependencies": {
+    "effection": "^3",
+    "@std/assert": "npm:@jsr/std__assert@^1",
+    "@std/path": "npm:@jsr/std__path@^1",
+    "@std/fs": "npm:@jsr/std__fs@^1",
+    "@effectionx/timebox": "workspace:*",
+    "@effectionx/signals": "workspace:*"
+  },
+  "devDependencies": {
+    "@effectionx/bdd": "workspace:*"
+  }
+}

@@ -1,11 +1,12 @@
 {
-  "name": "@effectionx/fx",
-  "version": "0.2.0",
+  "name": "@effectionx/raf",
+  "version": "0.0.1",
   "type": "module",
-  "exports": "./mod.ts",
   "license": "MIT",
+  "exports": "./mod.ts",
   "dependencies": {
-    "effection": "^3"
+    "effection": "^3",
+    "@essentials/raf": "^1.2.0"
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*"

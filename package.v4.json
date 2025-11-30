@@ -1,0 +1,37 @@
+{
+  "name": "effectionx",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "bdd",
+    "context-api",
+    "fx",
+    "jsonl-store",
+    "process",
+    "raf",
+    "signals",
+    "stream-helpers",
+    "task-buffer",
+    "test-adapter",
+    "timebox",
+    "tinyexec",
+    "watch",
+    "websocket",
+    "worker"
+  ],
+  "devDependencies": {
+    "expect": "^29",
+    "tsx": "^4.19.0"
+  },
+  "overrides": {
+    "effection": "^4.0.0-0"
+  },
+  "pnpm": {
+    "overrides": {
+      "effection": "^4.0.0-0"
+    }
+  },
+  "dependencies": {
+    "effection": "^4.0.0-0"
+  }
+}

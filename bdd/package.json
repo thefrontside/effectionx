@@ -1,0 +1,17 @@
+{
+  "name": "@effectionx/bdd",
+  "version": "0.2.2",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "deno": "./mod.deno.ts",
+      "node": "./mod.node.ts",
+      "default": "./mod.node.ts"
+    }
+  },
+  "dependencies": {
+    "effection": "^3",
+    "@effectionx/test-adapter": "workspace:*"
+  }
+}

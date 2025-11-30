@@ -1,0 +1,14 @@
+{
+  "name": "@effectionx/fx",
+  "version": "0.2.0",
+  "type": "module",
+  "exports": "./mod.ts",
+  "license": "MIT",
+  "dependencies": {
+    "effection": "^3"
+  },
+  "devDependencies": {
+    "expect": "^29",
+    "@effectionx/bdd": "workspace:*"
+  }
+}

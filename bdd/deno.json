@@ -1,6 +1,6 @@
 {
   "name": "@effectionx/bdd",
-  "exports": "./mod.ts",
+  "exports": "./mod.deno.ts",
   "version": "0.2.2",
   "license": "MIT",
   "imports": {

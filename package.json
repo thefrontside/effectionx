@@ -1,0 +1,13 @@
+{
+  "name": "effectionx",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "bdd",
+    "fx",
+    "test-adapter"
+  ],
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

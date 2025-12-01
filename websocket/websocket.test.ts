@@ -86,12 +86,9 @@ function useTestingPair(_options: TestingPairOptions = {}): Operation<
 
     wss.on("connection", (ws: WsWebSocket) =>
       scope.run(function* () {
-        // The ws library WebSocket is already open, so we need to manually emit 'open' event
-        // Since useWebSocket waits for 'open', we emit it asynchronously
-        queueMicrotask(() => {
-          ws.emit("open");
-        });
-        const socket = yield* useWebSocket(() => ws);
+        // ws library WebSocket is already open when 'connection' fires
+        // useWebSocket now handles this via readyState check
+        const socket = yield* useWebSocket(() => ws as unknown as WebSocket);
         sockets.add({
           close: () => ws.close(),
           socket,
@@ -119,6 +116,9 @@ function useTestingPair(_options: TestingPairOptions = {}): Operation<
     try {
       yield* provide([local, remote]);
     } finally {
+      // Close websocket connections first so httpServer can close
+      local.close();
+      remote.close();
       wss.close();
       const closed = withResolvers<void>();
       httpServer.close(() => closed.resolve());

@@ -120,7 +120,10 @@ export function useWebSocket<T>(
       throw yield* once(socket, "error");
     });
 
-    yield* once(socket, "open");
+    // Only wait for 'open' if socket isn't already open
+    if (socket.readyState !== WebSocket.OPEN) {
+      yield* once(socket, "open");
+    }
 
     yield* spawn(function* () {
       let subscription = yield* messages;

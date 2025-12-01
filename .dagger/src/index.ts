@@ -55,9 +55,9 @@ export class Effectionx {
     const container = this.ubuntu()
       .withExec(["bash", "run-test-v3-stress.sh", rounds.toString()])
 
-    // Get the filename
+    // Get the most recent log file (in case there are multiple from previous runs)
     const filename = await container
-      .withExec(["sh", "-c", "ls /effectionx/test-summary-v3_*.log"])
+      .withExec(["sh", "-c", "ls -t /effectionx/test-summary-v3_*.log | head -1"])
       .stdout()
 
     return container.file(filename.trim())
@@ -71,9 +71,9 @@ export class Effectionx {
     const container = this.ubuntu()
       .withExec(["bash", "run-test-v4-stress.sh", rounds.toString()])
 
-    // Get the filename
+    // Get the most recent log file (in case there are multiple from previous runs)
     const filename = await container
-      .withExec(["sh", "-c", "ls /effectionx/test-summary-v4_*.log"])
+      .withExec(["sh", "-c", "ls -t /effectionx/test-summary-v4_*.log | head -1"])
       .stdout()
 
     return container.file(filename.trim())

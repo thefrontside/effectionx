@@ -27,11 +27,11 @@ describe("parallel()", () => {
   it("should return an immediate channel with results as they are completed", function* () {
     const results = yield* parallel([
       function* () {
-        yield* sleep(20);
+        yield* sleep(200);
         return "second";
       },
       function* () {
-        yield* sleep(10);
+        yield* sleep(50);
         return "first";
       },
     ]);
@@ -50,11 +50,11 @@ describe("parallel()", () => {
   it("should return a sequence channel with results preserving array order as results", function* () {
     const results = yield* parallel([
       function* () {
-        yield* sleep(20);
+        yield* sleep(200);
         return "second";
       },
       function* () {
-        yield* sleep(10);
+        yield* sleep(50);
         return "first";
       },
     ]);
@@ -73,11 +73,11 @@ describe("parallel()", () => {
   it("should return all the result in an array, preserving order", function* () {
     const para = yield* parallel([
       function* () {
-        yield* sleep(20);
+        yield* sleep(200);
         return "second";
       },
       function* () {
-        yield* sleep(10);
+        yield* sleep(50);
         return "first";
       },
     ]);

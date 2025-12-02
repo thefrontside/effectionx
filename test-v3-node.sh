@@ -1,11 +1,24 @@
 #!/bin/bash
 
+# Allow Ctrl+C to stop the script
+trap 'echo ""; echo "Interrupted by user"; exit 130' INT
+
+# Usage: ./test-v3-node.sh [test-pattern] [iterations]
+# Examples:
+#   ./test-v3-node.sh                          # Run all tests once
+#   ./test-v3-node.sh 'watch/**/*.test.ts'     # Run watch tests once
+#   ./test-v3-node.sh 'watch/**/*.test.ts' 10  # Run watch tests 10 times
+#   ./test-v3-node.sh '' 50                    # Run all tests 50 times
+
+test_pattern=${1:-./**/*.test.ts}
+total=${2:-1}
 failures=0
-total=${1:-100}
 timestamp=$(date +%Y%m%d_%H%M%S)
 summary_file="test-summary-v3_${timestamp}.log"
 
 echo "V3 Node Test Run - Started at $(date)" > "$summary_file"
+echo "Test pattern: $test_pattern" >> "$summary_file"
+echo "Iterations: $total" >> "$summary_file"
 echo "==========================================" >> "$summary_file"
 echo "" >> "$summary_file"
 
@@ -16,6 +29,9 @@ rm -rf node_modules
 deno install
 echo ""
 
+echo "Running: $test_pattern ($total iterations)"
+echo ""
+
 for i in $(seq 1 $total); do
   echo "====================================="
   echo "Run $i/$total..."
@@ -24,7 +40,7 @@ for i in $(seq 1 $total); do
   start_time=$(date +%s)
 
   set -o pipefail
-  NO_COLOR=1 timeout 120 node --experimental-strip-types --test './**/*.test.ts' 2>&1 | tee /tmp/test-output-$i.log
+  FORCE_COLOR=1 timeout 120 node --experimental-strip-types --test "$test_pattern" 2>&1 | tee /tmp/test-output-$i.log
   exit_code=$?
   set +o pipefail
 

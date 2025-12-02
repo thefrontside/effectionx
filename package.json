@@ -2,9 +2,6 @@
   "name": "effectionx",
   "private": true,
   "type": "module",
-  "scripts": {
-    "test": "node --experimental-strip-types --test './**/*.test.ts'"
-  },
   "workspaces": [
     "bdd",
     "context-api",
@@ -24,14 +21,6 @@
   ],
   "devDependencies": {
     "expect": "^29"
-  },
-  "overrides": {
-    "effection": "^4.0.0-0"
-  },
-  "pnpm": {
-    "overrides": {
-      "effection": "^4.0.0-0"
-    }
   },
   "dependencies": {
     "effection": "^3"

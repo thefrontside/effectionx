@@ -20,16 +20,7 @@
     "worker"
   ],
   "devDependencies": {
-    "expect": "^29",
-    "tsx": "^4.19.0"
-  },
-  "overrides": {
-    "effection": "^4.0.0-0"
-  },
-  "pnpm": {
-    "overrides": {
-      "effection": "^4.0.0-0"
-    }
+    "expect": "^29"
   },
   "dependencies": {
     "effection": "^3"

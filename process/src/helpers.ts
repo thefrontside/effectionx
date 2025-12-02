@@ -1,5 +1,5 @@
 import {
-  createSignal,
+  createQueue,
   Err,
   Ok,
   type Operation,
@@ -15,22 +15,22 @@ export function useReadable(
   target: Readable | null,
 ): Stream<Uint8Array, void> {
   return resource(function* (provide) {
-    let signal = createSignal<Uint8Array, void>();
+    const queue = createQueue<Uint8Array, void>();
 
     let listener = (chunk: Uint8Array) => {
-      signal.send(chunk);
+      queue.add(chunk);
     };
 
     target?.on("data", listener);
 
-    target?.on("end", signal.close);
+    target?.on("end", queue.close);
 
     try {
-      yield* provide(yield* signal);
+      yield* provide(queue);
     } finally {
       target?.off("data", listener);
-      target?.off("end", signal.close);
-      signal.close();
+      target?.off("end", queue.close);
+      queue.close();
     }
   });
 }

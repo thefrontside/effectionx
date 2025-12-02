@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Allow Ctrl+C to stop the script
+trap 'echo ""; echo "Interrupted by user"; exit 130' INT
+
 failures=0
 total=${1:-100}
 timestamp=$(date +%Y%m%d_%H%M%S)

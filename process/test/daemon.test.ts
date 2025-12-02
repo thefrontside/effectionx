@@ -1,6 +1,6 @@
 import { beforeEach, describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
-import { spawn, type Task, until, withResolvers } from "effection";
+import { sleep, spawn, type Task, until, withResolvers } from "effection";
 import process from "node:process";
 
 import { type Daemon, daemon } from "../mod.ts";
@@ -17,10 +17,13 @@ describe("daemon", () => {
     beforeEach(function* () {
       const result = withResolvers<Daemon>();
       task = yield* spawn<void>(function* () {
-        let proc = yield* daemon("deno", {
-          arguments: ["run", "-A", "./fixtures/echo-server.ts"],
+        let proc = yield* daemon("node", {
+          arguments: [
+            "--experimental-strip-types",
+            "./fixtures/echo-server.ts",
+          ],
           env: {
-            PORT: "29000",
+            PORT: "29001",
             PATH: process.env.PATH as string,
             ...SystemRoot ? { SystemRoot } : {},
           },
@@ -36,7 +39,7 @@ describe("daemon", () => {
     });
 
     it("starts the given child", function* () {
-      const response = yield* fetchText("http://localhost:29000", {
+      const response = yield* fetchText("http://localhost:29001", {
         method: "POST",
         body: "hello",
       });
@@ -52,7 +55,7 @@ describe("daemon", () => {
       it("kills the process", function* () {
         expect(
           yield* captureError(
-            fetchText(`http://localhost:29000`, {
+            fetchText(`http://localhost:29001`, {
               method: "POST",
               body: "hello",
             }),
@@ -67,10 +70,10 @@ describe("daemon", () => {
   describe("shutting down the daemon process prematurely", () => {
     let task: Task<Error>;
     beforeEach(function* () {
-      let proc = yield* daemon("deno", {
-        arguments: ["run", "-A", "./fixtures/echo-server.ts"],
+      let proc = yield* daemon("node", {
+        arguments: ["--experimental-strip-types", "./fixtures/echo-server.ts"],
         env: {
-          PORT: "29000",
+          PORT: "29002",
           PATH: process.env.PATH as string,
           ...SystemRoot ? { SystemRoot } : {},
         },
@@ -88,7 +91,7 @@ describe("daemon", () => {
 
       yield* expectMatch(/listening/, lines()(proc.stdout));
 
-      yield* fetchText("http://localhost:29000", {
+      yield* fetchText("http://localhost:29002", {
         method: "POST",
         body: "exit",
       });

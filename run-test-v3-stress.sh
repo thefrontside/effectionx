@@ -12,7 +12,8 @@ STRESS_PID=$!
 sleep 2
 
 # Run tests with rounds parameter
-bash test-v3-node.sh "$ROUNDS"
+# First arg is test pattern (empty = all tests), second arg is iterations
+bash test-v3-node.sh '' "$ROUNDS"
 
 # Kill stress-ng when done
 kill $STRESS_PID 2>/dev/null || true

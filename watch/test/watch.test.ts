@@ -14,7 +14,7 @@ describe("watch", () => {
     let processes = yield* inspector(
       watch({
         path: fixture.path,
-        cmd: `deno run -A cat.ts`,
+        cmd: `node --experimental-strip-types cat.ts`,
         event: "change",
         execOptions: {
           cwd: import.meta.dirname,
@@ -80,7 +80,7 @@ describe("watch", () => {
     let processes = yield* inspector(
       watch({
         path: fixture.path,
-        cmd: `deno run -A watch-graceful.ts`,
+        cmd: `node --experimental-strip-types watch-graceful.ts`,
         execOptions: {
           cwd: import.meta.dirname,
           env: {

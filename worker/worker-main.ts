@@ -11,21 +11,17 @@ import {
   spawn,
   type Task,
 } from "effection";
-import { parentPort } from "node:worker_threads";
+import { MessagePort, parentPort } from "node:worker_threads";
+import assert from "node:assert";
 
 import type { WorkerControl, WorkerMainOptions } from "./types.ts";
 
-interface WorkerPort extends EventTarget {
-  postMessage(message: unknown): void;
-  close(): void;
-}
-
 // Get the appropriate worker port for the current environment as a resource
-function useWorkerPort(): Operation<WorkerPort> {
+function useWorkerPort(): Operation<MessagePort> {
   return resource(function* (provide) {
     const port = parentPort
-      ? (parentPort as unknown as WorkerPort) // Node.js worker_threads
-      : (self as unknown as WorkerPort); // Browser/Deno Web Worker
+      ? parentPort // Node.js worker_threads
+      : self as unknown as MessagePort; // Browser/Deno Web Worker
 
     try {
       yield* provide(port);
@@ -95,7 +91,7 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
 
     yield* spawn(function* () {
       for (const message of yield* each(on(port, "message"))) {
-        const control: WorkerControl<TSend, TData> = message.data;
+        const control: WorkerControl<TSend, TData> = (message as MessageEvent).data;
         switch (control.type) {
           case "init": {
             worker.start(
@@ -130,6 +126,8 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
           }
           case "send": {
             let { value, response } = control;
+            // Ensure that response is a proper MessagePort (DOM)
+            assert(response instanceof MessagePort, "Expect response to be an instance of MessagePort");
             sent.send({ value, response });
             break;
           }
@@ -244,4 +242,3 @@ export function createWorkerStatesSignal(): Operation<WorkerStateSignal> {
     }
   });
 }
-

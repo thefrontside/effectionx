@@ -126,7 +126,7 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
           }, [channel.port2]);
           channel.port1.start();
           let event = yield* once(channel.port1, "message");
-          let result = event.data;
+          let result = (event as MessageEvent).data;
           if (result.ok) {
             return result.value;
           } else {

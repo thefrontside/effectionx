@@ -1,4 +1,5 @@
 import { mock } from "node:test";
+import { setImmediate } from "node:timers";
 import { sleep, spawn, type Task, until } from "effection";
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";

@@ -118,4 +118,4 @@ describe("watch", () => {
     // never exit.
     // send the command to exit the watch and the main returns
   });
-});
+}, { sanitizeOps: false, sanitizeResources: false });

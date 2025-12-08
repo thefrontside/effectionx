@@ -5,7 +5,7 @@
     "effection": "npm:effection@^3",
     "immutable": "npm:immutable@^5",
     "@std/expect": "jsr:@std/expect@^1",
-    "@effectionx/bdd": "jsr:@effectionx/bdd@0.3.0"
+    "@effectionx/bdd": "workspace:^"
   },
   "license": "MIT",
   "exports": {

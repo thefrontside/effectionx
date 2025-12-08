@@ -9,7 +9,7 @@
     "@std/streams": "jsr:@std/streams@^1",
     "@std/fs": "jsr:@std/fs@^1",
     "@std/path": "jsr:@std/path@^1",
-    "@effectionx/bdd": "jsr:@effectionx/bdd@0.3.0",
+    "@effectionx/bdd": "workspace:^",
     "@std/expect": "jsr:@std/expect@^1"
   }
 }

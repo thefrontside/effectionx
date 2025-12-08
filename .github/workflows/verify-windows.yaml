@@ -39,13 +39,14 @@ jobs:
 
       - run: deno lint
 
-      - run: deno task generate-importmap
+      - run: deno task generate-importmap "^3" v3.importmap.json
+      - run: deno task generate-importmap v4 v4.importmap.json
 
       - name: "Test V3 (${{matrix.shell}})"
         if: matrix.shell == 'powershell' || matrix.shell == 'pwsh'
         run: |
           $env:SHELL = "${{matrix.shell}}"
-          deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi --trace-leaks
+          deno test --import-map v3.importmap.json --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi --trace-leaks
 
       - name: "Test V4 (${{matrix.shell}})"
         if: matrix.shell == 'powershell' || matrix.shell == 'pwsh'
@@ -57,7 +58,7 @@ jobs:
         if: matrix.shell == 'cmd'
         run: |
           set SHELL=${{matrix.shell}}
-          deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi --trace-leaks
+          deno test --import-map v3.importmap.json --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi --trace-leaks
 
       - name: "Test V4 (${{matrix.shell}})"
         if: matrix.shell == 'cmd'
@@ -69,7 +70,7 @@ jobs:
         if: matrix.shell == 'bash'
         run: |
           export SHELL=${{matrix.shell}}
-          deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi --trace-leaks
+          deno test --import-map v3.importmap.json --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi --trace-leaks
 
       - name: "Test V4 (${{matrix.shell}})"
         if: matrix.shell == 'bash'

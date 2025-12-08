@@ -20,21 +20,23 @@ more than a few times are welcome.
 All packages are tested against both effection v3 and v4 to ensure
 compatibility.
 
-### Running tests with v3 (default)
+### Generate import maps
 
 ```bash
-deno test -A
+# Generate v3 import map
+deno task generate-importmap "^3" v3.importmap.json
+
+# Generate v4 import map (fetches latest v4 from npm)
+deno task generate-importmap v4 v4.importmap.json
+```
+
+### Running tests with v3
+
+```bash
+deno test --import-map v3.importmap.json -A
 ```
 
 ### Running tests with v4
-
-First, generate the v4 import map (fetches the latest v4 version from npm):
-
-```bash
-deno task generate-importmap
-```
-
-Then run tests with the import map:
 
 ```bash
 deno test --import-map v4.importmap.json -A

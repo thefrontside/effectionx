@@ -15,6 +15,31 @@ more than a few times are welcome.
 5. Add doc strings to your source code - they will be used for documentation on
    the site.
 
+## Testing
+
+All packages are tested against both effection v3 and v4 to ensure
+compatibility.
+
+### Running tests with v3 (default)
+
+```bash
+deno test -A
+```
+
+### Running tests with v4
+
+First, generate the v4 import map (fetches the latest v4 version from npm):
+
+```bash
+deno task generate-importmap
+```
+
+Then run tests with the import map:
+
+```bash
+deno test --import-map v4.importmap.json -A
+```
+
 ## To publish a new project
 
 1. Member of [jsr.io/@effectionx](https://jsr.io/@effectionx) has to add that

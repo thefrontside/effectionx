@@ -53,7 +53,7 @@ await build({
     },
     sideEffects: false,
     dependencies: {
-      "effection": "^3 || ^4",
+      "effection": "^3 || ^4.0.0-0",
     },
   },
 });

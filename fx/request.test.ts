@@ -1,9 +1,9 @@
 import { beforeEach, describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 
-import { json, request } from "./request.ts";
 import { call, ensure, withResolvers } from "effection";
 import { createServer } from "node:http";
+import { json, request } from "./request.ts";
 
 // Ensure to run tests with --allow-net permission
 describe("request() and json()", () => {

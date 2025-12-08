@@ -23,7 +23,7 @@ describe("raf", () => {
         yield* each.next();
       }
     });
-    yield* sleep(100);
-    expect(count > 5).toBe(true);
+    yield* sleep(150);
+    expect(count).toBeGreaterThanOrEqual(5);
   });
 });

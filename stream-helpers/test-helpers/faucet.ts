@@ -1,4 +1,4 @@
-import { createSignal, type Operation, type Stream } from "effection";
+import { createChannel, type Operation, type Stream } from "effection";
 import { createBooleanSignal, is } from "@effectionx/signals";
 
 /**
@@ -81,7 +81,7 @@ export interface FaucetOptions {
  * @returns stream of items coming from the faucet
  */
 export function* useFaucet<T>(options: FaucetOptions): Operation<Faucet<T>> {
-  let signal = createSignal<T, never>();
+  let signal = createChannel<T, never>();
   let open = yield* createBooleanSignal(options.open);
 
   return {
@@ -90,12 +90,12 @@ export function* useFaucet<T>(options: FaucetOptions): Operation<Faucet<T>> {
       if (Array.isArray(items)) {
         for (let i of items) {
           yield* is(open, (open) => open);
-          signal.send(i);
+          yield* signal.send(i);
         }
       } else {
         yield* items(function* (item) {
           yield* is(open, (open) => open);
-          signal.send(item);
+          yield* signal.send(item);
         });
       }
     },

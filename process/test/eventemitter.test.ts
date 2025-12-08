@@ -1,5 +1,5 @@
 import { expect } from "@std/expect";
-import { spawn } from "effection";
+import { spawn, withResolvers } from "effection";
 import { describe, it } from "@effectionx/bdd";
 import { EventEmitter } from "node:events";
 
@@ -9,58 +9,74 @@ describe("once", () => {
   it("resolves with single argument as array", function* () {
     expect.assertions(1);
     const emitter = new EventEmitter();
+    const { resolve, operation } = withResolvers<[string]>();
 
-    let result;
     yield* spawn(function* () {
-      result = yield* once<[string]>(emitter, "test");
+      resolve(yield* once<[string]>(emitter, "test"));
     });
 
-    emitter.emit("test", "hello");
+    yield* spawn(function* () {
+      emitter.emit("test", "hello");
+    });
 
-    expect(result).toEqual(["hello"]);
+    expect(yield* operation).toEqual(["hello"]);
   });
 
   it("resolves with multiple arguments as array", function* () {
     expect.assertions(1);
     const emitter = new EventEmitter();
 
-    let result;
+    let { resolve, operation } = withResolvers<[number, string]>();
 
     yield* spawn(function* () {
-      result = yield* once<[number, string]>(emitter, "exit");
+      resolve(yield* once<[number, string]>(emitter, "exit"));
     });
 
-    emitter.emit("exit", 42, "SIGTERM");
+    yield* spawn(function* () {
+      emitter.emit("exit", 42, "SIGTERM");
+    });
 
-    expect(result).toEqual([42, "SIGTERM"]);
+    expect(yield* operation).toEqual([42, "SIGTERM"]);
   });
 
   it("only resolves once even with multiple emissions", function* () {
     const emitter = new EventEmitter();
 
-    let first;
+    const { resolve, operation } = withResolvers<void>();
+    let results: string[][] = [];
+
     yield* spawn(function* () {
-      first = yield* once<[string]>(emitter, "data");
+      results.push(yield* once<[string]>(emitter, "data"));
+      resolve();
     });
 
-    emitter.emit("data", "first");
-    emitter.emit("data", "second");
+    yield* spawn(function* () {
+      emitter.emit("data", "first");
+      emitter.emit("data", "second");
+    });
 
-    expect(first).toEqual(["first"]);
+    yield* operation;
+
+    expect(results).toEqual([["first"]]);
   });
 
   it("removes listener after resolving", function* () {
     expect.assertions(2);
     const emitter = new EventEmitter();
 
+    const { resolve, operation } = withResolvers<void>();
+
     yield* spawn(function* () {
       yield* once<[string]>(emitter, "test");
+      resolve();
     });
 
-    expect(emitter.listenerCount("test")).toBe(1);
+    yield* spawn(function* () {
+      expect(emitter.listenerCount("test")).toBe(1);
+      emitter.emit("test", "hello");
+    });
 
-    emitter.emit("test", "hello");
-
+    yield* operation;
     expect(emitter.listenerCount("test")).toBe(0);
   });
 });

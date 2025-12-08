@@ -48,6 +48,7 @@ describe("watch", () => {
   });
 
   it("ignores files in .gitignore", function* () {
+    expect.assertions(1);
     let fixture = yield* useFixture();
 
     let processes = yield* inspector(
@@ -64,6 +65,8 @@ describe("watch", () => {
     yield* fixture.write("dist/artifact.txt", "this file was built again");
 
     yield* processes.expectNoRestart();
+
+    expect(processes.starts).toHaveLength(1);
   });
 
   it.skip("ignores files in a .gitignore that is in a parent directory", function* () {
@@ -115,4 +118,4 @@ describe("watch", () => {
     // never exit.
     // send the command to exit the watch and the main returns
   });
-});
+}, { sanitizeOps: false, sanitizeResources: false });

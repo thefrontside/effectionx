@@ -3,7 +3,7 @@ import { assert } from "@std/assert";
 import { emptyDir, ensureDir } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
 import type { Operation, Result, Stream } from "effection";
-import { each, Ok, sleep, spawn, until } from "effection";
+import { each, Ok, resource, sleep, spawn, until } from "effection";
 import { cp, readFile, writeFile } from "node:fs/promises";
 
 import type { Start } from "../watch.ts";
@@ -67,72 +67,79 @@ type SuccessfulStart = {
 
 type ProcessStart = Result<SuccessfulStart>;
 
-export function* inspector(stream: Stream<Start, never>) {
-  let starts: ProcessStart[] = [];
+interface Inspector {
+  starts: ProcessStart[];
+  expectNext(): Operation<SuccessfulStart>;
+  expectNoRestart(): Operation<void>;
+}
 
-  let expected = 0;
+export function inspector(stream: Stream<Start, never>): Operation<Inspector> {
+  return resource(function* (provide) {
+    let starts: ProcessStart[] = [];
 
-  yield* spawn(function* () {
-    for (let { result } of yield* each(stream)) {
-      if (result.ok) {
-        let process = result.value;
-        let start = {
-          stdout: "",
-          stderr: "",
-          process: result.value,
-        };
-        starts.push(Ok(start));
-        yield* spawn(function* () {
-          for (let chunk of yield* each(process.stdout)) {
-            start.stdout += String(chunk);
-            yield* each.next();
-          }
-        });
-        yield* spawn(function* () {
-          for (let chunk of yield* each(process.stderr)) {
-            start.stderr += String(chunk);
-            yield* each.next();
-          }
-        });
-      } else {
-        starts.push(result);
-      }
+    let expected = 0;
 
-      yield* each.next();
-    }
-  });
-
-  let inspector = {
-    starts,
-    *expectNext(): Operation<SuccessfulStart> {
-      let initial = expected;
-      for (let i = 0; i < 500; i++) {
-        if (initial < starts.length) {
-          yield* sleep(10);
-          expected = starts.length;
-          let result = inspector.starts[inspector.starts.length - 1];
-          if (result.ok) {
-            return result.value;
-          } else {
-            throw new Error(
-              `expected successful start, but failed: ${result.error}`,
-            );
-          }
+    yield* spawn(function* () {
+      for (let { result } of yield* each(stream)) {
+        if (result.ok) {
+          let process = result.value;
+          let start = {
+            stdout: "",
+            stderr: "",
+            process: result.value,
+          };
+          starts.push(Ok(start));
+          yield* spawn(function* () {
+            for (let chunk of yield* each(process.stdout)) {
+              start.stdout += String(chunk);
+              yield* each.next();
+            }
+          });
+          yield* spawn(function* () {
+            for (let chunk of yield* each(process.stderr)) {
+              start.stderr += String(chunk);
+              yield* each.next();
+            }
+          });
         } else {
-          yield* sleep(10);
+          starts.push(result);
         }
+
+        yield* each.next();
       }
-      throw new Error(`expecting a sucessful start but it never appeared.`);
-    },
-    *expectNoRestart() {
-      let prexisting = inspector.starts.length;
-      yield* sleep(200);
-      let restarts = inspector.starts.length - prexisting;
-      assert(
-        restarts === 0,
-        `expected no process restarts to have happened, but instead there were: ${restarts}`,
-      );
-    },
-  };
-  return inspector;
+    });
+
+    yield* provide({
+      starts,
+      *expectNext() {
+        let initial = expected;
+        for (let i = 0; i < 500; i++) {
+          if (initial < starts.length) {
+            yield* sleep(10);
+            expected = starts.length;
+            let result = starts[starts.length - 1];
+            if (result.ok) {
+              return result.value;
+            } else {
+              throw new Error(
+                `expected successful start, but failed: ${result.error}`,
+              );
+            }
+          } else {
+            yield* sleep(10);
+          }
+        }
+        throw new Error(`expecting a sucessful start but it never appeared.`);
+      },
+      *expectNoRestart() {
+        let prexisting = starts.length;
+        yield* sleep(200);
+        let restarts = starts.length - prexisting;
+        assert(
+          restarts === 0,
+          `expected no process restarts to have happened, but instead there were: ${restarts}`,
+        );
+      },
+    });
+  });
 }

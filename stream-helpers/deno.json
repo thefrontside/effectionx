@@ -1,14 +1,15 @@
 {
   "name": "@effectionx/stream-helpers",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "imports": {
     "effection": "npm:effection@^3",
     "immutable": "npm:immutable@^5",
     "@effectionx/signals": "npm:@effectionx/signals@0.3.0",
     "@std/expect": "jsr:@std/expect@^1",
     "@std/testing": "jsr:@std/testing@^1",
+    "@effectionx/timebox": "npm:@effectionx/timebox@0.2.0",
     "@effectionx/bdd": "jsr:@effectionx/bdd@0.2.2",
-    "remeda": "npm:remeda@2.21.3"
+    "remeda": "npm:remeda@^2"
   },
   "license": "MIT",
   "exports": {

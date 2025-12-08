@@ -1,9 +1,7 @@
 name: Verify (POSIX)
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
   pull_request:
     branches:
       - main
@@ -34,5 +32,11 @@ jobs:
       - run: deno fmt --check
 
       - run: deno lint
+      - run: deno task generate-importmap "^3" v3.importmap.json
+      - run: deno task generate-importmap v4 v4.importmap.json
 
-      - run: deno test --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi
+      - name: V3 Tests
+        run: deno test --import-map v3.importmap.json --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi
+
+      - name: V4 Tests
+        run: deno test --import-map v4.importmap.json --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi --trace-leaks

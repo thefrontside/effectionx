@@ -1,4 +1,6 @@
 /deno.lock
 /**/build/
+/v3.importmap.json
+/v4.importmap.json
 
 .vscode

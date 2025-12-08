@@ -3,7 +3,8 @@
     "effection": "npm:effection@^3",
     "@deno/dnt": "jsr:@deno/dnt@0.42.3",
     "@std/path": "jsr:@std/path@^1",
-    "zod": "npm:zod@3.23.8"
+    "zod": "npm:zod@3.23.8",
+    "@std/fs": "jsr:@std/fs@^1"
   },
   "compilerOptions": {
     "lib": [
@@ -20,7 +21,10 @@
         "prefer-const",
         "require-yield"
       ]
-    }
+    },
+    "exclude": [
+      "tasks"
+    ]
   },
   "workspace": [
     "./context-api",
@@ -39,5 +43,8 @@
     "./stream-helpers",
     "./signals",
     "./process"
-  ]
+  ],
+  "tasks": {
+    "generate-importmap": "deno run --allow-read --allow-write --allow-net tasks/generate-importmap.ts"
+  }
 }

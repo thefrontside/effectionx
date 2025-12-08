@@ -45,6 +45,6 @@
     "./process"
   ],
   "tasks": {
-    "generate-importmap": "deno run --allow-read --allow-write tasks/generate-importmap.ts"
+    "generate-importmap": "deno run --allow-read --allow-write --allow-net tasks/generate-importmap.ts"
   }
 }

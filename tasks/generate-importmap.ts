@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write
+#!/usr/bin/env -S deno run --allow-read --allow-write --allow-net
 
 import { expandGlob } from "@std/fs";
 import { fromFileUrl, join } from "@std/path";
@@ -7,6 +7,58 @@ interface DenoConfig {
   name?: string;
   exports?: string | Record<string, string>;
   imports?: Record<string, string>;
+}
+
+interface NpmRegistryResponse {
+  versions: Record<string, unknown>;
+}
+
+/**
+ * Fetches the latest effection v4 version from the npm registry.
+ * Returns the highest v4.x.x version (including prereleases).
+ */
+async function getLatestEffectionV4(): Promise<string> {
+  const response = await fetch("https://registry.npmjs.org/effection");
+  if (!response.ok) {
+    throw new Error(`Failed to fetch npm registry: ${response.statusText}`);
+  }
+
+  const data: NpmRegistryResponse = await response.json();
+  const versions = Object.keys(data.versions);
+
+  // Filter to v4.x.x versions only
+  const v4Versions = versions.filter((v) => v.startsWith("4."));
+
+  if (v4Versions.length === 0) {
+    throw new Error("No v4 versions found for effection");
+  }
+
+  // Sort versions using Deno's semver comparison
+  // Parse and sort: stable versions first by semver, then prereleases
+  v4Versions.sort((a, b) => {
+    const parseVersion = (v: string) => {
+      const [main, prerelease] = v.split("-");
+      const [major, minor, patch] = main.split(".").map(Number);
+      return { major, minor, patch, prerelease: prerelease || "" };
+    };
+
+    const va = parseVersion(a);
+    const vb = parseVersion(b);
+
+    // Compare major.minor.patch first
+    if (va.major !== vb.major) return va.major - vb.major;
+    if (va.minor !== vb.minor) return va.minor - vb.minor;
+    if (va.patch !== vb.patch) return va.patch - vb.patch;
+
+    // If one has prerelease and other doesn't, stable comes after prerelease
+    if (!va.prerelease && vb.prerelease) return 1;
+    if (va.prerelease && !vb.prerelease) return -1;
+
+    // Both have prereleases, compare alphabetically
+    return va.prerelease.localeCompare(vb.prerelease);
+  });
+
+  return v4Versions[v4Versions.length - 1];
 }
 
 const rootDir = fromFileUrl(new URL("..", import.meta.url));
@@ -76,8 +128,10 @@ for await (
   }
 }
 
-// Add effection v4
-imports.set("effection", "npm:effection@^4.0.0-0");
+// Add effection v4 - fetch latest version from npm
+const effectionV4Version = await getLatestEffectionV4();
+imports.set("effection", `npm:effection@${effectionV4Version}`);
+console.log(`Using effection v4: ${effectionV4Version}`);
 
 // Add @std/testing sub-packages if @std/testing is present
 if (imports.has("@std/testing")) {

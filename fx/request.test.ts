@@ -2,17 +2,23 @@ import { beforeEach, describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 
 import { call, ensure, withResolvers } from "effection";
-import { createServer } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
 import { json, request } from "./request.ts";
 
 // Ensure to run tests with --allow-net permission
 describe("request() and json()", () => {
   let url: string;
   beforeEach(function* () {
-    let server = createServer((_req, res) => {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ id: 1, title: "do things" }));
-    });
+    let server = createServer(
+      (_req: IncomingMessage, res: ServerResponse) => {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ id: 1, title: "do things" }));
+      },
+    );
 
     const ready = withResolvers<void>();
     server.listen(0, () => ready.resolve());

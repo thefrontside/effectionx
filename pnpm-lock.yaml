@@ -1,0 +1,37 @@
+lockfileVersion: "9.0"
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+  .:
+    dependencies:
+      effection:
+        specifier: ^3
+        version: 3.6.1
+
+  bdd:
+    dependencies:
+      "@effectionx/test-adapter":
+        specifier: workspace:*
+        version: link:../test-adapter
+      effection:
+        specifier: ^3
+        version: 3.6.1
+
+  test-adapter:
+    dependencies:
+      effection:
+        specifier: ^3
+        version: 3.6.1
+
+packages:
+  effection@3.6.1:
+    resolution: {
+      integrity: sha512-ogsuH/cgxfOOaVUf53pYqhPJth4WhPlva0hGb4Roh6cZhttMoanMqwADkDk9ych28lKuQgntpCszbFRyRFifqg==,
+    }
+    engines: { node: ">= 16" }
+
+snapshots:
+  effection@3.6.1: {}

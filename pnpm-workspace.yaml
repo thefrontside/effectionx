@@ -1,0 +1,3 @@
+packages:
+  - "bdd"
+  - "test-adapter"

@@ -46,16 +46,26 @@ deno test --import-map v4.importmap.json -A
 
 ### Node.js Testing
 
-Packages with Node.js support have a `package.json` with a `test` script. To run
-all Node.js tests across all packages:
+This repository uses [Volta](https://volta.sh/) to manage Node.js and pnpm
+versions. The versions are pinned in `package.json`.
+
+#### Prerequisites
+
+Install Volta if you haven't already:
 
 ```bash
-npm install
-npm test
+curl https://get.volta.sh | bash
 ```
 
-This runs `npm test --workspaces --if-present`, which executes the `test` script
-in each package that has one defined.
+Volta will automatically install the correct Node.js and pnpm versions when you
+run commands in this repository.
+
+#### Running tests
+
+```bash
+pnpm install
+pnpm test
+```
 
 #### Adding Node.js support to a package
 
@@ -76,14 +86,15 @@ in each package that has one defined.
        "test": "node --experimental-strip-types --test *.test.ts"
      },
      "dependencies": {
-       "effection": "^3"
+       "effection": "^3",
+       "@effectionx/your-dependency": "workspace:*"
      }
    }
    ```
 
 2. Create platform-specific entry points (`mod.deno.ts`, `mod.node.ts`)
-3. Add the package to the root `package.json` workspaces array
-4. Run `npm install` to link the workspace
+3. Update the `deno.json` exports to point to the Deno-specific entry point
+4. Add the package to `pnpm-workspace.yaml`
 
 ## To publish a new project
 

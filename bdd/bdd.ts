@@ -17,8 +17,6 @@ export interface TestPrimitives {
     only: (name: string, fn: () => void | Promise<void>) => void;
   };
   afterAll: (fn: () => void | Promise<void>) => void;
-  /** Optional hook called after each test for assertion state cleanup */
-  afterEachTest?: () => void;
 }
 
 /**
@@ -44,8 +42,7 @@ export interface BDD {
  * This allows the BDD module to work with different test runners.
  */
 export function createBDD(primitives: TestPrimitives): BDD {
-  const { describe: $describe, it: $it, afterAll: $afterAll, afterEachTest } =
-    primitives;
+  const { describe: $describe, it: $it, afterAll: $afterAll } = primitives;
 
   let current: TestAdapter | undefined;
 
@@ -94,7 +91,6 @@ export function createBDD(primitives: TestPrimitives): BDD {
     }
     $it(desc, async () => {
       const result = await adapter.runTest(body);
-      afterEachTest?.();
       if (!result.ok) {
         throw result.error;
       }
@@ -110,7 +106,6 @@ export function createBDD(primitives: TestPrimitives): BDD {
     const adapter = current!;
     $it.only(desc, async () => {
       const result = await adapter.runTest(body);
-      afterEachTest?.();
       if (!result.ok) {
         throw result.error;
       }

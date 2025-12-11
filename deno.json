@@ -2,7 +2,6 @@
   "nodeModulesDir": "none",
   "imports": {
     "effection": "npm:effection@^3",
-    "@std/expect": "jsr:@std/expect@^1",
     "@deno/dnt": "jsr:@deno/dnt@0.42.3",
     "@std/path": "jsr:@std/path@^1",
     "zod": "npm:zod@3.23.8",

@@ -1,0 +1,10 @@
+{
+  "name": "@effectionx/test-adapter",
+  "version": "0.6.1",
+  "type": "module",
+  "license": "MIT",
+  "exports": "./mod.ts",
+  "dependencies": {
+    "effection": "^3"
+  }
+}

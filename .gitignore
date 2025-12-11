@@ -2,5 +2,7 @@
 /**/build/
 /v3.importmap.json
 /v4.importmap.json
+node_modules/
+package-lock.json
 
 .vscode

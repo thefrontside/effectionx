@@ -1,3 +1,4 @@
 packages:
   - "bdd"
   - "test-adapter"
+  - "tinyexec"

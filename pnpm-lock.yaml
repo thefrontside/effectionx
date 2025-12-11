@@ -26,6 +26,15 @@ importers:
         specifier: ^3
         version: 3.6.1
 
+  tinyexec:
+    dependencies:
+      effection:
+        specifier: ^3
+        version: 3.6.1
+      tinyexec:
+        specifier: ^0.3.2
+        version: 0.3.2
+
 packages:
   effection@3.6.1:
     resolution: {
@@ -33,5 +42,12 @@ packages:
     }
     engines: { node: ">= 16" }
 
+  tinyexec@0.3.2:
+    resolution: {
+      integrity: sha512-KQQR9yN7R5+OSwaK0XQoj22pwHoTlgYqmUscPYoknOoWCWfj/5/ABTMRi69FrKU5ffPVh5QcFikpWJI/P1ocHA==,
+    }
+
 snapshots:
   effection@3.6.1: {}
+
+  tinyexec@0.3.2: {}

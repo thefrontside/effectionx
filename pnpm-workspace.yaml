@@ -1,4 +1,5 @@
 packages:
   - "bdd"
   - "test-adapter"
+  - "timebox"
   - "tinyexec"

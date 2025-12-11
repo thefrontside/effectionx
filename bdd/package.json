@@ -12,6 +12,6 @@
   },
   "dependencies": {
     "effection": "^3",
-    "@effectionx/test-adapter": "workspace:*"
+    "@effectionx/test-adapter": "*"
   }
 }

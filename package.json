@@ -1,0 +1,9 @@
+{
+  "name": "effectionx",
+  "private": true,
+  "type": "module",
+  "workspaces": ["bdd", "test-adapter"],
+  "dependencies": {
+    "effection": "^3"
+  }
+}

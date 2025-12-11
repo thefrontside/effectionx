@@ -7,6 +7,8 @@
     "test": "pnpm -r --if-present test"
   },
   "dependencies": {
+    "@std/expect": "npm:@jsr/std__expect@^1",
+    "@std/internal": "npm:@jsr/std__internal@^1",
     "effection": "^3"
   },
   "volta": {

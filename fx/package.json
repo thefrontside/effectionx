@@ -4,7 +4,11 @@
   "type": "module",
   "license": "MIT",
   "exports": "./mod.ts",
+  "scripts": {
+    "test": "node --experimental-strip-types --test *.test.ts"
+  },
   "dependencies": {
-    "effection": "^3"
+    "effection": "^3",
+    "@effectionx/bdd": "workspace:*"
   }
 }

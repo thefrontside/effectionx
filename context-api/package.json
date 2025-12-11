@@ -1,0 +1,10 @@
+{
+  "name": "@effectionx/context-api",
+  "version": "0.2.1",
+  "type": "module",
+  "license": "MIT",
+  "exports": "./mod.ts",
+  "dependencies": {
+    "effection": "^3"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@effectionx/timebox",
+  "version": "0.3.1",
+  "type": "module",
+  "license": "MIT",
+  "exports": "./mod.ts",
+  "dependencies": {
+    "effection": "^3"
+  }
+}

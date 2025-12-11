@@ -7,12 +7,6 @@ settings:
 importers:
   .:
     dependencies:
-      "@std/expect":
-        specifier: npm:@jsr/std__expect@^1
-        version: "@jsr/std__expect@1.0.17"
-      "@std/internal":
-        specifier: npm:@jsr/std__internal@^1
-        version: "@jsr/std__internal@1.0.12"
       effection:
         specifier: ^3
         version: 3.6.1
@@ -28,27 +22,18 @@ importers:
 
   context-api:
     dependencies:
-      "@effectionx/bdd":
-        specifier: workspace:*
-        version: link:../bdd
       effection:
         specifier: ^3
         version: 3.6.1
 
   fx:
     dependencies:
-      "@effectionx/bdd":
-        specifier: workspace:*
-        version: link:../bdd
       effection:
         specifier: ^3
         version: 3.6.1
 
   signals:
     dependencies:
-      "@effectionx/bdd":
-        specifier: workspace:*
-        version: link:../bdd
       effection:
         specifier: ^3
         version: 3.6.1
@@ -64,9 +49,6 @@ importers:
 
   timebox:
     dependencies:
-      "@effectionx/bdd":
-        specifier: workspace:*
-        version: link:../bdd
       effection:
         specifier: ^3
         version: 3.6.1
@@ -81,24 +63,6 @@ importers:
         version: 0.3.2
 
 packages:
-  "@jsr/std__assert@1.0.16":
-    resolution: {
-      integrity: sha512-bX9ih0nR1kQ12/cnQRCQU0ppTCV7MFkP0qjyWxJRoDI8RC5cpTAmLFH/KcFgxmdN4flKkRbub8VtLuyKq+4OxA==,
-      tarball: https://npm.jsr.io/~/11/@jsr/std__assert/1.0.16.tgz,
-    }
-
-  "@jsr/std__expect@1.0.17":
-    resolution: {
-      integrity: sha512-+1wHqnotlmsLVrD9nAPTN0ITanwLCYmd9likMB7vn3/4vkTmotv/qUnzwtvegj7utgHrckR4Ksl1NDR8iaW3RQ==,
-      tarball: https://npm.jsr.io/~/11/@jsr/std__expect/1.0.17.tgz,
-    }
-
-  "@jsr/std__internal@1.0.12":
-    resolution: {
-      integrity: sha512-6xReMW9p+paJgqoFRpOE2nogJFvzPfaLHLIlyADYjKMUcwDyjKZxryIbgcU+gxiTygn8yCjld1HoI0ET4/iZeA==,
-      tarball: https://npm.jsr.io/~/11/@jsr/std__internal/1.0.12.tgz,
-    }
-
   effection@3.6.1:
     resolution: {
       integrity: sha512-ogsuH/cgxfOOaVUf53pYqhPJth4WhPlva0hGb4Roh6cZhttMoanMqwADkDk9ych28lKuQgntpCszbFRyRFifqg==,
@@ -116,17 +80,6 @@ packages:
     }
 
 snapshots:
-  "@jsr/std__assert@1.0.16":
-    dependencies:
-      "@jsr/std__internal": 1.0.12
-
-  "@jsr/std__expect@1.0.17":
-    dependencies:
-      "@jsr/std__assert": 1.0.16
-      "@jsr/std__internal": 1.0.12
-
-  "@jsr/std__internal@1.0.12": {}
-
   effection@3.6.1: {}
 
   immutable@5.1.4: {}

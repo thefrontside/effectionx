@@ -20,6 +20,12 @@ importers:
         specifier: ^3
         version: 3.6.1
 
+  context-api:
+    dependencies:
+      effection:
+        specifier: ^3
+        version: 3.6.1
+
   test-adapter:
     dependencies:
       effection:

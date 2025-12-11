@@ -1,5 +1,6 @@
 packages:
   - "bdd"
+  - "context-api"
   - "test-adapter"
   - "timebox"
   - "tinyexec"

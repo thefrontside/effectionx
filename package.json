@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "workspaces": ["bdd", "test-adapter"],
+  "scripts": {
+    "test": "npm test --workspaces --if-present"
+  },
   "dependencies": {
     "effection": "^3"
   }

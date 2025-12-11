@@ -2,6 +2,7 @@ packages:
   - "bdd"
   - "context-api"
   - "fx"
+  - "signals"
   - "test-adapter"
   - "timebox"
   - "tinyexec"

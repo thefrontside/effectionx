@@ -125,6 +125,21 @@ importers:
         specifier: workspace:*
         version: link:../bdd
 
+  inspector:
+    dependencies:
+      '@standard-schema/spec':
+        specifier: ^1.0.0
+        version: 1.1.0
+      arktype:
+        specifier: ^2.1.27
+        version: 2.1.29
+      effection:
+        specifier: ^3.6.1
+        version: 3.6.1
+      zod:
+        specifier: ^4.1.13
+        version: 4.3.5
+
   jsonl-store:
     dependencies:
       effection:
@@ -352,6 +367,12 @@ importers:
 
 packages:
 
+  '@ark/schema@0.56.0':
+    resolution: {integrity: sha512-ECg3hox/6Z/nLajxXqNhgPtNdHWC9zNsDyskwO28WinoFEnWow4IsERNz9AnXRhTZJnYIlAJ4uGn3nlLk65vZA==}
+
+  '@ark/util@0.56.0':
+    resolution: {integrity: sha512-BghfRC8b9pNs3vBoDJhcta0/c1J1rsoS1+HgVUreMFPdhz/CRAKReAu57YEllNaSy98rWAdY1gE+gFup7OXpgA==}
+
   '@babel/code-frame@7.28.6':
     resolution: {integrity: sha512-JYgintcMjRiCvS8mMECzaEn+m3PfoQiyqukOMCCVQtoJGYJw8j/8LBJEiqkHLkfwCcs74E3pbAUFNg7d9VNJ+Q==}
     engines: {node: '>=6.9.0'}
@@ -437,6 +458,9 @@ packages:
   '@sinonjs/fake-timers@14.0.0':
     resolution: {integrity: sha512-QfoXRaUTjMVVn/ZbnD4LS3TPtqOkOdKIYCKldIVPnuClcwRKat6LI2mRZ2s5qiBfO6Fy03An35dSls/2/FEc0Q==}
 
+  '@standard-schema/spec@1.1.0':
+    resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
   '@types/cross-spawn@6.0.6':
     resolution: {integrity: sha512-fXRhhUkG4H3TQk5dBhQ7m/JDdSNHKwR2BBia62lhwEIq9xGiQKLxd6LymNhn47SjXhsUEPmxi+PKw2OkW4LLjA==}
 
@@ -478,6 +502,12 @@ packages:
     resolution: {integrity: sha512-Cxwpt2SfTzTtXcfOlzGEee8O+c+MmUgGrNiBcXnuWxuFJHe6a5Hz7qwhwe5OgaSYI0IJvkLqWX1ASG+cJOkEiA==}
     engines: {node: '>=10'}
 
+  arkregex@0.0.5:
+    resolution: {integrity: sha512-ncYjBdLlh5/QnVsAA8De16Tc9EqmYM7y/WU9j+236KcyYNUXogpz3sC4ATIZYzzLxwI+0sEOaQLEmLmRleaEXw==}
+
+  arktype@2.1.29:
+    resolution: {integrity: sha512-jyfKk4xIOzvYNayqnD8ZJQqOwcrTOUbIU4293yrzAjA3O1dWh61j71ArMQ6tS/u4pD7vabSPe7nG3RCyoXW6RQ==}
+
   braces@3.0.3:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
     engines: {node: '>=8'}
@@ -511,6 +541,10 @@ packages:
   diff-sequences@29.6.3:
     resolution: {integrity: sha512-EjePK1srD3P08o2j4f0ExnylqRs5B9tJjcp9t1krH2qRi8CCdsYfwe9JgSLurFBWwq4uOlipzfk5fHNvwFKr8Q==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
+
+  effection@3.6.1:
+    resolution: {integrity: sha512-ogsuH/cgxfOOaVUf53pYqhPJth4WhPlva0hGb4Roh6cZhttMoanMqwADkDk9ych28lKuQgntpCszbFRyRFifqg==}
+    engines: {node: '>= 16'}
 
   effection@4.0.0:
     resolution: {integrity: sha512-eW2yqhyBdey4k8lkp7hpiev2FSHvJvQqvaIebI3EGikHZvfUWvNy7SmkwOnJa6WcsUtSh7VHUwdjHTbV++8M9w==}
@@ -718,7 +752,16 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
+  zod@4.3.5:
+    resolution: {integrity: sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==}
+
 snapshots:
+
+  '@ark/schema@0.56.0':
+    dependencies:
+      '@ark/util': 0.56.0
+
+  '@ark/util@0.56.0': {}
 
   '@babel/code-frame@7.28.6':
     dependencies:
@@ -792,6 +835,8 @@ snapshots:
     dependencies:
       '@sinonjs/commons': 3.0.1
 
+  '@standard-schema/spec@1.1.0': {}
+
   '@types/cross-spawn@6.0.6':
     dependencies:
       '@types/node': 22.19.7
@@ -832,6 +877,16 @@ snapshots:
 
   ansi-styles@5.2.0: {}
 
+  arkregex@0.0.5:
+    dependencies:
+      '@ark/util': 0.56.0
+
+  arktype@2.1.29:
+    dependencies:
+      '@ark/schema': 0.56.0
+      '@ark/util': 0.56.0
+      arkregex: 0.0.5
+
   braces@3.0.3:
     dependencies:
       fill-range: 7.1.1
@@ -862,6 +917,8 @@ snapshots:
   ctrlc-windows@2.2.0: {}
 
   diff-sequences@29.6.3: {}
+
+  effection@3.6.1: {}
 
   effection@4.0.0: {}
 
@@ -1029,3 +1086,5 @@ snapshots:
       zod: 3.25.76
 
   zod@3.25.76: {}
+
+  zod@4.3.5: {}

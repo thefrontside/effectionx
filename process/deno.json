@@ -1,7 +1,7 @@
 {
   "name": "@effectionx/process",
   "exports": "./mod.ts",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "license": "MIT",
   "imports": {
     "@types/cross-spawn": "npm:@types/cross-spawn@6.0.6",

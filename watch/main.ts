@@ -5,7 +5,7 @@ import { z } from "zod";
 import process from "node:process";
 import denoJson from "./deno.json" with { type: "json" };
 
-const builtins = ["-h", "--help", "-V", "--version"];
+const builtins = ["-h", "--help", "-V", "--version", "--path"];
 
 main(function* (argv) {
   let { args, rest } = extract(argv);
@@ -72,8 +72,17 @@ function extract(argv: string[]): Extract {
   let rest: string[] = argv.slice();
 
   for (let arg = rest.shift(); arg; arg = rest.shift()) {
+    if (!arg.startsWith('-')) {
+      rest.push(arg);
+      break;
+    }
     if (builtins.includes(arg)) {
       args.push(arg);
+      if (arg == "--path") {
+	if (rest.length > 0) {
+	  args.push(rest.shift()!);	  
+	}
+      }
     } else {
       rest.unshift(arg);
       break;

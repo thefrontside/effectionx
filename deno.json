@@ -38,6 +38,7 @@
     "./worker",
     "./stream-helpers",
     "./signals",
-    "./process"
+    "./process",
+    "./inspector"
   ]
 }

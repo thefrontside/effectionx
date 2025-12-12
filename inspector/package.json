@@ -1,0 +1,32 @@
+{
+  "name": "@effectionx/inspector",
+  "version": "0.0.1",
+  "type": "module",
+  "license": "MIT",
+  "author": "engineering@frontside.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thefrontside/effectionx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thefrontside/effectionx/issues"
+  },
+  "engines": {
+    "node": ">= 22"
+  },
+  "sideEffects": false,
+  "peerDependencies": {
+    "effection": "^3.6.1"
+  },
+  "dependencies": {
+    "@standard-schema/spec": "^1.0.0",
+    "arktype": "^2.1.27",
+    "zod": "^4.1.13"
+  },
+  "exports": {
+    ".": {
+      "development": "./mod.ts",
+      "default": "./dist/mod.js"
+    }
+  }
+}

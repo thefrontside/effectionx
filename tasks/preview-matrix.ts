@@ -14,7 +14,7 @@ await main(function* () {
   ).join();
   let changedFiles = stdout.trim().split("\n").filter(Boolean);
 
-  let include: Record<string, unknown>[] = [];
+  let workspaces: string[] = [];
 
   for (let pkg of packages) {
     // Check if any changed file is within this package's workspace
@@ -23,24 +23,11 @@ await main(function* () {
     );
 
     if (hasChanges) {
-      include.push({
-        workspace: pkg.workspace,
-        name: pkg.name,
-        version: pkg.version,
-      });
+      workspaces.push(pkg.workspace);
     }
   }
 
-  let exists = include.length > 0;
-
-  if (!exists) {
-    include.push({ workspace: "nothing" });
-  }
-
-  let outputValue = [
-    `exists=${exists}`,
-    `matrix=${JSON.stringify({ include })}`,
-  ].join("\n");
+  let outputValue = `workspaces=${workspaces.join(" ")}`;
 
   console.log(outputValue);
 

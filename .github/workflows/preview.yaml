@@ -1,0 +1,48 @@
+name: Preview
+on:
+  pull_request:
+
+jobs:
+  generate-matrix:
+    name: Generate Preview Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      exists: ${{ steps.set-matrix.outputs.exists }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno run -A tasks/preview-matrix.ts
+        id: set-matrix
+
+  preview:
+    if: fromJSON(needs.generate-matrix.outputs.exists)
+    name: Publish Previews
+    runs-on: ubuntu-latest
+    needs: [generate-matrix]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Build NPM packages
+        run: |
+          matrix='${{ needs.generate-matrix.outputs.matrix }}'
+          for workspace in $(echo "$matrix" | jq -r '.include[].workspace'); do
+            deno run -A tasks/build-npm.ts "$workspace"
+          done
+
+      - name: Publish previews
+        run: |
+          matrix='${{ needs.generate-matrix.outputs.matrix }}'
+          dirs=""
+          for workspace in $(echo "$matrix" | jq -r '.include[].workspace'); do
+            dirs="$dirs ./$workspace/build/npm"
+          done
+          npx pkg-pr-new publish $dirs

@@ -1,6 +1,6 @@
 {
   "name": "@effectionx/stream-helpers",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "imports": {
     "effection": "npm:effection@^3",
     "immutable": "npm:immutable@^5",

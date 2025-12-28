@@ -192,10 +192,10 @@ function* exampleWithCloseValue() {
 }
 ```
 
-### Subject (like RxJS BehaviorSubject)
+### Subject
 
-The `createSubject` helper converts any stream into a multicast stream that
-replays the latest value to new subscribers. It's analogous to
+Subject helper converts any stream into a multicast stream that replays the
+latest value to new subscribers. It's analogous to
 [RxJS BehaviorSubject](https://www.learnrxjs.io/learn-rxjs/subjects/behaviorsubject).
 
 ```typescript

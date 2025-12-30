@@ -21,7 +21,5 @@ export const protocol = createProtocol({
     args: schema.None,
     progress: schema.None,
     returns: schema.ContextNode,
-  }
+  },
 });
-
-

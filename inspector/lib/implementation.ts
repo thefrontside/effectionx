@@ -1,9 +1,4 @@
-import type {
-  Implementation,
-  Inspector,
-  Methods,
-  Protocol,
-} from "./types.ts";
+import type { Implementation, Inspector, Methods, Protocol } from "./types.ts";
 
 export function createImplementation<M extends Methods>(
   protocol: Protocol<M>,

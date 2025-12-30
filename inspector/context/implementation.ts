@@ -1,6 +1,6 @@
 import { type Scope, type Stream, useScope } from "effection";
 import { createImplementation } from "../lib/implementation.ts";
-import { type ContextNode, type ContextData, protocol } from "./protocol.ts";
+import { type ContextData, type ContextNode, protocol } from "./protocol.ts";
 
 export const context = createImplementation(protocol, function* () {
   let scope = yield* useScope();
@@ -14,7 +14,7 @@ export const context = createImplementation(protocol, function* () {
           };
         },
       };
-    }
+    },
   };
 });
 
@@ -72,7 +72,7 @@ function readV4Tree(scope: V4Scope): ContextNode {
 function readContextData(contexts: Record<string, unknown>): ContextData {
   let entries = Object.entries(contexts).map(([key, value]) => {
     try {
-      return [key, JSON.parse(JSON.stringify(value))];      
+      return [key, JSON.parse(JSON.stringify(value))];
     } catch (_error) {
       return [key, "unserializable"];
     }

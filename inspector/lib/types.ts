@@ -23,11 +23,13 @@ export interface Protocol<M extends Methods> {
   methods: M;
 }
 
-export type Implementation<M extends Methods> = () => Operation<{
-  [N in keyof M]: (
-    ...args: InvocationArgs<M, N>["args"]
-  ) => InvocationResult<M, N>;
-}>;
+export type Implementation<M extends Methods> = () => Operation<
+  {
+    [N in keyof M]: (
+      ...args: InvocationArgs<M, N>["args"]
+    ) => InvocationResult<M, N>;
+  }
+>;
 
 export type Handle<M extends Methods> = {
   protocol: Protocol<M>;

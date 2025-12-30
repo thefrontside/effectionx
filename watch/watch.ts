@@ -16,11 +16,17 @@ import {
   withResolvers,
 } from "effection";
 import { default as createIgnore } from "ignore";
-import { pipe } from "@gordonb/pipe";
+import { pipe } from "remeda";
 import { readFile } from "node:fs/promises";
 import { exec, type ExecOptions, type Process } from "@effectionx/process";
 
 import { debounce } from "./stream-helpers.ts";
+
+// Extended FSWatcher interface that includes EventEmitter methods
+interface FSWatcherWithEvents {
+  on(event: string, listener: (...args: EmitArgsWithName) => void): this;
+  close(): Promise<void>;
+}
 
 /**
  * Represents a single start of the specified command
@@ -105,6 +111,7 @@ export function watch(options: WatchOptions): Stream<Start, never> {
 
     let gitignored = yield* findIgnores(options.path);
 
+    // Cast to extended interface that includes EventEmitter methods
     let watcher = chokidar.watch(options.path, {
       ignored: (path) => {
         let relpath = relative(options.path, path);
@@ -112,7 +119,8 @@ export function watch(options: WatchOptions): Stream<Start, never> {
         return isGit || gitignored(path);
       },
       ignoreInitial: true,
-    });
+    }) as unknown as FSWatcherWithEvents;
+
     let { event = "all" } = options;
     watcher.on(event, (...args: EmitArgsWithName) => {
       if (event !== "all") {

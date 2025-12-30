@@ -192,6 +192,53 @@ function* exampleWithCloseValue() {
 }
 ```
 
+### Subject
+
+Subject helper converts any stream into a multicast stream that replays the
+latest value to new subscribers. It's analogous to
+[RxJS BehaviorSubject](https://www.learnrxjs.io/learn-rxjs/subjects/behaviorsubject).
+
+```typescript
+import { createSubject } from "@effectionx/stream-helpers";
+import { createChannel, spawn } from "effection";
+
+function* example() {
+  const subject = createSubject<number>();
+  const channel = createChannel<number, void>();
+  const downstream = subject(channel);
+
+  // First subscriber
+  const sub1 = yield* downstream;
+
+  yield* channel.send(1);
+  yield* channel.send(2);
+
+  console.log(yield* sub1.next()); // { done: false, value: 1 }
+  console.log(yield* sub1.next()); // { done: false, value: 2 }
+
+  // Late subscriber gets the latest value immediately
+  const sub2 = yield* downstream;
+  console.log(yield* sub2.next()); // { done: false, value: 2 }
+}
+```
+
+Use it with a pipe operator to convert any stream into a behavior subject:
+
+```typescript
+import { createSubject, map } from "@effectionx/stream-helpers";
+import { pipe } from "remeda";
+
+const subject = createSubject<string>();
+
+const stream = pipe(
+  source,
+  map(function* (x) {
+    return x.toString();
+  }),
+  subject,
+);
+```
+
 ### Passthrough Tracker
 
 Passthrough Tracker stream helper provides a way to know if all items that

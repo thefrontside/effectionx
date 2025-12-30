@@ -21,9 +21,11 @@ export function map<A, B>(
               return next;
             }
 
+            const value = yield* fn(next.value);
+
             return {
               done: false,
-              value: yield* fn(next.value),
+              value,
             };
           },
         };

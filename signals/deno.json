@@ -1,11 +1,11 @@
 {
   "name": "@effectionx/signals",
-  "version": "0.3.0",
+  "version": "0.4.1",
   "imports": {
     "effection": "npm:effection@^3",
     "immutable": "npm:immutable@^5",
     "@std/expect": "jsr:@std/expect@^1",
-    "@effectionx/bdd": "jsr:@effectionx/bdd@0.2.2"
+    "@effectionx/bdd": "jsr:@effectionx/bdd@^0.3.0"
   },
   "license": "MIT",
   "exports": {

@@ -10,12 +10,12 @@ describe("raceMap()", () => {
     function* () {
       let winner;
       const results = yield* raceMap({
-        first: function* () {
+        *first() {
           yield* sleep(10);
           winner = "first";
           return "first";
         },
-        second: function* () {
+        *second() {
           yield* sleep(20);
           winner = "second";
           return "second";

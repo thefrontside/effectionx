@@ -1,6 +1,6 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
-import { each, sleep, spawn } from "effection";
+import { race, sleep, spawn, withResolvers } from "effection";
 
 import { createArraySignal } from "./array.ts";
 
@@ -21,24 +21,35 @@ describe("array signal", () => {
     });
 
     it("does not send a value to the stream when the set value is the same as the current value", function* () {
+      expect.assertions(2);
+
       const array = yield* createArraySignal<number>([]);
 
-      const updates: number[][] = [];
+      const { resolve, operation } = withResolvers<void>();
+      const subscription = yield* array;
 
       yield* spawn(function* () {
-        for (const update of yield* each(array)) {
-          updates.push(update);
-          yield* each.next();
-        }
+        array.set([1, 2, 3]);
+
+        const firstUpdate = yield* subscription.next();
+
+        expect(firstUpdate.value).toEqual([1, 2, 3]);
+
+        array.set([1, 2, 3]);
+
+        const result = yield* race([
+          subscription.next(),
+          (function* () {
+            yield* sleep(1);
+            return "sleep won; update not received";
+          })(),
+        ]);
+
+        expect(result).toEqual("sleep won; update not received");
+        resolve();
       });
 
-      array.set([1, 2, 3]);
-
-      expect(updates).toEqual([[1, 2, 3]]);
-
-      array.set([1, 2, 3]);
-
-      expect(updates).toEqual([[1, 2, 3]]);
+      yield* operation;
     });
   });
 
@@ -73,7 +84,7 @@ describe("array signal", () => {
       });
 
       array.push(1);
-      yield* sleep(1);
+      yield* sleep(0);
 
       expect(ops).toEqual(["before shift", "got 1", "after shift"]);
       expect(array.valueOf()).toEqual([]);

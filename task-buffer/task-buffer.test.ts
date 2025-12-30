@@ -1,5 +1,5 @@
 import { FakeTime } from "@std/testing/time";
-import { sleep, spawn, type Task } from "effection";
+import { sleep, spawn, type Task, until } from "effection";
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "@std/expect";
 import { useTaskBuffer } from "./task-buffer.ts";
@@ -19,12 +19,12 @@ describe("TaskBuffer", () => {
         third = yield* yield* buffer.spawn(() => sleep(10));
       });
 
-      time.tick(5);
+      yield* until(time.tickAsync(5));
 
       // right now the third spawn is queued up, but not spawned.
       expect(third).toBeUndefined();
 
-      time.tick(10);
+      yield* until(time.tickAsync(10));
 
       // the other tasks finished and so the third task is active.
       expect(third).toBeDefined();
@@ -48,7 +48,7 @@ describe("TaskBuffer", () => {
 
       expect(finished).toEqual(0);
 
-      time.tick(10);
+      yield* until(time.tickAsync(10));
       yield* buffer;
 
       expect(finished).toEqual(3);

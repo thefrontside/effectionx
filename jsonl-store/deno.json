@@ -1,6 +1,6 @@
 {
   "name": "@effectionx/jsonl-store",
-  "version": "0.1.0",
+  "version": "0.3.1",
   "exports": "./mod.ts",
   "license": "MIT",
   "imports": {
@@ -9,7 +9,7 @@
     "@std/streams": "jsr:@std/streams@^1",
     "@std/fs": "jsr:@std/fs@^1",
     "@std/path": "jsr:@std/path@^1",
-    "@effectionx/bdd": "jsr:@effectionx/bdd@0.2.2",
+    "@effectionx/bdd": "jsr:@effectionx/bdd@^0.3.0",
     "@std/expect": "jsr:@std/expect@^1"
   }
 }

@@ -9,7 +9,7 @@ import type {
 
 export function createImplementation<M extends Methods>(
   protocol: Protocol<M>,
-  create: Implementation<M>
+  create: Implementation<M>,
 ): Inspector<M> {
   return {
     protocol,

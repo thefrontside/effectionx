@@ -22,7 +22,7 @@ type EffectionTree<D> = {
 
 export function readTree<D>(
   scope: Scope,
-  readData: Reader<D> = readContextData
+  readData: Reader<D> = readContextData,
 ): EffectionTree<D> {
   if (isV3Scope(scope)) {
     return readV3Tree(scope, readData);

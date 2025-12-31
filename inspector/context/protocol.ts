@@ -1,5 +1,5 @@
+import { createProtocol } from "@effectionx/inspector";
 import { scope } from "arktype";
-import { createProtocol } from "../lib/mod.ts";
 
 const schema = scope({
   ContextData: {

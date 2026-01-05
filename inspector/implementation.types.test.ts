@@ -7,7 +7,7 @@ import type { Method } from "./lib/types.ts";
 // protocol (i.e. the `Implementation<M>` type). If the types below do not
 // conform, the TypeScript type-check will fail when running `deno test`.
 
-const schema = scope({
+const _schema = scope({
   Args: "string[]",
   Obj: { greeting: "string" },
 }).export();
@@ -16,7 +16,7 @@ type FooMethods = { greet: Method<[string], never, { greeting: string }> };
 
 // This implementation must match `Implementation<FooMethods>` exactly. If it
 // doesn't, the type-check will fail and indicate a problem in the typings.
-const impl: Implementation<FooMethods> = function* () {
+const _impl: Implementation<FooMethods> = function* () {
   return {
     *greet(name: string) {
       return {

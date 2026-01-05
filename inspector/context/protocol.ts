@@ -1,6 +1,6 @@
 import { createProtocol } from "@effectionx/inspector";
 import { type Module, scope } from "arktype";
-import type { Protocol, Method } from "@effectionx/inspector";
+import type { Method, Protocol } from "@effectionx/inspector";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 const contextScope = {

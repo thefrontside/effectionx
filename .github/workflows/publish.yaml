@@ -78,7 +78,21 @@ jobs:
 
       - run: deno run -A tasks/build-npm.ts ${{matrix.workspace}}
 
+      - name: Check if Published
+        id: checkIfPublished
+        run: |
+          PACKAGE="${{ matrix.name }}@${{ matrix.version }}"
+
+          if npm view "$PACKAGE" version 2>/dev/null; then
+            echo "$PACKAGE exists, publishing will be skipped"
+            echo "publish=false" >> $GITHUB_OUTPUT
+          else
+            echo "$PACKAGE not found, will attempt to publish"
+            echo "publish=true" >> $GITHUB_OUTPUT
+          fi
+
       - run: npm publish --access=public --tag=latest
+        if: steps.checkIfPublished.outputs.publish == 'true'
         working-directory: ${{matrix.workspace}}/build/npm
 
   tag:

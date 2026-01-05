@@ -7,6 +7,7 @@
     "@standard-schema/spec": "npm:@standard-schema/spec@^1.0.0",
     "arktype": "npm:arktype@^2.1.27",
     "effection": "npm:effection@^3.6.1",
-    "zod": "npm:zod@^4.1.13"
+    "zod": "npm:zod@^4.1.13",
+    "@std/expect": "jsr:@std/expect@^1"
   }
 }

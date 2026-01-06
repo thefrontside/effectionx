@@ -16,8 +16,10 @@ jobs:
     name: Generate Job Matrix
     runs-on: ubuntu-latest
     outputs:
-      exists: ${{ steps.set-matrix.outputs.exists }}
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      jsr_exists: ${{ steps.set-matrix.outputs.jsr_exists }}
+      jsr_matrix: ${{ steps.set-matrix.outputs.jsr_matrix }}
+      npm_exists: ${{ steps.set-matrix.outputs.npm_exists }}
+      npm_matrix: ${{ steps.set-matrix.outputs.npm_matrix }}
     steps:
       - uses: actions/checkout@v4.2.0
         with:
@@ -26,11 +28,14 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
       - run: deno run -A tasks/publish-matrix.ts
         id: set-matrix
 
   jsr:
-    if: github.ref == 'refs/heads/main' && fromJSON(needs.generate-matrix.outputs.exists)
+    if: github.ref == 'refs/heads/main' && fromJSON(needs.generate-matrix.outputs.jsr_exists)
     name: Publish ${{ matrix.name }}@${{matrix.version}} to JSR
     runs-on: ubuntu-latest
 
@@ -43,7 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 6
-      matrix: ${{fromJSON(needs.generate-matrix.outputs.matrix)}}
+      matrix: ${{fromJSON(needs.generate-matrix.outputs.jsr_matrix)}}
 
     steps:
       - uses: actions/checkout@v4.2.0
@@ -53,7 +58,7 @@ jobs:
         working-directory: ${{ matrix.workspace }}
 
   npm:
-    if: github.ref == 'refs/heads/main' && fromJSON(needs.generate-matrix.outputs.exists)
+    if: github.ref == 'refs/heads/main' && fromJSON(needs.generate-matrix.outputs.npm_exists)
     name: Publish ${{ matrix.name }}@${{matrix.version}} to NPM
     runs-on: ubuntu-latest
 
@@ -66,7 +71,7 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 6
-      matrix: ${{fromJSON(needs.generate-matrix.outputs.matrix)}}
+      matrix: ${{fromJSON(needs.generate-matrix.outputs.npm_matrix)}}
 
     steps:
       - uses: actions/checkout@v4.2.0
@@ -81,15 +86,44 @@ jobs:
       - run: npm publish --access=public --tag=latest
         working-directory: ${{matrix.workspace}}/build/npm
 
+  gather-tags:
+    if: github.ref == 'refs/heads/main'
+    name: "Gather tags to create"
+    runs-on: ubuntu-latest
+    needs: [generate-matrix]
+    outputs:
+      tags_exist: ${{ steps.gather.outputs.tags_exist }}
+      tags_matrix: ${{ steps.gather.outputs.tags_matrix }}
+    steps:
+      - id: gather
+        run: |
+          JSR_EXISTS="${{ needs.generate-matrix.outputs.jsr_exists }}"
+          NPM_EXISTS="${{ needs.generate-matrix.outputs.npm_exists }}"
+          JSR_MATRIX='${{ needs.generate-matrix.outputs.jsr_matrix }}'
+          NPM_MATRIX='${{ needs.generate-matrix.outputs.npm_matrix }}'
+
+          # Combine unique tags from both matrices
+          COMBINED=$(echo "$JSR_MATRIX" "$NPM_MATRIX" | jq -s '
+            (.[0].include + .[1].include)
+            | map(select(.workspace != "nothing"))
+            | unique_by(.tagname)
+          ')
+
+          TAGS_EXIST=$(echo "$COMBINED" | jq 'length > 0')
+          TAGS_MATRIX=$(echo "{\"include\": $COMBINED}")
+
+          echo "tags_exist=$TAGS_EXIST" >> $GITHUB_OUTPUT
+          echo "tags_matrix=$TAGS_MATRIX" >> $GITHUB_OUTPUT
+
   tag:
-    if: github.ref == 'refs/heads/main' && fromJSON(needs.generate-matrix.outputs.exists)
+    if: github.ref == 'refs/heads/main' && fromJSON(needs.gather-tags.outputs.tags_exist)
     name: "Tag Release"
     runs-on: ubuntu-latest
-    needs: [generate-matrix, jsr, npm]
+    needs: [gather-tags, jsr, npm]
 
     strategy:
       fail-fast: false
-      matrix: ${{fromJSON(needs.generate-matrix.outputs.matrix)}}
+      matrix: ${{fromJSON(needs.gather-tags.outputs.tags_matrix)}}
 
     steps:
       - uses: actions/checkout@v4.2.0
@@ -97,3 +131,37 @@ jobs:
           token: ${{secrets.FRONTSIDEJACK_GITHUB_TOKEN}}
       - run: git tag ${{ matrix.tagname }}
       - run: git push origin --tags
+
+  publish-complete:
+    if: github.ref == 'refs/heads/main' && always()
+    name: "Publish Complete"
+    runs-on: ubuntu-latest
+    needs: [jsr, npm, tag]
+    steps:
+      - name: Check all jobs succeeded
+        run: |
+          JSR_RESULT="${{ needs.jsr.result }}"
+          NPM_RESULT="${{ needs.npm.result }}"
+          TAG_RESULT="${{ needs.tag.result }}"
+
+          echo "JSR: $JSR_RESULT"
+          echo "NPM: $NPM_RESULT"
+          echo "Tag: $TAG_RESULT"
+
+          # Success or skipped are both OK
+          if [[ "$JSR_RESULT" != "success" && "$JSR_RESULT" != "skipped" ]]; then
+            echo "JSR publishing failed"
+            exit 1
+          fi
+
+          if [[ "$NPM_RESULT" != "success" && "$NPM_RESULT" != "skipped" ]]; then
+            echo "NPM publishing failed"
+            exit 1
+          fi
+
+          if [[ "$TAG_RESULT" != "success" && "$TAG_RESULT" != "skipped" ]]; then
+            echo "Tagging failed"
+            exit 1
+          fi
+
+          echo "All publish jobs completed successfully!"

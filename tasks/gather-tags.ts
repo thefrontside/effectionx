@@ -34,7 +34,7 @@ await main(function* () {
     yield* until(
       Deno.writeTextFile(githubOutput, outputValue, {
         append: true,
-      })
+      }),
     );
   }
 });

@@ -84,12 +84,14 @@
 ## Key Improvements
 
 ### Before (Inefficient)
+
 - Published ALL packages to both JSR and NPM, even if already published
 - Single matrix for both registries
 - Wasted CI time and resources
 - Could not rerun individual registry publishes
 
 ### After (Efficient)
+
 - **Separate registry checks**: Only publish what's actually needed
 - **Both inline**: JSR and NPM are both inline jobs for consistency
 - **Individual job reruns**: Can retry failed JSR or NPM jobs independently
@@ -100,6 +102,7 @@
 ## Example Scenarios
 
 ### Scenario 1: Package published to JSR but not NPM
+
 ```
 generate-matrix outputs:
   jsr_exists: false (already on JSR)
@@ -112,6 +115,7 @@ Result:
 ```
 
 ### Scenario 2: Package published to NPM but not JSR
+
 ```
 generate-matrix outputs:
   jsr_exists: true  (needs JSR publish)
@@ -124,6 +128,7 @@ Result:
 ```
 
 ### Scenario 3: Package published to both
+
 ```
 generate-matrix outputs:
   jsr_exists: false (already on JSR)
@@ -136,6 +141,7 @@ Result:
 ```
 
 ### Scenario 4: New package needs both
+
 ```
 generate-matrix outputs:
   jsr_exists: true  (needs JSR publish)
@@ -148,6 +154,7 @@ Result:
 ```
 
 ### Scenario 5: OIDC configuration issue (rerun scenario)
+
 ```
 Initial run:
   ✓ jsr job: SUCCESS (3 packages published)

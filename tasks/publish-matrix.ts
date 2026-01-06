@@ -24,7 +24,10 @@ await main(function* () {
       };
 
       // Check JSR registry
-      let jsrCheck = yield* x(`deno`, [`info`, `jsr:${pkg.name}@${pkg.version}`], {
+      let jsrCheck = yield* x(`deno`, [
+        `info`,
+        `jsr:${pkg.name}@${pkg.version}`,
+      ], {
         throwOnError: false,
       });
       let jsrOutput = yield* jsrCheck;

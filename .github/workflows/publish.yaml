@@ -95,25 +95,15 @@ jobs:
       tags_exist: ${{ steps.gather.outputs.tags_exist }}
       tags_matrix: ${{ steps.gather.outputs.tags_matrix }}
     steps:
+      - uses: actions/checkout@v4.2.0
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
       - id: gather
-        run: |
-          JSR_EXISTS="${{ needs.generate-matrix.outputs.jsr_exists }}"
-          NPM_EXISTS="${{ needs.generate-matrix.outputs.npm_exists }}"
-          JSR_MATRIX='${{ needs.generate-matrix.outputs.jsr_matrix }}'
-          NPM_MATRIX='${{ needs.generate-matrix.outputs.npm_matrix }}'
-
-          # Combine unique tags from both matrices
-          COMBINED=$(echo "$JSR_MATRIX" "$NPM_MATRIX" | jq -s '
-            (.[0].include + .[1].include)
-            | map(select(.workspace != "nothing"))
-            | unique_by(.tagname)
-          ')
-
-          TAGS_EXIST=$(echo "$COMBINED" | jq 'length > 0')
-          TAGS_MATRIX=$(echo "{\"include\": $COMBINED}")
-
-          echo "tags_exist=$TAGS_EXIST" >> $GITHUB_OUTPUT
-          echo "tags_matrix=$TAGS_MATRIX" >> $GITHUB_OUTPUT
+        run: deno run -A tasks/gather-tags.ts
+        env:
+          JSR_MATRIX: ${{ needs.generate-matrix.outputs.jsr_matrix }}
+          NPM_MATRIX: ${{ needs.generate-matrix.outputs.npm_matrix }}
 
   tag:
     if: github.ref == 'refs/heads/main' && fromJSON(needs.gather-tags.outputs.tags_exist)
@@ -138,30 +128,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [jsr, npm, tag]
     steps:
+      - uses: actions/checkout@v4.2.0
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
       - name: Check all jobs succeeded
-        run: |
-          JSR_RESULT="${{ needs.jsr.result }}"
-          NPM_RESULT="${{ needs.npm.result }}"
-          TAG_RESULT="${{ needs.tag.result }}"
-
-          echo "JSR: $JSR_RESULT"
-          echo "NPM: $NPM_RESULT"
-          echo "Tag: $TAG_RESULT"
-
-          # Success or skipped are both OK
-          if [[ "$JSR_RESULT" != "success" && "$JSR_RESULT" != "skipped" ]]; then
-            echo "JSR publishing failed"
-            exit 1
-          fi
-
-          if [[ "$NPM_RESULT" != "success" && "$NPM_RESULT" != "skipped" ]]; then
-            echo "NPM publishing failed"
-            exit 1
-          fi
-
-          if [[ "$TAG_RESULT" != "success" && "$TAG_RESULT" != "skipped" ]]; then
-            echo "Tagging failed"
-            exit 1
-          fi
-
-          echo "All publish jobs completed successfully!"
+        run: deno run -A tasks/publish-complete.ts
+        env:
+          JSR_RESULT: ${{ needs.jsr.result }}
+          NPM_RESULT: ${{ needs.npm.result }}
+          TAG_RESULT: ${{ needs.tag.result }}

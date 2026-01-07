@@ -44,7 +44,25 @@ function isV4Scope(value: Scope): value is Scope & V4Scope {
 }
 
 function readV3Tree<D>(scope: V3Scope, readData: Reader<D>): EffectionTree<D> {
-  let children = [...scope.frame.children].map((frame) => ({ frame }));
+  const childrenRaw = scope.frame.children;
+  let childrenArr: V3Frame[] = [];
+
+  if (
+    childrenRaw &&
+    typeof (childrenRaw as unknown)[Symbol.iterator] === "function"
+  ) {
+    childrenArr = [...(childrenRaw as Iterable<V3Frame>)];
+  } else if (Array.isArray(childrenRaw)) {
+    childrenArr = childrenRaw as V3Frame[];
+  } else if (childrenRaw && typeof childrenRaw === "object") {
+    childrenArr = Object.values(
+      childrenRaw as unknown as Record<string, V3Frame>,
+    );
+  } else {
+    childrenArr = [];
+  }
+
+  let children = childrenArr.map((frame) => ({ frame }));
   return {
     data: readData(scope.frame.context),
     children: children.map((s) => readV3Tree(s, readData)),

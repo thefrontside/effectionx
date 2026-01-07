@@ -78,7 +78,7 @@ function readV4Tree<D>(scope: V4Scope, readData: Reader<D>): EffectionTree<D> {
 }
 
 // make anything serializable.
-function readContextData<D>(contexts: Record<string, unknown>): D {
+export function readContextData<D>(contexts: Record<string, unknown>): D {
   let entries = Object.entries(contexts).map(([key, value]) => {
     try {
       return [key, JSON.parse(JSON.stringify(value))];

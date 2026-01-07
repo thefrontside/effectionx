@@ -1,5 +1,5 @@
 import type { Inspector } from "@effectionx/inspector";
-import { createImplementation, readTree } from "@effectionx/inspector";
+import { createImplementation, readTree, readContextData } from "@effectionx/inspector";
 import { createSignal, type Stream, useScope } from "effection";
 import { api } from "effection/experimental";
 import { type ContextData, type ContextNode, protocol } from "./protocol.ts";
@@ -12,8 +12,9 @@ export const read: Inspector<typeof protocol.methods> = createImplementation(
 
     yield* api.Context.decorate({
       set([scope, context, value], next) {
+	let internal = scope as unknown as V4Scope;
         signal.send({
-          values: { read: "me" },
+          values: readContextData(internal.contexts),
         });
         return next(scope, context, value);
       },
@@ -34,6 +35,11 @@ export const read: Inspector<typeof protocol.methods> = createImplementation(
     };
   },
 );
+
+interface V4Scope {
+  contexts: Record<string, unknown>;
+  children: V4Scope[];
+}
 
 /**
 import { createImplementation, readTree } from "@effectionx/inspector";

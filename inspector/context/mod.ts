@@ -1,2 +1,2 @@
-export * from "./read/implementation.ts";
-export * from "./watch/implementation.ts";
+export * from "./implementation.ts";
+export * from "./protocol.ts";

@@ -1,3 +1,41 @@
+import type { Inspector } from "@effectionx/inspector";
+import { createImplementation, readTree } from "@effectionx/inspector";
+import { createSignal, type Stream, useScope } from "effection";
+import { api } from "effection/experimental";
+import { type ContextData, type ContextNode, protocol } from "./protocol.ts";
+
+export const read: Inspector<typeof protocol.methods> = createImplementation(
+  protocol,
+  function* () {
+    let scope = yield* useScope();
+    let signal = createSignal<ContextData, never>();
+
+    yield* api.Context.decorate({
+      set([scope, context, value], next) {
+        signal.send({
+          values: { read: "me" },
+        });
+        return next(scope, context, value);
+      },
+    });
+
+    return {
+      *readContextTree(): Stream<never, ContextNode> {
+        return {
+          *next() {
+            return {
+              done: true,
+              value: readTree<ContextData>(scope),
+            };
+          },
+        };
+      },
+      watchContextTree: () => signal,
+    };
+  },
+);
+
+/**
 import { createImplementation, readTree } from "@effectionx/inspector";
 import {
   createChannel,
@@ -71,3 +109,5 @@ export const watch: Inspector<typeof protocol.methods> = createImplementation(
     };
   },
 );
+
+ */

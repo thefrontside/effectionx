@@ -5,7 +5,10 @@ import type { Scope } from "effection";
 import { readTree } from "./lib/mod.ts";
 
 // helper to construct v3 frames
-function v3Frame(context: Record<string, unknown>, children: unknown[] = []) {
+export function v3Frame(
+  context: Record<string, unknown>,
+  children: unknown[] = [],
+) {
   const normalized = children.map((c) => {
     if (c && typeof c === "object") {
       const obj = c as Record<string, unknown>;
@@ -23,7 +26,10 @@ function v3Frame(context: Record<string, unknown>, children: unknown[] = []) {
 }
 
 // helper to construct v4 scopes
-function v4Scope(contexts: Record<string, unknown>, children: unknown[] = []) {
+export function v4Scope(
+  contexts: Record<string, unknown>,
+  children: unknown[] = [],
+) {
   const normalized = children.map((c) => {
     if (c && typeof c === "object") {
       const obj = c as Record<string, unknown>;

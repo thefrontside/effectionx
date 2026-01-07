@@ -19,7 +19,9 @@ export type ContextData = { values: Record<string, unknown> };
 
 export type ContextNode = { data: ContextData; children: ContextNode[] };
 
-type ContextMethods = { readContextTree: Method<never[], never, ContextNode> };
+type ContextMethods = {
+  readContextTree: Method<never[], never, ContextNode>;
+};
 
 const methods: ContextMethods = {
   readContextTree: {

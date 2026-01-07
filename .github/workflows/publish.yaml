@@ -79,7 +79,6 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.com
 
       - run: deno run -A tasks/build-npm.ts ${{matrix.workspace}}
 

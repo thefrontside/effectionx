@@ -151,8 +151,8 @@ importers:
         version: 4.3.5
     devDependencies:
       effection:
-        specifier: https://pkg.pr.new/thefrontside/effection@0677605
-        version: https://pkg.pr.new/thefrontside/effection@0677605
+        specifier: https://pkg.pr.new/thefrontside/effection@166d13a
+        version: https://pkg.pr.new/thefrontside/effection@166d13a
 
   jsonl-store:
     dependencies:
@@ -943,8 +943,8 @@ packages:
     resolution: {integrity: sha512-eW2yqhyBdey4k8lkp7hpiev2FSHvJvQqvaIebI3EGikHZvfUWvNy7SmkwOnJa6WcsUtSh7VHUwdjHTbV++8M9w==}
     engines: {node: '>= 16'}
 
-  effection@https://pkg.pr.new/thefrontside/effection@0677605:
-    resolution: {tarball: https://pkg.pr.new/thefrontside/effection@0677605}
+  effection@https://pkg.pr.new/thefrontside/effection@166d13a:
+    resolution: {tarball: https://pkg.pr.new/thefrontside/effection@166d13a}
     version: 4.0.0-pr
     engines: {node: '>= 16'}
 
@@ -1735,7 +1735,7 @@ snapshots:
 
   effection@4.0.0: {}
 
-  effection@https://pkg.pr.new/thefrontside/effection@0677605: {}
+  effection@https://pkg.pr.new/thefrontside/effection@166d13a: {}
 
   es-module-lexer@1.7.0: {}
 

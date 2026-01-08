@@ -133,12 +133,13 @@ importers:
       arktype:
         specifier: ^2.1.27
         version: 2.1.29
-      effection:
-        specifier: ^3.6.1
-        version: 3.6.1
       zod:
         specifier: ^4.1.13
         version: 4.3.5
+    devDependencies:
+      effection:
+        specifier: https://pkg.pr.new/thefrontside/effection@0677605
+        version: https://pkg.pr.new/thefrontside/effection@0677605
 
   jsonl-store:
     dependencies:
@@ -542,12 +543,13 @@ packages:
     resolution: {integrity: sha512-EjePK1srD3P08o2j4f0ExnylqRs5B9tJjcp9t1krH2qRi8CCdsYfwe9JgSLurFBWwq4uOlipzfk5fHNvwFKr8Q==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
 
-  effection@3.6.1:
-    resolution: {integrity: sha512-ogsuH/cgxfOOaVUf53pYqhPJth4WhPlva0hGb4Roh6cZhttMoanMqwADkDk9ych28lKuQgntpCszbFRyRFifqg==}
-    engines: {node: '>= 16'}
-
   effection@4.0.0:
     resolution: {integrity: sha512-eW2yqhyBdey4k8lkp7hpiev2FSHvJvQqvaIebI3EGikHZvfUWvNy7SmkwOnJa6WcsUtSh7VHUwdjHTbV++8M9w==}
+    engines: {node: '>= 16'}
+
+  effection@https://pkg.pr.new/thefrontside/effection@0677605:
+    resolution: {tarball: https://pkg.pr.new/thefrontside/effection@0677605}
+    version: 4.0.0-pr
     engines: {node: '>= 16'}
 
   escape-string-regexp@2.0.0:
@@ -918,9 +920,9 @@ snapshots:
 
   diff-sequences@29.6.3: {}
 
-  effection@3.6.1: {}
-
   effection@4.0.0: {}
+
+  effection@https://pkg.pr.new/thefrontside/effection@0677605: {}
 
   escape-string-regexp@2.0.0: {}
 

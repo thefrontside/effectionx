@@ -16,12 +16,15 @@
   },
   "sideEffects": false,
   "peerDependencies": {
-    "effection": "^3.6.1"
+    "effection": "^4.x.x"
   },
   "dependencies": {
     "@standard-schema/spec": "^1.0.0",
     "arktype": "^2.1.27",
     "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "effection": "https://pkg.pr.new/thefrontside/effection@0677605"
   },
   "exports": {
     ".": {

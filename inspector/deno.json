@@ -6,8 +6,8 @@
   "imports": {
     "@standard-schema/spec": "npm:@standard-schema/spec@^1.0.0",
     "arktype": "npm:arktype@^2.1.27",
-    "effection": "https://esm.sh/pr/thefrontside/effection/effection@0677605",
-    "effection/experimental": "https://esm.sh/pr/thefrontside/effection/effection@0677605/experimental",
+    "effection": "https://esm.sh/pr/thefrontside/effection/effection@166d13a",
+    "effection/experimental": "https://esm.sh/pr/thefrontside/effection/effection@166d13a/experimental",
     "zod": "npm:zod@^4.1.13",
     "@std/expect": "jsr:@std/expect@^1"
   }

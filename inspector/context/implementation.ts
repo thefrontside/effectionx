@@ -1,23 +1,37 @@
 import type { Inspector } from "@effectionx/inspector";
 import { createImplementation, readTree, readContextData } from "@effectionx/inspector";
-import { createSignal, type Stream, useScope } from "effection";
+import { createContext, createSignal, type Stream, useScope } from "effection";
 import { api } from "effection/experimental";
 import { type ContextData, type ContextNode, protocol } from "./protocol.ts";
 
 export const read: Inspector<typeof protocol.methods> = createImplementation(
   protocol,
   function* () {
+    let ids = 0;
     let scope = yield* useScope();
     let signal = createSignal<ContextData, never>();
+    let id = createContext<number>("@effectionx/inspector.id");
 
-    yield* api.Context.decorate({
-      set([scope, context, value], next) {
-	let internal = scope as unknown as V4Scope;
-        signal.send({
-          values: readContextData(internal.contexts),
-        });
-        return next(scope, context, value);
+    yield* api.Scope.decorate({
+      init(args, next) {
+	let contexts = next(...args);
+	contexts[id.name] = ids++;
+	return contexts;
       },
+      set([contexts, context, value], next) {
+        signal.send({
+	  id: contexts[id.name] as string,
+          values: readContextData(contexts),
+        });
+        return next(contexts, context, value);
+      },
+      delete([contexts, context], next) {
+        signal.send({
+	  id: contexts[id.name] as string,
+          values: readContextData(contexts),
+        });
+	return next(contexts, context);
+      }
     });
 
     return {
@@ -35,85 +49,3 @@ export const read: Inspector<typeof protocol.methods> = createImplementation(
     };
   },
 );
-
-interface V4Scope {
-  contexts: Record<string, unknown>;
-  children: V4Scope[];
-}
-
-/**
-import { createImplementation, readTree } from "@effectionx/inspector";
-import {
-  createChannel,
-  type Scope,
-  sleep,
-  spawn,
-  type Stream,
-  useScope,
-} from "effection";
-
-import { type ContextData, type ContextNode, protocol } from "./protocol.ts";
-import type { Inspector } from "@effectionx/inspector";
-
-function deepEqual(a: unknown, b: unknown) {
-  try {
-    return JSON.stringify(a) === JSON.stringify(b);
-  } catch (_e) {
-    return false;
-  }
-}
-
-export const watch: Inspector<typeof protocol.methods> = createImplementation(
-  protocol,
-  function* () {
-    let scope = yield* useScope();
-
-    return {
-      *watchContextTree(
-        ...args: { interval?: number; scope?: Scope }[]
-      ): Stream<ContextNode, never> {
-        let last: ContextNode | undefined;
-
-        const opts = args[0];
-        const interval = opts?.interval ?? 100;
-
-        const providedScope = opts?.scope;
-        let workingScope: Scope = providedScope ?? scope;
-
-        // create a per-invocation subscriber channel
-        const updates = createChannel<ContextNode, never>();
-
-        yield* spawn(function* () {
-          while (true) {
-            try {
-              const current = readTree<ContextData>(workingScope);
-
-              const shouldSend = last === undefined ||
-                !deepEqual(current, last);
-
-              if (shouldSend) {
-                last = current;
-                yield* updates.send(current);
-              }
-              console.log("looped", { shouldSend, last, current });
-            } catch {
-              // ignore readTree errors in runtime
-            }
-
-            yield* sleep(interval);
-          }
-        });
-
-        console.log("sending initial value");
-        const first = readTree<ContextData>(workingScope);
-        yield* updates.send(first);
-
-        const sub = yield* updates;
-
-        return sub;
-      },
-    };
-  },
-);
-
- */

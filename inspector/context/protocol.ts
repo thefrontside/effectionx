@@ -3,6 +3,7 @@ import { createProtocol } from "../lib/mod.ts";
 
 const schema = scope({
   ContextData: {
+    id: "string",
     values: "object.json",
   },
   ContextNode: {

@@ -1,14 +1,5 @@
 import type { Scope } from "effection";
 
-interface V3Frame {
-  context: Record<string, unknown>;
-  children: Set<V3Frame>;
-}
-
-interface V3Scope {
-  frame: V3Frame;
-}
-
 interface V4Scope {
   contexts: Record<string, unknown>;
   children: V4Scope[];
@@ -23,50 +14,8 @@ type EffectionTree<D> = {
 export function readTree<D>(
   scope: Scope,
   readData: Reader<D> = readContextData,
-): EffectionTree<D> {
-  if (isV3Scope(scope)) {
-    return readV3Tree(scope, readData);
-  } else if (isV4Scope(scope)) {
-    return readV4Tree(scope, readData);
-  } else {
-    throw new TypeError(`unrecognizable scope type`);
-  }
-}
-
-function isV3Scope(value: Scope): value is Scope & V3Scope {
-  let hypothetical = value as Scope & V3Scope;
-  return hypothetical.frame && typeof hypothetical.frame.context === "object";
-}
-
-function isV4Scope(value: Scope): value is Scope & V4Scope {
-  let hypothetical = value as Scope & V4Scope;
-  return typeof hypothetical.contexts === "object";
-}
-
-function readV3Tree<D>(scope: V3Scope, readData: Reader<D>): EffectionTree<D> {
-  const childrenRaw = scope.frame.children;
-  let childrenArr: V3Frame[] = [];
-
-  if (
-    childrenRaw &&
-    typeof (childrenRaw as unknown)[Symbol.iterator] === "function"
-  ) {
-    childrenArr = [...(childrenRaw as Iterable<V3Frame>)];
-  } else if (Array.isArray(childrenRaw)) {
-    childrenArr = childrenRaw as V3Frame[];
-  } else if (childrenRaw && typeof childrenRaw === "object") {
-    childrenArr = Object.values(
-      childrenRaw as unknown as Record<string, V3Frame>,
-    );
-  } else {
-    childrenArr = [];
-  }
-
-  let children = childrenArr.map((frame) => ({ frame }));
-  return {
-    data: readData(scope.frame.context),
-    children: children.map((s) => readV3Tree(s, readData)),
-  };
+): EffectionTree<D> {  
+  return readV4Tree(scope as unknown as V4Scope, readData);
 }
 
 function readV4Tree<D>(scope: V4Scope, readData: Reader<D>): EffectionTree<D> {

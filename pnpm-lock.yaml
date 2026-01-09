@@ -1,0 +1,87 @@
+lockfileVersion: "9.0"
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+  .:
+    dependencies:
+      effection:
+        specifier: ^3
+        version: 3.6.1
+
+  bdd:
+    dependencies:
+      "@effectionx/test-adapter":
+        specifier: workspace:*
+        version: link:../test-adapter
+      effection:
+        specifier: ^3
+        version: 3.6.1
+
+  context-api:
+    dependencies:
+      effection:
+        specifier: ^3
+        version: 3.6.1
+
+  fx:
+    dependencies:
+      effection:
+        specifier: ^3
+        version: 3.6.1
+
+  signals:
+    dependencies:
+      effection:
+        specifier: ^3
+        version: 3.6.1
+      immutable:
+        specifier: ^5
+        version: 5.1.4
+
+  test-adapter:
+    dependencies:
+      effection:
+        specifier: ^3
+        version: 3.6.1
+
+  timebox:
+    dependencies:
+      effection:
+        specifier: ^3
+        version: 3.6.1
+
+  tinyexec:
+    dependencies:
+      effection:
+        specifier: ^3
+        version: 3.6.1
+      tinyexec:
+        specifier: ^0.3.2
+        version: 0.3.2
+
+packages:
+  effection@3.6.1:
+    resolution: {
+      integrity: sha512-ogsuH/cgxfOOaVUf53pYqhPJth4WhPlva0hGb4Roh6cZhttMoanMqwADkDk9ych28lKuQgntpCszbFRyRFifqg==,
+    }
+    engines: { node: ">= 16" }
+
+  immutable@5.1.4:
+    resolution: {
+      integrity: sha512-p6u1bG3YSnINT5RQmx/yRZBpenIl30kVxkTLDyHLIMk0gict704Q9n+thfDI7lTRm9vXdDYutVzXhzcThxTnXA==,
+    }
+
+  tinyexec@0.3.2:
+    resolution: {
+      integrity: sha512-KQQR9yN7R5+OSwaK0XQoj22pwHoTlgYqmUscPYoknOoWCWfj/5/ABTMRi69FrKU5ffPVh5QcFikpWJI/P1ocHA==,
+    }
+
+snapshots:
+  effection@3.6.1: {}
+
+  immutable@5.1.4: {}
+
+  tinyexec@0.3.2: {}

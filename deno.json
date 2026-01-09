@@ -1,4 +1,5 @@
 {
+  "nodeModulesDir": "none",
   "imports": {
     "effection": "npm:effection@^3",
     "@deno/dnt": "jsr:@deno/dnt@0.42.3",
@@ -7,24 +8,13 @@
     "@std/fs": "jsr:@std/fs@^1"
   },
   "compilerOptions": {
-    "lib": [
-      "deno.ns",
-      "dom.iterable",
-      "dom"
-    ],
+    "lib": ["deno.ns", "dom.iterable", "dom"],
     "jsx": "react-jsx",
     "jsxImportSource": "revolution"
   },
   "lint": {
-    "rules": {
-      "exclude": [
-        "prefer-const",
-        "require-yield"
-      ]
-    },
-    "exclude": [
-      "tasks"
-    ]
+    "rules": { "exclude": ["prefer-const", "require-yield"] },
+    "exclude": ["tasks"]
   },
   "workspace": [
     "./chain",

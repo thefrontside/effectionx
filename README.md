@@ -20,7 +20,9 @@ more than a few times are welcome.
 All packages are tested against both effection v3 and v4 to ensure
 compatibility.
 
-### Generate import maps
+### Deno Testing
+
+#### Generate import maps
 
 ```bash
 # Generate v3 import map
@@ -30,17 +32,69 @@ deno task generate-importmap "^3" v3.importmap.json
 deno task generate-importmap v4 v4.importmap.json
 ```
 
-### Running tests with v3
+#### Running tests with v3
 
 ```bash
 deno test --import-map v3.importmap.json -A
 ```
 
-### Running tests with v4
+#### Running tests with v4
 
 ```bash
 deno test --import-map v4.importmap.json -A
 ```
+
+### Node.js Testing
+
+This repository uses [Volta](https://volta.sh/) to manage Node.js and pnpm
+versions. The versions are pinned in `package.json`.
+
+#### Prerequisites
+
+Install Volta if you haven't already:
+
+```bash
+curl https://get.volta.sh | bash
+```
+
+Volta will automatically install the correct Node.js and pnpm versions when you
+run commands in this repository.
+
+#### Running tests
+
+```bash
+pnpm install
+pnpm test
+```
+
+#### Adding Node.js support to a package
+
+1. Add a `package.json` with conditional exports:
+
+   ```json
+   {
+     "name": "@effectionx/your-package",
+     "type": "module",
+     "exports": {
+       ".": {
+         "deno": "./mod.deno.ts",
+         "node": "./mod.node.ts",
+         "default": "./mod.node.ts"
+       }
+     },
+     "scripts": {
+       "test": "node --experimental-strip-types --test *.test.ts"
+     },
+     "dependencies": {
+       "effection": "^3",
+       "@effectionx/your-dependency": "workspace:*"
+     }
+   }
+   ```
+
+2. Create platform-specific entry points (`mod.deno.ts`, `mod.node.ts`)
+3. Update the `deno.json` exports to point to the Deno-specific entry point
+4. Add the package to `pnpm-workspace.yaml`
 
 ## To publish a new project
 

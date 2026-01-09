@@ -1,0 +1,16 @@
+{
+  "name": "effectionx",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "test": "pnpm -r --if-present test"
+  },
+  "dependencies": {
+    "effection": "^3"
+  },
+  "volta": {
+    "node": "22.12.0",
+    "pnpm": "9.15.9"
+  }
+}

@@ -1,37 +1,61 @@
 import type { Inspector } from "@effectionx/inspector";
-import { createImplementation, readTree, readContextData } from "@effectionx/inspector";
-import { createContext, createSignal, type Stream, useScope } from "effection";
+import {
+  createImplementation,
+  readContextData,
+  readTree,
+} from "@effectionx/inspector";
+import { createContext, createSignal, type Stream } from "effection";
 import { api } from "effection/experimental";
-import { type ContextData, type ContextNode, protocol } from "./protocol.ts";
+import {
+  type ContextData,
+  type ContextNode,
+  protocol,
+  type ScopeEvent,
+  type TaskEvent,
+} from "./protocol.ts";
+import { useScope } from "effection";
 
-export const read: Inspector<typeof protocol.methods> = createImplementation(
+const Id = createContext<number>("@effectionx/inspector.id");
+
+export const scope: Inspector<typeof protocol.methods> = createImplementation(
   protocol,
   function* () {
-    let ids = 0;
     let scope = yield* useScope();
-    let signal = createSignal<ContextData, never>();
-    let id = createContext<number>("@effectionx/inspector.id");
+    let ids = 0;
+    let signal = {
+      scope: createSignal<ScopeEvent, never>(),
+      task: createSignal<TaskEvent, never>(),
+    };
+
+    yield* Id.set(ids++);
 
     yield* api.Scope.decorate({
-      init(args, next) {
-	let contexts = next(...args);
-	contexts[id.name] = ids++;
-	return contexts;
-      },
       set([contexts, context, value], next) {
-        signal.send({
-	  id: contexts[id.name] as string,
-          values: readContextData(contexts),
-        });
+        if (context !== Id) {
+          signal.scope.send({
+            type: "set",
+            context: { name: context.name },
+            value: String(value),
+            data: {
+              id: contexts[Id.name] as string,
+              values: readContextData(contexts),
+            },
+          });
+        }
+
         return next(contexts, context, value);
       },
       delete([contexts, context], next) {
-        signal.send({
-	  id: contexts[id.name] as string,
-          values: readContextData(contexts),
+        signal.scope.send({
+          type: "delete",
+          context: { name: context.name },
+          data: {
+            id: contexts[Id.name] as string,
+            values: readContextData(contexts),
+          },
         });
-	return next(contexts, context);
-      }
+        return next(contexts, context);
+      },
     });
 
     return {
@@ -45,7 +69,8 @@ export const read: Inspector<typeof protocol.methods> = createImplementation(
           },
         };
       },
-      watchContextTree: () => signal,
+      watchContextTree: () => signal.scope,
+      watchTaskTree: () => signal.task,
     };
   },
 );

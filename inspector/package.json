@@ -19,6 +19,7 @@
     "effection": "^4.x.x"
   },
   "dependencies": {
+    "@ark/util": "^0.56.0",
     "@standard-schema/spec": "^1.0.0",
     "arktype": "^2.1.27",
     "zod": "^4.1.13"

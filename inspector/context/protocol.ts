@@ -12,15 +12,23 @@ const $ = scope({
   },
   TaskEvent: () =>
     $.type.or({
-      type: "'Task.started'",
+      type: "'started'",
       id: "string",
       parentId: "string",
-      scope: "ContextData",
     }, {
-      type: "'Task.result'",
+      type: "'result'",
       id: "string",
-      parentId: "string",
-      scope: "ContextData",
+      result: $.type.or({
+	ok: "true",
+	value: "object.json",
+      }, {
+	ok: "false",
+	error: {
+	  name: "string",
+	  message: "string",
+	  stack: "string?",
+	}
+      }),
     }),
   ScopeEvent: () =>
     $.type.or({

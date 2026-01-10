@@ -25,7 +25,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
-    "effection": "https://pkg.pr.new/thefrontside/effection@166d13a"
+    "effection": "https://pkg.pr.new/thefrontside/effection@4dffdff"
   },
   "exports": {
     ".": {

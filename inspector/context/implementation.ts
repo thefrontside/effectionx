@@ -3,8 +3,9 @@ import {
   createImplementation,
   readContextData,
   readTree,
+  toJson,
 } from "@effectionx/inspector";
-import { createContext, createSignal, type Stream } from "effection";
+import { createContext, createSignal, type Stream, useScope } from "effection";
 import { api } from "effection/experimental";
 import {
   type ContextData,
@@ -13,7 +14,6 @@ import {
   type ScopeEvent,
   type TaskEvent,
 } from "./protocol.ts";
-import { useScope } from "effection";
 
 const Id = createContext<number>("@effectionx/inspector.id");
 
@@ -28,6 +28,35 @@ export const scope: Inspector<typeof protocol.methods> = createImplementation(
     };
 
     yield* Id.set(ids++);
+
+    yield* api.Task.decorate({
+      *run(args, next) {
+        let parentId = String((yield* Id.get()) ?? "global");
+        let id = String(yield* Id.set(ids++));
+        signal.task.send({
+          type: "started",
+          id,
+          parentId,
+        });
+
+        try {
+          let value = yield* next(...args);
+          signal.task.send({
+            type: "result",
+            id,
+            result: { ok: true, value: toJson(value) },
+          });
+        } catch (error) {
+          let { name, message, stack } = error as Error;
+          signal.task.send({
+            type: "result",
+            id,
+            result: { ok: false, error: { name, message, stack } },
+          });
+          throw error;
+        }
+      },
+    });
 
     yield* api.Scope.decorate({
       set([contexts, context, value], next) {

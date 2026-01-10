@@ -14,7 +14,7 @@ type EffectionTree<D> = {
 export function readTree<D>(
   scope: Scope,
   readData: Reader<D> = readContextData,
-): EffectionTree<D> {  
+): EffectionTree<D> {
   return readV4Tree(scope as unknown as V4Scope, readData);
 }
 

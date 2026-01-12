@@ -8,6 +8,7 @@
     "arktype": "npm:arktype@^2.1.27",
     "@ark/util": "npm:@ark/util@^0.56.0",
     "effection": "npm:effection@^4",
+    "effection/experimental": "npm:effection@^4/experimental",
     "zod": "npm:zod@^4.1.13",
     "@std/expect": "jsr:@std/expect@^1"
   }

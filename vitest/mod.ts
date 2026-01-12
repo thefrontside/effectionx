@@ -4,15 +4,6 @@ import { createTestAdapter, type TestAdapter } from "@effectionx/test-adapter";
 
 import * as vitest from "vitest";
 
-declare module "vitest" {
-  interface Suite {
-    adapter?: TestAdapter;
-  }
-  interface File {
-    adapter?: TestAdapter;
-  }
-}
-
 function describeWithScope(
   name: string | Function,
   factory?: vitest.SuiteFactory,

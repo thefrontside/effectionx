@@ -7,8 +7,7 @@
     "@standard-schema/spec": "npm:@standard-schema/spec@^1.0.0",
     "arktype": "npm:arktype@^2.1.27",
     "@ark/util": "npm:@ark/util@^0.56.0",
-    "effection": "https://esm.sh/pr/thefrontside/effection/effection@4dffdff",
-    "effection/experimental": "https://esm.sh/pr/thefrontside/effection/effection@4dffdff/experimental",
+    "effection": "npm:effection@^4",
     "zod": "npm:zod@^4.1.13",
     "@std/expect": "jsr:@std/expect@^1"
   }

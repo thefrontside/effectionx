@@ -1,6 +1,7 @@
 # Vitest
 
-Adapter to add an effection scope to the test suite to allow writing a `function* () {}` test function.
+Adapter to add an effection scope to the test suite to allow writing a
+`function* () {}` test function.
 
 ---
 

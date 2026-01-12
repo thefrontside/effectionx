@@ -15,7 +15,7 @@ declare module "vitest" {
 
 function describeWithScope(
   name: string | Function,
-  factory?: vitest.SuiteFactory
+  factory?: vitest.SuiteFactory,
 ): vitest.SuiteCollector {
   return vitest.describe<{ bleep: string }>(name, (...args) => {
     vitest.beforeAll((suite) => {
@@ -37,7 +37,7 @@ function describeWithScope(
 
 describeWithScope.only = function describeWithScope(
   name: string | Function,
-  factory?: vitest.SuiteFactory
+  factory?: vitest.SuiteFactory,
 ): vitest.SuiteCollector {
   return vitest.describe.only(name, (...args) => {
     vitest.beforeAll((suite) => {
@@ -62,20 +62,20 @@ describeWithScope.skipIf = (condition: unknown) =>
 describeWithScope.runIf = (condition: unknown) =>
   condition ? describeWithScope : describeWithScope.skip;
 
-export const describe = <typeof vitest.describe>(<unknown>describeWithScope);
+export const describe = <typeof vitest.describe> (<unknown> describeWithScope);
 
 export function beforeEach(op: () => Operation<void>): void {
   vitest.beforeEach<{ task: { suite: { adapter: TestAdapter } } }>(
     (context) => {
       context.task.suite.adapter.addSetup(op);
-    }
+    },
   );
 }
 
 export function it(
   desc: string,
   op?: () => Operation<void>,
-  timeout?: number
+  timeout?: number,
 ): void {
   if (op) {
     return vitest.it(
@@ -87,7 +87,7 @@ export function it(
         let adapter: TestAdapter = context.task.suite.adapter as TestAdapter;
         return await adapter.runTest(op);
       },
-      timeout
+      timeout,
     );
   } else {
     return vitest.it.todo(desc);
@@ -97,7 +97,7 @@ export function it(
 it.only = function only(
   desc: string,
   op?: () => Operation<void>,
-  timeout?: number
+  timeout?: number,
 ): void {
   if (op) {
     return vitest.it.only(
@@ -109,7 +109,7 @@ it.only = function only(
         let adapter: TestAdapter = context.task.suite.adapter as TestAdapter;
         return await adapter.runTest(op);
       },
-      timeout
+      timeout,
     );
   } else {
     return vitest.it.skip(desc, () => {});
@@ -119,7 +119,7 @@ it.only = function only(
 it.skip = function skip(
   desc: string,
   _op?: () => Operation<void>,
-  _timeout?: number
+  _timeout?: number,
 ): void {
   return vitest.it.skip(desc, () => {});
 };
@@ -137,4 +137,4 @@ export function* captureError<T>(op: Operation<T>): Operation<Error> {
   }
 }
 
-export { expect, assert } from "vitest";
+export { assert, expect } from "vitest";

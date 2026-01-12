@@ -8,7 +8,7 @@ function describeWithScope(
   name: string | Function,
   factory?: vitest.SuiteFactory,
 ): vitest.SuiteCollector {
-  return vitest.describe<{ bleep: string }>(name, (...args) => {
+  return vitest.describe(name, (...args) => {
     vitest.beforeAll((suite) => {
       let parent = (suite.suite as unknown as { adapter?: TestAdapter })
         ?.adapter as TestAdapter | undefined;

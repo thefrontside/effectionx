@@ -1,0 +1,11 @@
+{
+  "name": "@effectionx/star-optimization",
+  "version": "0.0.1",
+  "exports": "./mod.ts",
+  "license": "MIT",
+  "imports": {
+    "effection": "https://esm.sh/pr/thefrontside/effection/effection@3026087",
+    "@effectionx/bdd": "npm:@effectionx/bdd@^0.3.0",
+    "@std/expect": "jsr:@std/expect@^1"
+  }
+}

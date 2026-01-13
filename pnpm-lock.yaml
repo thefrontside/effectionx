@@ -138,6 +138,16 @@ importers:
         specifier: workspace:*
         version: link:../bdd
 
+  inline:
+    dependencies:
+      effection:
+        specifier: ^3 || ^4
+        version: 4.0.0
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+
   jsonl-store:
     dependencies:
       effection:

@@ -10,6 +10,19 @@ const $ = scope({
     data: "ContextData",
     children: "ContextNode[]",
   },
+  Error: {
+    name: "string",
+    message: "string",
+    stack: "string?",
+  },
+  Result: () =>
+    $.type.or({
+      ok: "true",
+      value: "object.json",
+    }, {
+      ok: "false",
+      error: "Error",
+    }),
   TaskEvent: () =>
     $.type.or({
       type: "'started'",
@@ -19,31 +32,11 @@ const $ = scope({
       type: "'result'",
       id: "string",
       result: $.type.or({
-	ok: "true",
-	value: "object.json",
+        exists: "true",
+        value: "Result",
       }, {
-	ok: "false",
-	error: {
-	  name: "string",
-	  message: "string",
-	  stack: "string?",
-	}
+        exists: "false",
       }),
-    }),
-  ScopeEvent: () =>
-    $.type.or({
-      type: "'init'",
-      data: "ContextData",
-      parent: "string | undefined",
-    }, {
-      type: "'set'",
-      context: { name: "string" },
-      value: "object.json",
-      data: "ContextData",
-    }, {
-      type: "'delete'",
-      context: { name: "string" },
-      data: "ContextData",
     }),
   Never: "never",
   None: "never[]",
@@ -55,24 +48,12 @@ export type ContextData = typeof schema.ContextData.infer;
 
 export type ContextNode = typeof schema.ContextNode.infer;
 
-export type ScopeEvent = typeof schema.ScopeEvent.infer;
-
 export type TaskEvent = typeof schema.TaskEvent.infer;
 
 export const protocol = createProtocol({
-  readContextTree: {
-    args: schema.None,
-    progress: schema.None,
-    returns: schema.ContextNode,
-  },
-  watchTaskTree: {
+  watchTasks: {
     args: schema.None,
     progress: schema.TaskEvent,
-    returns: schema.Never,
-  },
-  watchContextTree: {
-    args: schema.None,
-    progress: schema.ScopeEvent,
     returns: schema.Never,
   },
 });

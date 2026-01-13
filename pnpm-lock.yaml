@@ -141,8 +141,8 @@ importers:
         version: 4.3.5
     devDependencies:
       effection:
-        specifier: https://pkg.pr.new/thefrontside/effection@4dffdff
-        version: https://pkg.pr.new/thefrontside/effection@4dffdff
+        specifier: https://pkg.pr.new/thefrontside/effection@dd872a0
+        version: https://pkg.pr.new/thefrontside/effection@dd872a0
 
   jsonl-store:
     dependencies:
@@ -550,8 +550,8 @@ packages:
     resolution: {integrity: sha512-eW2yqhyBdey4k8lkp7hpiev2FSHvJvQqvaIebI3EGikHZvfUWvNy7SmkwOnJa6WcsUtSh7VHUwdjHTbV++8M9w==}
     engines: {node: '>= 16'}
 
-  effection@https://pkg.pr.new/thefrontside/effection@4dffdff:
-    resolution: {tarball: https://pkg.pr.new/thefrontside/effection@4dffdff}
+  effection@https://pkg.pr.new/thefrontside/effection@dd872a0:
+    resolution: {tarball: https://pkg.pr.new/thefrontside/effection@dd872a0}
     version: 4.0.0-pr
     engines: {node: '>= 16'}
 
@@ -925,7 +925,7 @@ snapshots:
 
   effection@4.0.0: {}
 
-  effection@https://pkg.pr.new/thefrontside/effection@4dffdff: {}
+  effection@https://pkg.pr.new/thefrontside/effection@dd872a0: {}
 
   escape-string-regexp@2.0.0: {}
 

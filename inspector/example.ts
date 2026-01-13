@@ -1,36 +1,35 @@
-import { each, main, spawn, suspend, type Stream, type Subscription } from "effection";
+import {
+  each,
+  global,
+  main,
+  spawn,
+  type Stream,
+  type Subscription,
+} from "effection";
 
-import * as inspectors from "./context/mod.ts";
-import { scoped, sleep } from "effection";
+import * as inspectors from "./task/mod.ts";
+import { sleep } from "effection";
+
+await global.run(() =>
+  global.eval(function* () {
+    const inspector = yield* inspectors.scope.attach();
+
+    let taskOps = createStreamableSubscription(
+      yield* inspector.methods.watchTasks(),
+    );
+
+    yield* spawn(function* () {
+      for (let event of yield* each(taskOps)) {
+        console.log(event);
+        yield* each.next();
+      }
+    });
+  })
+);
 
 await main(function* () {
-  const inspector = yield* inspectors.scope.attach();
-
-  let scopeOps = createStreamableSubscription(
-    yield* inspector.methods.watchContextTree(),
-  );
-
-  let taskOps = createStreamableSubscription(
-    yield* inspector.methods.watchTaskTree(),
-  );
-
-  yield* spawn(function* () {
-    for (let event of yield* each(scopeOps)) {
-      console.log(event);
-      yield* each.next();
-    }
-  });
-
-  yield* spawn(function* () {
-    for (let event of yield* each(taskOps)) {
-      console.log(event);
-      yield* each.next();
-    }
-  });
-
-
   for (let i = 1; i <= 10; i++) {
-    yield* spawn(function*() {
+    yield* spawn(function* () {
       yield* sleep(1);
       return i + " is done";
     });

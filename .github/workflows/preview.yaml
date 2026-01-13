@@ -19,6 +19,10 @@ jobs:
         with:
           node-version: 22
 
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
       - run: pnpm install --frozen-lockfile
 
       - name: Get changed packages

@@ -46,3 +46,6 @@ dist/
 # Plans directory (working documents)
 .opencode/plans/
 
+# Rust compilation artifacts for SWC build
+/.swc/
+

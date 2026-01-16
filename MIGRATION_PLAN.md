@@ -37,7 +37,7 @@ Add devDependencies, scripts, and pnpm peer dependency rules:
   "scripts": {
     "build": "tsc --build",
     "typecheck": "tsc -p tsconfig.check.json",
-    "test": "node --conditions=development --experimental-strip-types --test './**/*.test.ts'",
+    "test": "node --conditions=development --experimental-strip-types --test \"**/*.test.ts\"",
     "lint": "biome lint .",
     "format": "biome format . --write",
     "format:check": "biome format .",
@@ -167,6 +167,8 @@ Create `tsconfig.test.json` at the repository root. This file defines which file
 }
 ```
 
+> **Note:** Biome is configured to include JSON files by default, so do not add `**/*.json` to the ignore list.
+
 ### 1.6 Update `pnpm-workspace.yaml`
 
 Add all 17 packages:
@@ -277,17 +279,19 @@ The `sync-tsrefs.ts` script has three subcommand modes:
 | Command | Description |
 |---------|-------------|
 | `pnpm sync:tsrefs` | Updates tsconfig `references` only (default) |
-| `pnpm sync:tsrefs:fix` | Updates references AND adds missing workspace deps to package.json |
+| `pnpm sync:tsrefs:fix` | Updates references and adds missing workspace deps to package.json |
 | `pnpm check:tsrefs` | Fails if references or deps are out of date (for CI) |
 
 The script:
 - Scans all TypeScript files (including nested directories) for workspace package imports
 - Determines if a file is a test file by checking if it matches the `include` patterns in `tsconfig.test.json` (and is not excluded by `exclude` patterns). The script looks for the nearest `tsconfig.test.json` walking up from the file, falling back to the root `tsconfig.test.json`
 - Classifies imports based on file type:
-  - **Test-only imports** (only used in test files) → added to `devDependencies` with `"workspace:*"`
-  - **Runtime imports** (used in non-test files) → added to `dependencies` with `"workspace:*"` (or left in `peerDependencies` if already declared there)
+  - **Test-only imports** (only used in test files) → added to `devDependencies` with "workspace:*"
+  - **Runtime imports** (used in non-test files) → added to `dependencies` with "workspace:*" (or left in `peerDependencies` if already declared there)
 - Generates the correct `references` array in each package's `tsconfig.json` for `tsc --build`
 - Skips packages without a `tsconfig.json` (warns but continues)
+- Uses the root `tsconfig.test.json` when no nearer test config exists
+
 
 > **Important:** 
 > - Each package's `tsconfig.json` must be created before running `sync:tsrefs`
@@ -379,7 +383,7 @@ Replace `jsr:` and `npm:` specifiers in documentation examples with standard npm
 
 | Script | Notes |
 |--------|-------|
-| `publish-matrix.ts` | Replace Deno APIs |
+| `publish-matrix.ts` | Replace Deno APIs, change `../tinyexec/mod.ts` → `@effectionx/tinyexec` |
 | `gather-tags.ts` | Replace Deno APIs |
 | `preview-matrix.ts` | Replace Deno APIs |
 | `publish-complete.ts` | Replace Deno APIs |
@@ -387,6 +391,8 @@ Replace `jsr:` and `npm:` specifiers in documentation examples with standard npm
 | `check-version-mismatches.ts` | Replace Deno APIs |
 | `update-effection-version.ts` | Replace Deno APIs |
 | `lib/read-packages.ts` | Replace Deno APIs |
+
+> **Note:** Task scripts currently use relative imports to workspace packages (e.g., `../tinyexec/mod.ts`). These should be changed to use package names (e.g., `@effectionx/tinyexec`) for consistency with standard Node module resolution. This requires Phase 2 to be complete first so workspace links exist.
 
 ### 5.3 Scripts to remove
 

@@ -120,9 +120,11 @@ For type checking everything including tests:
 }
 ```
 
-### 1.4 Create `tsconfig.test.json`
+### 1.4 Create root `tsconfig.test.json`
 
-Defines which files are considered test files. The `sync-tsrefs.ts` script uses this to distinguish test-only imports from runtime imports:
+Create `tsconfig.test.json` at the repository root. This file defines which files are considered test files. The `sync-tsrefs.ts` script uses this as the default fallback to distinguish test-only imports from runtime imports.
+
+**Location:** `/tsconfig.test.json` (repository root)
 
 ```json
 {
@@ -130,6 +132,8 @@ Defines which files are considered test files. The `sync-tsrefs.ts` script uses 
   "exclude": ["**/dist", "**/node_modules"]
 }
 ```
+
+> **Required:** This root `tsconfig.test.json` is required for `sync-tsrefs.ts` to correctly classify imports. Without it, all imports are treated as runtime dependencies.
 
 ### 1.5 Create `biome.json`
 
@@ -262,29 +266,33 @@ Delete after migrating configuration to package.json and tsconfig.json.
 
 ### 2.4 Sync tsconfig references and dependencies
 
-After creating all package tsconfig.json files, run:
+After creating all package `tsconfig.json` and `package.json` files, run:
 
 ```bash
 pnpm sync:tsrefs:fix
 ```
 
-The `sync-tsrefs.ts` script has three modes:
+The `sync-tsrefs.ts` script has three subcommand modes:
 
 | Command | Description |
 |---------|-------------|
-| `pnpm sync:tsrefs` | Updates tsconfig `references` only |
+| `pnpm sync:tsrefs` | Updates tsconfig `references` only (default) |
 | `pnpm sync:tsrefs:fix` | Updates references AND adds missing workspace deps to package.json |
 | `pnpm check:tsrefs` | Fails if references or deps are out of date (for CI) |
 
 The script:
-- Scans all TypeScript files for workspace package imports
-- Uses root `tsconfig.test.json` (or nearest one) to determine if a file is a test file
-- Test-only imports → added to `devDependencies`
-- Runtime imports → added to `dependencies` (or left in `peerDependencies` if already there)
-- Generates the correct `references` array for `tsc --build`
+- Scans all TypeScript files (including nested directories) for workspace package imports
+- Uses root `tsconfig.test.json` as the default to determine if a file is a test file
+- Classifies imports based on file type:
+  - **Test-only imports** (only used in test files) → added to `devDependencies` with `"workspace:*"`
+  - **Runtime imports** (used in non-test files) → added to `dependencies` with `"workspace:*"` (or left in `peerDependencies` if already declared there)
+- Generates the correct `references` array in each package's `tsconfig.json` for `tsc --build`
 - Skips packages without a `tsconfig.json` (warns but continues)
 
-> **Important:** Each package's `tsconfig.json` must be created before running `sync:tsrefs`. The script will skip packages without a tsconfig and warn.
+> **Important:** 
+> - Each package's `tsconfig.json` must be created before running `sync:tsrefs`
+> - The root `tsconfig.test.json` must exist for correct test file classification
+> - Run `pnpm sync:tsrefs:fix` to auto-update both references and package.json dependencies
 
 ## Phase 3: Test Infrastructure
 

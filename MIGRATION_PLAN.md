@@ -42,7 +42,8 @@ Add devDependencies, scripts, and pnpm peer dependency rules:
     "format": "biome format . --write",
     "format:check": "biome format .",
     "sync:tsrefs": "node --experimental-strip-types tasks/sync-tsrefs.ts",
-    "check:tsrefs": "node --experimental-strip-types tasks/sync-tsrefs.ts --check"
+    "sync:tsrefs:fix": "node --experimental-strip-types tasks/sync-tsrefs.ts fix",
+    "check:tsrefs": "node --experimental-strip-types tasks/sync-tsrefs.ts check"
   },
   "devDependencies": {
     "@biomejs/biome": "^1",
@@ -119,7 +120,18 @@ For type checking everything including tests:
 }
 ```
 
-### 1.4 Create `biome.json`
+### 1.4 Create `tsconfig.test.json`
+
+Defines which files are considered test files. The `sync-tsrefs.ts` script uses this to distinguish test-only imports from runtime imports:
+
+```json
+{
+  "include": ["**/*.test.ts", "**/test/**/*.ts"],
+  "exclude": ["**/dist", "**/node_modules"]
+}
+```
+
+### 1.5 Create `biome.json`
 
 ```json
 {
@@ -151,7 +163,7 @@ For type checking everything including tests:
 }
 ```
 
-### 1.5 Update `pnpm-workspace.yaml`
+### 1.6 Update `pnpm-workspace.yaml`
 
 Add all 17 packages:
 
@@ -176,7 +188,9 @@ packages:
   - "worker"
 ```
 
-### 1.6 Update `.gitignore`
+> **Note:** The `pnpm-workspace.yaml` must use explicit package paths, not globs (e.g., `packages/*`). The `sync-tsrefs.ts` script requires explicit entries and will error if globs are used.
+
+### 1.7 Update `.gitignore`
 
 Add:
 
@@ -234,8 +248,8 @@ Note: Packages with multiple exports (check each `deno.json`) need all exports m
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["*.ts"],
-  "exclude": ["*.test.ts", "dist"],
+  "include": ["**/*.ts"],
+  "exclude": ["**/*.test.ts", "dist"],
   "references": []
 }
 ```
@@ -246,15 +260,28 @@ Start with empty `references: []`. These will be auto-populated in step 2.4.
 
 Delete after migrating configuration to package.json and tsconfig.json.
 
-### 2.4 Sync tsconfig references
+### 2.4 Sync tsconfig references and dependencies
 
 After creating all package tsconfig.json files, run:
 
 ```bash
-pnpm sync:tsrefs
+pnpm sync:tsrefs:fix
 ```
 
-This automatically populates the `references` array in each package's tsconfig.json based on actual imports found in the source code. The script (`tasks/sync-tsrefs.ts`) scans all TypeScript files for workspace package imports and generates the correct dependency graph.
+The `sync-tsrefs.ts` script has three modes:
+
+| Command | Description |
+|---------|-------------|
+| `pnpm sync:tsrefs` | Updates tsconfig `references` only |
+| `pnpm sync:tsrefs:fix` | Updates references AND adds missing workspace deps to package.json |
+| `pnpm check:tsrefs` | Fails if references or deps are out of date (for CI) |
+
+The script:
+- Scans all TypeScript files for workspace package imports
+- Uses `tsconfig.test.json` to determine if a file is a test file
+- Test-only imports → added to `devDependencies`
+- Runtime imports → added to `dependencies` (or left in `peerDependencies` if already there)
+- Generates the correct `references` array for `tsc --build`
 
 ## Phase 3: Test Infrastructure
 
@@ -356,7 +383,7 @@ Replace `jsr:` and `npm:` specifiers in documentation examples with standard npm
 
 ### 5.4 New scripts
 
-- `sync-tsrefs.ts` - Already created, syncs tsconfig project references
+- `sync-tsrefs.ts` - Already created, syncs tsconfig project references and package dependencies
 
 ## Phase 6: CI Workflow Migration
 
@@ -459,7 +486,7 @@ pnpm typecheck
 ### After Phase 2:
 ```bash
 pnpm ls -r
-pnpm sync:tsrefs
+pnpm sync:tsrefs:fix
 tsc --build
 ```
 

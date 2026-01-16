@@ -7,7 +7,7 @@ import {
   withResolvers,
 } from "effection";
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { createBooleanSignal } from "./boolean.ts";
 
 describe("boolean", () => {

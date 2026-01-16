@@ -1,6 +1,6 @@
 import { describe, it } from "@effectionx/bdd";
 import { createArraySignal, is } from "@effectionx/signals";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { createChannel, sleep, spawn } from "effection";
 
 import { batch } from "./batch.ts";

@@ -1,5 +1,5 @@
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { timebox } from "./mod.ts";
 import { type Operation, sleep, suspend } from "effection";
 

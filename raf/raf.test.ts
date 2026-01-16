@@ -3,7 +3,7 @@ import {
   caf as cancelAnimationFrame,
   raf as requestAnimationFrame,
 } from "@essentials/raf";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { each, sleep, spawn } from "effection";
 
 import { raf } from "./raf.ts";

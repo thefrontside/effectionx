@@ -5,7 +5,7 @@ import {
   type Subscription,
 } from "effection";
 import { beforeEach, describe, it } from "@effectionx/bdd";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 
 import { createSubject } from "./subject.ts";
 

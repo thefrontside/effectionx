@@ -1,5 +1,5 @@
 import { spawn, type Task } from "effection";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { beforeEach, describe, it } from "@effectionx/bdd";
 import process from "node:process";
 

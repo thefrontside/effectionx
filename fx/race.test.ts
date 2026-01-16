@@ -1,5 +1,5 @@
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { sleep } from "effection";
 
 import { raceMap } from "./race.ts";

@@ -1,11 +1,11 @@
 import { beforeEach, describe, it } from "@effectionx/bdd";
 import { timebox } from "@effectionx/timebox";
-import { assert } from "@std/assert";
-import { expect } from "@std/expect";
-import { emptyDir, exists } from "@std/fs";
-import { fromFileUrl, join } from "@std/path";
+import assert from "node:assert";
+import { expect } from "expect";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { scoped, sleep, spawn, suspend, until } from "effection";
-import { readFile } from "node:fs/promises";
+import { access, mkdir, readFile, rm } from "node:fs/promises";
 
 import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
 import { useWorker } from "./worker.ts";
@@ -65,8 +65,8 @@ describe("worker", () => {
     let url: string;
 
     beforeEach(function* () {
-      let dir = fromFileUrl(import.meta.resolve("./test-tmp"));
-      yield* until(emptyDir(dir));
+      let dir = fileURLToPath(import.meta.resolve("./test-tmp"));
+      yield* until(rm(dir, { recursive: true, force: true }).then(() => mkdir(dir, { recursive: true })));
       startFile = join(dir, "started.txt");
       endFile = join(dir, "ended.txt");
       url = import.meta.resolve("./test-assets/shutdown-worker.ts");
@@ -88,7 +88,7 @@ describe("worker", () => {
       let started = yield* timebox(10_000, function* () {
         while (true) {
           yield* sleep(1);
-          if (yield* until(exists(startFile))) {
+          if (yield* until(access(startFile).then(() => true, () => false))) {
             break;
           }
         }
@@ -97,7 +97,7 @@ describe("worker", () => {
       assert(!started.timeout, "worker did not start after 10s");
       yield* task.halt();
 
-      expect(yield* until(exists(endFile))).toEqual(true);
+      expect(yield* until(access(endFile).then(() => true, () => false))).toEqual(true);
       expect(yield* until(readFile(endFile, "utf-8"))).toEqual(
         "goodbye cruel world!",
       );

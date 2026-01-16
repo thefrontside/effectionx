@@ -1,4 +1,4 @@
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { type Operation, scoped } from "effection";
 import { describe, it } from "@effectionx/bdd";
 import { createApi } from "@effectionx/context-api";

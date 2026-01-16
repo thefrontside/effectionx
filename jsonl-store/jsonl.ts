@@ -1,7 +1,6 @@
-import { JsonParseStream } from "@std/json";
-import { TextLineStream } from "@std/streams";
-import { emptyDir, exists, walk } from "@std/fs";
-import { dirname, fromFileUrl, globToRegExp, join, toFileUrl } from "@std/path";
+import { JsonParseStream, TextLineStream } from "./stream-helpers.ts";
+import { emptyDir, exists, fromFileUrl, globToRegExp, toFileUrl, walk } from "./fs-helpers.ts";
+import { dirname, join } from "node:path";
 
 import {
   call,
@@ -30,7 +29,10 @@ function* mkdir(
 }
 
 export class JSONLStore implements Store {
-  constructor(public location: URL) {}
+  location: URL;
+  constructor(location: URL) {
+    this.location = location;
+  }
 
   /**
    * Creates a store with a location that has a trailing slash.

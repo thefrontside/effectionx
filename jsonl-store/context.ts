@@ -1,5 +1,5 @@
 import { type Context, createContext, type Operation } from "effection";
-import { join } from "@std/path";
+import { join } from "node:path";
 import process from "node:process";
 import type { Store } from "./types.ts";
 import { JSONLStore } from "./jsonl.ts";

@@ -1,5 +1,5 @@
-import { expect } from "@std/expect";
-import { dirname, join } from "@std/path";
+import { expect } from "expect";
+import { dirname, join } from "node:path";
 import { beforeEach, describe, it } from "@effectionx/bdd";
 import { each, until } from "effection";
 import * as fsp from "node:fs/promises";

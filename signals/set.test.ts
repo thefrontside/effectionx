@@ -1,5 +1,5 @@
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { each, spawn } from "effection";
 import { createSetSignal } from "./set.ts";
 import { Set } from "immutable";

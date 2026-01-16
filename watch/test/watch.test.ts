@@ -1,5 +1,5 @@
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { createArraySignal, is } from "@effectionx/signals";
 import { forEach } from "@effectionx/stream-helpers";
 

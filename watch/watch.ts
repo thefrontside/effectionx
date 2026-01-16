@@ -1,5 +1,5 @@
-import { exists } from "@std/fs";
-import { join, relative } from "@std/path";
+import { access } from "node:fs/promises";
+import { join, relative } from "node:path";
 import chokidar, { type EmitArgsWithName } from "chokidar";
 import {
   call,
@@ -172,7 +172,7 @@ export function watch(options: WatchOptions): Stream<Start, never> {
  */
 function* findIgnores(path: string): Operation<(path: string) => boolean> {
   let gitignore = join(path, ".gitignore");
-  if (yield* call(() => exists(gitignore))) {
+  if (yield* call(() => access(gitignore).then(() => true, () => false))) {
     let ignores = createIgnore();
     let buffer = yield* call(() => readFile(gitignore));
     ignores.add(buffer.toString());

@@ -3,7 +3,7 @@ import { watch } from "./watch.ts";
 import { parser } from "zod-opts";
 import { z } from "zod";
 import process from "node:process";
-import denoJson from "./deno.json" with { type: "json" };
+import packageJson from "./package.json" with { type: "json" };
 
 const builtins = ["-h", "--help", "-V", "--version"];
 
@@ -20,7 +20,7 @@ main(function* (argv) {
         type: z.array(z.string()).optional(),
       },
     ])
-    .version(denoJson.version)
+    .version(packageJson.version)
     .parse(args);
 
   if (rest.length === 0) {

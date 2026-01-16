@@ -10,7 +10,7 @@ This document outlines the plan to migrate the effectionx monorepo from Deno to 
 |--------|----------|
 | Runtime | Node.js with `--experimental-strip-types` |
 | Build | `tsc --build` with incremental + project references |
-| Lint/Format | Biome |
+| Lint/Format | Biome (including JSON files) |
 | Assertions | `@std/expect` (npm) |
 | Publishing | NPM only (drop JSR) |
 | Exports | Conditional: `development` → source, `default` → dist |
@@ -18,12 +18,15 @@ This document outlines the plan to migrate the effectionx monorepo from Deno to 
 | Test files | Excluded from build, included in type check |
 | `dist/` | Gitignored |
 | deno-deploy | Keep but deprecate |
+| Engines | `>= 22` (required for `--experimental-strip-types`) |
+| Peer deps | Strict enforcement via pnpm config |
+| Legacy compat | Add `main`/`types` fields alongside `exports` |
 
 ## Phase 1: Root Configuration
 
 ### 1.1 Update `package.json`
 
-Add devDependencies and scripts:
+Add devDependencies, scripts, and pnpm peer dependency rules:
 
 ```json
 {
@@ -34,16 +37,24 @@ Add devDependencies and scripts:
   "scripts": {
     "build": "tsc --build",
     "typecheck": "tsc -p tsconfig.check.json",
-    "test": "node --conditions=development --experimental-strip-types --test '**/*.test.ts'",
+    "test": "node --conditions=development --experimental-strip-types --test '**/!(node_modules|dist)/*.test.ts'",
     "lint": "biome lint .",
     "format": "biome format . --write",
-    "format:check": "biome format ."
+    "format:check": "biome format .",
+    "sync:tsrefs": "node --experimental-strip-types tasks/sync-tsrefs.ts",
+    "check:tsrefs": "node --experimental-strip-types tasks/sync-tsrefs.ts --check"
   },
   "devDependencies": {
     "@biomejs/biome": "^1",
     "@std/expect": "^1",
     "effection": "^3",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "ignoreMissing": [],
+      "allowAny": []
+    }
   },
   "volta": {
     "node": "22.12.0",
@@ -135,7 +146,7 @@ For type checking everything including tests:
     "indentWidth": 2
   },
   "files": {
-    "ignore": ["**/dist", "**/node_modules", "**/*.json"]
+    "ignore": ["**/dist", "**/node_modules"]
   }
 }
 ```
@@ -185,13 +196,14 @@ For each package, create/update:
   "name": "@effectionx/<name>",
   "version": "<from deno.json>",
   "type": "module",
+  "main": "./dist/mod.js",
+  "types": "./dist/mod.d.ts",
   "exports": {
     ".": {
       "development": "./mod.ts",
       "default": "./dist/mod.js"
     }
   },
-  "types": "./dist/mod.d.ts",
   "peerDependencies": {
     "effection": "^3 || ^4.0.0-0"
   },
@@ -205,7 +217,7 @@ For each package, create/update:
     "url": "https://github.com/thefrontside/effectionx/issues"
   },
   "engines": {
-    "node": ">= 16"
+    "node": ">= 22"
   },
   "sideEffects": false
 }
@@ -228,11 +240,21 @@ Note: Packages with multiple exports (check each `deno.json`) need all exports m
 }
 ```
 
-Add references for packages that depend on other workspace packages.
+Start with empty `references: []`. These will be auto-populated in step 2.4.
 
 ### 2.3 Remove `deno.json`
 
 Delete after migrating configuration to package.json and tsconfig.json.
+
+### 2.4 Sync tsconfig references
+
+After creating all package tsconfig.json files, run:
+
+```bash
+pnpm sync:tsrefs
+```
+
+This automatically populates the `references` array in each package's tsconfig.json based on actual imports found in the source code. The script (`tasks/sync-tsrefs.ts`) scans all TypeScript files for workspace package imports and generates the correct dependency graph.
 
 ## Phase 3: Test Infrastructure
 
@@ -267,15 +289,37 @@ Replace `FakeTime` with alternative (e.g., `@sinonjs/fake-timers` or custom).
 
 | Package | Imports to replace |
 |---------|-------------------|
-| `watch` | `@std/fs` → `node:fs`, `@std/path` → `node:path` |
-| `worker` | `@std/assert` → `node:assert`, `@std/fs` → `node:fs`, `@std/path` → `node:path` |
-| `jsonl-store` | `@std/json` → native, `@std/streams` → `node:stream`, `@std/fs` → `node:fs`, `@std/path` → `node:path` |
+| `watch` | `@std/fs` → custom helpers + `node:fs`, `@std/path` → `node:path` |
+| `worker` | `@std/assert` → `node:assert`, `@std/fs` → custom helpers + `node:fs`, `@std/path` → `node:path`, `fromFileUrl` → `node:url` |
+| `jsonl-store` | `@std/json` → native, `@std/streams` → `node:stream`, `@std/fs` → custom helpers + `node:fs`, `@std/path` → `node:path`, `fromFileUrl`/`toFileUrl` → `node:url` |
 
 ### 4.2 Test helper files
 
 Also update test helpers in:
 - `watch/test/helpers.ts`
 - `worker/worker.test.ts`
+
+### 4.3 Create effection-based fs helpers
+
+Create helper functions to replace `@std/fs` utilities that don't have direct Node.js equivalents:
+
+- `ensureDir` - create directory recursively if not exists
+- `exists` - check if path exists  
+- `emptyDir` - remove all contents of a directory
+- `walk` - recursively iterate directory entries
+
+These should be effection Operations where appropriate.
+
+### 4.4 Update JSDoc examples
+
+File: `jsonl-store/jsonl.ts`
+
+Replace `jsr:` and `npm:` specifiers in documentation examples with standard npm package names:
+
+| Before | After |
+|--------|-------|
+| `jsr:@effectionx/jsonl-store` | `@effectionx/jsonl-store` |
+| `npm:effection@^3` | `effection` |
 
 ## Phase 5: Task Scripts Rewrite
 
@@ -309,6 +353,10 @@ Also update test helpers in:
 ### 5.3 Scripts to remove
 
 - `generate-importmap.ts` - No longer needed
+
+### 5.4 New scripts
+
+- `sync-tsrefs.ts` - Already created, syncs tsconfig project references
 
 ## Phase 6: CI Workflow Migration
 
@@ -349,6 +397,9 @@ jobs:
 
       - name: install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: check tsconfig references
+        run: pnpm check:tsrefs
 
       - name: lint
         run: pnpm lint
@@ -408,6 +459,7 @@ pnpm typecheck
 ### After Phase 2:
 ```bash
 pnpm ls -r
+pnpm sync:tsrefs
 tsc --build
 ```
 
@@ -419,6 +471,7 @@ pnpm test
 
 ### Final:
 - [ ] `pnpm install` succeeds
+- [ ] `pnpm check:tsrefs` passes
 - [ ] `pnpm lint` passes
 - [ ] `pnpm format:check` passes
 - [ ] `pnpm typecheck` passes

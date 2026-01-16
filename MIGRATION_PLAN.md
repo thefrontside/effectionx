@@ -282,7 +282,7 @@ The `sync-tsrefs.ts` script has three subcommand modes:
 
 The script:
 - Scans all TypeScript files (including nested directories) for workspace package imports
-- Uses root `tsconfig.test.json` as the default to determine if a file is a test file
+- Determines if a file is a test file by checking if it matches the `include` patterns in `tsconfig.test.json` (and is not excluded by `exclude` patterns). The script looks for the nearest `tsconfig.test.json` walking up from the file, falling back to the root `tsconfig.test.json`
 - Classifies imports based on file type:
   - **Test-only imports** (only used in test files) → added to `devDependencies` with `"workspace:*"`
   - **Runtime imports** (used in non-test files) → added to `dependencies` with `"workspace:*"` (or left in `peerDependencies` if already declared there)
@@ -395,6 +395,11 @@ Replace `jsr:` and `npm:` specifiers in documentation examples with standard npm
 ### 5.4 New scripts
 
 - `sync-tsrefs.ts` - Already created, syncs tsconfig project references and package dependencies
+  - Subcommands: `update` (default), `fix`, `check`
+  - `fix` mode also updates `package.json` dependencies based on import usage
+  - `check` mode fails CI if references or deps are out of date
+
+> **Note:** All task scripts use `node --experimental-strip-types` for consistency. The scripts are plain TypeScript without TS-only syntax (no enums, namespaces, etc.), so they work with Node's type stripping. This avoids needing a separate build step or additional runtime like tsx.
 
 ## Phase 6: CI Workflow Migration
 

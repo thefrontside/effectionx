@@ -1,4 +1,4 @@
-import { assert } from "@std/assert";
+import assert from "node:assert";
 import {
   Err,
   Ok,
@@ -10,6 +10,7 @@ import {
   spawn,
   withResolvers,
 } from "effection";
+import Worker from "web-worker";
 
 import { useMessageChannel } from "./message-channel.ts";
 

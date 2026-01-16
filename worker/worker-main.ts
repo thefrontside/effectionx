@@ -1,3 +1,4 @@
+import { on, type EventSourceLike } from "@effectionx/event-emitter";
 import type { ValueSignal } from "@effectionx/signals";
 import {
   createSignal,
@@ -5,7 +6,6 @@ import {
   Err,
   main,
   Ok,
-  on,
   type Operation,
   resource,
   spawn,
@@ -72,7 +72,7 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
     let worker = yield* createWorkerStatesSignal();
 
     yield* spawn(function* () {
-      for (const message of yield* each(on(self, "message"))) {
+      for (const [message] of yield* each(on<[MessageEvent]>(self as unknown as EventSourceLike, "message"))) {
         const control: WorkerControl<TSend, TData> = message.data;
         switch (control.type) {
           case "init": {

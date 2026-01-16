@@ -1,0 +1,32 @@
+{
+  "name": "@effectionx/event-emitter",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/mod.js",
+  "types": "./dist/mod.d.ts",
+  "exports": {
+    ".": {
+      "development": "./mod.ts",
+      "default": "./dist/mod.js"
+    }
+  },
+  "peerDependencies": {
+    "effection": "^3 || ^4.0.0-0"
+  },
+  "license": "MIT",
+  "author": "engineering@frontside.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thefrontside/effectionx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thefrontside/effectionx/issues"
+  },
+  "engines": {
+    "node": ">= 22"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@effectionx/event-emitter": "workspace:*"
+  }
+}

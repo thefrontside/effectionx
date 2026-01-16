@@ -1,5 +1,5 @@
 {
-  "name": "@effectionx/bdd",
+  "name": "@effectionx/jsonl-store",
   "version": "0.3.1",
   "type": "module",
   "main": "./dist/mod.js",
@@ -12,9 +12,6 @@
   },
   "peerDependencies": {
     "effection": "^3 || ^4.0.0-0"
-  },
-  "dependencies": {
-    "@effectionx/test-adapter": "workspace:*"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",

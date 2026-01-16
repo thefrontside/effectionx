@@ -1,5 +1,5 @@
 {
-  "name": "@effectionx/bdd",
+  "name": "@effectionx/deno-deploy",
   "version": "0.3.1",
   "type": "module",
   "main": "./dist/mod.js",
@@ -12,9 +12,6 @@
   },
   "peerDependencies": {
     "effection": "^3 || ^4.0.0-0"
-  },
-  "dependencies": {
-    "@effectionx/test-adapter": "workspace:*"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",
@@ -29,7 +26,8 @@
     "node": ">= 22"
   },
   "sideEffects": false,
-  "devDependencies": {
-    "@effectionx/bdd": "workspace:*"
+  "deprecated": "This package is deprecated and only works with Deno runtime.",
+  "dependencies": {
+    "@effectionx/deno-deploy": "workspace:*"
   }
 }

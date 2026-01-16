@@ -3,6 +3,7 @@ packages:
   - "chain"
   - "context-api"
   - "deno-deploy"
+  - "event-emitter"
   - "fx"
   - "jsonl-store"
   - "process"

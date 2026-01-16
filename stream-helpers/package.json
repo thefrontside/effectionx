@@ -1,6 +1,6 @@
 {
-  "name": "@effectionx/bdd",
-  "version": "0.3.1",
+  "name": "@effectionx/stream-helpers",
+  "version": "0.5.1",
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
@@ -8,13 +8,21 @@
     ".": {
       "development": "./mod.ts",
       "default": "./dist/mod.js"
+    },
+    "./test-helpers": {
+      "development": "./test-helpers.ts",
+      "default": "./dist/test-helpers.js"
     }
   },
   "peerDependencies": {
     "effection": "^3 || ^4.0.0-0"
   },
   "dependencies": {
-    "@effectionx/test-adapter": "workspace:*"
+    "immutable": "^5",
+    "remeda": "^2",
+    "@effectionx/signals": "workspace:*",
+    "@effectionx/timebox": "workspace:*",
+    "@effectionx/stream-helpers": "workspace:*"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",

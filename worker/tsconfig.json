@@ -1,0 +1,29 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "test-assets/**",
+    "dist"
+  ],
+  "references": [
+    {
+      "path": "../bdd"
+    },
+    {
+      "path": "../event-emitter"
+    },
+    {
+      "path": "../signals"
+    },
+    {
+      "path": "../timebox"
+    }
+  ]
+}

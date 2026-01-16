@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc --build",
     "typecheck": "tsc -p tsconfig.check.json",
-    "test": "node --conditions=development --experimental-strip-types --test \"**/*.test.ts\"",
+    "test": "node --env-file=.env --conditions=development --experimental-strip-types --test \"**/*.test.ts\"",
     "lint": "biome lint .",
     "format": "biome format . --write",
     "format:check": "biome format .",
@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1",
+    "@types/node": "^22",
     "effection": "^3",
     "expect": "^29",
     "typescript": "^5"

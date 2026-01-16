@@ -8,13 +8,15 @@
     "moduleResolution": "NodeNext",
     "target": "ES2022",
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "rewriteRelativeImportExtensions": true
   },
+  "files": [],
   "references": [
     { "path": "bdd" },
     { "path": "chain" },
     { "path": "context-api" },
-    { "path": "deno-deploy" },
+    { "path": "event-emitter" },
     { "path": "fx" },
     { "path": "jsonl-store" },
     { "path": "process" },

@@ -11,6 +11,9 @@ importers:
       '@biomejs/biome':
         specifier: ^1
         version: 1.9.4
+      '@types/node':
+        specifier: ^22
+        version: 22.19.7
       effection:
         specifier: ^3
         version: 3.6.1
@@ -27,50 +30,262 @@ importers:
         specifier: workspace:*
         version: link:../test-adapter
       effection:
-        specifier: ^3
+        specifier: ^3 || ^4.0.0-0
         version: 3.6.1
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: 'link:'
+
+  chain:
+    dependencies:
+      effection:
+        specifier: ^3 || ^4.0.0-0
+        version: 3.6.1
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
 
   context-api:
     dependencies:
       effection:
-        specifier: ^3
+        specifier: ^3 || ^4.0.0-0
+        version: 3.6.1
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+      '@effectionx/context-api':
+        specifier: workspace:*
+        version: 'link:'
+
+  deno-deploy:
+    dependencies:
+      '@effectionx/deno-deploy':
+        specifier: workspace:*
+        version: 'link:'
+      effection:
+        specifier: ^3 || ^4.0.0-0
+        version: 3.6.1
+
+  event-emitter:
+    dependencies:
+      effection:
+        specifier: ^3 || ^4.0.0-0
         version: 3.6.1
 
   fx:
     dependencies:
       effection:
-        specifier: ^3
+        specifier: ^3 || ^4.0.0-0
         version: 3.6.1
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+
+  jsonl-store:
+    dependencies:
+      effection:
+        specifier: ^3 || ^4.0.0-0
+        version: 3.6.1
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+
+  process:
+    dependencies:
+      '@effectionx/event-emitter':
+        specifier: workspace:*
+        version: link:../event-emitter
+      '@effectionx/stream-helpers':
+        specifier: workspace:*
+        version: link:../stream-helpers
+      cross-spawn:
+        specifier: ^7
+        version: 7.0.6
+      ctrlc-windows:
+        specifier: ^2
+        version: 2.2.0
+      effection:
+        specifier: ^3 || ^4.0.0-0
+        version: 3.6.1
+      shellwords:
+        specifier: ^0.1.1
+        version: 0.1.1
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+      '@types/cross-spawn':
+        specifier: ^6
+        version: 6.0.6
+
+  raf:
+    dependencies:
+      effection:
+        specifier: ^3 || ^4.0.0-0
+        version: 3.6.1
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
 
   signals:
     dependencies:
       effection:
-        specifier: ^3
+        specifier: ^3 || ^4.0.0-0
         version: 3.6.1
       immutable:
         specifier: ^5
         version: 5.1.4
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+
+  stream-helpers:
+    dependencies:
+      '@effectionx/signals':
+        specifier: workspace:*
+        version: link:../signals
+      '@effectionx/stream-helpers':
+        specifier: workspace:*
+        version: 'link:'
+      '@effectionx/timebox':
+        specifier: workspace:*
+        version: link:../timebox
+      effection:
+        specifier: ^3 || ^4.0.0-0
+        version: 3.6.1
+      immutable:
+        specifier: ^5
+        version: 5.1.4
+      remeda:
+        specifier: ^2
+        version: 2.33.4
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+
+  task-buffer:
+    dependencies:
+      '@effectionx/task-buffer':
+        specifier: workspace:*
+        version: 'link:'
+      effection:
+        specifier: ^3 || ^4.0.0-0
+        version: 3.6.1
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+      '@sinonjs/fake-timers':
+        specifier: ^14
+        version: 14.0.0
+      '@types/sinonjs__fake-timers':
+        specifier: ^8
+        version: 8.1.5
 
   test-adapter:
     dependencies:
       effection:
-        specifier: ^3
+        specifier: ^3 || ^4.0.0-0
         version: 3.6.1
 
   timebox:
     dependencies:
+      '@effectionx/timebox':
+        specifier: workspace:*
+        version: 'link:'
       effection:
-        specifier: ^3
+        specifier: ^3 || ^4.0.0-0
         version: 3.6.1
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
 
   tinyexec:
     dependencies:
       effection:
-        specifier: ^3
+        specifier: ^3 || ^4.0.0-0
         version: 3.6.1
       tinyexec:
         specifier: ^0.3.2
         version: 0.3.2
+
+  watch:
+    dependencies:
+      '@effectionx/process':
+        specifier: workspace:*
+        version: link:../process
+      chokidar:
+        specifier: ^4
+        version: 4.0.3
+      effection:
+        specifier: ^3 || ^4.0.0-0
+        version: 3.6.1
+      ignore:
+        specifier: ^7
+        version: 7.0.5
+      remeda:
+        specifier: ^2
+        version: 2.33.4
+      zod:
+        specifier: ^3
+        version: 3.25.76
+      zod-opts:
+        specifier: ^0
+        version: 0.1.8
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+      '@effectionx/signals':
+        specifier: workspace:*
+        version: link:../signals
+      '@effectionx/stream-helpers':
+        specifier: workspace:*
+        version: link:../stream-helpers
+
+  websocket:
+    dependencies:
+      effection:
+        specifier: ^3 || ^4.0.0-0
+        version: 3.6.1
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+
+  worker:
+    dependencies:
+      '@effectionx/event-emitter':
+        specifier: workspace:*
+        version: link:../event-emitter
+      '@effectionx/signals':
+        specifier: workspace:*
+        version: link:../signals
+      '@effectionx/worker':
+        specifier: workspace:*
+        version: 'link:'
+      effection:
+        specifier: ^3 || ^4.0.0-0
+        version: 3.6.1
+      web-worker:
+        specifier: ^1
+        version: 1.5.0
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+      '@effectionx/timebox':
+        specifier: workspace:*
+        version: link:../timebox
 
 packages:
 
@@ -150,6 +365,15 @@ packages:
   '@sinclair/typebox@0.27.8':
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
 
+  '@sinonjs/commons@3.0.1':
+    resolution: {integrity: sha512-K3mCHKQ9sVh8o1C9cxkwxaOmXoAMlDxC1mYyHrjqOWEcBjYr76t96zL2zlj5dUGZ3HSw240X1qgH3Mjf1yJWpQ==}
+
+  '@sinonjs/fake-timers@14.0.0':
+    resolution: {integrity: sha512-QfoXRaUTjMVVn/ZbnD4LS3TPtqOkOdKIYCKldIVPnuClcwRKat6LI2mRZ2s5qiBfO6Fy03An35dSls/2/FEc0Q==}
+
+  '@types/cross-spawn@6.0.6':
+    resolution: {integrity: sha512-fXRhhUkG4H3TQk5dBhQ7m/JDdSNHKwR2BBia62lhwEIq9xGiQKLxd6LymNhn47SjXhsUEPmxi+PKw2OkW4LLjA==}
+
   '@types/istanbul-lib-coverage@2.0.6':
     resolution: {integrity: sha512-2QF/t/auWm0lsy8XtKVPG19v3sSOQlJe/YHZgfjb/KBBHOGSV+J2q/S671rcq9uTBrLAXmZpqJiaQbMT+zNU1w==}
 
@@ -159,8 +383,11 @@ packages:
   '@types/istanbul-reports@3.0.4':
     resolution: {integrity: sha512-pk2B1NWalF9toCRu6gjBzR69syFjP4Od8WRAX+0mmf9lAjCRicLOWc+ZrxZHx/0XRjotgkF9t6iaMJ+aXcOdZQ==}
 
-  '@types/node@25.0.9':
-    resolution: {integrity: sha512-/rpCXHlCWeqClNBwUhDcusJxXYDjZTyE8v5oTO7WbL8eij2nKhUeU89/6xgjU7N4/Vh3He0BtyhJdQbDyhiXAw==}
+  '@types/node@22.19.7':
+    resolution: {integrity: sha512-MciR4AKGHWl7xwxkBa6xUGxQJ4VBOmPTF7sL+iGzuahOFaO0jHCsuEfS80pan1ef4gWId1oWOweIhrDEYLuaOw==}
+
+  '@types/sinonjs__fake-timers@8.1.5':
+    resolution: {integrity: sha512-mQkU2jY8jJEF7YHjHvsQO8+3ughTL1mcnn96igfhONmR+fUPSKIkefQYpSe8bsly2Ep7oQbn/6VG5/9/0qcArQ==}
 
   '@types/stack-utils@2.0.3':
     resolution: {integrity: sha512-9aEbYZ3TbYMznPdcdr3SmIrLXwC/AKZXQeCf9Pgao5CKb8CyHuEX5jzWPTkvregvhRJHcpRO6BFoGW9ycaOkYw==}
@@ -187,6 +414,10 @@ packages:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
     engines: {node: '>=10'}
 
+  chokidar@4.0.3:
+    resolution: {integrity: sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA==}
+    engines: {node: '>= 14.16.0'}
+
   ci-info@3.9.0:
     resolution: {integrity: sha512-NIxF55hv4nSqQswkAeiOi1r83xy8JldOFDTWiug55KBu9Jnblncd2U6ViHmYgHf01TPZS77NJBhBMKdWj9HQMQ==}
     engines: {node: '>=8'}
@@ -197,6 +428,13 @@ packages:
 
   color-name@1.1.4:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
+
+  cross-spawn@7.0.6:
+    resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
+    engines: {node: '>= 8'}
+
+  ctrlc-windows@2.2.0:
+    resolution: {integrity: sha512-t9y568r+T8FUuBaqKK60YGFJdj3b3ktdJW9WXIT3CuBdQhAOYdSZu75jFUN0Ay4Yz5HHicVQqAYCwcnqhOn23g==}
 
   diff-sequences@29.6.3:
     resolution: {integrity: sha512-EjePK1srD3P08o2j4f0ExnylqRs5B9tJjcp9t1krH2qRi8CCdsYfwe9JgSLurFBWwq4uOlipzfk5fHNvwFKr8Q==}
@@ -225,12 +463,19 @@ packages:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
 
+  ignore@7.0.5:
+    resolution: {integrity: sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg==}
+    engines: {node: '>= 4'}
+
   immutable@5.1.4:
     resolution: {integrity: sha512-p6u1bG3YSnINT5RQmx/yRZBpenIl30kVxkTLDyHLIMk0gict704Q9n+thfDI7lTRm9vXdDYutVzXhzcThxTnXA==}
 
   is-number@7.0.0:
     resolution: {integrity: sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng==}
     engines: {node: '>=0.12.0'}
+
+  isexe@2.0.0:
+    resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
 
   jest-diff@29.7.0:
     resolution: {integrity: sha512-LMIgiIrhigmPrs03JHpxUh2yISK3vLFPkAodPeo0+BuF7wA2FoQbkEg1u8gBYBThncu7e1oEDUfIXVuTqLRUjw==}
@@ -259,6 +504,10 @@ packages:
     resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
     engines: {node: '>=8.6'}
 
+  path-key@3.1.1:
+    resolution: {integrity: sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==}
+    engines: {node: '>=8'}
+
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
@@ -272,6 +521,24 @@ packages:
 
   react-is@18.3.1:
     resolution: {integrity: sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==}
+
+  readdirp@4.1.2:
+    resolution: {integrity: sha512-GDhwkLfywWL2s6vEjyhri+eXmfH6j1L7JE27WhqLeYzoh/A3DBaYGEj2H/HFZCn/kMfim73FXxEJTw06WtxQwg==}
+    engines: {node: '>= 14.18.0'}
+
+  remeda@2.33.4:
+    resolution: {integrity: sha512-ygHswjlc/opg2VrtiYvUOPLjxjtdKvjGz1/plDhkG66hjNjFr1xmfrs2ClNFo/E6TyUFiwYNh53bKV26oBoMGQ==}
+
+  shebang-command@2.0.0:
+    resolution: {integrity: sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==}
+    engines: {node: '>=8'}
+
+  shebang-regex@3.0.0:
+    resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
+    engines: {node: '>=8'}
+
+  shellwords@0.1.1:
+    resolution: {integrity: sha512-vFwSUfQvqybiICwZY5+DAWIPLKsWO31Q91JSKl3UYv+K5c2QRPzn0qzec6QPu1Qc9eHYItiP3NdJqNVqetYAww==}
 
   slash@3.0.0:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
@@ -292,13 +559,32 @@ packages:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
     engines: {node: '>=8.0'}
 
+  type-detect@4.0.8:
+    resolution: {integrity: sha512-0fr/mIH1dlO+x7TlcMy+bIDqKPsw/70tVyeHW787goQjhmqaZe10uwLujubK9q9Lg6Fiho1KUKDYz0Z7k7g5/g==}
+    engines: {node: '>=4'}
+
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
-  undici-types@7.16.0:
-    resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
+  undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+
+  web-worker@1.5.0:
+    resolution: {integrity: sha512-RiMReJrTAiA+mBjGONMnjVDP2u3p9R1vkcGz6gDIrOMT3oGuYwX2WRMYI9ipkphSuE5XKEhydbhNEJh4NY9mlw==}
+
+  which@2.0.2:
+    resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
+    engines: {node: '>= 8'}
+    hasBin: true
+
+  zod-opts@0.1.8:
+    resolution: {integrity: sha512-YZhdEcIL3D2W9fXCCf/UBgrBS90c8w25RTteh5GihGIZzadYr/qIFxyM2L98zHUkZ2S8MMxwn3ny8fzPNnvPlg==}
+    engines: {node: '>=16'}
+
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
 snapshots:
 
@@ -358,11 +644,23 @@ snapshots:
       '@jest/schemas': 29.6.3
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 25.0.9
+      '@types/node': 22.19.7
       '@types/yargs': 17.0.35
       chalk: 4.1.2
 
   '@sinclair/typebox@0.27.8': {}
+
+  '@sinonjs/commons@3.0.1':
+    dependencies:
+      type-detect: 4.0.8
+
+  '@sinonjs/fake-timers@14.0.0':
+    dependencies:
+      '@sinonjs/commons': 3.0.1
+
+  '@types/cross-spawn@6.0.6':
+    dependencies:
+      '@types/node': 22.19.7
 
   '@types/istanbul-lib-coverage@2.0.6': {}
 
@@ -374,9 +672,11 @@ snapshots:
     dependencies:
       '@types/istanbul-lib-report': 3.0.3
 
-  '@types/node@25.0.9':
+  '@types/node@22.19.7':
     dependencies:
-      undici-types: 7.16.0
+      undici-types: 6.21.0
+
+  '@types/sinonjs__fake-timers@8.1.5': {}
 
   '@types/stack-utils@2.0.3': {}
 
@@ -401,6 +701,10 @@ snapshots:
       ansi-styles: 4.3.0
       supports-color: 7.2.0
 
+  chokidar@4.0.3:
+    dependencies:
+      readdirp: 4.1.2
+
   ci-info@3.9.0: {}
 
   color-convert@2.0.1:
@@ -408,6 +712,14 @@ snapshots:
       color-name: 1.1.4
 
   color-name@1.1.4: {}
+
+  cross-spawn@7.0.6:
+    dependencies:
+      path-key: 3.1.1
+      shebang-command: 2.0.0
+      which: 2.0.2
+
+  ctrlc-windows@2.2.0: {}
 
   diff-sequences@29.6.3: {}
 
@@ -431,9 +743,13 @@ snapshots:
 
   has-flag@4.0.0: {}
 
+  ignore@7.0.5: {}
+
   immutable@5.1.4: {}
 
   is-number@7.0.0: {}
+
+  isexe@2.0.0: {}
 
   jest-diff@29.7.0:
     dependencies:
@@ -466,7 +782,7 @@ snapshots:
   jest-util@29.7.0:
     dependencies:
       '@jest/types': 29.6.3
-      '@types/node': 25.0.9
+      '@types/node': 22.19.7
       chalk: 4.1.2
       ci-info: 3.9.0
       graceful-fs: 4.2.11
@@ -479,6 +795,8 @@ snapshots:
       braces: 3.0.3
       picomatch: 2.3.1
 
+  path-key@3.1.1: {}
+
   picocolors@1.1.1: {}
 
   picomatch@2.3.1: {}
@@ -490,6 +808,18 @@ snapshots:
       react-is: 18.3.1
 
   react-is@18.3.1: {}
+
+  readdirp@4.1.2: {}
+
+  remeda@2.33.4: {}
+
+  shebang-command@2.0.0:
+    dependencies:
+      shebang-regex: 3.0.0
+
+  shebang-regex@3.0.0: {}
+
+  shellwords@0.1.1: {}
 
   slash@3.0.0: {}
 
@@ -507,6 +837,20 @@ snapshots:
     dependencies:
       is-number: 7.0.0
 
+  type-detect@4.0.8: {}
+
   typescript@5.9.3: {}
 
-  undici-types@7.16.0: {}
+  undici-types@6.21.0: {}
+
+  web-worker@1.5.0: {}
+
+  which@2.0.2:
+    dependencies:
+      isexe: 2.0.0
+
+  zod-opts@0.1.8:
+    dependencies:
+      zod: 3.25.76
+
+  zod@3.25.76: {}

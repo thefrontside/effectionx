@@ -1,0 +1,20 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "mod.deno.ts",
+    "dist"
+  ],
+  "references": [
+    {
+      "path": "../test-adapter"
+    }
+  ]
+}

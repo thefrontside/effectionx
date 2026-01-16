@@ -1,0 +1,26 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "test/**",
+    "dist"
+  ],
+  "references": [
+    {
+      "path": "../bdd"
+    },
+    {
+      "path": "../event-emitter"
+    },
+    {
+      "path": "../stream-helpers"
+    }
+  ]
+}

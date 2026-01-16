@@ -1,6 +1,6 @@
 {
-  "name": "@effectionx/bdd",
-  "version": "0.3.1",
+  "name": "@effectionx/process",
+  "version": "0.6.2",
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
@@ -12,9 +12,6 @@
   },
   "peerDependencies": {
     "effection": "^3 || ^4.0.0-0"
-  },
-  "dependencies": {
-    "@effectionx/test-adapter": "workspace:*"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",
@@ -29,7 +26,15 @@
     "node": ">= 22"
   },
   "sideEffects": false,
+  "dependencies": {
+    "@effectionx/event-emitter": "workspace:*",
+    "@effectionx/stream-helpers": "workspace:*",
+    "cross-spawn": "^7",
+    "ctrlc-windows": "^2",
+    "shellwords": "^0.1.1"
+  },
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*"
+    "@effectionx/bdd": "workspace:*",
+    "@types/cross-spawn": "^6"
   }
 }

@@ -1,0 +1,31 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+    "resolveJsonModule": true
+  },
+  "include": [
+    "**/*.ts",
+    "package.json"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "test/**",
+    "dist"
+  ],
+  "references": [
+    {
+      "path": "../bdd"
+    },
+    {
+      "path": "../process"
+    },
+    {
+      "path": "../signals"
+    },
+    {
+      "path": "../stream-helpers"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ This document outlines the plan to migrate the effectionx monorepo from Deno to 
 | Runtime | Node.js with `--experimental-strip-types` |
 | Build | `tsc --build` with incremental + project references |
 | Lint/Format | Biome (including JSON files) |
-| Assertions | `@std/expect` (npm) |
+| Assertions | `expect` (Jest's expect package from npm) |
 | Publishing | NPM only (drop JSR) |
 | Exports | Conditional: `development` → source, `default` → dist |
 | Effection dep | `"^3 \|\| ^4.0.0-0"` as peerDependencies |
@@ -47,8 +47,8 @@ Add devDependencies, scripts, and pnpm peer dependency rules:
   },
   "devDependencies": {
     "@biomejs/biome": "^1",
-    "@std/expect": "^1",
     "effection": "^3",
+    "expect": "^29",
     "typescript": "^5"
   },
   "pnpm": {
@@ -311,7 +311,9 @@ In all 31 test files, update:
 
 | Before | After |
 |--------|-------|
-| `import { expect } from "@std/expect"` | `import { expect } from "@std/expect"` (npm package - same API) |
+| `import { expect } from "@std/expect"` | `import { expect } from "expect"` |
+
+The `expect` package from npm (Jest's expect) has the same API as `@std/expect`.
 
 ### 3.3 Replace `@std/testing/mock`
 

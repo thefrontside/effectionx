@@ -4,10 +4,27 @@
   "type": "module",
   "packageManager": "pnpm@9.15.9",
   "scripts": {
-    "test": "pnpm -r --if-present test"
+    "build": "tsc --build",
+    "typecheck": "tsc -p tsconfig.check.json",
+    "test": "node --conditions=development --experimental-strip-types --test \"**/*.test.ts\"",
+    "lint": "biome lint .",
+    "format": "biome format . --write",
+    "format:check": "biome format .",
+    "sync:tsrefs": "node --experimental-strip-types tasks/sync-tsrefs.ts",
+    "sync:tsrefs:fix": "node --experimental-strip-types tasks/sync-tsrefs.ts fix",
+    "check:tsrefs": "node --experimental-strip-types tasks/sync-tsrefs.ts check"
   },
-  "dependencies": {
-    "effection": "^3"
+  "devDependencies": {
+    "@biomejs/biome": "^1",
+    "effection": "^3",
+    "expect": "^29",
+    "typescript": "^5"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "ignoreMissing": [],
+      "allowAny": []
+    }
   },
   "volta": {
     "node": "22.12.0",

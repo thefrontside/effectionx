@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "incremental": true,
+    "declaration": true,
+    "declarationMap": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "references": [
+    { "path": "bdd" },
+    { "path": "chain" },
+    { "path": "context-api" },
+    { "path": "deno-deploy" },
+    { "path": "fx" },
+    { "path": "jsonl-store" },
+    { "path": "process" },
+    { "path": "raf" },
+    { "path": "signals" },
+    { "path": "stream-helpers" },
+    { "path": "task-buffer" },
+    { "path": "test-adapter" },
+    { "path": "timebox" },
+    { "path": "tinyexec" },
+    { "path": "watch" },
+    { "path": "websocket" },
+    { "path": "worker" }
+  ]
+}

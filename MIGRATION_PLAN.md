@@ -37,7 +37,7 @@ Add devDependencies, scripts, and pnpm peer dependency rules:
   "scripts": {
     "build": "tsc --build",
     "typecheck": "tsc -p tsconfig.check.json",
-    "test": "node --conditions=development --experimental-strip-types --test '**/!(node_modules|dist)/*.test.ts'",
+    "test": "node --conditions=development --experimental-strip-types --test './**/*.test.ts'",
     "lint": "biome lint .",
     "format": "biome format . --write",
     "format:check": "biome format .",
@@ -278,10 +278,13 @@ The `sync-tsrefs.ts` script has three modes:
 
 The script:
 - Scans all TypeScript files for workspace package imports
-- Uses `tsconfig.test.json` to determine if a file is a test file
+- Uses root `tsconfig.test.json` (or nearest one) to determine if a file is a test file
 - Test-only imports → added to `devDependencies`
 - Runtime imports → added to `dependencies` (or left in `peerDependencies` if already there)
 - Generates the correct `references` array for `tsc --build`
+- Skips packages without a `tsconfig.json` (warns but continues)
+
+> **Important:** Each package's `tsconfig.json` must be created before running `sync:tsrefs`. The script will skip packages without a tsconfig and warn.
 
 ## Phase 3: Test Infrastructure
 

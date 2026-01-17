@@ -27,7 +27,7 @@ pnpm install
 ```bash
 pnpm build          # Build all packages
 pnpm test           # Run all tests
-pnpm typecheck      # Type-check all packages
+pnpm check          # Type-check all packages
 pnpm lint           # Lint all packages
 pnpm format         # Format all files
 pnpm format:check   # Check formatting

@@ -1,55 +1,12 @@
 # effectionx
 
-This repository contains a collection of contributions by the community. This
-repository automatically publishes to JSR and NPM. All packages that were used
-more than a few times are welcome.
+This repository contains a collection of community contributions built on top of the [Effection](https://frontside.com/effection) structured concurrency library. All packages are published to NPM under the `@effectionx` scope.
 
-## Adding a new package
+## Development
 
-1. Create a directory
-2. Add a deno.json file with
-   `{ "name": "@effectionx/<you_package_name>", version: "0.1.0", "exports": "./mod.ts", "license": "MIT" }`
-3. Add a README.md (text before `---` will be used as a description for the
-   package)
-4. Add your source code and export it from `mod.ts`
-5. Add doc strings to your source code - they will be used for documentation on
-   the site.
+This repository uses [Volta](https://volta.sh/) to manage Node.js and pnpm versions. The versions are pinned in `package.json`.
 
-## Testing
-
-All packages are tested against both effection v3 and v4 to ensure
-compatibility.
-
-### Deno Testing
-
-#### Generate import maps
-
-```bash
-# Generate v3 import map
-deno task generate-importmap "^3" v3.importmap.json
-
-# Generate v4 import map (fetches latest v4 from npm)
-deno task generate-importmap v4 v4.importmap.json
-```
-
-#### Running tests with v3
-
-```bash
-deno test --import-map v3.importmap.json -A
-```
-
-#### Running tests with v4
-
-```bash
-deno test --import-map v4.importmap.json -A
-```
-
-### Node.js Testing
-
-This repository uses [Volta](https://volta.sh/) to manage Node.js and pnpm
-versions. The versions are pinned in `package.json`.
-
-#### Prerequisites
+### Prerequisites
 
 Install Volta if you haven't already:
 
@@ -57,47 +14,99 @@ Install Volta if you haven't already:
 curl https://get.volta.sh | bash
 ```
 
-Volta will automatically install the correct Node.js and pnpm versions when you
-run commands in this repository.
+Volta will automatically install the correct Node.js and pnpm versions when you run commands in this repository.
 
-#### Running tests
+### Setup
 
 ```bash
 pnpm install
-pnpm test
 ```
 
-#### Adding Node.js support to a package
+### Available Commands
 
-1. Add a `package.json` with conditional exports:
+```bash
+pnpm build          # Build all packages
+pnpm test           # Run all tests
+pnpm typecheck      # Type-check all packages
+pnpm lint           # Lint all packages
+pnpm format         # Format all files
+pnpm format:check   # Check formatting
+pnpm sync:tsrefs    # Check tsconfig references
+pnpm sync:tsrefs:fix # Fix tsconfig references and dependencies
+```
+
+### Running Tests for a Specific Package
+
+```bash
+cd <package-name>
+node --env-file=../.env --test "*.test.ts"
+```
+
+## Adding a New Package
+
+1. Create a directory for your package
+2. Add a `package.json`:
 
    ```json
    {
      "name": "@effectionx/your-package",
+     "version": "0.1.0",
      "type": "module",
+     "license": "MIT",
      "exports": {
        ".": {
-         "deno": "./mod.deno.ts",
-         "node": "./mod.node.ts",
-         "default": "./mod.node.ts"
+         "development": "./mod.ts",
+         "default": "./dist/mod.js"
        }
      },
+     "files": ["dist", "mod.ts", "src"],
      "scripts": {
-       "test": "node --experimental-strip-types --test *.test.ts"
+       "test": "node --env-file=../.env --test \"*.test.ts\""
      },
      "dependencies": {
-       "effection": "^3",
-       "@effectionx/your-dependency": "workspace:*"
+       "effection": "^3"
      }
    }
    ```
 
-2. Create platform-specific entry points (`mod.deno.ts`, `mod.node.ts`)
-3. Update the `deno.json` exports to point to the Deno-specific entry point
-4. Add the package to `pnpm-workspace.yaml`
+3. Add a `tsconfig.json`:
 
-## To publish a new project
+   ```json
+   {
+     "extends": "../tsconfig.json",
+     "compilerOptions": {
+       "outDir": "dist",
+       "rootDir": "."
+     },
+     "include": ["**/*.ts"],
+     "exclude": ["**/*.test.ts", "dist"],
+     "references": []
+   }
+   ```
 
-1. Member of [jsr.io/@effectionx](https://jsr.io/@effectionx) has to add that
-   project to the scope
-2. It should be publish on next merge to main
+4. Add your package to `pnpm-workspace.yaml`
+5. Add your package to `tsconfig.json` references
+6. Run `pnpm sync:tsrefs:fix` to update dependencies
+7. Add a `README.md` (text before `---` will be used as a description)
+8. Add your source code and export it from `mod.ts`
+9. Add doc strings to your source code - they will be used for documentation
+
+## Publishing
+
+Packages are automatically published to NPM when merged to main. To publish a new version:
+
+1. Update the version in the package's `package.json`
+2. Merge to main
+3. The CI will automatically publish if the version doesn't exist on NPM
+
+## Project Structure
+
+```
+.internal/          # Internal tooling scripts (not published)
+<package>/          # Package directories
+  mod.ts            # Main entry point
+  *.test.ts         # Tests
+  package.json      # Package manifest
+  tsconfig.json     # TypeScript config
+  README.md         # Package documentation
+```

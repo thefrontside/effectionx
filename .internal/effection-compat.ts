@@ -9,6 +9,8 @@ type PackageInfo = { name: string; dir: string; peerRange: string | null };
 
 type VersionPair = { min: string; max: string };
 
+type VersionGroup = { version: string; packages: string[] };
+
 const rootDir = process.cwd();
 
 const runCommand = (command: string) => exec(command).expect();
@@ -73,20 +75,36 @@ const resolveVersionPair = (
   return { min, max };
 };
 
-const resolveVersionGroups = function* (): Operation<string[]> {
+const resolveVersionGroups = function* (): Operation<VersionGroup[]> {
   const packages = yield* getWorkspacePackages();
   const allVersions = yield* fetchEffectionVersions();
-  const unique = new Set<string>();
+  const groups = new Map<string, Set<string>>();
 
   for (const pkg of packages) {
     if (!pkg.peerRange) continue;
     const { min, max } = resolveVersionPair(allVersions, pkg.peerRange);
-    unique.add(min);
-    unique.add(max);
+
+    const minGroup = groups.get(min) ?? new Set<string>();
+    const maxGroup = groups.get(max) ?? new Set<string>();
+
+    minGroup.add(pkg.name);
+    maxGroup.add(pkg.name);
+
+    groups.set(min, minGroup);
+    groups.set(max, maxGroup);
+
     console.log(`  ${pkg.name}: min=${min}, max=${max}`);
   }
 
-  return Array.from(unique).sort(semver.compare);
+  // Sort by version and convert to array
+  const sortedVersions = Array.from(groups.keys()).sort(semver.compare);
+  return sortedVersions.map((version) => {
+    const pkgSet = groups.get(version);
+    return {
+      version,
+      packages: pkgSet ? Array.from(pkgSet) : [],
+    };
+  });
 };
 
 const main = function* (): Operation<void> {
@@ -94,14 +112,19 @@ const main = function* (): Operation<void> {
   console.log("====================================\n");
 
   console.log("Resolving version groups...");
-  const versions = yield* resolveVersionGroups();
+  const groups = yield* resolveVersionGroups();
+  const versionList = groups.map((g) => g.version).join(", ");
   console.log(
-    `\nWill test against ${versions.length} Effection versions: ${versions.join(", ")}\n`,
+    `\nWill test against ${groups.length} Effection versions: ${versionList}\n`,
   );
 
-  for (const version of versions) {
+  for (const group of groups) {
+    const { version, packages } = group;
+    const filters = packages.map((pkg) => `--filter=${pkg}`).join(" ");
+
     console.log(`\n${"=".repeat(60)}`);
     console.log(`Testing with Effection ${version}`);
+    console.log(`Packages: ${packages.join(", ")}`);
     console.log("=".repeat(60));
 
     console.log(`\n[1/3] Setting override to effection@${version}...`);
@@ -113,9 +136,9 @@ const main = function* (): Operation<void> {
     yield* runCommand("pnpm install --no-frozen-lockfile");
 
     console.log("[3/3] Running tests...");
-    yield* runCommand("pnpm turbo run test");
+    yield* runCommand(`pnpm turbo run test ${filters}`);
 
-    console.log(`\n✓ Completed tests for Effection ${version}`);
+    console.log(`\n Completed tests for Effection ${version}`);
   }
 
   console.log(`\n${"=".repeat(60)}`);
@@ -127,7 +150,7 @@ const main = function* (): Operation<void> {
   );
   yield* runCommand("pnpm install --no-frozen-lockfile");
 
-  console.log("\n✓ All compatibility tests complete!");
+  console.log("\n All compatibility tests complete!");
 };
 
 run(main);

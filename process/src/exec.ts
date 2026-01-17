@@ -1,4 +1,4 @@
-import { split } from "shellwords-ts";
+import shellwords from "shellwords-ts";
 
 import { type Operation, spawn } from "effection";
 import type {
@@ -33,7 +33,7 @@ const createProcess: CreateOSProcess = (cmd, opts) => {
  * forever, consider using `daemon()`
  */
 export function exec(command: string, options: ExecOptions = {}): Exec {
-  let [cmd, ...args] = options.shell ? [command] : split(command);
+  let [cmd, ...args] = options.shell ? [command] : shellwords.split(command);
   let opts = { ...options, arguments: args.concat(options.arguments || []) };
 
   return {

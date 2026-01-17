@@ -71,9 +71,22 @@ importers:
 
   event-emitter:
     dependencies:
+      '@effectionx/event-emitter':
+        specifier: workspace:*
+        version: 'link:'
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1
+
+  fs:
+    dependencies:
+      effection:
+        specifier: ^3 || ^4.0.0-0
+        version: 3.6.1
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
 
   fx:
     dependencies:

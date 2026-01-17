@@ -4,6 +4,7 @@ packages:
   - "context-api"
   - "deno-deploy"
   - "event-emitter"
+  - "fs"
   - "fx"
   - "jsonl-store"
   - "process"

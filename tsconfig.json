@@ -17,6 +17,7 @@
     { "path": "chain" },
     { "path": "context-api" },
     { "path": "event-emitter" },
+    { "path": "fs" },
     { "path": "fx" },
     { "path": "jsonl-store" },
     { "path": "process" },

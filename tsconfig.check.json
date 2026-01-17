@@ -3,28 +3,7 @@
   "compilerOptions": {
     "noEmit": true,
     "composite": false,
-    "incremental": false,
-    "paths": {
-      "@effectionx/bdd": ["./bdd/mod.ts"],
-      "@effectionx/chain": ["./chain/mod.ts"],
-      "@effectionx/context-api": ["./context-api/mod.ts"],
-      "@effectionx/node-events": ["./node-events/mod.ts"],
-      "@effectionx/fs": ["./fs/mod.ts"],
-      "@effectionx/fx": ["./fx/mod.ts"],
-      "@effectionx/jsonl-store": ["./jsonl-store/mod.ts"],
-      "@effectionx/process": ["./process/mod.ts"],
-      "@effectionx/raf": ["./raf/mod.ts"],
-      "@effectionx/signals": ["./signals/mod.ts"],
-      "@effectionx/stream-helpers": ["./stream-helpers/mod.ts"],
-      "@effectionx/stream-helpers/*": ["./stream-helpers/*"],
-      "@effectionx/task-buffer": ["./task-buffer/mod.ts"],
-      "@effectionx/test-adapter": ["./test-adapter/mod.ts"],
-      "@effectionx/timebox": ["./timebox/mod.ts"],
-      "@effectionx/tinyexec": ["./tinyexec/mod.ts"],
-      "@effectionx/watch": ["./watch/mod.ts"],
-      "@effectionx/websocket": ["./websocket/mod.ts"],
-      "@effectionx/worker": ["./worker/mod.ts"]
-    }
+    "incremental": false
   },
   "include": ["**/*.ts"],
   "exclude": ["**/dist", "**/node_modules", "deno-deploy", "bdd/mod.deno.ts"]

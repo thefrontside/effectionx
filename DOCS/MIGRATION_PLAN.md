@@ -337,9 +337,9 @@ Replace `FakeTime` with alternative (e.g., `@sinonjs/fake-timers` or custom).
 
 | Package | Imports to replace |
 |---------|-------------------|
-| `watch` | `@std/fs` → custom helpers + `node:fs`, `@std/path` → `node:path` |
-| `worker` | `@std/assert` → `node:assert`, `@std/fs` → custom helpers + `node:fs`, `@std/path` → `node:path`, `fromFileUrl` → `node:url` |
-| `jsonl-store` | `@std/json` → native, `@std/streams` → `node:stream`, `@std/fs` → custom helpers + `node:fs`, `@std/path` → `node:path`, `fromFileUrl`/`toFileUrl` → `node:url` |
+| `watch` | `@std/fs` → `@effectionx/fs`, `@std/path` → `node:path` |
+| `worker` | `@std/assert` → `node:assert`, `@std/fs` → `@effectionx/fs`, `@std/path` → `node:path`, `fromFileUrl` → `node:url` |
+| `jsonl-store` | `@std/json` → native, `@std/streams` → `node:stream`, `@std/fs` → `@effectionx/fs`, `@std/path` → `node:path`, `fromFileUrl`/`toFileUrl` → `node:url` |
 
 ### 4.2 Test helper files
 
@@ -347,12 +347,12 @@ Also update test helpers in:
 - `watch/test/helpers.ts`
 - `worker/worker.test.ts`
 
-### 4.3 Create effection-based fs helpers
+### 4.3 Create `@effectionx/fs`
 
-Create helper functions to replace `@std/fs` utilities that don't have direct Node.js equivalents:
+Create `@effectionx/fs` to replace `@std/fs` utilities that don't have direct Node.js equivalents:
 
 - `ensureDir` - create directory recursively if not exists
-- `exists` - check if path exists  
+- `exists` - check if path exists
 - `emptyDir` - remove all contents of a directory
 - `walk` - recursively iterate directory entries
 
@@ -377,24 +377,24 @@ Task scripts have been moved from `tasks/` to `.internal/` for clearer naming as
 
 | Deno API | Node equivalent |
 |----------|-----------------|
-| `Deno.env.get()` | `process.env[]` |
-| `Deno.env.has()` | `process.env[] !== undefined` |
-| `Deno.readTextFile()` | `fs.promises.readFile(path, 'utf-8')` |
-| `Deno.writeTextFile()` | `fs.promises.writeFile(path, content)` |
-| `Deno.args` | `process.argv.slice(2)` |
-| `Deno.cwd()` | `process.cwd()` |
-| `Deno.chdir()` | `process.chdir()` |
-| `Deno.copyFile()` | `fs.promises.copyFile()` |
-| `Deno.exit()` | `process.exit()` |
+| `Deno.env.get()` | `@effectionx/process` env helper |
+| `Deno.env.has()` | `@effectionx/process` env helper |
+| `Deno.readTextFile()` | `@effectionx/fs` readTextFile |
+| `Deno.writeTextFile()` | `@effectionx/fs` writeTextFile |
+| `Deno.args` | `@effectionx/process` args helper |
+| `Deno.cwd()` | `@effectionx/process` cwd helper |
+| `Deno.chdir()` | `@effectionx/process` chdir helper |
+| `Deno.copyFile()` | `@effectionx/fs` copyFile |
+| `Deno.exit()` | `@effectionx/process` exit helper |
 
 ### 5.2 Scripts migrated to `.internal/`
 
 | Script | Status | Notes |
 |--------|--------|-------|
-| `publish-matrix.ts` | ✅ Migrated | Uses `@effectionx/tinyexec`, `process.env` |
-| `gather-tags.ts` | ✅ Migrated | Uses `process.env`, `node:fs` |
-| `preview-matrix.ts` | ✅ Migrated | Uses `@effectionx/tinyexec`, `process.env` |
-| `publish-complete.ts` | ✅ Migrated | Uses `process.env` |
+| `publish-matrix.ts` | ✅ Migrated | Uses `@effectionx/tinyexec`, `@effectionx/process` |
+| `gather-tags.ts` | ✅ Migrated | Uses `@effectionx/process`, `@effectionx/fs` |
+| `preview-matrix.ts` | ✅ Migrated | Uses `@effectionx/tinyexec`, `@effectionx/process` |
+| `publish-complete.ts` | ✅ Migrated | Uses `@effectionx/process` |
 | `lib/read-packages.ts` | ✅ Migrated | Reads `pnpm-workspace.yaml` + `package.json` |
 | `sync-tsrefs.ts` | ✅ Migrated | Already Node.js compatible |
 

@@ -19,6 +19,7 @@
     "@types/node": "^22",
     "effection": "^3",
     "expect": "^29",
+    "semver": "^7.6.3",
     "typescript": "^5"
   },
   "pnpm": {

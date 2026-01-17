@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@effectionx/tinyexec": "workspace:*",
     "effection": "^3",
-    "zod": "^3",
-    "@effectionx/tinyexec": "workspace:*"
+    "semver": "^7.6.3",
+    "zod": "^3"
   }
 }

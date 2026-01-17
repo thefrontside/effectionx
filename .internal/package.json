@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@effectionx/fs": "workspace:*",
+    "@effectionx/process": "workspace:*",
     "@effectionx/tinyexec": "workspace:*",
     "effection": "^3",
     "semver": "^7.6.3",

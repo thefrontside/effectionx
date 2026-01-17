@@ -14,24 +14,42 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.19.7
+      '@types/semver':
+        specifier: ^7
+        version: 7.7.1
       effection:
         specifier: ^3
         version: 3.6.1
       expect:
         specifier: ^29
         version: 29.7.0
+      semver:
+        specifier: ^7.6.3
+        version: 7.7.3
+      turbo:
+        specifier: ^2
+        version: 2.7.5
       typescript:
         specifier: ^5
         version: 5.9.3
 
   .internal:
     dependencies:
+      '@effectionx/fs':
+        specifier: workspace:*
+        version: link:../fs
+      '@effectionx/process':
+        specifier: workspace:*
+        version: link:../process
       '@effectionx/tinyexec':
         specifier: workspace:*
         version: link:../tinyexec
       effection:
         specifier: ^3
         version: 3.6.1
+      semver:
+        specifier: ^7.6.3
+        version: 7.7.3
       zod:
         specifier: ^3
         version: 3.25.76
@@ -44,10 +62,6 @@ importers:
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1
-    devDependencies:
-      '@effectionx/bdd':
-        specifier: workspace:*
-        version: 'link:'
 
   chain:
     dependencies:
@@ -68,24 +82,15 @@ importers:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
-      '@effectionx/context-api':
-        specifier: workspace:*
-        version: 'link:'
 
   event-emitter:
     dependencies:
-      '@effectionx/event-emitter':
-        specifier: workspace:*
-        version: 'link:'
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1
 
   fs:
     dependencies:
-      '@effectionx/fs':
-        specifier: workspace:*
-        version: 'link:'
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1
@@ -173,9 +178,6 @@ importers:
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals
-      '@effectionx/stream-helpers':
-        specifier: workspace:*
-        version: 'link:'
       '@effectionx/timebox':
         specifier: workspace:*
         version: link:../timebox
@@ -195,9 +197,6 @@ importers:
 
   task-buffer:
     dependencies:
-      '@effectionx/task-buffer':
-        specifier: workspace:*
-        version: 'link:'
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1
@@ -220,9 +219,6 @@ importers:
 
   timebox:
     dependencies:
-      '@effectionx/timebox':
-        specifier: workspace:*
-        version: 'link:'
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1
@@ -301,9 +297,6 @@ importers:
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals
-      '@effectionx/worker':
-        specifier: workspace:*
-        version: 'link:'
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1
@@ -419,6 +412,9 @@ packages:
 
   '@types/node@22.19.7':
     resolution: {integrity: sha512-MciR4AKGHWl7xwxkBa6xUGxQJ4VBOmPTF7sL+iGzuahOFaO0jHCsuEfS80pan1ef4gWId1oWOweIhrDEYLuaOw==}
+
+  '@types/semver@7.7.1':
+    resolution: {integrity: sha512-FmgJfu+MOcQ370SD0ev7EI8TlCAfKYU+B4m5T3yXc1CiRN94g/SZPtsCkk506aUDtlMnFZvasDwHHUcZUEaYuA==}
 
   '@types/sinonjs__fake-timers@8.1.5':
     resolution: {integrity: sha512-mQkU2jY8jJEF7YHjHvsQO8+3ughTL1mcnn96igfhONmR+fUPSKIkefQYpSe8bsly2Ep7oQbn/6VG5/9/0qcArQ==}
@@ -566,6 +562,11 @@ packages:
   remeda@2.33.4:
     resolution: {integrity: sha512-ygHswjlc/opg2VrtiYvUOPLjxjtdKvjGz1/plDhkG66hjNjFr1xmfrs2ClNFo/E6TyUFiwYNh53bKV26oBoMGQ==}
 
+  semver@7.7.3:
+    resolution: {integrity: sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q==}
+    engines: {node: '>=10'}
+    hasBin: true
+
   shebang-command@2.0.0:
     resolution: {integrity: sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==}
     engines: {node: '>=8'}
@@ -595,6 +596,40 @@ packages:
   to-regex-range@5.0.1:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
     engines: {node: '>=8.0'}
+
+  turbo-darwin-64@2.7.5:
+    resolution: {integrity: sha512-nN3wfLLj4OES/7awYyyM7fkU8U8sAFxsXau2bYJwAWi6T09jd87DgHD8N31zXaJ7LcpyppHWPRI2Ov9MuZEwnQ==}
+    cpu: [x64]
+    os: [darwin]
+
+  turbo-darwin-arm64@2.7.5:
+    resolution: {integrity: sha512-wCoDHMiTf3FgLAbZHDDx/unNNonSGhsF5AbbYODbxnpYyoKDpEYacUEPjZD895vDhNvYCH0Nnk24YsP4n/cD6g==}
+    cpu: [arm64]
+    os: [darwin]
+
+  turbo-linux-64@2.7.5:
+    resolution: {integrity: sha512-KKPvhOmJMmzWj/yjeO4LywkQ85vOJyhru7AZk/+c4B6OUh/odQ++SiIJBSbTG2lm1CuV5gV5vXZnf/2AMlu3Zg==}
+    cpu: [x64]
+    os: [linux]
+
+  turbo-linux-arm64@2.7.5:
+    resolution: {integrity: sha512-8PIva4L6BQhiPikUTds9lSFSHXVDAsEvV6QUlgwPsXrtXVQMVi6Sv9p+IxtlWQFvGkdYJUgX9GnK2rC030Xcmw==}
+    cpu: [arm64]
+    os: [linux]
+
+  turbo-windows-64@2.7.5:
+    resolution: {integrity: sha512-rupskv/mkIUgQXzX/wUiK00mKMorQcK8yzhGFha/D5lm05FEnLx8dsip6rWzMcVpvh+4GUMA56PgtnOgpel2AA==}
+    cpu: [x64]
+    os: [win32]
+
+  turbo-windows-arm64@2.7.5:
+    resolution: {integrity: sha512-G377Gxn6P42RnCzfMyDvsqQV7j69kVHKlhz9J4RhtJOB5+DyY4yYh/w0oTIxZQ4JRMmhjwLu3w9zncMoQ6nNDw==}
+    cpu: [arm64]
+    os: [win32]
+
+  turbo@2.7.5:
+    resolution: {integrity: sha512-7Imdmg37joOloTnj+DPrab9hIaQcDdJ5RwSzcauo/wMOSAgO+A/I/8b3hsGGs6PWQz70m/jkPgdqWsfNKtwwDQ==}
+    hasBin: true
 
   type-detect@4.0.8:
     resolution: {integrity: sha512-0fr/mIH1dlO+x7TlcMy+bIDqKPsw/70tVyeHW787goQjhmqaZe10uwLujubK9q9Lg6Fiho1KUKDYz0Z7k7g5/g==}
@@ -726,6 +761,8 @@ snapshots:
   '@types/node@22.19.7':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/semver@7.7.1': {}
 
   '@types/sinonjs__fake-timers@8.1.5': {}
 
@@ -868,6 +905,8 @@ snapshots:
 
   remeda@2.33.4: {}
 
+  semver@7.7.3: {}
+
   shebang-command@2.0.0:
     dependencies:
       shebang-regex: 3.0.0
@@ -891,6 +930,33 @@ snapshots:
   to-regex-range@5.0.1:
     dependencies:
       is-number: 7.0.0
+
+  turbo-darwin-64@2.7.5:
+    optional: true
+
+  turbo-darwin-arm64@2.7.5:
+    optional: true
+
+  turbo-linux-64@2.7.5:
+    optional: true
+
+  turbo-linux-arm64@2.7.5:
+    optional: true
+
+  turbo-windows-64@2.7.5:
+    optional: true
+
+  turbo-windows-arm64@2.7.5:
+    optional: true
+
+  turbo@2.7.5:
+    optionalDependencies:
+      turbo-darwin-64: 2.7.5
+      turbo-darwin-arm64: 2.7.5
+      turbo-linux-64: 2.7.5
+      turbo-linux-arm64: 2.7.5
+      turbo-windows-64: 2.7.5
+      turbo-windows-arm64: 2.7.5
 
   type-detect@4.0.8: {}
 

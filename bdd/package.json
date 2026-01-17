@@ -28,8 +28,5 @@
   "engines": {
     "node": ">= 22"
   },
-  "sideEffects": false,
-  "devDependencies": {
-    "@effectionx/bdd": "workspace:*"
-  }
+  "sideEffects": false
 }

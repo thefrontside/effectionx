@@ -26,9 +26,6 @@
     "node": ">= 22"
   },
   "sideEffects": false,
-  "dependencies": {
-    "@effectionx/task-buffer": "workspace:*"
-  },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
     "@sinonjs/fake-timers": "^14",

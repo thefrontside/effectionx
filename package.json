@@ -7,6 +7,7 @@
     "build": "tsc --build",
     "check": "tsc -p tsconfig.check.json",
     "test": "node --env-file=.env --test \"**/*.test.ts\"",
+    "test:effection": "node --env-file=.env .internal/effection-compat.ts",
     "lint": "biome lint .",
     "format": "biome format . --write",
     "format:check": "biome format .",
@@ -17,9 +18,11 @@
   "devDependencies": {
     "@biomejs/biome": "^1",
     "@types/node": "^22",
+    "@types/semver": "^7",
     "effection": "^3",
     "expect": "^29",
     "semver": "^7.6.3",
+    "turbo": "^2",
     "typescript": "^5"
   },
   "pnpm": {

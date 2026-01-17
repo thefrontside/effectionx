@@ -26,9 +26,6 @@
     "node": ">= 22"
   },
   "sideEffects": false,
-  "dependencies": {
-    "@effectionx/timebox": "workspace:*"
-  },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*"
   }

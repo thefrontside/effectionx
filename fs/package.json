@@ -28,8 +28,5 @@
   "engines": {
     "node": ">= 22"
   },
-  "sideEffects": false,
-  "dependencies": {
-    "@effectionx/fs": "workspace:*"
-  }
+  "sideEffects": false
 }

@@ -18,11 +18,10 @@
     "effection": "^3 || ^4.0.0-0"
   },
   "dependencies": {
-    "immutable": "^5",
-    "remeda": "^2",
     "@effectionx/signals": "workspace:*",
     "@effectionx/timebox": "workspace:*",
-    "@effectionx/stream-helpers": "workspace:*"
+    "immutable": "^5",
+    "remeda": "^2"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",

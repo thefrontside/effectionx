@@ -73,6 +73,20 @@ export function* ensureFile(pathOrUrl: string | URL): Operation<void> {
 }
 
 /**
+ * Read the contents of a directory
+ *
+ * @example
+ * ```ts
+ * import { readdir } from "@effectionx/fs";
+ *
+ * const entries = yield* readdir("./src");
+ * ```
+ */
+export function* readdir(pathOrUrl: string | URL): Operation<string[]> {
+  return yield* until(fsp.readdir(toPath(pathOrUrl)));
+}
+
+/**
  * Empty a directory by removing all its contents.
  * Creates the directory if it doesn't exist.
  *
@@ -87,7 +101,7 @@ export function* emptyDir(pathOrUrl: string | URL): Operation<void> {
   const dirPath = toPath(pathOrUrl);
 
   try {
-    const entries: string[] = yield* until(fsp.readdir(dirPath));
+    const entries = yield* readdir(dirPath);
     yield* all(
       entries.map((entry) =>
         rm(path.join(dirPath, entry), { recursive: true, force: true })

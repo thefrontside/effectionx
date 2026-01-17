@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import {
   all,
   resource,
+  spawn,
   until,
   type Operation,
   type Stream,
@@ -291,10 +292,10 @@ export function walk(
   return resource(function* (provide) {
     const signal = createSignal<WalkEntry, void>();
 
-    async function walkDir(dir: string, depth: number): Promise<void> {
+    function* walkDir(dir: string, depth: number): Operation<void> {
       if (depth > maxDepth) return;
 
-      const entries = await fsp.readdir(dir, { withFileTypes: true });
+      const entries = yield* until(fsp.readdir(dir, { withFileTypes: true }));
 
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
@@ -306,9 +307,9 @@ export function walk(
         // If following symlinks, resolve the target type
         if (isSymlink && followSymlinks) {
           try {
-            const stat = await fsp.stat(fullPath);
-            isDirectory = stat.isDirectory();
-            isFile = stat.isFile();
+            const stats = yield* stat(fullPath);
+            isDirectory = stats.isDirectory();
+            isFile = stats.isFile();
           } catch {
             // Broken symlink, skip
             continue;
@@ -327,7 +328,7 @@ export function walk(
           if (includeDirs && shouldInclude(walkEntry)) {
             signal.send(walkEntry);
           }
-          await walkDir(fullPath, depth + 1);
+          yield* walkDir(fullPath, depth + 1);
         } else if (isSymlink) {
           if (includeSymlinks && shouldInclude(walkEntry)) {
             signal.send(walkEntry);
@@ -340,10 +341,10 @@ export function walk(
       }
     }
 
-    walkDir(rootPath, 0).then(
-      () => signal.close(),
-      () => signal.close(),
-    );
+    yield* spawn(function* () {
+      yield* walkDir(rootPath, 0);
+      signal.close();
+    });
 
     yield* provide(yield* signal);
   });

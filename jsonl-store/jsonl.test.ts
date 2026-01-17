@@ -72,7 +72,7 @@ describe("JSONLStore", () => {
   describe("reading content of a file", () => {
     beforeEach(function* () {
       yield* until(
-        fsp.writeFile(join(tmpDir, "test.jsonl"), `1\n2\n3\n`, "utf-8"),
+        fsp.writeFile(join(tmpDir, "test.jsonl"), "1\n2\n3\n", "utf-8"),
       );
     });
     it("streams multiple items", function* () {

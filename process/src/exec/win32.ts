@@ -111,18 +111,16 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
       if (result.ok) {
         let [code, signal] = result.value;
         return { command, options, code, signal } as ExitStatus;
-      } else {
-        throw result.error;
       }
+        throw result.error;
     }
 
     function* expect() {
       let status = yield* join();
-      if (status.code != 0) {
+      if (status.code !== 0) {
         throw new ExecError(status, command, options);
-      } else {
-        return status;
       }
+        return status;
     }
 
     try {

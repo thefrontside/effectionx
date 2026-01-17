@@ -641,19 +641,19 @@ const updateReferences = async () => {
 
     if (isFixMode && depsChanged) {
       if (Object.keys(updatedDeps.dependencies).length === 0) {
-        delete packageJson.dependencies;
+        packageJson.dependencies = undefined;
       } else {
         packageJson.dependencies = updatedDeps.dependencies;
       }
 
       if (Object.keys(updatedDeps.devDependencies).length === 0) {
-        delete packageJson.devDependencies;
+        packageJson.devDependencies = undefined;
       } else {
         packageJson.devDependencies = updatedDeps.devDependencies;
       }
 
       if (Object.keys(updatedDeps.peerDependencies).length === 0) {
-        delete packageJson.peerDependencies;
+        packageJson.peerDependencies = undefined;
       } else {
         packageJson.peerDependencies = updatedDeps.peerDependencies;
       }

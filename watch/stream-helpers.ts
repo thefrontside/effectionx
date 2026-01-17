@@ -13,9 +13,8 @@ export function debounce<T, R>(
             let result = yield* race([sleep(ms), subscription.next()]);
             if (!result) {
               return next;
-            } else {
-              next = result;
             }
+              next = result;
           }
         },
       };

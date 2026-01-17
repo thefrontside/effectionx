@@ -56,7 +56,7 @@ main(function* (argv) {
         console.error(`failed to start: ${result.error}`);
       }
       yield* start.restarting;
-      process.stdout.write(`--> restarting....\n`);
+      process.stdout.write("--> restarting....\n");
       yield* each.next();
     });
   }

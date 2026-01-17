@@ -23,8 +23,7 @@ import type { Operation, Stream } from "effection";
 export function filter<T>(
   predicate: (value: T) => Operation<boolean>,
 ): <TDone>(stream: Stream<T, TDone>) => Stream<T, TDone> {
-  return function (stream) {
-    return {
+  return (stream) => ({
       *[Symbol.iterator]() {
         const subscription = yield* stream;
 
@@ -45,6 +44,5 @@ export function filter<T>(
           },
         };
       },
-    };
-  };
+    });
 }

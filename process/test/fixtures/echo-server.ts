@@ -6,7 +6,7 @@ console.log("starting server");
 const port = Number.parseInt(process.env.PORT || "29000");
 
 const server = createServer(async (req, res) => {
-  process.stderr.write(`got request\n`);
+  process.stderr.write("got request\n");
 
   // Read the entire request body
   const chunks: Buffer[] = [];

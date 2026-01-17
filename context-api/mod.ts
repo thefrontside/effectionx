@@ -9,9 +9,7 @@ export type Around<A> = {
     : Middleware<[], A[K]>;
 };
 
-export interface Middleware<TArgs extends unknown[], TReturn> {
-  (args: TArgs, next: (...args: TArgs) => TReturn): TReturn;
-}
+export type Middleware<TArgs extends unknown[], TReturn> = (args: TArgs, next: (...args: TArgs) => TReturn) => TReturn
 
 export interface Api<A> {
   operations: Operations<A>;
@@ -51,7 +49,7 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
             return yield* middleware(args, handle);
           },
         });
-      } else {
+      }
         return Object.assign(api, {
           [field]: {
             *[Symbol.iterator]() {
@@ -61,7 +59,6 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
             },
           },
         });
-      }
     },
     {} as Operations<A>,
   );

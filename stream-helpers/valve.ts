@@ -39,8 +39,7 @@ export interface ValveOptions {
 export function valve(
   options: ValveOptions,
 ): <T>(stream: Stream<T, never>) => Stream<T, never> {
-  return function <T>(stream: Stream<T, never>): Stream<T, never> {
-    return {
+  return <T>(stream: Stream<T, never>): Stream<T, never> => ({
       *[Symbol.iterator]() {
         const buffer = yield* createArraySignal<T>([]);
         let open = true;
@@ -70,6 +69,5 @@ export function valve(
           },
         };
       },
-    };
-  };
+    });
 }

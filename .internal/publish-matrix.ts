@@ -12,7 +12,7 @@ await main(function* () {
   for (const pkg of packages) {
     const tagname = `${pkg.name.split("/")[1]}-v${pkg.version}`;
 
-    const git = yield* x(`git`, [`tag`, `--list`, tagname]);
+    const git = yield* x("git", ["tag", "--list", tagname]);
     const { stdout } = yield* git;
 
     // if tag doesn't exist, check npm registry
@@ -25,7 +25,7 @@ await main(function* () {
       };
 
       // Check NPM registry
-      const npmCheck = yield* x(`npm`, [`view`, `${pkg.name}@${pkg.version}`], {
+      const npmCheck = yield* x("npm", ["view", `${pkg.name}@${pkg.version}`], {
         throwOnError: false,
       });
       const npmOutput = yield* npmCheck;
@@ -50,7 +50,7 @@ await main(function* () {
 
   if (process.env.GITHUB_OUTPUT) {
     yield* call(() =>
-      fsp.appendFile(process.env.GITHUB_OUTPUT as string, outputValue + "\n"),
+      fsp.appendFile(process.env.GITHUB_OUTPUT as string, `${outputValue}\n`),
     );
   }
 });

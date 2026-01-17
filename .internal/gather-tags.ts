@@ -34,7 +34,7 @@ await main(function* () {
 
   if (process.env.GITHUB_OUTPUT) {
     yield* call(() =>
-      fsp.appendFile(process.env.GITHUB_OUTPUT as string, outputValue + "\n"),
+      fsp.appendFile(process.env.GITHUB_OUTPUT as string, `${outputValue}\n`),
     );
   }
 });

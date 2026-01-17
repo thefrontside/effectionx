@@ -132,9 +132,8 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
           let result = (event as MessageEvent).data;
           if (result.ok) {
             return result.value;
-          } else {
-            throw result.error;
           }
+            throw result.error;
         },
         [Symbol.iterator]: outcome.operation[Symbol.iterator],
       });

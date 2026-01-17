@@ -6,7 +6,7 @@ import { createTestAdapter } from "../mod.ts";
 describe("TestAdapter", () => {
   it("can run a test", async () => {
     let adapter = createTestAdapter();
-    let result: string = "pending";
+    let result = "pending";
     await adapter.runTest(function* () {
       result = "done";
     });
@@ -71,7 +71,7 @@ describe("TestAdapter", () => {
       resource<void>(function* (provide) {
         try {
           sequence.push("parent/setup:once");
-          contexts["parent"] = yield* context.expect();
+          contexts.parent = yield* context.expect();
           yield* provide();
         } finally {
           sequence.push("parent/teardown:once");

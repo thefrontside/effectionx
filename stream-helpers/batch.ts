@@ -27,8 +27,7 @@ export interface BatchOptions {
 export function batch(
   options: RequireAtLeastOne<BatchOptions>,
 ): <T>(stream: Stream<T, never>) => Stream<Readonly<T[]>, never> {
-  return function <T>(stream: Stream<T, never>): Stream<Readonly<T[]>, never> {
-    return {
+  return <T>(stream: Stream<T, never>): Stream<Readonly<T[]>, never> => ({
       *[Symbol.iterator]() {
         const subscription = yield* stream;
         let lastPull: Task<IteratorResult<T, never>> | undefined;
@@ -62,12 +61,12 @@ export function batch(
                   done: false as const,
                   value: batch,
                 };
-              } else if (options.maxTime && start + options.maxTime <= now) {
+              }if (options.maxTime && start + options.maxTime <= now) {
                 return {
                   done: false as const,
                   value: batch,
                 };
-              } else if (options.maxTime) {
+              }if (options.maxTime) {
                 const task = yield* spawn(() => subscription.next());
 
                 const timeout = yield* timebox(
@@ -82,9 +81,8 @@ export function batch(
                     done: false as const,
                     value: batch,
                   };
-                } else {
-                  next = timeout.value;
                 }
+                  next = timeout.value;
               } else {
                 next = yield* subscription.next();
               }
@@ -102,6 +100,5 @@ export function batch(
           },
         };
       },
-    };
-  };
+    });
 }

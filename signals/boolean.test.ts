@@ -47,11 +47,11 @@ describe("boolean", () => {
           subscription.next(),
           (function* () {
             yield* sleep(1);
-            return `sleep won; update not received`;
+            return "sleep won; update not received";
           })(),
         ]);
 
-        expect(next).toEqual(`sleep won; update not received`);
+        expect(next).toEqual("sleep won; update not received");
 
         boolean.set(false);
 

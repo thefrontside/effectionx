@@ -42,8 +42,7 @@ export function lines(): <T extends Uint8Array, TReturn>(
   stream: Stream<T, TReturn>,
 ) => Stream<string, Remainder<TReturn>> {
   const decoder = new TextDecoder();
-  return function (stream) {
-    return {
+  return (stream) => ({
       *[Symbol.iterator]() {
         let subscription = yield* stream;
         let buffer: string[] = [];
@@ -61,7 +60,7 @@ export function lines(): <T extends Uint8Array, TReturn>(
                     result: next.value,
                   },
                 };
-              } else {
+              }
                 let current = remainder + decoder.decode(next.value);
                 let lines = current.split("\n");
                 if (lines.length > 0) {
@@ -70,7 +69,6 @@ export function lines(): <T extends Uint8Array, TReturn>(
                 } else {
                   remainder = current;
                 }
-              }
             }
             return {
               done: false,
@@ -79,8 +77,7 @@ export function lines(): <T extends Uint8Array, TReturn>(
           },
         };
       },
-    };
-  };
+    });
 }
 
 export function* box<T>(op: () => Operation<T>): Operation<Result<T>> {

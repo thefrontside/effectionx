@@ -276,7 +276,7 @@ export function walk(
     includeSymlinks = true,
     match,
     skip,
-    maxDepth = Infinity,
+    maxDepth = Number.POSITIVE_INFINITY,
     followSymlinks = false,
   } = options;
 
@@ -433,7 +433,7 @@ export function globToRegExp(
       case "=":
       case "!":
       case "|":
-        pattern += "\\" + c;
+        pattern += `\\${c}`;
         break;
 
       case "?":
@@ -449,7 +449,7 @@ export function globToRegExp(
         if (extended) {
           pattern += c;
         } else {
-          pattern += "\\" + c;
+          pattern += `\\${c}`;
         }
         break;
 
@@ -506,7 +506,7 @@ export function globToRegExp(
       case "\\":
         // Escape next character
         if (next) {
-          pattern += "\\" + next;
+          pattern += `\\${next}`;
           i++;
         }
         break;

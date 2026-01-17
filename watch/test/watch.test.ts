@@ -54,7 +54,7 @@ describe("watch", () => {
     let processes = yield* inspector(
       watch({
         path: fixture.path,
-        cmd: `echo hello`,
+        cmd: "echo hello",
         event: "change",
       }),
     );

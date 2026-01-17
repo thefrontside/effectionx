@@ -15,9 +15,7 @@ import {
 } from "effection";
 import { box } from "./box.ts";
 
-export interface TestOperation {
-  (): Operation<void>;
-}
+export type TestOperation = () => Operation<void>
 
 export interface TestAdapter {
   /**
@@ -77,7 +75,7 @@ export interface TestAdapter {
    *
    * @ignore
    */
-  ["@@init@@"](): Operation<Result<Scope>>;
+  "@@init@@"(): Operation<Result<Scope>>;
 }
 
 export interface TestAdapterOptions {
@@ -162,7 +160,7 @@ export function createTestAdapter(
       });
     },
 
-    *["@@init@@"]() {
+    *"@@init@@"() {
       if (scope) {
         return yield* scope.operation;
       }
@@ -184,9 +182,9 @@ export function createTestAdapter(
           }
         });
         if (!init.ok) {
-          scope!.resolve(init);
+          scope?.resolve(init);
         } else {
-          scope!.resolve(Ok(yield* useScope()));
+          scope?.resolve(Ok(yield* useScope()));
           yield* suspend();
         }
       });

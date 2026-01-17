@@ -9,8 +9,7 @@ import type { Operation, Stream } from "effection";
 export function map<A, B>(
   fn: (value: A) => Operation<B>,
 ): <TClose>(stream: Stream<A, TClose>) => Stream<B, TClose> {
-  return function (stream) {
-    return {
+  return (stream) => ({
       *[Symbol.iterator]() {
         const subscription = yield* stream;
 
@@ -30,6 +29,5 @@ export function map<A, B>(
           },
         };
       },
-    };
-  };
+    });
 }

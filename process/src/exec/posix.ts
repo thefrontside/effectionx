@@ -92,18 +92,16 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
       if (result.ok) {
         let [code, signal] = result.value;
         return { command, options, code, signal } as ExitStatus;
-      } else {
-        throw result.error;
       }
+        throw result.error;
     }
 
     function* expect() {
       let status: ExitStatus = yield* join();
-      if (status.code != 0) {
+      if (status.code !== 0) {
         throw new ExecError(status, command, options);
-      } else {
-        return status;
       }
+        return status;
     }
 
     try {

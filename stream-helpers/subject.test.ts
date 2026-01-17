@@ -15,9 +15,8 @@ function* next<T, TClose>(
   const item = yield* subscription.next();
   if (item.done) {
     return item.value;
-  } else {
-    return item.value;
   }
+    return item.value;
 }
 
 describe("subject", () => {

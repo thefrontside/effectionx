@@ -61,9 +61,8 @@ export class JSONLStore implements Store {
 
     if (pathname.charAt(-1) === "/") {
       return new JSONLStore(toFileUrl(pathname));
-    } else {
-      return new JSONLStore(toFileUrl(`${pathname}/`));
     }
+      return new JSONLStore(toFileUrl(`${pathname}/`));
   }
 
   /**
@@ -231,7 +230,7 @@ export class JSONLStore implements Store {
         for (const file of yield* each(stream(files))) {
           const key = file.path
             .replace(root, "")
-            .replaceAll(`\\`, `/`)
+            .replaceAll("\\", "/")
             .replace(/\.jsonl$/, "");
 
           for (const item of yield* each(read<T>(key))) {

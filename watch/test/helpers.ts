@@ -121,16 +121,14 @@ export function inspector(stream: Stream<Start, never>): Operation<Inspector> {
             let result = starts[starts.length - 1];
             if (result.ok) {
               return result.value;
-            } else {
+            }
               throw new Error(
                 `expected successful start, but failed: ${result.error}`,
               );
-            }
-          } else {
-            yield* sleep(10);
           }
+            yield* sleep(10);
         }
-        throw new Error(`expecting a sucessful start but it never appeared.`);
+        throw new Error("expecting a sucessful start but it never appeared.");
       },
       *expectNoRestart() {
         let prexisting = starts.length;

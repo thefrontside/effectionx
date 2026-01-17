@@ -61,7 +61,7 @@ export function createBDD(primitives: TestPrimitives): BDD {
   }
 
   describe.skip = $describe.skip;
-  describe.only = function (name: string, fn: () => void): void {
+  describe.only = (name: string, fn: () => void): void => {
     const original = current;
     try {
       const child = (current = createTestAdapter({ name, parent: original }));

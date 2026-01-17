@@ -197,7 +197,7 @@ export function createWorkerStatesSignal(): Operation<WorkerStateSignal> {
     const interrupt: WorkerStateSignal["interrupt"] = () => {
       let next: Interrupted = {
         type: "interrupted",
-        error: new Error(`worker terminated`),
+        error: new Error("worker terminated"),
       };
       set(next);
       return next;
@@ -221,11 +221,10 @@ export function createWorkerStatesSignal(): Operation<WorkerStateSignal> {
         start(task) {
           if (ref.current.type === "complete") {
             return ref.current;
-          } else {
+          }
             const next: Running = { type: "running", task };
             set(next);
             return next;
-          }
         },
         complete(value) {
           let next: Complete = { type: "complete", value };

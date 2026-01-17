@@ -187,9 +187,8 @@ function* findIgnores(path: string): Operation<(path: string) => boolean> {
       let relativePathname = relative(path, pathname).trim();
       return relativePathname !== "" && ignores.ignores(relativePathname);
     };
-  } else {
-    return () => false;
   }
+    return () => false;
 }
 
 function fresh(staletime: number): (args: EmitArgsWithName) => boolean {

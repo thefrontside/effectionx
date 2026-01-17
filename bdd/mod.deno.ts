@@ -44,11 +44,11 @@ export function describe(
 }
 
 describe.skip = $describe.skip;
-describe.only = function (
+describe.only = (
   name: string,
   body: () => void,
   options?: SanitizeOptions,
-): void {
+): void => {
   const original = current;
   try {
     const child = (current = createTestAdapter({ name, parent: original }));

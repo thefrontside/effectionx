@@ -224,12 +224,20 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: '0 6 * * 1'  # Weekly on Monday at 6am UTC
+    - cron: '0 6 * * 1'  # Weekly Monday 6am UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   compat:
-    name: Effection Compatibility
-    runs-on: ubuntu-latest
+    name: Effection Compat (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -240,7 +248,7 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --no-frozen-lockfile
 
       - name: Run compatibility tests
         run: pnpm test:effection
@@ -248,8 +256,9 @@ jobs:
 
 ### Notes
 
-- **Non-frozen lockfile**: The runner uses `--no-frozen-lockfile` internally because it swaps Effection versions via pnpm overrides.
-- **Single OS**: No need for OS matrix; version compatibility is OS-agnostic.
+- **Non-frozen lockfile**: Uses `--no-frozen-lockfile` because the runner swaps Effection versions via pnpm overrides.
+- **OS matrix**: Runs on ubuntu, macos, and windows due to OS-specific package behavior (e.g., `@effectionx/process`).
+- **Blocks publish**: The `publish.yaml` workflow requires compat tests to pass before publishing.
 - **Separate from verify**: Compatibility tests run independently so regular tests remain fast.
 
 ## Design Decisions

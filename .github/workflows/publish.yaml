@@ -9,8 +9,11 @@ jobs:
   verify:
     uses: ./.github/workflows/verify-node.yaml
 
+  compat:
+    uses: ./.github/workflows/effection-compat.yaml
+
   generate-matrix:
-    needs: [verify]
+    needs: [verify, compat]
     name: Generate Job Matrix
     runs-on: ubuntu-latest
     outputs:

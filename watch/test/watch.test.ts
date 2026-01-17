@@ -19,7 +19,7 @@ describe("watch", () => {
         execOptions: {
           cwd: import.meta.dirname,
           env: {
-            PATH: process.env.PATH!,
+            PATH: process.env.PATH ?? "",
           },
           arguments: [fixture.getPath("src/file.txt")],
         },
@@ -84,7 +84,7 @@ describe("watch", () => {
         execOptions: {
           cwd: import.meta.dirname,
           env: {
-            PATH: process.env.PATH!,
+            PATH: process.env.PATH ?? "",
           },
         },
       }),

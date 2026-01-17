@@ -1,4 +1,4 @@
-import { createTestAdapter, type TestAdapter } from "@effectionx/test-adapter";
+import { type TestAdapter, createTestAdapter } from "@effectionx/test-adapter";
 import type { Operation } from "effection";
 
 /**
@@ -84,7 +84,10 @@ export function createBDD(primitives: TestPrimitives): BDD {
   }
 
   function it(desc: string, body?: () => Operation<void>): void {
-    const adapter = current!;
+    if (!current) {
+      throw new Error("it() must be called within a describe() block");
+    }
+    const adapter = current;
     if (!body) {
       $it.skip(desc, () => {});
       return;
@@ -103,7 +106,10 @@ export function createBDD(primitives: TestPrimitives): BDD {
   };
 
   it.only = (desc: string, body: () => Operation<void>): void => {
-    const adapter = current!;
+    if (!current) {
+      throw new Error("it.only() must be called within a describe() block");
+    }
+    const adapter = current;
     $it.only(desc, async () => {
       const result = await adapter.runTest(body);
       if (!result.ok) {

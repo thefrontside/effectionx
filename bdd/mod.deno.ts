@@ -1,10 +1,10 @@
-import { createTestAdapter, type TestAdapter } from "@effectionx/test-adapter";
-import type { Operation } from "effection";
+import { type TestAdapter, createTestAdapter } from "@effectionx/test-adapter";
 import {
   afterAll as $afterAll,
   describe as $describe,
   it as $it,
 } from "@std/testing/bdd";
+import type { Operation } from "effection";
 
 /**
  * Sanitization options for test cases and test suites.
@@ -79,7 +79,10 @@ export function it(
   body?: () => Operation<void>,
   options?: SanitizeOptions,
 ): void {
-  const adapter = current!;
+  if (!current) {
+    throw new Error("it() must be called within a describe() block");
+  }
+  const adapter = current;
   if (!body) {
     $it.skip(desc, () => {});
     return;
@@ -106,7 +109,10 @@ it.only = (
   body: () => Operation<void>,
   options?: SanitizeOptions,
 ): void => {
-  const adapter = current!;
+  if (!current) {
+    throw new Error("it.only() must be called within a describe() block");
+  }
+  const adapter = current;
   $it.only({
     name: desc,
     fn: async () => {

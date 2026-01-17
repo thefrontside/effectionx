@@ -1,13 +1,13 @@
+import type { Readable } from "node:stream";
 import {
-  createSignal,
   Err,
   Ok,
   type Operation,
-  resource,
   type Result,
   type Stream,
+  createSignal,
+  resource,
 } from "effection";
-import type { Readable } from "node:stream";
 
 export type OutputStream = Stream<Uint8Array, void>;
 
@@ -43,41 +43,43 @@ export function lines(): <T extends Uint8Array, TReturn>(
 ) => Stream<string, Remainder<TReturn>> {
   const decoder = new TextDecoder();
   return (stream) => ({
-      *[Symbol.iterator]() {
-        let subscription = yield* stream;
-        let buffer: string[] = [];
-        let remainder = "";
+    *[Symbol.iterator]() {
+      let subscription = yield* stream;
+      let buffer: string[] = [];
+      let remainder = "";
 
-        return {
-          *next() {
-            while (buffer.length === 0) {
-              let next = yield* subscription.next();
-              if (next.done) {
-                return {
-                  done: true,
-                  value: {
-                    remainder,
-                    result: next.value,
-                  },
-                };
-              }
-                let current = remainder + decoder.decode(next.value);
-                let lines = current.split("\n");
-                if (lines.length > 0) {
-                  buffer.push(...lines.slice(0, -1));
-                  remainder = lines.slice(-1)[0];
-                } else {
-                  remainder = current;
-                }
+      return {
+        *next() {
+          while (buffer.length === 0) {
+            let next = yield* subscription.next();
+            if (next.done) {
+              return {
+                done: true,
+                value: {
+                  remainder,
+                  result: next.value,
+                },
+              };
             }
-            return {
-              done: false,
-              value: buffer.pop()!,
-            };
-          },
-        };
-      },
-    });
+            let current = remainder + decoder.decode(next.value);
+            let lines = current.split("\n");
+            if (lines.length > 0) {
+              buffer.push(...lines.slice(0, -1));
+              remainder = lines.slice(-1)[0];
+            } else {
+              remainder = current;
+            }
+          }
+          // biome-ignore lint/style/noNonNullAssertion: buffer.length > 0 guaranteed by while loop
+          const value = buffer.pop()!;
+          return {
+            done: false,
+            value,
+          };
+        },
+      };
+    },
+  });
 }
 
 export function* box<T>(op: () => Operation<T>): Operation<Result<T>> {

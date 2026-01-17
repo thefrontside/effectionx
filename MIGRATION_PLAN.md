@@ -41,8 +41,8 @@ Add devDependencies, scripts, and pnpm peer dependency rules:
     "lint": "biome lint .",
     "format": "biome format . --write",
     "format:check": "biome format .",
-    "sync:tsrefs": "node --experimental-strip-types tasks/sync-tsrefs.ts",
-    "sync:tsrefs:fix": "node --experimental-strip-types tasks/sync-tsrefs.ts fix",
+    "sync": "node --experimental-strip-types tasks/sync-tsrefs.ts",
+    "sync:fix": "node --experimental-strip-types tasks/sync-tsrefs.ts fix",
     "check:tsrefs": "node --experimental-strip-types tasks/sync-tsrefs.ts check"
   },
   "devDependencies": {
@@ -275,15 +275,15 @@ Delete after migrating configuration to package.json and tsconfig.json.
 After creating all package `tsconfig.json` and `package.json` files, run:
 
 ```bash
-pnpm sync:tsrefs:fix
+pnpm sync:fix
 ```
 
 The `sync-tsrefs.ts` script has three subcommand modes:
 
 | Command | Description |
 |---------|-------------|
-| `pnpm sync:tsrefs` | Updates tsconfig `references` only (default) |
-| `pnpm sync:tsrefs:fix` | Updates references and adds missing workspace deps to package.json |
+| `pnpm sync` | Updates tsconfig `references` only (default) |
+| `pnpm sync:fix` | Updates references and adds missing workspace deps to package.json |
 | `pnpm check:tsrefs` | Fails if references or deps are out of date (for CI) |
 
 The script:
@@ -298,9 +298,9 @@ The script:
 
 
 > **Important:** 
-> - Each package's `tsconfig.json` must be created before running `sync:tsrefs`
+> - Each package's `tsconfig.json` must be created before running `sync`
 > - The root `tsconfig.test.json` must exist for correct test file classification
-> - Run `pnpm sync:tsrefs:fix` to auto-update both references and package.json dependencies
+> - Run `pnpm sync:fix` to auto-update both references and package.json dependencies
 
 ## Phase 3: Test Infrastructure
 

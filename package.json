@@ -10,8 +10,8 @@
     "lint": "biome lint .",
     "format": "biome format . --write",
     "format:check": "biome format .",
-    "sync:tsrefs": "node --env-file=.env .internal/sync-tsrefs.ts",
-    "sync:tsrefs:fix": "node --env-file=.env .internal/sync-tsrefs.ts fix",
+    "sync": "node --env-file=.env .internal/sync-tsrefs.ts",
+    "sync:fix": "node --env-file=.env .internal/sync-tsrefs.ts fix",
     "check:tsrefs": "node --env-file=.env .internal/sync-tsrefs.ts check"
   },
   "devDependencies": {

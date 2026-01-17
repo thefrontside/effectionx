@@ -1,15 +1,17 @@
-if (Deno.args.length !== 1) {
-  console.error("Usage: deno run cat.ts <file>");
-  Deno.exit(1);
+import { readFileSync } from "node:fs";
+import process from "node:process";
+
+if (process.argv.length !== 3) {
+  console.error("Usage: node cat.ts <file>");
+  process.exit(1);
 }
 
-const filename = Deno.args[0];
+const filename = process.argv[2];
 
 try {
-  const content = await Deno.readTextFile(filename);
-  const encoder = new TextEncoder();
-  await Deno.stdout.write(encoder.encode(content));
+  const content = readFileSync(filename, "utf-8");
+  process.stdout.write(content);
 } catch (error) {
   console.error(`Error reading file "${filename}":`, (error as Error).message);
-  Deno.exit(1);
+  process.exit(1);
 }

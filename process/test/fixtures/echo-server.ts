@@ -1,16 +1,19 @@
-const { process } = globalThis;
+import { createServer } from "node:http";
+import process from "node:process";
 
 console.log("starting server");
-Deno.serve({
-  port: parseInt(process.env.PORT || "29000"),
-  onListen: () => {
-    console.log("listening");
-  },
-}, async (request: Request) => {
+
+const port = Number.parseInt(process.env.PORT || "29000");
+
+const server = createServer(async (req, res) => {
   process.stderr.write(`got request\n`);
 
   // Read the entire request body
-  const command = await request.text();
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    chunks.push(chunk);
+  }
+  const command = Buffer.concat(chunks).toString();
 
   // Handle the command asynchronously to allow response to be sent first
   setTimeout(() => {
@@ -18,13 +21,15 @@ Deno.serve({
   }, 100);
 
   // Echo the request body back
-  return new Response(command, {
-    status: 200,
-    headers: { "Content-Type": "text/plain" },
-  });
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end(command);
 });
 
-process.on("message", function (message: unknown) {
+server.listen(port, () => {
+  console.log("listening");
+});
+
+process.on("message", (message: unknown) => {
   console.log("got message", message);
   if (process.send) {
     process.send(message);

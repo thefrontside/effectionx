@@ -28,5 +28,8 @@
   "sideEffects": false,
   "devDependencies": {
     "@effectionx/bdd": "workspace:*"
+  },
+  "dependencies": {
+    "@effectionx/timebox": "workspace:*"
   }
 }

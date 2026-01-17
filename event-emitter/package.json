@@ -25,5 +25,8 @@
   "engines": {
     "node": ">= 22"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "dependencies": {
+    "@effectionx/event-emitter": "workspace:*"
+  }
 }

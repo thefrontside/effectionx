@@ -26,13 +26,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Check formatting
-        run: pnpm format:check
+        run: pnpm fmt:check
 
       - name: Lint
         run: pnpm lint
 
       - name: Typecheck
-        run: pnpm typecheck
+        run: pnpm check
 
       - name: Check tsconfig refs
         run: pnpm check:tsrefs

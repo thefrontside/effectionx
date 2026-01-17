@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { readTextFile } from "@effectionx/fs";
@@ -145,9 +146,13 @@ const main = function* (): Operation<void> {
   console.log("Cleaning up...");
   console.log("=".repeat(60));
 
-  yield* runCommand(
-    "pnpm config delete --location project pnpm.overrides.effection",
-  );
+  // Remove .npmrc created by pnpm config set
+  const npmrcPath = path.join(rootDir, ".npmrc");
+  if (fs.existsSync(npmrcPath)) {
+    fs.unlinkSync(npmrcPath);
+    console.log("Removed .npmrc");
+  }
+
   yield* runCommand("pnpm install --no-frozen-lockfile");
 
   console.log("\n All compatibility tests complete!");

@@ -32,3 +32,6 @@ dist/
 
 # Test temp directories
 **/test-tmp/
+
+# pnpm config (created by effection-compat runner)
+.npmrc

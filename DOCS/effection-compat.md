@@ -1,39 +1,125 @@
 # Effection Compatibility Test Runner
 
-This document describes the local workflow for running the test suite against the minimum and maximum Effection versions declared by each package. It includes implementation sketches with code snippets for review.
+This document describes the workflow for testing packages against the minimum and maximum Effection versions declared by each package's `peerDependencies`.
 
 ## Goals
 
-- Run tests for each package at the **lowest** and **highest stable** Effection versions supported by its peer range.
+- Run tests for each package at the **lowest** and **highest** Effection versions supported by its peer range.
 - Prefer **stable** max versions when available; only use prerelease if no stable satisfies.
-- Support local usage for **one**, **many**, or **all** packages.
-- Support **watch** for a **one**, **many**, or **all** packages.
-- Avoid committing multiple lockfiles; allow non-frozen installs for the compatibility runner.
+- Group packages by version to minimize install cycles.
+- Use Turbo `--filter` flags to only test relevant packages per version group.
 
-## Definitions
-
-- **min version**: `semver.minVersion(range)`
-- **max version**: `semver.maxSatisfying(versions, range, { includePrerelease: false })`, with prerelease fallback if null.
-
----
-
-## Turbo Version Groups (Generated Config)
-
-This approach groups tests by Effection version and runs Turbo once per version, which avoids override conflicts while keeping parallelism within each version group.
-
-### Workflow
-
-1) Resolve all min/max versions across packages.
-2) For each unique version:
-   - apply override + install
-   - run Turbo tests across the workspace (parallel within that version)
-3) Repeat for the next version.
+## Usage
 
 ```bash
-node --env-file=.env .internal/effection-compat.ts
+pnpm test:effection
 ```
 
-### Turbo Config Sketch (`turbo.json`)
+## How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     Effection Compatibility Test Runner                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  1. RESOLVE VERSION GROUPS                                                  │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │  Read pnpm-workspace.yaml                                              │ │
+│  │       │                                                                │ │
+│  │       ▼                                                                │ │
+│  │  For each package:                                                     │ │
+│  │    • Read package.json → peerDependencies.effection                    │ │
+│  │    • Fetch all effection versions from npm                             │ │
+│  │    • Resolve min (semver.minVersion) and max (semver.maxSatisfying)    │ │
+│  │       │                                                                │ │
+│  │       ▼                                                                │ │
+│  │  Group packages by version:                                            │ │
+│  │    version 3.0.0 → [pkg-a, pkg-b, pkg-c, ...]                          │ │
+│  │    version 4.0.0 → [pkg-a, pkg-b, pkg-c, ...]                          │ │
+│  └────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  2. FOR EACH VERSION GROUP                                                  │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │                         ┌──────────────────┐                           │ │
+│  │                         │ Version: 3.0.0   │                           │ │
+│  │                         │ Packages: [...]  │                           │ │
+│  │                         └────────┬─────────┘                           │ │
+│  │                                  │                                     │ │
+│  │    ┌─────────────────────────────┼─────────────────────────────┐       │ │
+│  │    │                             ▼                             │       │ │
+│  │    │  [1/3] Set pnpm override                                  │       │ │
+│  │    │        pnpm config set pnpm.overrides.effection=3.0.0     │       │ │
+│  │    │                             │                             │       │ │
+│  │    │                             ▼                             │       │ │
+│  │    │  [2/3] Install dependencies                               │       │ │
+│  │    │        pnpm install --no-frozen-lockfile                  │       │ │
+│  │    │                             │                             │       │ │
+│  │    │                             ▼                             │       │ │
+│  │    │  [3/3] Run tests with Turbo filters                       │       │ │
+│  │    │        pnpm turbo run test --filter=pkg-a --filter=pkg-b  │       │ │
+│  │    └─────────────────────────────┬─────────────────────────────┘       │ │
+│  │                                  │                                     │ │
+│  │                                  ▼                                     │ │
+│  │                         ┌──────────────────┐                           │ │
+│  │                         │ Version: 4.0.0   │                           │ │
+│  │                         │ Packages: [...]  │                           │ │
+│  │                         └────────┬─────────┘                           │ │
+│  │                                  │                                     │ │
+│  │                            (repeat...)                                 │ │
+│  └────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  3. CLEANUP                                                                 │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │  • Remove .npmrc (created by pnpm config set)                          │ │
+│  │  • Reinstall with original lockfile                                    │ │
+│  └────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Version Resolution
+
+For each package with an `effection` peer dependency (e.g., `^3 || ^4.0.0-0`):
+
+1. **min version**: `semver.minVersion(range)` → `3.0.0`
+2. **max version**: `semver.maxSatisfying(versions, range)` with stable preference → `4.0.0`
+
+### Version Groups
+
+Packages are grouped by which versions they support. For example:
+
+| Package | Peer Range | Min | Max |
+|---------|------------|-----|-----|
+| @effectionx/process | `^3 \|\| ^4.0.0-0` | 3.0.0 | 4.0.0 |
+| @effectionx/signals | `^3 \|\| ^4.0.0-0` | 3.0.0 | 4.0.0 |
+
+This produces two version groups:
+- **3.0.0**: all packages supporting 3.x
+- **4.0.0**: all packages supporting 4.x
+
+### Execution Flow
+
+For each version group:
+
+1. Set pnpm override: `pnpm config set --location project pnpm.overrides.effection=<version>`
+2. Install dependencies: `pnpm install --no-frozen-lockfile`
+3. Run tests with filters: `pnpm turbo run test --filter=@effectionx/pkg1 --filter=@effectionx/pkg2 ...`
+
+After all groups complete:
+
+4. Remove `.npmrc` (created by pnpm config set)
+5. Reinstall: `pnpm install --no-frozen-lockfile`
+
+## Configuration
+
+### Turbo Config (`turbo.json`)
 
 ```json
 {
@@ -50,13 +136,16 @@ node --env-file=.env .internal/effection-compat.ts
     },
     "test": {
       "dependsOn": ["^check"],
-      "outputs": []
+      "outputs": [],
+      "cache": false
     }
   }
 }
 ```
 
-### Root Script Hook
+Note: `cache: false` on `test` prevents cross-version caching artifacts.
+
+### Root Script (`package.json`)
 
 ```json
 {
@@ -66,155 +155,117 @@ node --env-file=.env .internal/effection-compat.ts
 }
 ```
 
-### Runner Sketch (`.internal/effection-compat.ts`)
+### Runner Dependencies (`.internal/package.json`)
 
-```ts
-import path from "node:path";
-import { type Operation, run } from "effection";
-import { exec } from "@effectionx/process";
-import { readTextFile, writeTextFile } from "@effectionx/fs";
-import semver from "semver";
-
-type PackageInfo = { name: string; dir: string; peerRange: string | null };
-
-type VersionPair = { min: string; max: string };
-
-const rootDir = process.cwd();
-
-const runCommand = (command: string) => exec(command).expect();
-
-const readJson = function* <T>(filePath: string): Operation<T> {
-  const raw = yield* readTextFile(filePath);
-  return JSON.parse(raw) as T;
-};
-
-const getWorkspacePackages = function* (): Operation<PackageInfo[]> {
-  const workspace = yield* readTextFile(path.join(rootDir, "pnpm-workspace.yaml"));
-  const lines = workspace.split(/\r?\n/).filter((line) => line.trim().startsWith("-"));
-  const entries = lines.map((line) => line.replace(/^\s*-\s*/, "").replace(/['"]/g, ""));
-
-  const packages: PackageInfo[] = [];
-  for (const entry of entries) {
-    const dir = path.join(rootDir, entry);
-    const pkgPath = path.join(dir, "package.json");
-    const pkg = yield* readJson<{ name: string; peerDependencies?: Record<string, string> }>(pkgPath);
-    packages.push({
-      name: pkg.name,
-      dir,
-      peerRange: pkg.peerDependencies?.effection ?? null,
-    });
+```json
+{
+  "dependencies": {
+    "@effectionx/fs": "workspace:*",
+    "@effectionx/process": "workspace:*",
+    "effection": "^3 || ^4.0.0-0",
+    "semver": "^7.7.2"
   }
-  return packages;
-};
-
-const fetchEffectionVersions = function* (): Operation<string[]> {
-  const { stdout } = yield* runCommand("npm view effection versions --json");
-  return JSON.parse(stdout) as string[];
-};
-
-const resolveVersionPair = (allVersions: string[], range: string): VersionPair => {
-  const min = semver.minVersion(range)?.version;
-  if (!min) throw new Error(`No min version for range: ${range}`);
-
-  const stableMax = semver.maxSatisfying(allVersions, range, { includePrerelease: false });
-  const max = stableMax ?? semver.maxSatisfying(allVersions, range, { includePrerelease: true });
-  if (!max) throw new Error(`No max version for range: ${range}`);
-
-  return { min, max };
-};
-
-const resolveVersionGroups = function* (): Operation<string[]> {
-  const packages = yield* getWorkspacePackages();
-  const allVersions = yield* fetchEffectionVersions();
-  const unique = new Set<string>();
-
-  for (const pkg of packages) {
-    if (!pkg.peerRange) continue;
-    const { min, max } = resolveVersionPair(allVersions, pkg.peerRange);
-    unique.add(min);
-    unique.add(max);
-  }
-
-  return Array.from(unique).sort(semver.compare);
-};
-
-const main = function* (): Operation<void> {
-  const configJson = JSON.stringify({
-    $schema: "https://turbo.build/schema.json",
-    tasks: {
-      build: { outputs: ["dist/**", "*.tsbuildinfo"] },
-      lint: { outputs: [] },
-      check: { outputs: [] },
-      test: { dependsOn: ["^check"], outputs: [], cache: false },
-    },
-  }, null, 2);
-  const configPath = "/tmp/turbo.effection.json";
-
-  yield* writeTextFile(configPath, configJson);
-
-  const versions = yield* resolveVersionGroups();
-
-  for (const version of versions) {
-    yield* runCommand(`pnpm config set --location project pnpm.overrides.effection=${version}`);
-    yield* runCommand("pnpm install --no-frozen-lockfile");
-    yield* runCommand(`pnpm turbo run test --config ${configPath}`);
-  }
-
-  yield* runCommand("pnpm config delete --location project pnpm.overrides.effection");
-  yield* runCommand("pnpm install --no-frozen-lockfile");
-};
-
-run(main);
+}
 ```
 
-### Version Swap Mechanism (Selected)
+## Example Output
 
-The runner applies overrides per **version group**:
+```
+Effection Compatibility Test Runner
+====================================
 
-- Set the override once per version: `pnpm config set pnpm.overrides.effection=<version>`
-- Install with `pnpm install --no-frozen-lockfile`
-- Run `pnpm turbo run test --config /tmp/turbo.effection.json` for that group
-- Clear the override and reinstall at the end
+Resolving version groups...
+Fetching effection versions from npm...
+  @effectionx/bdd: min=3.0.0, max=4.0.0
+  @effectionx/chain: min=3.0.0, max=4.0.0
+  @effectionx/process: min=3.0.0, max=4.0.0
+  ...
 
-**Lockfiles decision (for posterity):** we are not using per-version lockfiles for compatibility runs because they are high-maintenance and would require keeping multiple lockfiles in sync across the workspace.
+Will test against 2 Effection versions: 3.0.0, 4.0.0
 
-### Notes on Turbo Usage
+============================================================
+Testing with Effection 3.0.0
+Packages: @effectionx/bdd, @effectionx/chain, @effectionx/process, ...
+============================================================
 
-- `test` runs with the full Turbo task graph, so you can use `turbo run lint`, `turbo run check`, or `turbo run build` with the same config file.
-- Turbo does not natively manage dependency swaps; the runner handles overrides per version group.
-- Use `cache: false` to avoid cross-version caching artifacts in `test` when running the version groups.
-- Since this is local-only, `pnpm` can use `packageImportMethod=hardlink` for faster installs if your filesystem supports it.
+[1/3] Setting override to effection@3.0.0...
+[2/3] Installing dependencies...
+[3/3] Running tests...
 
-### Watch Mode
+ Completed tests for Effection 3.0.0
 
-Watch mode should be limited to **one package + one Effection version** to avoid override conflicts:
+============================================================
+Testing with Effection 4.0.0
+Packages: @effectionx/bdd, @effectionx/chain, @effectionx/process, ...
+============================================================
 
-- Resolve the package’s min or max Effection version.
-- Apply the override once.
-- Run the package test command with watch enabled.
+[1/3] Setting override to effection@4.0.0...
+[2/3] Installing dependencies...
+[3/3] Running tests...
 
-Example flow:
+ Completed tests for Effection 4.0.0
 
-```bash
-pnpm config set pnpm.overrides.effection=<version>
-pnpm install --no-frozen-lockfile
-pnpm --filter @effectionx/process test --watch
+============================================================
+Cleaning up...
+============================================================
+
+ All compatibility tests complete!
 ```
 
----
+## CI Integration
 
-## Recommendation
+### Workflow: `.github/workflows/effection-compat.yaml`
 
-Use **per version groups** so overrides are safe and parallelism stays within each Effection version.
+```yaml
+name: Effection Compatibility
 
-## CI Usage (Optional)
+on:
+  workflow_call:
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Monday at 6am UTC
 
-If you want to run the compatibility matrix in CI, reuse the runner so the version grouping stays consistent:
+jobs:
+  compat:
+    name: Effection Compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-```bash
-pnpm test:effection
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run compatibility tests
+        run: pnpm test:effection
 ```
 
-Notes:
-- This requires `--no-frozen-lockfile` because the runner swaps Effection versions per group.
-- Consider a separate CI job so regular tests remain locked to the committed `pnpm-lock.yaml`.
+### Notes
+
+- **Non-frozen lockfile**: The runner uses `--no-frozen-lockfile` internally because it swaps Effection versions via pnpm overrides.
+- **Single OS**: No need for OS matrix; version compatibility is OS-agnostic.
+- **Separate from verify**: Compatibility tests run independently so regular tests remain fast.
+
+## Design Decisions
+
+### Why pnpm overrides?
+
+Using `pnpm.overrides` in `.npmrc` (via `pnpm config set --location project`) allows swapping versions without modifying `package.json` files or maintaining multiple lockfiles.
+
+### Why Turbo filters?
+
+When packages have different peer ranges, each version group may include different packages. Turbo's `--filter` flag ensures only relevant packages are tested for each version.
+
+### Why no per-version lockfiles?
+
+Multiple lockfiles are high-maintenance and would require keeping them in sync across the workspace. The override approach is simpler and works well for compatibility testing.
+
+### Why cache: false?
+
+Turbo's cache could serve stale results across version groups. Disabling cache for `test` ensures each version group runs fresh tests.

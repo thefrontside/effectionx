@@ -33,7 +33,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: node --experimental-strip-types .internal/publish-matrix.ts
+      - run: node --env-file=.env .internal/publish-matrix.ts
         id: set-matrix
 
   npm:
@@ -91,7 +91,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - id: gather
-        run: node --experimental-strip-types .internal/gather-tags.ts
+        run: node --env-file=.env .internal/gather-tags.ts
         env:
           NPM_MATRIX: ${{ needs.generate-matrix.outputs.npm_matrix }}
 
@@ -130,7 +130,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Check all jobs succeeded
-        run: node --experimental-strip-types .internal/publish-complete.ts
+        run: node --env-file=.env .internal/publish-complete.ts
         env:
           NPM_RESULT: ${{ needs.npm.result }}
           TAG_RESULT: ${{ needs.tag.result }}

@@ -23,7 +23,7 @@ jobs:
 
       - name: Get changed packages
         id: changed
-        run: node --experimental-strip-types .internal/preview-matrix.ts
+        run: node --env-file=.env .internal/preview-matrix.ts
 
       - name: Build packages
         if: steps.changed.outputs.workspaces != ''

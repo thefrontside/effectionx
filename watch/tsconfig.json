@@ -19,6 +19,9 @@
       "path": "../bdd"
     },
     {
+      "path": "../fs"
+    },
+    {
       "path": "../process"
     },
     {

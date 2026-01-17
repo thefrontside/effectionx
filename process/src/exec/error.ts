@@ -1,12 +1,15 @@
 import type { ExecOptions, ExitStatus } from "./api.ts";
 
 export class ExecError extends Error {
-  constructor(
-    public status: ExitStatus,
-    public command: string,
-    public options: ExecOptions,
-  ) {
+  status: ExitStatus;
+  command: string;
+  options: ExecOptions;
+
+  constructor(status: ExitStatus, command: string, options: ExecOptions) {
     super();
+    this.status = status;
+    this.command = command;
+    this.options = options;
   }
 
   override name = "ExecError";

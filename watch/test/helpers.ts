@@ -1,10 +1,11 @@
 import type { Process } from "@effectionx/process";
-import { assert } from "@std/assert";
-import { emptyDir, ensureDir } from "@std/fs";
-import { dirname, fromFileUrl, join } from "@std/path";
+import { emptyDir, ensureDir } from "@effectionx/fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Operation, Result, Stream } from "effection";
 import { each, Ok, resource, sleep, spawn, until } from "effection";
 import { cp, readFile, writeFile } from "node:fs/promises";
+import assert from "node:assert";
 
 import type { Start } from "../watch.ts";
 
@@ -19,12 +20,12 @@ export interface Fixture {
 }
 
 export function* useFixture(): Operation<Fixture> {
-  let tmpDir = fromFileUrl(new URL("./temp", import.meta.url));
-  let fixtureDir = fromFileUrl(new URL("./fixtures", import.meta.url));
+  let tmpDir = fileURLToPath(new URL("./temp", import.meta.url));
+  let fixtureDir = fileURLToPath(new URL("./fixtures", import.meta.url));
   // let path = join(tmpDir, "fixtures");
   let path = tmpDir;
   try {
-    yield* until(emptyDir(tmpDir));
+    yield* emptyDir(tmpDir);
   } catch (e) {
     console.log(`Encountered error clearing ${tmpDir}`);
     console.error(e);
@@ -50,7 +51,7 @@ export function* useFixture(): Operation<Fixture> {
     },
     *write(filename: string, content: string) {
       const dest = join(path, filename);
-      yield* until(ensureDir(dirname(dest)));
+      yield* ensureDir(dirname(dest));
       yield* until(writeFile(join(path, filename), content));
     },
     *read(name) {

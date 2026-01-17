@@ -36,7 +36,8 @@
     "ignore": "^7",
     "remeda": "^2",
     "zod": "^3",
-    "zod-opts": "^0"
+    "zod-opts": "^0",
+    "@effectionx/fs": "workspace:*"
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",

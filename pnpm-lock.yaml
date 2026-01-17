@@ -26,16 +26,15 @@ importers:
 
   .internal:
     dependencies:
+      '@effectionx/tinyexec':
+        specifier: workspace:*
+        version: link:../tinyexec
       effection:
         specifier: ^3
         version: 3.6.1
       zod:
         specifier: ^3
         version: 3.25.76
-    devDependencies:
-      '@effectionx/tinyexec':
-        specifier: workspace:*
-        version: link:../tinyexec
 
   bdd:
     dependencies:
@@ -161,6 +160,9 @@ importers:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      '@essentials/raf':
+        specifier: ^1
+        version: 1.2.0
 
   signals:
     dependencies:
@@ -274,6 +276,9 @@ importers:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      '@effectionx/fs':
+        specifier: workspace:*
+        version: link:../fs
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals
@@ -290,6 +295,12 @@ importers:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      '@types/ws':
+        specifier: ^8
+        version: 8.18.1
+      ws:
+        specifier: ^8
+        version: 8.19.0
 
   worker:
     dependencies:
@@ -379,6 +390,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@essentials/raf@1.2.0':
+    resolution: {integrity: sha512-AWJvpprE2o7ATMb7HBYMVUVmPJBCt2wZp2rY7d+rAcNSMvzLbDepy9KFeqqrPZh+s9aIpbw1LgmuAW7kuRFgrQ==}
+
   '@jest/expect-utils@29.7.0':
     resolution: {integrity: sha512-GlsNBWiFQFCVi9QVSx7f5AgMeLxe9YCCs5PuP2O2LdjDAA8Jh9eX7lA1Jq/xdXw3Wb3hyvlFNfZIfcRetSzYcA==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
@@ -420,6 +434,9 @@ packages:
 
   '@types/stack-utils@2.0.3':
     resolution: {integrity: sha512-9aEbYZ3TbYMznPdcdr3SmIrLXwC/AKZXQeCf9Pgao5CKb8CyHuEX5jzWPTkvregvhRJHcpRO6BFoGW9ycaOkYw==}
+
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
   '@types/yargs-parser@21.0.3':
     resolution: {integrity: sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ==}
@@ -608,6 +625,18 @@ packages:
     engines: {node: '>= 8'}
     hasBin: true
 
+  ws@8.19.0:
+    resolution: {integrity: sha512-blAT2mjOEIi0ZzruJfIhb3nps74PRWTCz1IjglWEEpQl5XS/UNama6u2/rjFkDDouqr4L67ry+1aGIALViWjDg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   zod-opts@0.1.8:
     resolution: {integrity: sha512-YZhdEcIL3D2W9fXCCf/UBgrBS90c8w25RTteh5GihGIZzadYr/qIFxyM2L98zHUkZ2S8MMxwn3ny8fzPNnvPlg==}
     engines: {node: '>=16'}
@@ -660,6 +689,8 @@ snapshots:
   '@biomejs/cli-win32-x64@1.9.4':
     optional: true
 
+  '@essentials/raf@1.2.0': {}
+
   '@jest/expect-utils@29.7.0':
     dependencies:
       jest-get-type: 29.6.3
@@ -708,6 +739,10 @@ snapshots:
   '@types/sinonjs__fake-timers@8.1.5': {}
 
   '@types/stack-utils@2.0.3': {}
+
+  '@types/ws@8.18.1':
+    dependencies:
+      '@types/node': 22.19.7
 
   '@types/yargs-parser@21.0.3': {}
 
@@ -877,6 +912,8 @@ snapshots:
   which@2.0.2:
     dependencies:
       isexe: 2.0.0
+
+  ws@8.19.0: {}
 
   zod-opts@0.1.8:
     dependencies:

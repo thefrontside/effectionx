@@ -1,18 +1,18 @@
+import { createServer } from "node:http";
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "expect";
 import {
-  createQueue,
   type Operation,
-  resource,
   type Subscription,
+  createQueue,
+  resource,
   suspend,
   useScope,
   withResolvers,
 } from "effection";
-import { createServer } from "node:http";
-import { type WebSocket as WsWebSocket, WebSocketServer } from "ws";
+import { expect } from "expect";
+import { WebSocketServer, type WebSocket as WsWebSocket } from "ws";
 
-import { useWebSocket, type WebSocketResource } from "./websocket.ts";
+import { type WebSocketResource, useWebSocket } from "./websocket.ts";
 
 describe("WebSocket", () => {
   it("can send messages from the client to the server", function* () {
@@ -64,18 +64,18 @@ describe("WebSocket", () => {
   });
 });
 
-export interface TestSocket {
+interface TestSocket {
   close(): void;
   socket: WebSocketResource<unknown>;
 }
 
-export interface TestingPairOptions {
+interface TestingPairOptions {
   fail?: Response;
 }
 
-function useTestingPair(_options: TestingPairOptions = {}): Operation<
-  [TestSocket, TestSocket]
-> {
+function useTestingPair(
+  _options: TestingPairOptions = {},
+): Operation<[TestSocket, TestSocket]> {
   return resource(function* (provide) {
     let sockets = createQueue<TestSocket, never>();
 
@@ -86,18 +86,16 @@ function useTestingPair(_options: TestingPairOptions = {}): Operation<
 
     wss.on("connection", (ws: WsWebSocket) =>
       scope.run(function* () {
-        // The ws library WebSocket is already open, so we need to manually emit 'open' event
-        // Since useWebSocket waits for 'open', we emit it asynchronously
-        queueMicrotask(() => {
-          ws.emit("open");
-        });
-        const socket = yield* useWebSocket(() => ws);
+        // ws library WebSocket is already open when 'connection' fires
+        // useWebSocket now handles this via readyState check
+        const socket = yield* useWebSocket(() => ws as unknown as WebSocket);
         sockets.add({
           close: () => ws.close(),
           socket,
         });
         yield* suspend();
-      }));
+      }),
+    );
 
     const listening = withResolvers<void>();
     httpServer.listen(9901, listening.resolve);
@@ -119,6 +117,9 @@ function useTestingPair(_options: TestingPairOptions = {}): Operation<
     try {
       yield* provide([local, remote]);
     } finally {
+      // Close websocket connections first so httpServer can close
+      local.close();
+      remote.close();
       wss.close();
       const closed = withResolvers<void>();
       httpServer.close(() => closed.resolve());

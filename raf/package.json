@@ -27,6 +27,7 @@
   },
   "sideEffects": false,
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*"
+    "@effectionx/bdd": "workspace:*",
+    "@essentials/raf": "^1"
   }
 }

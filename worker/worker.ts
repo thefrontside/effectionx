@@ -133,7 +133,7 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
           if (result.ok) {
             return result.value;
           }
-            throw result.error;
+          throw result.error;
         },
         [Symbol.iterator]: outcome.operation[Symbol.iterator],
       });

@@ -77,4 +77,7 @@ export interface ProcessResult extends ExitStatus {
   stdout: string;
   stderr: string;
 }
-export type CreateOSProcess = (command: string, options: ExecOptions) => Operation<Process>
+export type CreateOSProcess = (
+  command: string,
+  options: ExecOptions,
+) => Operation<Process>;

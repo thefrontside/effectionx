@@ -33,18 +33,18 @@ export function createTracker(): Operation<Tracker> {
       },
       passthrough() {
         return <T, TDone>(stream: Stream<T, TDone>): Stream<T, TDone> => ({
-            *[Symbol.iterator]() {
-              const subscription = yield* stream;
+          *[Symbol.iterator]() {
+            const subscription = yield* stream;
 
-              return {
-                *next() {
-                  const next = yield* subscription.next();
-                  tracked.add(next.value);
-                  return next;
-                },
-              };
-            },
-          });
+            return {
+              *next() {
+                const next = yield* subscription.next();
+                tracked.add(next.value);
+                return next;
+              },
+            };
+          },
+        });
       },
       markOne(item) {
         tracked.delete(item);

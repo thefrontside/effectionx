@@ -4,9 +4,7 @@ import type { ValueSignal } from "./types.ts";
 
 export interface BooleanSignal extends ValueSignal<boolean> {}
 
-export function createBooleanSignal(
-  initial = false,
-): Operation<BooleanSignal> {
+export function createBooleanSignal(initial = false): Operation<BooleanSignal> {
   return resource(function* (provide) {
     const signal = createSignal<boolean, void>();
 

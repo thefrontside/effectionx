@@ -122,11 +122,11 @@ export function inspector(stream: Stream<Start, never>): Operation<Inspector> {
             if (result.ok) {
               return result.value;
             }
-              throw new Error(
-                `expected successful start, but failed: ${result.error}`,
-              );
+            throw new Error(
+              `expected successful start, but failed: ${result.error}`,
+            );
           }
-            yield* sleep(10);
+          yield* sleep(10);
         }
         throw new Error("expecting a sucessful start but it never appeared.");
       },

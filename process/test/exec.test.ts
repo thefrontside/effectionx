@@ -280,11 +280,10 @@ describe("handles env vars", () => {
       });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      const expected =
-        `${JSON.stringify({
-          args: ["boop"],
-          envVar: "boop",
-        })}\n`;
+      const expected = `${JSON.stringify({
+        args: ["boop"],
+        envVar: "boop",
+      })}\n`;
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -304,11 +303,10 @@ describe("handles env vars", () => {
       );
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      const expected =
-        `${JSON.stringify({
-          args: ["boop"],
-          envVar: "boop",
-        })}\n`;
+      const expected = `${JSON.stringify({
+        args: ["boop"],
+        envVar: "boop",
+      })}\n`;
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -388,11 +386,10 @@ describe("handles env vars", () => {
       });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      const expected =
-        `${JSON.stringify({
-          args: ["$EFFECTION_TEST_ENV_VAL"],
-          envVar: "boop",
-        })}\n`;
+      const expected = `${JSON.stringify({
+        args: ["$EFFECTION_TEST_ENV_VAL"],
+        envVar: "boop",
+      })}\n`;
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -417,11 +414,10 @@ describe("handles env vars", () => {
       // - Bash (Windows): Normalizes ${VAR} to $VAR during argument processing: $EFFECTION_TEST_ENV_VAL + LF
       // - Bash (Unix): Keeps curly braces intact: ${EFFECTION_TEST_ENV_VAL} + LF
       // Note: Shellwords parsing preserves braces on all platforms, but bash execution normalizes them
-      const expected =
-        `${JSON.stringify({
-          args: ["${EFFECTION_TEST_ENV_VAL}"],
-          envVar: "boop",
-        })}\n`;
+      const expected = `${JSON.stringify({
+        args: ["${EFFECTION_TEST_ENV_VAL}"],
+        envVar: "boop",
+      })}\n`;
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -448,11 +444,10 @@ describe("handles env vars", () => {
         let { stdout, code }: ProcessResult = yield* proc.expect();
 
         // Windows bash should resolve environment variables
-        const expected =
-          `${JSON.stringify({
-            args: ["boop"],
-            envVar: "boop",
-          })}\n`;
+        const expected = `${JSON.stringify({
+          args: ["boop"],
+          envVar: "boop",
+        })}\n`;
         expect(stdout).toEqual(expected);
         expect(code).toBe(0);
       });
@@ -472,11 +467,10 @@ describe("handles env vars", () => {
         let { stdout, code }: ProcessResult = yield* proc.expect();
 
         // Windows bash should resolve environment variables with curly brace syntax
-        const expected =
-          `${JSON.stringify({
-            args: ["boop"],
-            envVar: "boop",
-          })}\n`;
+        const expected = `${JSON.stringify({
+          args: ["boop"],
+          envVar: "boop",
+        })}\n`;
         expect(stdout).toEqual(expected);
         expect(code).toBe(0);
       });

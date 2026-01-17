@@ -16,7 +16,7 @@ function* next<T, TClose>(
   if (item.done) {
     return item.value;
   }
-    return item.value;
+  return item.value;
 }
 
 describe("subject", () => {

@@ -14,7 +14,7 @@ export function debounce<T, R>(
             if (!result) {
               return next;
             }
-              next = result;
+            next = result;
           }
         },
       };

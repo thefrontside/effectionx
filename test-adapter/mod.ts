@@ -15,7 +15,7 @@ import {
 } from "effection";
 import { box } from "./box.ts";
 
-export type TestOperation = () => Operation<void>
+export type TestOperation = () => Operation<void>;
 
 export interface TestAdapter {
   /**

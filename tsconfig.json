@@ -16,7 +16,7 @@
     { "path": "bdd" },
     { "path": "chain" },
     { "path": "context-api" },
-    { "path": "event-emitter" },
+    { "path": "node-events" },
     { "path": "fs" },
     { "path": "fx" },
     { "path": "jsonl-store" },

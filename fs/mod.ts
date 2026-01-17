@@ -90,7 +90,7 @@ export function* emptyDir(pathOrUrl: string | URL): Operation<void> {
     const entries: string[] = yield* until(fsp.readdir(dirPath));
     yield* all(
       entries.map((entry) =>
-        remove(path.join(dirPath, entry), { recursive: true, force: true })
+        rm(path.join(dirPath, entry), { recursive: true, force: true })
       )
     );
   } catch (error) {
@@ -108,12 +108,12 @@ export function* emptyDir(pathOrUrl: string | URL): Operation<void> {
  *
  * @example
  * ```ts
- * import { remove } from "@effectionx/fs";
+ * import { rm } from "@effectionx/fs";
  *
- * yield* remove("./temp", { recursive: true });
+ * yield* rm("./temp", { recursive: true });
  * ```
  */
-export function* remove(
+export function* rm(
   pathOrUrl: string | URL,
   options?: { recursive?: boolean; force?: boolean },
 ): Operation<void> {

@@ -10,7 +10,7 @@ import {
   ensureDir,
   ensureFile,
   emptyDir,
-  remove,
+  rm,
   readTextFile,
   writeTextFile,
   walk,
@@ -109,12 +109,12 @@ describe("@effectionx/fs", () => {
     });
   });
 
-  describe("remove", () => {
+  describe("rm", () => {
     it("removes a file", function* () {
       const filePath = path.join(testDir, "to-remove.txt");
       yield* until(fsp.writeFile(filePath, "delete me"));
 
-      yield* remove(filePath);
+      yield* rm(filePath);
 
       expect(yield* exists(filePath)).toBe(false);
     });
@@ -124,7 +124,7 @@ describe("@effectionx/fs", () => {
       yield* until(fsp.mkdir(dirPath));
       yield* until(fsp.writeFile(path.join(dirPath, "file.txt"), "nested"));
 
-      yield* remove(dirPath, { recursive: true });
+      yield* rm(dirPath, { recursive: true });
 
       expect(yield* exists(dirPath)).toBe(false);
     });

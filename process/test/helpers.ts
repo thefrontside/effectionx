@@ -1,5 +1,4 @@
 import { type Operation, type Stream, until } from "effection";
-import { filter } from "@effectionx/stream-helpers";
 
 export function* captureError(op: Operation<unknown>): Operation<Error> {
   try {
@@ -19,7 +18,7 @@ export function expectStreamNotEmpty(
       let next = yield* subscription.next();
       if (next.done) {
         throw new Error(
-          `Expected the stream to produce at least one value before closing.`,
+          "Expected the stream to produce at least one value before closing.",
         );
       }
     },
@@ -55,9 +54,16 @@ export function streamClose<TClose>(
 }
 
 export function* expectMatch(pattern: RegExp, stream: Stream<string, unknown>) {
-  const stdout = filter<string>(function* (v) {
-    return pattern.test(v);
-  })(stream);
+  const subscription = yield* stream;
+  let next = yield* subscription.next();
+  while (!next.done) {
+    if (pattern.test(next.value)) {
+      return;
+    }
+    next = yield* subscription.next();
+  }
 
-  yield* expectStreamNotEmpty(stdout);
+  throw new Error(
+    "Expected the stream to produce at least one value before closing.",
+  );
 }

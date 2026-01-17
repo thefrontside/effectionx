@@ -1,5 +1,4 @@
-// deno-lint-ignore-file ban-types no-explicit-any
-import { createContext, type Operation } from "effection";
+import { type Operation, createContext } from "effection";
 
 export type Around<A> = {
   [K in keyof Operations<A>]: A[K] extends (
@@ -9,7 +8,10 @@ export type Around<A> = {
     : Middleware<[], A[K]>;
 };
 
-export type Middleware<TArgs extends unknown[], TReturn> = (args: TArgs, next: (...args: TArgs) => TReturn) => TReturn
+export type Middleware<TArgs extends unknown[], TReturn> = (
+  args: TArgs,
+  next: (...args: TArgs) => TReturn,
+) => TReturn;
 
 export interface Api<A> {
   operations: Operations<A>;
@@ -30,6 +32,7 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
   let middleware: Around<A> = fields.reduce(
     (sum, field) => {
       return Object.assign(sum, {
+        // biome-ignore lint/suspicious/noExplicitAny: Dynamic middleware composition
         [field]: (args: any, next: any) => next(...args),
       });
     },
@@ -43,22 +46,25 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
       let handle = handler[field];
       if (typeof handle === "function") {
         return Object.assign(api, {
+          // biome-ignore lint/suspicious/noExplicitAny: Dynamic field types
           [field]: function* (...args: any[]) {
             let around = yield* context.expect();
+            // biome-ignore lint/complexity/noBannedTypes: Dynamic middleware call
             let middleware = around[field] as Function;
             return yield* middleware(args, handle);
           },
         });
       }
-        return Object.assign(api, {
-          [field]: {
-            *[Symbol.iterator]() {
-              let around = yield* context.expect();
-              let middleware = around[field] as Function;
-              return yield* middleware([], () => handle);
-            },
+      return Object.assign(api, {
+        [field]: {
+          *[Symbol.iterator]() {
+            let around = yield* context.expect();
+            // biome-ignore lint/complexity/noBannedTypes: Dynamic middleware call
+            let middleware = around[field] as Function;
+            return yield* middleware([], () => handle);
           },
-        });
+        },
+      });
     },
     {} as Operations<A>,
   );
@@ -68,9 +74,12 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
     yield* context.set(
       fields.reduce(
         (sum, field) => {
+          // biome-ignore lint/suspicious/noExplicitAny: Dynamic middleware types
           let prior = current[field] as Middleware<any[], any>;
+          // biome-ignore lint/suspicious/noExplicitAny: Dynamic middleware types
           let middleware = around[field] as Middleware<any[], any>;
           return Object.assign(sum, {
+            // biome-ignore lint/suspicious/noExplicitAny: Dynamic middleware composition
             [field]: (args: any, next: any) =>
               middleware(args, (...args) => prior(args, next)),
           });

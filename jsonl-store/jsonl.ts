@@ -1,4 +1,4 @@
-import { JsonParseStream, TextLineStream } from "./stream-helpers.ts";
+import { dirname, join } from "node:path";
 import {
   emptyDir,
   exists,
@@ -7,18 +7,18 @@ import {
   toFileUrl,
   walk,
 } from "./fs-helpers.ts";
-import { dirname, join } from "node:path";
+import { JsonParseStream, TextLineStream } from "./stream-helpers.ts";
 
 import {
+  stream,
+  type Operation,
+  type Stream,
   call,
   createChannel,
   createQueue,
   each,
-  type Operation,
   resource,
   spawn,
-  type Stream,
-  stream,
 } from "effection";
 import type { Store, StoreConstructorOptions } from "./types.ts";
 
@@ -62,7 +62,7 @@ export class JSONLStore implements Store {
     if (pathname.charAt(-1) === "/") {
       return new JSONLStore(toFileUrl(pathname));
     }
-      return new JSONLStore(toFileUrl(`${pathname}/`));
+    return new JSONLStore(toFileUrl(`${pathname}/`));
   }
 
   /**
@@ -119,7 +119,7 @@ export class JSONLStore implements Store {
       const fileStream = fs.createReadStream(fromFileUrl(location));
       const webStream = Readable.toWeb(fileStream);
 
-      // deno-lint-ignore no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: Node stream type incompatibility
       const lines = (webStream as any)
         .pipeThrough(new TextDecoderStream())
         .pipeThrough(new TextLineStream())

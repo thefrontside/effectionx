@@ -1,5 +1,6 @@
 import { spawn as spawnProcess } from "node:child_process";
 import process from "node:process";
+import { once } from "@effectionx/event-emitter";
 import {
   Err,
   Ok,
@@ -10,7 +11,6 @@ import {
   spawn,
   withResolvers,
 } from "effection";
-import { once } from "../eventemitter.ts";
 import { useReadable } from "../helpers.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";

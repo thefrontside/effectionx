@@ -1,4 +1,5 @@
 import { platform } from "node:os";
+import { once } from "@effectionx/event-emitter";
 // @ts-types="npm:@types/cross-spawn@6.0.6"
 import { spawn as spawnProcess } from "cross-spawn";
 import { ctrlc } from "ctrlc-windows";
@@ -12,7 +13,6 @@ import {
   spawn,
   withResolvers,
 } from "effection";
-import { once } from "../eventemitter.ts";
 import { useReadable } from "../helpers.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";

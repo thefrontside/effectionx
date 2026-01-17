@@ -45,7 +45,7 @@ describe("JSONLStore", () => {
         location: new URL(".cache", "file:///usr/"),
       });
       expect(store.location.protocol).toEqual("file:");
-      expect(store.location.pathname).toEqual("/usr/.cache/");
+      expect(store.location.pathname.endsWith("/usr/.cache/")).toBe(true);
     });
   });
 

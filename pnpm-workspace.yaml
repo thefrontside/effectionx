@@ -4,7 +4,7 @@ packages:
   - "chain"
   - "context-api"
   # deno-deploy excluded - deprecated Deno-only package
-  - "event-emitter"
+  - "node-events"
   - "fs"
   - "fx"
   - "jsonl-store"

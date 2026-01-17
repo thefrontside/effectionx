@@ -1,5 +1,5 @@
 {
-  "name": "@effectionx/event-emitter",
+  "name": "@effectionx/node-events",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/mod.js",
@@ -27,6 +27,6 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@effectionx/event-emitter": "workspace:*"
+    "@effectionx/node-events": "workspace:*"
   }
 }

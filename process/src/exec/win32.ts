@@ -1,5 +1,5 @@
 import { platform } from "node:os";
-import { once } from "@effectionx/event-emitter";
+import { once } from "@effectionx/node-events";
 // @ts-types="npm:@types/cross-spawn@6.0.6"
 import { spawn as spawnProcess } from "cross-spawn";
 import { ctrlc } from "ctrlc-windows";

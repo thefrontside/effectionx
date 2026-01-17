@@ -27,7 +27,7 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@effectionx/event-emitter": "workspace:*",
+    "@effectionx/node-events": "workspace:*",
     "@effectionx/signals": "workspace:*",
     "web-worker": "^1",
     "@effectionx/worker": "workspace:*"

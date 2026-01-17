@@ -3,7 +3,7 @@ import { describe, it } from "@effectionx/bdd";
 import { spawn, withResolvers } from "effection";
 import { expect } from "expect";
 
-import { once } from "@effectionx/event-emitter";
+import { once } from "@effectionx/node-events";
 
 describe("once", () => {
   it("resolves with single argument as array", function* () {

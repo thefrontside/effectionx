@@ -27,7 +27,7 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@effectionx/event-emitter": "workspace:*",
+    "@effectionx/node-events": "workspace:*",
     "@effectionx/stream-helpers": "workspace:*",
     "cross-spawn": "^7",
     "ctrlc-windows": "^2",

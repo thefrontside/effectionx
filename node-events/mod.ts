@@ -44,7 +44,7 @@ function isEventTarget(target: EventSourceLike): target is EventTargetLike {
  *
  * @example
  * ```ts
- * import { on } from "@effectionx/event-emitter";
+ * import { on } from "@effectionx/node-events";
  * import { each } from "effection";
  *
  * // In a worker thread (EventTarget style)
@@ -111,7 +111,7 @@ export function on<T extends unknown[]>(
  *
  * @example
  * ```ts
- * import { once } from "@effectionx/event-emitter";
+ * import { once } from "@effectionx/node-events";
  *
  * // Wait for a single message (EventTarget style)
  * const [event] = yield* once(self, "message");

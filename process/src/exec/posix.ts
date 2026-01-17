@@ -1,6 +1,6 @@
 import { spawn as spawnProcess } from "node:child_process";
 import process from "node:process";
-import { once } from "@effectionx/event-emitter";
+import { once } from "@effectionx/node-events";
 import {
   Err,
   Ok,

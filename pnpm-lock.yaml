@@ -72,15 +72,6 @@ importers:
         specifier: workspace:*
         version: 'link:'
 
-  deno-deploy:
-    dependencies:
-      '@effectionx/deno-deploy':
-        specifier: workspace:*
-        version: 'link:'
-      effection:
-        specifier: ^3 || ^4.0.0-0
-        version: 3.6.1
-
   event-emitter:
     dependencies:
       '@effectionx/event-emitter':
@@ -251,6 +242,9 @@ importers:
 
   watch:
     dependencies:
+      '@effectionx/fs':
+        specifier: workspace:*
+        version: link:../fs
       '@effectionx/process':
         specifier: workspace:*
         version: link:../process
@@ -276,9 +270,6 @@ importers:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
-      '@effectionx/fs':
-        specifier: workspace:*
-        version: link:../fs
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals

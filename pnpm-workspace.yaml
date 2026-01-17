@@ -3,7 +3,7 @@ packages:
   - "bdd"
   - "chain"
   - "context-api"
-  - "deno-deploy"
+  # deno-deploy excluded - deprecated Deno-only package
   - "event-emitter"
   - "fs"
   - "fx"

@@ -26,8 +26,5 @@
     "node": ">= 22"
   },
   "sideEffects": false,
-  "deprecated": "This package is deprecated and only works with Deno runtime.",
-  "dependencies": {
-    "@effectionx/deno-deploy": "workspace:*"
-  }
+  "deprecated": "This package is Deno-specific and no longer actively maintained."
 }

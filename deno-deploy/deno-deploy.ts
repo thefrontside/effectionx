@@ -1,4 +1,9 @@
-import { type Context, createContext, type Operation } from "effection";
+/**
+ * @deprecated This package is Deno-specific and no longer actively maintained.
+ * The effectionx monorepo has migrated to Node.js.
+ * @module
+ */
+import { type Context, type Operation, createContext } from "effection";
 
 export interface DenoDeploy {
   /**

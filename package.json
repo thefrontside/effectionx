@@ -6,13 +6,13 @@
   "scripts": {
     "build": "tsc --build",
     "typecheck": "tsc -p tsconfig.check.json",
-    "test": "node --env-file=.env --conditions=development --experimental-strip-types --test \"**/*.test.ts\"",
+    "test": "node --env-file=.env --test \"**/*.test.ts\"",
     "lint": "biome lint .",
     "format": "biome format . --write",
     "format:check": "biome format .",
-    "sync:tsrefs": "node --experimental-strip-types .internal/sync-tsrefs.ts",
-    "sync:tsrefs:fix": "node --experimental-strip-types .internal/sync-tsrefs.ts fix",
-    "check:tsrefs": "node --experimental-strip-types .internal/sync-tsrefs.ts check"
+    "sync:tsrefs": "node --env-file=.env .internal/sync-tsrefs.ts",
+    "sync:tsrefs:fix": "node --env-file=.env .internal/sync-tsrefs.ts fix",
+    "check:tsrefs": "node --env-file=.env .internal/sync-tsrefs.ts check"
   },
   "devDependencies": {
     "@biomejs/biome": "^1",

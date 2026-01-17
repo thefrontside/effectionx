@@ -531,35 +531,20 @@ jobs:
 
 | Metric | Count |
 |--------|-------|
-| **Passing** | 144 |
+| **Passing** | 145 |
 | **Skipped** | 6 |
-| **Failing** | 1 (flaky) |
+| **Failing** | 0 |
 
-### Known Issue: Flaky Test
+### Resolved Issues
 
-**Test:** `process/test/daemon.test.ts` → `"throw an error because it was not expected to close"`
+**Daemon Test Fix** (commit 8781338)
 
-**Error:**
-```
-Error: Expected the stream to produce at least one value before closing.
-    at [Symbol.iterator] (process/test/helpers.ts:21:15)
-    at expectMatch (process/test/helpers.ts:62:10)
-```
+The daemon tests were initially failing due to:
+1. Still using `deno run` instead of `node --experimental-strip-types`
+2. The `expectMatch()` helper used `filter()` which caused hangs waiting for pattern matches
+3. Port 29000 conflicted with exec tests running in parallel
 
-**Analysis:**
-This test verifies that a daemon process throws an error when it exits unexpectedly. The test uses `expectMatch()` which expects to receive at least one line from stdout before the stream closes. The flakiness occurs because:
-
-1. The test starts a daemon process that prints "listening" to stdout
-2. It then sends a request to make the daemon exit with code 1
-3. The `expectMatch(/listening/, ...)` call races against the process startup
-4. Sometimes the process exits before the stdout stream delivers the "listening" line to the test
-
-**Root Cause:** This is a timing/race condition in the test itself, not related to the Deno→Node migration. The same issue would likely occur in Deno under certain conditions.
-
-**Potential Fix:** The test helper `expectMatch()` could be made more robust by:
-- Adding a timeout before failing
-- Retrying the match operation
-- Or the test setup could ensure the process is fully started before proceeding
+**Fix:** Updated daemon tests to use Node.js, rewrote `expectMatch()` to directly iterate the stream and return on first match, and changed to ports 29001/29002 to avoid conflicts.
 
 ### Verification Checklist
 
@@ -569,12 +554,11 @@ This test verifies that a daemon process throws an error when it exits unexpecte
 - [x] `pnpm format:check` passes
 - [x] `pnpm typecheck` passes
 - [x] `pnpm build` succeeds
-- [x] `pnpm test` passes (144/145 tests, 1 flaky)
+- [x] `pnpm test` passes (145 tests)
 - [x] No `deno.json` files remain (except deno-deploy)
 - [x] CI workflows updated
 
 ## Future Work (Out of Scope)
 
-- Fix flaky daemon test (timing/race condition)
 - Testing against both Effection v3 and v4 using `@node-loader/import-maps`
 - Per-package version matrix based on peerDependencies

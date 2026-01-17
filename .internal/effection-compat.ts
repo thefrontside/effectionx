@@ -3,7 +3,7 @@ import path from "node:path";
 import process from "node:process";
 import { readTextFile } from "@effectionx/fs";
 import { exec } from "@effectionx/process";
-import { type Operation, run } from "effection";
+import { type Operation, main } from "effection";
 import semver from "semver";
 
 type PackageInfo = { name: string; dir: string; peerRange: string | null };
@@ -108,7 +108,7 @@ const resolveVersionGroups = function* (): Operation<VersionGroup[]> {
   });
 };
 
-const main = function* (): Operation<void> {
+await main(function* () {
   console.log("Effection Compatibility Test Runner");
   console.log("====================================\n");
 
@@ -156,6 +156,4 @@ const main = function* (): Operation<void> {
   yield* runCommand("pnpm install --no-frozen-lockfile");
 
   console.log("\n All compatibility tests complete!");
-};
-
-run(main);
+});

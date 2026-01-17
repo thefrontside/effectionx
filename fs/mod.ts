@@ -1,7 +1,13 @@
 import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { resource, until, type Operation, type Stream, createSignal } from "effection";
+import {
+  resource,
+  until,
+  type Operation,
+  type Stream,
+  createSignal,
+} from "effection";
 
 /**
  * Convert a path or URL to a file path string
@@ -22,17 +28,13 @@ export function toPath(pathOrUrl: string | URL): string {
  * }
  * ```
  */
-export function exists(pathOrUrl: string | URL): Operation<boolean> {
-  return {
-    *[Symbol.iterator]() {
-      try {
-        yield* until(fsp.access(toPath(pathOrUrl)));
-        return true;
-      } catch {
-        return false;
-      }
-    },
-  };
+export function* exists(pathOrUrl: string | URL): Operation<boolean> {
+  try {
+    yield* until(fsp.access(toPath(pathOrUrl)));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -45,12 +47,8 @@ export function exists(pathOrUrl: string | URL): Operation<boolean> {
  * yield* ensureDir("./data/cache");
  * ```
  */
-export function ensureDir(pathOrUrl: string | URL): Operation<void> {
-  return {
-    *[Symbol.iterator]() {
-      yield* until(fsp.mkdir(toPath(pathOrUrl), { recursive: true }));
-    },
-  };
+export function* ensureDir(pathOrUrl: string | URL): Operation<void> {
+  yield* until(fsp.mkdir(toPath(pathOrUrl), { recursive: true }));
 }
 
 /**
@@ -63,18 +61,14 @@ export function ensureDir(pathOrUrl: string | URL): Operation<void> {
  * yield* ensureFile("./data/config.json");
  * ```
  */
-export function ensureFile(pathOrUrl: string | URL): Operation<void> {
-  return {
-    *[Symbol.iterator]() {
-      const filePath = toPath(pathOrUrl);
-      try {
-        yield* until(fsp.access(filePath));
-      } catch {
-        yield* until(fsp.mkdir(path.dirname(filePath), { recursive: true }));
-        yield* until(fsp.writeFile(filePath, ""));
-      }
-    },
-  };
+export function* ensureFile(pathOrUrl: string | URL): Operation<void> {
+  const filePath = toPath(pathOrUrl);
+  try {
+    yield* until(fsp.access(filePath));
+  } catch {
+    yield* until(fsp.mkdir(path.dirname(filePath), { recursive: true }));
+    yield* until(fsp.writeFile(filePath, ""));
+  }
 }
 
 /**
@@ -88,30 +82,29 @@ export function ensureFile(pathOrUrl: string | URL): Operation<void> {
  * yield* emptyDir("./dist");
  * ```
  */
-export function emptyDir(pathOrUrl: string | URL): Operation<void> {
-  return {
-    *[Symbol.iterator]() {
-      const dirPath = toPath(pathOrUrl);
+export function* emptyDir(pathOrUrl: string | URL): Operation<void> {
+  const dirPath = toPath(pathOrUrl);
 
-      try {
-        const entries: string[] = yield* until(fsp.readdir(dirPath));
-        yield* until(
-          Promise.all(
-            entries.map((entry) =>
-              fsp.rm(path.join(dirPath, entry), { recursive: true, force: true })
-            )
-          )
-        );
-      } catch (error) {
-        // If directory doesn't exist, create it
-        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-          yield* until(fsp.mkdir(dirPath, { recursive: true }));
-        } else {
-          throw error;
-        }
-      }
-    },
-  };
+  try {
+    const entries: string[] = yield* until(fsp.readdir(dirPath));
+    yield* until(
+      Promise.all(
+        entries.map((entry) =>
+          fsp.rm(path.join(dirPath, entry), {
+            recursive: true,
+            force: true,
+          }),
+        ),
+      ),
+    );
+  } catch (error) {
+    // If directory doesn't exist, create it
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      yield* until(fsp.mkdir(dirPath, { recursive: true }));
+    } else {
+      throw error;
+    }
+  }
 }
 
 /**
@@ -124,15 +117,11 @@ export function emptyDir(pathOrUrl: string | URL): Operation<void> {
  * yield* remove("./temp", { recursive: true });
  * ```
  */
-export function remove(
+export function* remove(
   pathOrUrl: string | URL,
-  options?: { recursive?: boolean; force?: boolean }
+  options?: { recursive?: boolean; force?: boolean },
 ): Operation<void> {
-  return {
-    *[Symbol.iterator]() {
-      yield* until(fsp.rm(toPath(pathOrUrl), options));
-    },
-  };
+  yield* until(fsp.rm(toPath(pathOrUrl), options));
 }
 
 /**
@@ -145,12 +134,8 @@ export function remove(
  * yield* copyFile("./source.txt", "./dest.txt");
  * ```
  */
-export function copyFile(src: string | URL, dest: string | URL): Operation<void> {
-  return {
-    *[Symbol.iterator]() {
-      yield* until(fsp.copyFile(toPath(src), toPath(dest)));
-    },
-  };
+export function* copyFile(src: string | URL, dest: string | URL): Operation<void> {
+  yield* until(fsp.copyFile(toPath(src), toPath(dest)));
 }
 
 /**
@@ -163,12 +148,8 @@ export function copyFile(src: string | URL, dest: string | URL): Operation<void>
  * const content = yield* readTextFile("./config.json");
  * ```
  */
-export function readTextFile(pathOrUrl: string | URL): Operation<string> {
-  return {
-    *[Symbol.iterator]() {
-      return yield* until(fsp.readFile(toPath(pathOrUrl), "utf-8"));
-    },
-  };
+export function* readTextFile(pathOrUrl: string | URL): Operation<string> {
+  return yield* until(fsp.readFile(toPath(pathOrUrl), "utf-8"));
 }
 
 /**
@@ -181,12 +162,11 @@ export function readTextFile(pathOrUrl: string | URL): Operation<string> {
  * yield* writeTextFile("./output.txt", "Hello, World!");
  * ```
  */
-export function writeTextFile(pathOrUrl: string | URL, content: string): Operation<void> {
-  return {
-    *[Symbol.iterator]() {
-      yield* until(fsp.writeFile(toPath(pathOrUrl), content));
-    },
-  };
+export function* writeTextFile(
+  pathOrUrl: string | URL,
+  content: string,
+): Operation<void> {
+  yield* until(fsp.writeFile(toPath(pathOrUrl), content));
 }
 
 /**
@@ -241,7 +221,10 @@ export interface WalkOptions {
  * }
  * ```
  */
-export function walk(root: string | URL, options: WalkOptions = {}): Stream<WalkEntry, void> {
+export function walk(
+  root: string | URL,
+  options: WalkOptions = {},
+): Stream<WalkEntry, void> {
   const {
     includeDirs = true,
     includeFiles = true,
@@ -318,7 +301,7 @@ export function walk(root: string | URL, options: WalkOptions = {}): Stream<Walk
 
     walkDir(rootPath, 0).then(
       () => signal.close(),
-      () => signal.close()
+      () => signal.close(),
     );
 
     yield* provide(yield* signal);
@@ -346,13 +329,20 @@ export function expandGlob(
     exclude?: string[];
     includeDirs?: boolean;
     followSymlinks?: boolean;
-  } = {}
+  } = {},
 ): Stream<WalkEntry, void> {
-  const { root = ".", exclude = [], includeDirs = true, followSymlinks = false } = options;
+  const {
+    root = ".",
+    exclude = [],
+    includeDirs = true,
+    followSymlinks = false,
+  } = options;
 
   // Convert glob to regex
   const globRegex = globToRegExp(glob, { extended: true, globstar: true });
-  const excludeRegexes = exclude.map((e) => globToRegExp(e, { extended: true, globstar: true }));
+  const excludeRegexes = exclude.map((e) =>
+    globToRegExp(e, { extended: true, globstar: true }),
+  );
 
   return walk(root, {
     includeDirs,
@@ -376,7 +366,7 @@ export function expandGlob(
  */
 export function globToRegExp(
   glob: string,
-  options?: { extended?: boolean; globstar?: boolean }
+  options?: { extended?: boolean; globstar?: boolean },
 ): RegExp {
   const { extended = true, globstar = true } = options ?? {};
 
@@ -485,4 +475,7 @@ export function globToRegExp(
 }
 
 // Re-export URL utilities for convenience
-export { fileURLToPath as fromFileUrl, pathToFileURL as toFileUrl } from "node:url";
+export {
+  fileURLToPath as fromFileUrl,
+  pathToFileURL as toFileUrl,
+} from "node:url";

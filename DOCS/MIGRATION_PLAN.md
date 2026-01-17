@@ -31,7 +31,7 @@
 ## Scripts and Tooling
 
 - Replacing `@deno/dnt` with `tsc --build` omits DNT’s behavior: import rewrite, shims, `package.json` adjustments, and module resolution. A replacement plan for URL imports (`https://`/`jsr:`) is required.
-- `pnpm check` should run `tsc --build -p tsconfig.build.check.json` followed by `tsc -p tsconfig.check.json` to emit declarations into `.cache/types` while still checking tests.
+- `pnpm check` should run `tsc --build --emitDeclarationOnly` followed by `tsc -p tsconfig.check.json`. `tsconfig.check.json` uses `baseUrl` + `paths` to resolve `@effectionx/*` against source.
 - Task scripts are written in TS and will need a runtime strategy (tsx/ts-node/compiled JS) if Node cannot execute them directly.
 
 ## Project Reference Automation

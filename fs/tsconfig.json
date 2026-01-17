@@ -4,7 +4,16 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["**/*.ts"],
-  "exclude": ["**/*.test.ts", "dist"],
-  "references": []
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "dist"
+  ],
+  "references": [
+    {
+      "path": "../bdd"
+    }
+  ]
 }

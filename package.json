@@ -10,9 +10,9 @@
     "lint": "biome lint .",
     "format": "biome format . --write",
     "format:check": "biome format .",
-    "sync:tsrefs": "node --experimental-strip-types tasks/sync-tsrefs.ts",
-    "sync:tsrefs:fix": "node --experimental-strip-types tasks/sync-tsrefs.ts fix",
-    "check:tsrefs": "node --experimental-strip-types tasks/sync-tsrefs.ts check"
+    "sync:tsrefs": "node --experimental-strip-types .internal/sync-tsrefs.ts",
+    "sync:tsrefs:fix": "node --experimental-strip-types .internal/sync-tsrefs.ts fix",
+    "check:tsrefs": "node --experimental-strip-types .internal/sync-tsrefs.ts check"
   },
   "devDependencies": {
     "@biomejs/biome": "^1",

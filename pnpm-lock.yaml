@@ -24,6 +24,19 @@ importers:
         specifier: ^5
         version: 5.9.3
 
+  .internal:
+    dependencies:
+      effection:
+        specifier: ^3
+        version: 3.6.1
+      zod:
+        specifier: ^3
+        version: 3.25.76
+    devDependencies:
+      '@effectionx/tinyexec':
+        specifier: workspace:*
+        version: link:../tinyexec
+
   bdd:
     dependencies:
       '@effectionx/test-adapter':
@@ -80,6 +93,9 @@ importers:
 
   fs:
     dependencies:
+      '@effectionx/fs':
+        specifier: workspace:*
+        version: 'link:'
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1

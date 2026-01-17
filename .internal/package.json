@@ -1,0 +1,11 @@
+{
+  "name": "@effectionx/internal",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "effection": "^3",
+    "zod": "^3",
+    "@effectionx/tinyexec": "workspace:*"
+  }
+}

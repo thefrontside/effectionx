@@ -28,7 +28,6 @@ dist/
 !process/test/fixtures/hello-world-failed.js
 
 # Environment files
-.env
 .env.local
 
 # Test temp directories

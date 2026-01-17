@@ -5,7 +5,7 @@
   "packageManager": "pnpm@9.15.9",
   "scripts": {
     "build": "tsc --build",
-    "check": "tsc -p tsconfig.check.json",
+    "check": "tsc -b tsconfig.build.check.json && tsc -p tsconfig.check.json",
     "test": "node --env-file=.env --test \"**/*.test.ts\"",
     "test:effection": "node --env-file=.env .internal/effection-compat.ts",
     "lint": "biome lint .",

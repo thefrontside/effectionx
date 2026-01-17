@@ -35,3 +35,6 @@ dist/
 
 # pnpm config (created by effection-compat runner)
 .npmrc
+
+# Typecheck cache output
+.cache/

@@ -1,4 +1,4 @@
-name: Verify
+name: Verify (POSIX)
 
 on:
   workflow_call:
@@ -42,7 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -62,5 +62,3 @@ jobs:
 
       - name: Run tests
         run: pnpm test
-        env:
-          SHELL: ${{ runner.os == 'Windows' && 'bash' || '' }}

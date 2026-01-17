@@ -1,0 +1,49 @@
+name: Verify (Windows)
+
+on:
+  workflow_call:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ matrix.shell }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [bash, cmd]
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Run tests (bash)
+        if: matrix.shell == 'bash'
+        run: |
+          export SHELL=bash
+          pnpm test
+
+      - name: Run tests (cmd)
+        if: matrix.shell == 'cmd'
+        run: |
+          set SHELL=cmd
+          pnpm test

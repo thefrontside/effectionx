@@ -6,14 +6,17 @@ on:
       - main
 
 jobs:
-  verify:
-    uses: ./.github/workflows/verify-node.yaml
+  verify-posix:
+    uses: ./.github/workflows/verify-posix.yaml
+
+  verify-windows:
+    uses: ./.github/workflows/verify-windows.yaml
 
   compat:
     uses: ./.github/workflows/effection-compat.yaml
 
   generate-matrix:
-    needs: [verify, compat]
+    needs: [verify-posix, verify-windows, compat]
     name: Generate Job Matrix
     runs-on: ubuntu-latest
     outputs:

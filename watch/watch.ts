@@ -172,7 +172,14 @@ export function watch(options: WatchOptions): Stream<Start, never> {
  */
 function* findIgnores(path: string): Operation<(path: string) => boolean> {
   let gitignore = join(path, ".gitignore");
-  if (yield* call(() => access(gitignore).then(() => true, () => false))) {
+  if (
+    yield* call(() =>
+      access(gitignore).then(
+        () => true,
+        () => false,
+      ),
+    )
+  ) {
     let ignores = createIgnore();
     let buffer = yield* call(() => readFile(gitignore));
     ignores.add(buffer.toString());

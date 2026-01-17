@@ -10,11 +10,17 @@ await main(function* () {
   // Filter out "nothing" workspace and get unique tags
   const uniqueTags = npmMatrix.include
     .filter((item: { workspace: string }) => item.workspace !== "nothing")
-    .flatMap((item: { tagname: string }, index: number, array: { tagname: string }[]) => {
-      // Only include if this is the first occurrence of this tagname
-      const firstIndex = array.findIndex((i) => i.tagname === item.tagname);
-      return firstIndex === index ? [item] : [];
-    });
+    .flatMap(
+      (
+        item: { tagname: string },
+        index: number,
+        array: { tagname: string }[],
+      ) => {
+        // Only include if this is the first occurrence of this tagname
+        const firstIndex = array.findIndex((i) => i.tagname === item.tagname);
+        return firstIndex === index ? [item] : [];
+      },
+    );
 
   const tagsExist = uniqueTags.length > 0;
   const tagsMatrix = { include: uniqueTags };
@@ -28,7 +34,7 @@ await main(function* () {
 
   if (process.env.GITHUB_OUTPUT) {
     yield* call(() =>
-      fsp.appendFile(process.env.GITHUB_OUTPUT as string, outputValue + "\n")
+      fsp.appendFile(process.env.GITHUB_OUTPUT as string, outputValue + "\n"),
     );
   }
 });

@@ -6,13 +6,11 @@ interface OpMap<T = unknown, TArgs extends unknown[] = []> {
   [key: string]: (...args: TArgs) => Operation<T>;
 }
 
-export function raceMap<T>(opMap: OpMap): Operation<
-  {
-    [K in keyof OpMap<T>]: OpMap[K] extends (...args: any[]) => any
-      ? ReturnType<OpMap[K]>
-      : OpMap[K];
-  }
-> {
+export function raceMap<T>(opMap: OpMap): Operation<{
+  [K in keyof OpMap<T>]: OpMap[K] extends (...args: any[]) => any
+    ? ReturnType<OpMap[K]>
+    : OpMap[K];
+}> {
   return resource(function* Race(provide) {
     const keys = Object.keys(opMap);
     const taskMap: { [key: string]: Task<unknown> } = {};

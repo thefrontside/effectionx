@@ -66,7 +66,11 @@ describe("worker", () => {
 
     beforeEach(function* () {
       let dir = fileURLToPath(import.meta.resolve("./test-tmp"));
-      yield* until(rm(dir, { recursive: true, force: true }).then(() => mkdir(dir, { recursive: true })));
+      yield* until(
+        rm(dir, { recursive: true, force: true }).then(() =>
+          mkdir(dir, { recursive: true }),
+        ),
+      );
       startFile = join(dir, "started.txt");
       endFile = join(dir, "ended.txt");
       url = import.meta.resolve("./test-assets/shutdown-worker.ts");
@@ -88,7 +92,14 @@ describe("worker", () => {
       let started = yield* timebox(10_000, function* () {
         while (true) {
           yield* sleep(1);
-          if (yield* until(access(startFile).then(() => true, () => false))) {
+          if (
+            yield* until(
+              access(startFile).then(
+                () => true,
+                () => false,
+              ),
+            )
+          ) {
             break;
           }
         }
@@ -97,28 +108,32 @@ describe("worker", () => {
       assert(!started.timeout, "worker did not start after 10s");
       yield* task.halt();
 
-      expect(yield* until(access(endFile).then(() => true, () => false))).toEqual(true);
+      expect(
+        yield* until(
+          access(endFile).then(
+            () => true,
+            () => false,
+          ),
+        ),
+      ).toEqual(true);
       expect(yield* until(readFile(endFile, "utf-8"))).toEqual(
         "goodbye cruel world!",
       );
     });
   });
 
-  it(
-    "becomes halted if you try and await its value out of scope",
-    function* () {
-      let url = import.meta.resolve("./test-assets/suspend-worker.ts");
-      let worker = yield* scoped(function* () {
-        return yield* useWorker(url, { type: "module" });
-      });
-      try {
-        yield* worker;
-      } catch (e) {
-        expect(e).toBeInstanceOf(Error);
-        expect(e).toMatchObject({ message: "worker terminated" });
-      }
-    },
-  );
+  it("becomes halted if you try and await its value out of scope", function* () {
+    let url = import.meta.resolve("./test-assets/suspend-worker.ts");
+    let worker = yield* scoped(function* () {
+      return yield* useWorker(url, { type: "module" });
+    });
+    try {
+      yield* worker;
+    } catch (e) {
+      expect(e).toBeInstanceOf(Error);
+      expect(e).toMatchObject({ message: "worker terminated" });
+    }
+  });
 
   it("supports stateful operations", function* () {
     expect.assertions(3);

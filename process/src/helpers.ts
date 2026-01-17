@@ -11,9 +11,7 @@ import type { Readable } from "node:stream";
 
 export type OutputStream = Stream<Uint8Array, void>;
 
-export function useReadable(
-  target: Readable | null,
-): Stream<Uint8Array, void> {
+export function useReadable(target: Readable | null): Stream<Uint8Array, void> {
   return resource(function* (provide) {
     let signal = createSignal<Uint8Array, void>();
 

@@ -119,11 +119,14 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
       yield* provide({
         *send(value) {
           let channel = yield* useMessageChannel();
-          worker.postMessage({
-            type: "send",
-            value,
-            response: channel.port2,
-          }, [channel.port2]);
+          worker.postMessage(
+            {
+              type: "send",
+              value,
+              response: channel.port2,
+            },
+            [channel.port2],
+          );
           channel.port1.start();
           let event = yield* once(channel.port1, "message");
           let result = (event as MessageEvent).data;

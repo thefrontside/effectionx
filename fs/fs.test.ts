@@ -133,9 +133,15 @@ describe("@effectionx/fs", () => {
   describe("walk", () => {
     it("walks directory tree", function* () {
       // Create test structure
-      yield* until(fsp.mkdir(path.join(testDir, "walk-test", "sub"), { recursive: true }));
-      yield* until(fsp.writeFile(path.join(testDir, "walk-test", "file1.txt"), "1"));
-      yield* until(fsp.writeFile(path.join(testDir, "walk-test", "sub", "file2.txt"), "2"));
+      yield* until(
+        fsp.mkdir(path.join(testDir, "walk-test", "sub"), { recursive: true }),
+      );
+      yield* until(
+        fsp.writeFile(path.join(testDir, "walk-test", "file1.txt"), "1"),
+      );
+      yield* until(
+        fsp.writeFile(path.join(testDir, "walk-test", "sub", "file2.txt"), "2"),
+      );
 
       const entries: string[] = [];
       for (const entry of yield* each(walk(path.join(testDir, "walk-test")))) {
@@ -149,11 +155,17 @@ describe("@effectionx/fs", () => {
     });
 
     it("respects includeFiles option", function* () {
-      yield* until(fsp.mkdir(path.join(testDir, "walk-files"), { recursive: true }));
-      yield* until(fsp.writeFile(path.join(testDir, "walk-files", "file.txt"), "1"));
+      yield* until(
+        fsp.mkdir(path.join(testDir, "walk-files"), { recursive: true }),
+      );
+      yield* until(
+        fsp.writeFile(path.join(testDir, "walk-files", "file.txt"), "1"),
+      );
 
       const entries: string[] = [];
-      for (const entry of yield* each(walk(path.join(testDir, "walk-files"), { includeFiles: false }))) {
+      for (const entry of yield* each(
+        walk(path.join(testDir, "walk-files"), { includeFiles: false }),
+      )) {
         entries.push(entry.name);
         yield* each.next();
       }

@@ -76,7 +76,7 @@ describe("TestAdapter", () => {
         } finally {
           sequence.push("parent/teardown:once");
         }
-      })
+      }),
     );
 
     parent.addSetup(() =>
@@ -87,7 +87,7 @@ describe("TestAdapter", () => {
         } finally {
           sequence.push("parent/teardown:each");
         }
-      })
+      }),
     );
 
     let first = createTestAdapter({ name: "child", parent });
@@ -138,6 +138,5 @@ describe("TestAdapter", () => {
     });
   });
 
-  it("can run multiple tests", async () => {
-  });
+  it("can run multiple tests", async () => {});
 });

@@ -49,7 +49,7 @@ export function createBDD(primitives: TestPrimitives): BDD {
   function describe(name: string, body: () => void) {
     const original = current;
     try {
-      const child = current = createTestAdapter({ name, parent: original });
+      const child = (current = createTestAdapter({ name, parent: original }));
 
       $describe(name, () => {
         $afterAll(() => child.destroy());
@@ -64,7 +64,7 @@ export function createBDD(primitives: TestPrimitives): BDD {
   describe.only = function (name: string, fn: () => void): void {
     const original = current;
     try {
-      const child = current = createTestAdapter({ name, parent: original });
+      const child = (current = createTestAdapter({ name, parent: original }));
 
       $describe.only(name, () => {
         $afterAll(() => child.destroy());

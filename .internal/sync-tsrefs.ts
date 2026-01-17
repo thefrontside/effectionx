@@ -78,7 +78,10 @@ const getWorkspaceEntries = async () => {
     if (!trimmed.startsWith("-")) {
       continue;
     }
-    const value = trimmed.replace(/^-\s*/, "").replace(/^"|"$/g, "").replace(/^'|'$/g, "");
+    const value = trimmed
+      .replace(/^-\s*/, "")
+      .replace(/^"|"$/g, "")
+      .replace(/^'|'$/g, "");
     if (!value) {
       continue;
     }
@@ -91,7 +94,9 @@ const getWorkspaceEntries = async () => {
 
   for (const entry of entries) {
     if ([...entry].some((char) => globChars.has(char))) {
-      throw new Error(`Workspace entry '${entry}' includes glob characters; add explicit package paths.`);
+      throw new Error(
+        `Workspace entry '${entry}' includes glob characters; add explicit package paths.`,
+      );
     }
   }
 
@@ -138,7 +143,9 @@ const collectPackages = async (entries: string[]) => {
     try {
       packageJson = await readJson(packageJsonPath);
     } catch (error) {
-      throw new Error(`Workspace entry '${entry}' is missing a valid package.json: ${String(error)}`);
+      throw new Error(
+        `Workspace entry '${entry}' is missing a valid package.json: ${String(error)}`,
+      );
     }
 
     const name = packageJson.name;
@@ -153,7 +160,10 @@ const collectPackages = async (entries: string[]) => {
 };
 
 // Collect workspace dependencies from dependencies and peerDependencies.
-const getWorkspaceDeps = (packageJson: JsonObject, workspaceNames: Set<string>) => {
+const getWorkspaceDeps = (
+  packageJson: JsonObject,
+  workspaceNames: Set<string>,
+) => {
   const deps = packageJson.dependencies ?? {};
   const peerDeps = packageJson.peerDependencies ?? {};
   const result = new Set<string>();
@@ -221,7 +231,10 @@ const collectSourceFiles = async (packageDir: string) => {
 };
 
 // Resolve a workspace package name from an import specifier.
-const resolveWorkspaceImport = (specifier: string, workspaceNames: string[]) => {
+const resolveWorkspaceImport = (
+  specifier: string,
+  workspaceNames: string[],
+) => {
   for (const name of workspaceNames) {
     if (specifier === name || specifier.startsWith(`${name}/`)) {
       return name;
@@ -230,7 +243,8 @@ const resolveWorkspaceImport = (specifier: string, workspaceNames: string[]) => 
   return null;
 };
 
-const escapeRegex = (value: string) => value.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+const escapeRegex = (value: string) =>
+  value.replace(/[.+^${}()|[\]\\]/g, "\\$&");
 
 // Convert a tsconfig glob pattern to a RegExp.
 const globToRegExp = (pattern: string) => {
@@ -282,9 +296,11 @@ const globToRegExp = (pattern: string) => {
   return new RegExp(regex);
 };
 
-const compilePatterns = (patterns: string[]) => patterns.map((pattern) => globToRegExp(pattern));
+const compilePatterns = (patterns: string[]) =>
+  patterns.map((pattern) => globToRegExp(pattern));
 
-const matchesAny = (value: string, patterns: RegExp[]) => patterns.some((pattern) => pattern.test(value));
+const matchesAny = (value: string, patterns: RegExp[]) =>
+  patterns.some((pattern) => pattern.test(value));
 
 // Load tsconfig.test.json and precompile include/exclude patterns.
 const loadTestConfig = async (configPath: string): Promise<TestConfig> => {
@@ -407,7 +423,10 @@ const findWorkspaceImports = async (
         const workspaceName = resolveWorkspaceImport(specifier, workspaceNames);
         if (workspaceName) {
           if (!matches.has(workspaceName)) {
-            matches.set(workspaceName, { testFiles: new Set(), runtimeFiles: new Set() });
+            matches.set(workspaceName, {
+              testFiles: new Set(),
+              runtimeFiles: new Set(),
+            });
           }
           const entry = matches.get(workspaceName);
           if (!entry) {
@@ -431,7 +450,9 @@ const findWorkspaceImports = async (
 };
 
 const getDependencyObject = (value: unknown) =>
-  value && typeof value === "object" ? { ...(value as Record<string, string>) } : {};
+  value && typeof value === "object"
+    ? { ...(value as Record<string, string>) }
+    : {};
 
 // Update or verify tsconfig project references for all packages.
 const updateReferences = async () => {
@@ -439,7 +460,9 @@ const updateReferences = async () => {
   const packages = await collectPackages(entries);
   const workspaceMap = new Map(packages.map((pkg) => [pkg.name, pkg]));
   const workspaceNames = new Set(workspaceMap.keys());
-  const workspaceNameList = [...workspaceNames].sort((a, b) => a.localeCompare(b));
+  const workspaceNameList = [...workspaceNames].sort((a, b) =>
+    a.localeCompare(b),
+  );
 
   const warnings: string[] = [];
   const mismatches: string[] = [];
@@ -450,7 +473,9 @@ const updateReferences = async () => {
   if (await fileExists(rootTestConfigPath)) {
     rootTestConfig = await loadTestConfig(rootTestConfigPath);
   } else {
-    warnings.push("Missing tsconfig.test.json at repo root; test-only classification defaults to runtime.");
+    warnings.push(
+      "Missing tsconfig.test.json at repo root; test-only classification defaults to runtime.",
+    );
   }
 
   for (const pkg of packages) {
@@ -462,7 +487,11 @@ const updateReferences = async () => {
 
     const getTestConfigForFile = async (filePath: string) => {
       const dir = path.dirname(filePath);
-      const nearest = await findNearestTestConfig(dir, pkg.dir, testConfigPathCache);
+      const nearest = await findNearestTestConfig(
+        dir,
+        pkg.dir,
+        testConfigPathCache,
+      );
       const resolved = nearest ?? rootTestConfig?.path ?? null;
 
       if (!resolved) {
@@ -482,7 +511,11 @@ const updateReferences = async () => {
       return loaded;
     };
 
-    const workspaceImports = await findWorkspaceImports(pkg.dir, workspaceNameList, getTestConfigForFile);
+    const workspaceImports = await findWorkspaceImports(
+      pkg.dir,
+      workspaceNameList,
+      getTestConfigForFile,
+    );
     const mergedDeps = new Set([...workspaceDeps, ...workspaceImports.keys()]);
     mergedDeps.delete(pkg.name);
     const orderedDeps = [...mergedDeps].sort((a, b) => a.localeCompare(b));
@@ -499,7 +532,9 @@ const updateReferences = async () => {
     try {
       tsconfig = JSON.parse(tsconfigRaw) as TsConfig;
     } catch (error) {
-      throw new Error(`Failed to parse JSON in ${pkg.tsconfigPath}: ${String(error)}`);
+      throw new Error(
+        `Failed to parse JSON in ${pkg.tsconfigPath}: ${String(error)}`,
+      );
     }
 
     const nextReferences = orderedDeps
@@ -514,19 +549,25 @@ const updateReferences = async () => {
 
     const currentReferences = Array.isArray(tsconfig.references)
       ? tsconfig.references
-          .map((ref) => (typeof ref?.path === "string" ? { path: ref.path } : null))
+          .map((ref) =>
+            typeof ref?.path === "string" ? { path: ref.path } : null,
+          )
           .filter((ref): ref is { path: string } => Boolean(ref))
       : [];
 
     const normalize = (refs: Array<{ path: string }>) =>
-      refs.map((ref) => ({ path: ref.path })).sort((a, b) => a.path.localeCompare(b.path));
+      refs
+        .map((ref) => ({ path: ref.path }))
+        .sort((a, b) => a.path.localeCompare(b.path));
 
     const normalizedCurrent = normalize(currentReferences);
     const normalizedNext = normalize(nextReferences);
 
     const hasMismatch =
       normalizedCurrent.length !== normalizedNext.length ||
-      normalizedCurrent.some((ref, index) => ref.path !== normalizedNext[index]?.path);
+      normalizedCurrent.some(
+        (ref, index) => ref.path !== normalizedNext[index]?.path,
+      );
 
     if (hasMismatch) {
       mismatches.push(pkg.tsconfigPath);
@@ -581,7 +622,12 @@ const updateReferences = async () => {
         continue;
       }
 
-      if (hasTest && !inDependencies && !inPeerDependencies && !inDevDependencies) {
+      if (
+        hasTest &&
+        !inDependencies &&
+        !inPeerDependencies &&
+        !inDevDependencies
+      ) {
         if (isFixMode) {
           devDependencies[depName] = "workspace:*";
           depsChanged = true;
@@ -632,7 +678,9 @@ const updateReferences = async () => {
   }
 
   if (dependencyIssues.length > 0) {
-    messages.push(`package dependencies out of date:\n- ${dependencyIssues.join("\n- ")}`);
+    messages.push(
+      `package dependencies out of date:\n- ${dependencyIssues.join("\n- ")}`,
+    );
   }
 
   if (messages.length > 0) {

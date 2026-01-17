@@ -46,16 +46,16 @@ export function createSubject<T>(): <TClose>(
 
       let iterator: Subscription<T, TClose> = current
         ? {
-          *next() {
-            iterator = upstream;
-            return current!;
-          },
-        }
+            *next() {
+              iterator = upstream;
+              return current!;
+            },
+          }
         : {
-          *next() {
-            return current = yield* upstream.next();
-          },
-        };
+            *next() {
+              return (current = yield* upstream.next());
+            },
+          };
 
       return {
         next: () => iterator.next(),

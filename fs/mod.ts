@@ -136,8 +136,8 @@ export function* emptyDir(pathOrUrl: string | URL): Operation<void> {
     const entries = yield* readdir(dirPath);
     yield* all(
       entries.map((entry) =>
-        rm(path.join(dirPath, entry), { recursive: true, force: true })
-      )
+        rm(path.join(dirPath, entry), { recursive: true, force: true }),
+      ),
     );
   } catch (error) {
     // If directory doesn't exist, create it
@@ -176,7 +176,10 @@ export function rm(
  * yield* copyFile("./source.txt", "./dest.txt");
  * ```
  */
-export function copyFile(src: string | URL, dest: string | URL): Operation<void> {
+export function copyFile(
+  src: string | URL,
+  dest: string | URL,
+): Operation<void> {
   return until(fsp.copyFile(toPath(src), toPath(dest)));
 }
 

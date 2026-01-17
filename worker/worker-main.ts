@@ -21,7 +21,7 @@ function useWorkerPort(): Operation<MessagePort> {
   return resource(function* (provide) {
     const port = parentPort
       ? parentPort // Node.js worker_threads
-      : self as unknown as MessagePort; // Browser/Deno Web Worker
+      : (self as unknown as MessagePort); // Browser/Deno Web Worker
 
     try {
       yield* provide(port);
@@ -91,7 +91,8 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
 
     yield* spawn(function* () {
       for (const message of yield* each(on(port, "message"))) {
-        const control: WorkerControl<TSend, TData> = (message as MessageEvent).data;
+        const control: WorkerControl<TSend, TData> = (message as MessageEvent)
+          .data;
         switch (control.type) {
           case "init": {
             worker.start(
@@ -127,7 +128,10 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
           case "send": {
             let { value, response } = control;
             // Ensure that response is a proper MessagePort (DOM)
-            assert(response instanceof MessagePort, "Expect response to be an instance of MessagePort");
+            assert(
+              response instanceof MessagePort,
+              "Expect response to be an instance of MessagePort",
+            );
             sent.send({ value, response });
             break;
           }
@@ -183,7 +187,7 @@ export function createWorkerStatesSignal(): Operation<WorkerStateSignal> {
     const signal = createSignal<WorkerState>();
 
     const set: WorkerStateSignal["set"] = (value) => {
-      signal.send(ref.current = value);
+      signal.send((ref.current = value));
       return value;
     };
 

@@ -1,5 +1,12 @@
 import { JsonParseStream, TextLineStream } from "./stream-helpers.ts";
-import { emptyDir, exists, fromFileUrl, globToRegExp, toFileUrl, walk } from "./fs-helpers.ts";
+import {
+  emptyDir,
+  exists,
+  fromFileUrl,
+  globToRegExp,
+  toFileUrl,
+  walk,
+} from "./fs-helpers.ts";
 import { dirname, join } from "node:path";
 
 import {
@@ -47,18 +54,15 @@ export class JSONLStore implements Store {
    * @returns
    */
   static from(options: StoreConstructorOptions): JSONLStore {
-    const pathname = options.location instanceof URL
-      ? options.location.pathname
-      : options.location;
+    const pathname =
+      options.location instanceof URL
+        ? options.location.pathname
+        : options.location;
 
     if (pathname.charAt(-1) === "/") {
-      return new JSONLStore(
-        toFileUrl(pathname),
-      );
+      return new JSONLStore(toFileUrl(pathname));
     } else {
-      return new JSONLStore(
-        toFileUrl(`${pathname}/`),
-      );
+      return new JSONLStore(toFileUrl(`${pathname}/`));
     }
   }
 
@@ -158,11 +162,9 @@ export class JSONLStore implements Store {
     yield* mkdir(dirname(fromFileUrl(location)), { recursive: true });
 
     yield* call(() =>
-      fsp.writeFile(
-        fromFileUrl(location),
-        `${JSON.stringify(data)}\n`,
-        { encoding: "utf-8" },
-      )
+      fsp.writeFile(fromFileUrl(location), `${JSON.stringify(data)}\n`, {
+        encoding: "utf-8",
+      }),
     );
   }
 
@@ -183,11 +185,9 @@ export class JSONLStore implements Store {
     const location = new URL(`./${key}.jsonl`, this.location);
 
     yield* call(() =>
-      fsp.appendFile(
-        fromFileUrl(location),
-        `${JSON.stringify(data)}\n`,
-        { encoding: "utf-8" },
-      )
+      fsp.appendFile(fromFileUrl(location), `${JSON.stringify(data)}\n`, {
+        encoding: "utf-8",
+      }),
     );
   }
 
@@ -219,9 +219,7 @@ export class JSONLStore implements Store {
     const files = walk(root, {
       includeDirs: false,
       includeFiles: true,
-      match: [
-        reg,
-      ],
+      match: [reg],
     });
 
     const read = this.read.bind(this);

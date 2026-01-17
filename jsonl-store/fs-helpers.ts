@@ -7,7 +7,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  */
 export async function exists(pathOrUrl: string | URL): Promise<boolean> {
   try {
-    const filePath = pathOrUrl instanceof URL ? fileURLToPath(pathOrUrl) : pathOrUrl;
+    const filePath =
+      pathOrUrl instanceof URL ? fileURLToPath(pathOrUrl) : pathOrUrl;
     await fsp.access(filePath);
     return true;
   } catch {
@@ -19,18 +20,19 @@ export async function exists(pathOrUrl: string | URL): Promise<boolean> {
  * Empty a directory by removing all its contents
  */
 export async function emptyDir(pathOrUrl: string | URL): Promise<void> {
-  const dirPath = pathOrUrl instanceof URL ? fileURLToPath(pathOrUrl) : pathOrUrl;
-  
+  const dirPath =
+    pathOrUrl instanceof URL ? fileURLToPath(pathOrUrl) : pathOrUrl;
+
   try {
     const entries = await fsp.readdir(dirPath);
     await Promise.all(
-      entries.map(entry => 
-        fsp.rm(path.join(dirPath, entry), { recursive: true, force: true })
-      )
+      entries.map((entry) =>
+        fsp.rm(path.join(dirPath, entry), { recursive: true, force: true }),
+      ),
     );
   } catch (error) {
     // If directory doesn't exist, create it
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       await fsp.mkdir(dirPath, { recursive: true });
     } else {
       throw error;
@@ -57,16 +59,16 @@ export interface WalkOptions {
  */
 export async function* walk(
   root: string,
-  options: WalkOptions = {}
+  options: WalkOptions = {},
 ): AsyncGenerator<WalkEntry> {
   const { includeDirs = true, includeFiles = true, match } = options;
-  
+
   async function* walkDir(dir: string): AsyncGenerator<WalkEntry> {
     const entries = await fsp.readdir(dir, { withFileTypes: true });
-    
+
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
-      
+
       const walkEntry: WalkEntry = {
         path: fullPath,
         name: entry.name,
@@ -74,24 +76,24 @@ export async function* walk(
         isDirectory: entry.isDirectory(),
         isSymlink: entry.isSymbolicLink(),
       };
-      
+
       if (entry.isDirectory()) {
         if (includeDirs) {
-          if (!match || match.some(re => re.test(fullPath))) {
+          if (!match || match.some((re) => re.test(fullPath))) {
             yield walkEntry;
           }
         }
         yield* walkDir(fullPath);
       } else if (entry.isFile()) {
         if (includeFiles) {
-          if (!match || match.some(re => re.test(fullPath))) {
+          if (!match || match.some((re) => re.test(fullPath))) {
             yield walkEntry;
           }
         }
       }
     }
   }
-  
+
   yield* walkDir(root);
 }
 
@@ -109,16 +111,19 @@ export { pathToFileURL as toFileUrl };
  * Convert a glob pattern to a RegExp
  * Simplified implementation that handles common patterns
  */
-export function globToRegExp(glob: string, options?: { globstar?: boolean }): RegExp {
+export function globToRegExp(
+  glob: string,
+  options?: { globstar?: boolean },
+): RegExp {
   let pattern = glob
     // Escape special regex characters except * and ?
-    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
     // Handle **
-    .replace(/\*\*/g, options?.globstar ? '.*' : '[^/]*')
+    .replace(/\*\*/g, options?.globstar ? ".*" : "[^/]*")
     // Handle single *
-    .replace(/(?<!\*)\*(?!\*)/g, '[^/]*')
+    .replace(/(?<!\*)\*(?!\*)/g, "[^/]*")
     // Handle ?
-    .replace(/\?/g, '.');
-  
+    .replace(/\?/g, ".");
+
   return new RegExp(`^${pattern}$`);
 }

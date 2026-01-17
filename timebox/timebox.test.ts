@@ -5,7 +5,10 @@ import { type Operation, sleep, suspend } from "effection";
 
 describe("timebox", () => {
   it("is completed if operation returns within alloted time", function* () {
-    let outcome = yield* timebox(100, delayed(5, () => "hello"));
+    let outcome = yield* timebox(
+      100,
+      delayed(5, () => "hello"),
+    );
     outcome.timeout;
     expect(outcome).toMatchObject({
       timeout: false,

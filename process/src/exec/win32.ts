@@ -32,10 +32,7 @@ function* killTree(pid: number) {
   }
 }
 
-export const createWin32Process: CreateOSProcess = (
-  command,
-  options,
-) => {
+export const createWin32Process: CreateOSProcess = (command, options) => {
   return resource(function* (provide) {
     let processResult = withResolvers<Result<ProcessResultValue>>();
 

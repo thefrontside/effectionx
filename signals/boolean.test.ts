@@ -45,10 +45,10 @@ describe("boolean", () => {
 
         let next = yield* race([
           subscription.next(),
-          function* () {
+          (function* () {
             yield* sleep(1);
             return `sleep won; update not received`;
-          }(),
+          })(),
         ]);
 
         expect(next).toEqual(`sleep won; update not received`);

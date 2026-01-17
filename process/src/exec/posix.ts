@@ -17,10 +17,7 @@ import { ExecError } from "./error.ts";
 
 type ProcessResultValue = [number?, string?];
 
-export const createPosixProcess: CreateOSProcess = (
-  command,
-  options,
-) => {
+export const createPosixProcess: CreateOSProcess = (command, options) => {
   return resource(function* (provide) {
     let processResult = withResolvers<Result<ProcessResultValue>>();
 

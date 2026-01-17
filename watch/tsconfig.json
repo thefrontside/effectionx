@@ -5,15 +5,8 @@
     "rootDir": ".",
     "resolveJsonModule": true
   },
-  "include": [
-    "**/*.ts",
-    "package.json"
-  ],
-  "exclude": [
-    "**/*.test.ts",
-    "test/**",
-    "dist"
-  ],
+  "include": ["**/*.ts", "package.json"],
+  "exclude": ["**/*.test.ts", "test/**", "dist"],
   "references": [
     {
       "path": "../bdd"

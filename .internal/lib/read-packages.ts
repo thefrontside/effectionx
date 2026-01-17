@@ -20,7 +20,7 @@ export function* readPackages(): Operation<PackageConfig[]> {
 
   // Read pnpm-workspace.yaml
   const workspaceYaml = yield* call(() =>
-    fsp.readFile(resolve(rootDir, "pnpm-workspace.yaml"), "utf-8")
+    fsp.readFile(resolve(rootDir, "pnpm-workspace.yaml"), "utf-8"),
   );
 
   // Parse workspace entries (simple YAML parsing for our format)
@@ -28,9 +28,7 @@ export function* readPackages(): Operation<PackageConfig[]> {
   for (const line of workspaceYaml.split("\n")) {
     const trimmed = line.trim();
     if (trimmed.startsWith("-")) {
-      const value = trimmed
-        .replace(/^-\s*/, "")
-        .replace(/^["']|["']$/g, "");
+      const value = trimmed.replace(/^-\s*/, "").replace(/^["']|["']$/g, "");
       if (value) {
         workspaces.push(value);
       }
@@ -44,7 +42,7 @@ export function* readPackages(): Operation<PackageConfig[]> {
     const workspacePath = resolve(rootDir, workspace);
 
     const packageJsonContent = yield* call(() =>
-      fsp.readFile(`${workspacePath}/package.json`, "utf-8")
+      fsp.readFile(`${workspacePath}/package.json`, "utf-8"),
     );
     const packageJson = PackageJson.parse(JSON.parse(packageJsonContent));
 

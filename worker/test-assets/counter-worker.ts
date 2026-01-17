@@ -1,14 +1,15 @@
 import { workerMain } from "../worker-main.ts";
 
-await workerMain<number, number, number, number>(
-  function* ({ messages, data: initial }) {
-    let counter = initial;
+await workerMain<number, number, number, number>(function* ({
+  messages,
+  data: initial,
+}) {
+  let counter = initial;
 
-    yield* messages.forEach(function* (message) {
-      counter += message;
-      return counter;
-    });
-
+  yield* messages.forEach(function* (message) {
+    counter += message;
     return counter;
-  },
-);
+  });
+
+  return counter;
+});

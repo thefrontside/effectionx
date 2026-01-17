@@ -11,7 +11,11 @@ await main(function* () {
   const baseBranch = process.env.GITHUB_BASE_REF || "main";
 
   // Get list of changed files compared to base branch
-  const git = yield* x("git", ["diff", "--name-only", `origin/${baseBranch}...HEAD`]);
+  const git = yield* x("git", [
+    "diff",
+    "--name-only",
+    `origin/${baseBranch}...HEAD`,
+  ]);
   const { stdout } = yield* git;
   const changedFiles = stdout.trim().split("\n").filter(Boolean);
 
@@ -20,7 +24,7 @@ await main(function* () {
   for (const pkg of packages) {
     // Check if any changed file is within this package's workspace
     const hasChanges = changedFiles.some((file) =>
-      file.startsWith(`${pkg.workspace}/`)
+      file.startsWith(`${pkg.workspace}/`),
     );
 
     if (hasChanges) {
@@ -34,7 +38,7 @@ await main(function* () {
 
   if (process.env.GITHUB_OUTPUT) {
     yield* call(() =>
-      fsp.appendFile(process.env.GITHUB_OUTPUT as string, outputValue + "\n")
+      fsp.appendFile(process.env.GITHUB_OUTPUT as string, outputValue + "\n"),
     );
   }
 });

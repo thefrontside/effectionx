@@ -15,14 +15,8 @@ export interface EventEmitterLike {
  * This includes browser EventTarget and web-worker's global `self`.
  */
 export interface EventTargetLike {
-  addEventListener(
-    event: string,
-    listener: (event: unknown) => void,
-  ): void;
-  removeEventListener(
-    event: string,
-    listener: (event: unknown) => void,
-  ): void;
+  addEventListener(event: string, listener: (event: unknown) => void): void;
+  removeEventListener(event: string, listener: (event: unknown) => void): void;
 }
 
 /**

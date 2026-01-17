@@ -28,7 +28,7 @@ export function describe(
 ) {
   const original = current;
   try {
-    const child = current = createTestAdapter({ name, parent: original });
+    const child = (current = createTestAdapter({ name, parent: original }));
 
     $describe({
       name,
@@ -51,7 +51,7 @@ describe.only = function (
 ): void {
   const original = current;
   try {
-    const child = current = createTestAdapter({ name, parent: original });
+    const child = (current = createTestAdapter({ name, parent: original }));
 
     $describe.only({
       name,

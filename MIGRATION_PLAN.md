@@ -128,6 +128,10 @@ Create `tsconfig.test.json` at the repository root. This file defines which file
 
 ```json
 {
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
   "include": ["**/*.test.ts", "**/test/**/*.ts"],
   "exclude": ["**/dist", "**/node_modules"]
 }

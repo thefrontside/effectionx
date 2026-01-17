@@ -156,7 +156,7 @@ export function createTestAdapter(
               yield* fn();
             }
             yield* op();
-          })
+          }),
         );
         return yield* test;
       });

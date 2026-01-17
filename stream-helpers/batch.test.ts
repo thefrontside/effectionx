@@ -54,7 +54,7 @@ describe("batch", () => {
         last = now;
 
         batches.push(batch);
-      }, stream)
+      }, stream),
     );
 
     yield* sleep(1);
@@ -86,7 +86,7 @@ describe("batch", () => {
     yield* spawn(() =>
       forEach<readonly number[], void>(function* (batch) {
         batches.push(batch);
-      }, stream)
+      }, stream),
     );
 
     yield* sleep(1);

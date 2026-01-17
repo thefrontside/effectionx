@@ -3,7 +3,7 @@
  */
 export class TextLineStream extends TransformStream<string, string> {
   #buffer = "";
-  
+
   constructor() {
     super({
       transform: (chunk, controller) => {

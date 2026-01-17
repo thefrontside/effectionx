@@ -9,8 +9,8 @@
     "test": "node --env-file=.env --test \"**/*.test.ts\"",
     "test:effection": "node --env-file=.env .internal/effection-compat.ts",
     "lint": "biome lint .",
-    "format": "biome format . --write",
-    "format:check": "biome format .",
+    "fmt": "biome format . --write",
+    "fmt:check": "biome format .",
     "sync": "node --env-file=.env .internal/sync-tsrefs.ts",
     "sync:fix": "node --env-file=.env .internal/sync-tsrefs.ts fix",
     "check:tsrefs": "node --env-file=.env .internal/sync-tsrefs.ts check"

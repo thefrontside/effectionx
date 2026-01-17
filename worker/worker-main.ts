@@ -1,4 +1,3 @@
-import { on, type EventSourceLike } from "@effectionx/event-emitter";
 import type { ValueSignal } from "@effectionx/signals";
 import {
   createSignal,
@@ -6,13 +5,31 @@ import {
   Err,
   main,
   Ok,
+  on,
   type Operation,
   resource,
   spawn,
   type Task,
 } from "effection";
+import { MessagePort, parentPort } from "node:worker_threads";
+import assert from "node:assert";
 
 import type { WorkerControl, WorkerMainOptions } from "./types.ts";
+
+// Get the appropriate worker port for the current environment as a resource
+function useWorkerPort(): Operation<MessagePort> {
+  return resource(function* (provide) {
+    const port = parentPort
+      ? parentPort // Node.js worker_threads
+      : self as unknown as MessagePort; // Browser/Deno Web Worker
+
+    try {
+      yield* provide(port);
+    } finally {
+      port.close();
+    }
+  });
+}
 
 /**
  * Entrypoint used in the worker that estaliblishes communication
@@ -68,12 +85,13 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
   body: (options: WorkerMainOptions<TSend, TRecv, TData>) => Operation<TReturn>,
 ): Promise<void> {
   await main(function* () {
+    const port = yield* useWorkerPort();
     let sent = createSignal<{ value: TSend; response: MessagePort }>();
     let worker = yield* createWorkerStatesSignal();
 
     yield* spawn(function* () {
-      for (const [message] of yield* each(on<[MessageEvent]>(self as unknown as EventSourceLike, "message"))) {
-        const control: WorkerControl<TSend, TData> = message.data;
+      for (const message of yield* each(on(port, "message"))) {
+        const control: WorkerControl<TSend, TData> = (message as MessageEvent).data;
         switch (control.type) {
           case "init": {
             worker.start(
@@ -108,6 +126,8 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
           }
           case "send": {
             let { value, response } = control;
+            // Ensure that response is a proper MessagePort (DOM)
+            assert(response instanceof MessagePort, "Expect response to be an instance of MessagePort");
             sent.send({ value, response });
             break;
           }
@@ -126,11 +146,13 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
 
     for (const state of yield* each(worker)) {
       if (state.type === "new") {
-        postMessage({ type: "open" });
+        port.postMessage({ type: "open" });
       } else if (state.type === "interrupted" || state.type === "error") {
-        postMessage({ type: "close", result: Err(state.error) });
+        port.postMessage({ type: "close", result: Err(state.error) });
+        break;
       } else if (state.type === "complete") {
-        postMessage({ type: "close", result: Ok(state.value) });
+        port.postMessage({ type: "close", result: Ok(state.value) });
+        break;
       }
       yield* each.next();
     }
@@ -219,8 +241,4 @@ export function createWorkerStatesSignal(): Operation<WorkerStateSignal> {
       }
     }
   });
-}
-
-function postMessage(message: unknown): void {
-  self.postMessage(message);
 }

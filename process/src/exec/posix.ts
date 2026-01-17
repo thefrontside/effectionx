@@ -1,15 +1,15 @@
 import { spawn as spawnProcess } from "node:child_process";
+import process from "node:process";
 import {
-  all,
-  createSignal,
   Err,
   Ok,
-  resource,
   type Result,
+  all,
+  createSignal,
+  resource,
   spawn,
   withResolvers,
 } from "effection";
-import process from "node:process";
 import { once } from "../eventemitter.ts";
 import { useReadable } from "../helpers.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
@@ -93,7 +93,7 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
         let [code, signal] = result.value;
         return { command, options, code, signal } as ExitStatus;
       }
-        throw result.error;
+      throw result.error;
     }
 
     function* expect() {
@@ -101,7 +101,7 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
       if (status.code !== 0) {
         throw new ExecError(status, command, options);
       }
-        return status;
+      return status;
     }
 
     try {
@@ -116,7 +116,7 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
     } finally {
       try {
         if (typeof childProcess.pid === "undefined") {
-          // deno-lint-ignore no-unsafe-finally
+          // biome-ignore lint/correctness/noUnsafeFinally: Intentional error for missing PID
           throw new Error("no pid for childProcess");
         }
         process.kill(-childProcess.pid, "SIGTERM");

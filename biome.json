@@ -13,6 +13,13 @@
       },
       "correctness": {
         "useYield": "off"
+      },
+      "complexity": {
+        "noForEach": "off"
+      },
+      "suspicious": {
+        "noThenProperty": "off",
+        "noShadowRestrictedNames": "off"
       }
     }
   },

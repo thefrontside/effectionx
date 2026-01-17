@@ -1,17 +1,17 @@
 import { platform } from "node:os";
-import {
-  all,
-  createSignal,
-  Err,
-  Ok,
-  resource,
-  type Result,
-  spawn,
-  withResolvers,
-} from "effection";
 // @ts-types="npm:@types/cross-spawn@6.0.6"
 import { spawn as spawnProcess } from "cross-spawn";
 import { ctrlc } from "ctrlc-windows";
+import {
+  Err,
+  Ok,
+  type Result,
+  all,
+  createSignal,
+  resource,
+  spawn,
+  withResolvers,
+} from "effection";
 import { once } from "../eventemitter.ts";
 import { useReadable } from "../helpers.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
@@ -112,7 +112,7 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
         let [code, signal] = result.value;
         return { command, options, code, signal } as ExitStatus;
       }
-        throw result.error;
+      throw result.error;
     }
 
     function* expect() {
@@ -120,7 +120,7 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
       if (status.code !== 0) {
         throw new ExecError(status, command, options);
       }
-        return status;
+      return status;
     }
 
     try {
@@ -140,7 +140,7 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
           childProcess.signalCode === null
         ) {
           if (typeof childProcess.pid === "undefined") {
-            // deno-lint-ignore no-unsafe-finally
+            // biome-ignore lint/correctness/noUnsafeFinally: Intentional error for missing PID
             throw new Error("no pid for childProcess");
           }
 

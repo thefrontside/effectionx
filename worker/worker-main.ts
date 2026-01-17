@@ -1,18 +1,18 @@
+import assert from "node:assert";
+import { MessagePort, parentPort } from "node:worker_threads";
 import type { ValueSignal } from "@effectionx/signals";
 import {
+  Err,
+  Ok,
+  type Operation,
+  type Task,
   createSignal,
   each,
-  Err,
   main,
-  Ok,
   on,
-  type Operation,
   resource,
   spawn,
-  type Task,
 } from "effection";
-import { MessagePort, parentPort } from "node:worker_threads";
-import assert from "node:assert";
 
 import type { WorkerControl, WorkerMainOptions } from "./types.ts";
 
@@ -187,7 +187,8 @@ export function createWorkerStatesSignal(): Operation<WorkerStateSignal> {
     const signal = createSignal<WorkerState>();
 
     const set: WorkerStateSignal["set"] = (value) => {
-      signal.send((ref.current = value));
+      ref.current = value;
+      signal.send(value);
       return value;
     };
 
@@ -222,9 +223,9 @@ export function createWorkerStatesSignal(): Operation<WorkerStateSignal> {
           if (ref.current.type === "complete") {
             return ref.current;
           }
-            const next: Running = { type: "running", task };
-            set(next);
-            return next;
+          const next: Running = { type: "running", task };
+          set(next);
+          return next;
         },
         complete(value) {
           let next: Complete = { type: "complete", value };

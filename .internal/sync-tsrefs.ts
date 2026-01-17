@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
+import type { Dirent } from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import type { Dirent } from "node:fs";
 
 const rootDir = path.resolve(process.cwd());
 const workspaceFile = path.join(rootDir, "pnpm-workspace.yaml");
@@ -414,8 +414,8 @@ const findWorkspaceImports = async (
 
     const applyMatches = (regex: RegExp) => {
       regex.lastIndex = 0;
-      let match: RegExpExecArray | null;
-      while ((match = regex.exec(content)) !== null) {
+      let match: RegExpExecArray | null = regex.exec(content);
+      while (match !== null) {
         const specifier = match[1];
         if (!specifier) {
           continue;
@@ -438,6 +438,7 @@ const findWorkspaceImports = async (
             entry.runtimeFiles.add(filePath);
           }
         }
+        match = regex.exec(content);
       }
     };
 

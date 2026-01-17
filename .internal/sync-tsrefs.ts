@@ -1,7 +1,9 @@
-import { promises as fs } from "node:fs";
+import { promises as fsp } from "node:fs";
 import type { Dirent } from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { exists, readTextFile, writeTextFile } from "@effectionx/fs";
+import { type Operation, call, main } from "effection";
 
 const rootDir = path.resolve(process.cwd());
 const workspaceFile = path.join(rootDir, "pnpm-workspace.yaml");
@@ -51,21 +53,11 @@ const formatJson = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
 // Normalize path separators for cross-platform logging.
 const toPosixPath = (value: string) => value.replace(/\\/g, "/");
 
-// Check for file existence without throwing.
-const fileExists = async (filePath: string) => {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 // Parse pnpm-workspace.yaml and return explicit package paths.
-const getWorkspaceEntries = async () => {
+function* getWorkspaceEntries(): Operation<string[]> {
   let raw = "";
   try {
-    raw = await fs.readFile(workspaceFile, "utf-8");
+    raw = yield* readTextFile(workspaceFile);
   } catch (error) {
     throw new Error(`Failed to read ${workspaceFile}: ${String(error)}`);
   }
@@ -101,13 +93,13 @@ const getWorkspaceEntries = async () => {
   }
 
   return entries;
-};
+}
 
 // Read and parse a JSON file with helpful error messages.
-const readJson = async <T extends JsonObject>(filePath: string): Promise<T> => {
+function* readJson<T extends JsonObject>(filePath: string): Operation<T> {
   let raw = "";
   try {
-    raw = await fs.readFile(filePath, "utf-8");
+    raw = yield* readTextFile(filePath);
   } catch (error) {
     throw new Error(`Failed to read ${filePath}: ${String(error)}`);
   }
@@ -116,7 +108,7 @@ const readJson = async <T extends JsonObject>(filePath: string): Promise<T> => {
   } catch (error) {
     throw new Error(`Failed to parse JSON in ${filePath}: ${String(error)}`);
   }
-};
+}
 
 // Compute the relative path for a tsconfig project reference.
 const pathForReference = (fromDir: string, toDir: string) => {
@@ -131,7 +123,7 @@ const pathForReference = (fromDir: string, toDir: string) => {
 };
 
 // Load package.json metadata for each workspace entry.
-const collectPackages = async (entries: string[]) => {
+function* collectPackages(entries: string[]): Operation<PackageInfo[]> {
   const packages: PackageInfo[] = [];
 
   for (const entry of entries) {
@@ -141,7 +133,7 @@ const collectPackages = async (entries: string[]) => {
 
     let packageJson: JsonObject;
     try {
-      packageJson = await readJson(packageJsonPath);
+      packageJson = yield* readJson(packageJsonPath);
     } catch (error) {
       throw new Error(
         `Workspace entry '${entry}' is missing a valid package.json: ${String(error)}`,
@@ -157,7 +149,7 @@ const collectPackages = async (entries: string[]) => {
   }
 
   return packages;
-};
+}
 
 // Collect workspace dependencies from dependencies and peerDependencies.
 const getWorkspaceDeps = (
@@ -188,7 +180,7 @@ const getWorkspaceDeps = (
 };
 
 // Recursively gather TypeScript source files for a package.
-const collectSourceFiles = async (packageDir: string) => {
+function* collectSourceFiles(packageDir: string): Operation<string[]> {
   const entries: string[] = [];
   const stack = [packageDir];
   const ignoreDirs = new Set(["dist", "node_modules", ".git"]);
@@ -202,7 +194,7 @@ const collectSourceFiles = async (packageDir: string) => {
 
     let dirEntries: Array<Dirent> = [];
     try {
-      dirEntries = await fs.readdir(dir, { withFileTypes: true });
+      dirEntries = yield* call(() => fsp.readdir(dir, { withFileTypes: true }));
     } catch (error) {
       throw new Error(`Failed to read directory ${dir}: ${String(error)}`);
     }
@@ -228,7 +220,7 @@ const collectSourceFiles = async (packageDir: string) => {
   }
 
   return entries;
-};
+}
 
 // Resolve a workspace package name from an import specifier.
 const resolveWorkspaceImport = (
@@ -303,8 +295,8 @@ const matchesAny = (value: string, patterns: RegExp[]) =>
   patterns.some((pattern) => pattern.test(value));
 
 // Load tsconfig.test.json and precompile include/exclude patterns.
-const loadTestConfig = async (configPath: string): Promise<TestConfig> => {
-  const config = await readJson<JsonObject>(configPath);
+function* loadTestConfig(configPath: string): Operation<TestConfig> {
+  const config = yield* readJson<JsonObject>(configPath);
   const include = Array.isArray(config.include)
     ? config.include.filter((item): item is string => typeof item === "string")
     : [];
@@ -320,14 +312,14 @@ const loadTestConfig = async (configPath: string): Promise<TestConfig> => {
     includeRegex: compilePatterns(include),
     excludeRegex: compilePatterns(exclude),
   };
-};
+}
 
 // Find the nearest tsconfig.test.json walking up to the package root.
-const findNearestTestConfig = async (
+function* findNearestTestConfig(
   startDir: string,
   stopDir: string,
   cache: Map<string, string | null>,
-) => {
+): Operation<string | null> {
   let current = startDir;
   const visited: string[] = [];
 
@@ -342,7 +334,7 @@ const findNearestTestConfig = async (
 
     visited.push(current);
     const candidate = path.join(current, "tsconfig.test.json");
-    if (await fileExists(candidate)) {
+    if (yield* exists(candidate)) {
       for (const dir of visited) {
         cache.set(dir, candidate);
       }
@@ -365,7 +357,7 @@ const findNearestTestConfig = async (
   }
 
   return null;
-};
+}
 
 const isTestFile = (filePath: string, testConfig: TestConfig) => {
   if (testConfig.include.length === 0) {
@@ -390,12 +382,12 @@ const isTestFile = (filePath: string, testConfig: TestConfig) => {
 };
 
 // Scan source files for workspace package imports.
-const findWorkspaceImports = async (
+function* findWorkspaceImports(
   packageDir: string,
   workspaceNames: string[],
-  getTestConfigForFile: (filePath: string) => Promise<TestConfig | null>,
-) => {
-  const files = await collectSourceFiles(packageDir);
+  getTestConfigForFile: (filePath: string) => Operation<TestConfig | null>,
+): Operation<Map<string, ImportUsage>> {
+  const files = yield* collectSourceFiles(packageDir);
   const matches = new Map<string, ImportUsage>();
   const importFromRegex = /(?:import|export)\s+[^"']*from\s+["']([^"']+)["']/g;
   const importBareRegex = /import\s+["']([^"']+)["']/g;
@@ -404,12 +396,12 @@ const findWorkspaceImports = async (
   for (const filePath of files) {
     let content = "";
     try {
-      content = await fs.readFile(filePath, "utf-8");
+      content = yield* readTextFile(filePath);
     } catch (error) {
       throw new Error(`Failed to read ${filePath}: ${String(error)}`);
     }
 
-    const testConfig = await getTestConfigForFile(filePath);
+    const testConfig = yield* getTestConfigForFile(filePath);
     const fileIsTest = testConfig ? isTestFile(filePath, testConfig) : false;
 
     const applyMatches = (regex: RegExp) => {
@@ -418,6 +410,7 @@ const findWorkspaceImports = async (
       while (match !== null) {
         const specifier = match[1];
         if (!specifier) {
+          match = regex.exec(content);
           continue;
         }
         const workspaceName = resolveWorkspaceImport(specifier, workspaceNames);
@@ -430,6 +423,7 @@ const findWorkspaceImports = async (
           }
           const entry = matches.get(workspaceName);
           if (!entry) {
+            match = regex.exec(content);
             continue;
           }
           if (fileIsTest) {
@@ -448,7 +442,7 @@ const findWorkspaceImports = async (
   }
 
   return matches;
-};
+}
 
 const getDependencyObject = (value: unknown) =>
   value && typeof value === "object"
@@ -456,9 +450,9 @@ const getDependencyObject = (value: unknown) =>
     : {};
 
 // Update or verify tsconfig project references for all packages.
-const updateReferences = async () => {
-  const entries = await getWorkspaceEntries();
-  const packages = await collectPackages(entries);
+function* updateReferences(): Operation<void> {
+  const entries = yield* getWorkspaceEntries();
+  const packages = yield* collectPackages(entries);
   const workspaceMap = new Map(packages.map((pkg) => [pkg.name, pkg]));
   const workspaceNames = new Set(workspaceMap.keys());
   const workspaceNameList = [...workspaceNames].sort((a, b) =>
@@ -471,8 +465,8 @@ const updateReferences = async () => {
   const updatedPackageJsons: string[] = [];
 
   let rootTestConfig: TestConfig | null = null;
-  if (await fileExists(rootTestConfigPath)) {
-    rootTestConfig = await loadTestConfig(rootTestConfigPath);
+  if (yield* exists(rootTestConfigPath)) {
+    rootTestConfig = yield* loadTestConfig(rootTestConfigPath);
   } else {
     warnings.push(
       "Missing tsconfig.test.json at repo root; test-only classification defaults to runtime.",
@@ -480,15 +474,17 @@ const updateReferences = async () => {
   }
 
   for (const pkg of packages) {
-    const packageJson = await readJson<JsonObject>(pkg.packageJsonPath);
+    const packageJson = yield* readJson<JsonObject>(pkg.packageJsonPath);
     const workspaceDeps = getWorkspaceDeps(packageJson, workspaceNames);
 
     const testConfigPathCache = new Map<string, string | null>();
     const testConfigCache = new Map<string, TestConfig>();
 
-    const getTestConfigForFile = async (filePath: string) => {
+    function* getTestConfigForFile(
+      filePath: string,
+    ): Operation<TestConfig | null> {
       const dir = path.dirname(filePath);
-      const nearest = await findNearestTestConfig(
+      const nearest = yield* findNearestTestConfig(
         dir,
         pkg.dir,
         testConfigPathCache,
@@ -507,12 +503,12 @@ const updateReferences = async () => {
         return testConfigCache.get(resolved) ?? null;
       }
 
-      const loaded = await loadTestConfig(resolved);
+      const loaded = yield* loadTestConfig(resolved);
       testConfigCache.set(resolved, loaded);
       return loaded;
-    };
+    }
 
-    const workspaceImports = await findWorkspaceImports(
+    const workspaceImports = yield* findWorkspaceImports(
       pkg.dir,
       workspaceNameList,
       getTestConfigForFile,
@@ -523,7 +519,7 @@ const updateReferences = async () => {
 
     let tsconfigRaw = "";
     try {
-      tsconfigRaw = await fs.readFile(pkg.tsconfigPath, "utf-8");
+      tsconfigRaw = yield* readTextFile(pkg.tsconfigPath);
     } catch (error) {
       warnings.push(`Skipping ${pkg.tsconfigPath}: ${String(error)}`);
       continue;
@@ -574,7 +570,7 @@ const updateReferences = async () => {
       mismatches.push(pkg.tsconfigPath);
       if (!isCheckMode) {
         tsconfig.references = nextReferences;
-        await fs.writeFile(pkg.tsconfigPath, formatJson(tsconfig));
+        yield* writeTextFile(pkg.tsconfigPath, formatJson(tsconfig));
       }
     }
 
@@ -659,7 +655,7 @@ const updateReferences = async () => {
         packageJson.peerDependencies = updatedDeps.peerDependencies;
       }
 
-      await fs.writeFile(pkg.packageJsonPath, formatJson(packageJson));
+      yield* writeTextFile(pkg.packageJsonPath, formatJson(packageJson));
       updatedPackageJsons.push(pkg.packageJsonPath);
     }
   }
@@ -702,6 +698,8 @@ const updateReferences = async () => {
         .join(", ")}`,
     );
   }
-};
+}
 
-await updateReferences();
+await main(function* () {
+  yield* updateReferences();
+});

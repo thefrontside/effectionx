@@ -1,4 +1,5 @@
 import * as fsp from "node:fs/promises";
+import type { Stats } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
@@ -15,6 +16,36 @@ import {
  */
 export function toPath(pathOrUrl: string | URL): string {
   return pathOrUrl instanceof URL ? fileURLToPath(pathOrUrl) : pathOrUrl;
+}
+
+/**
+ * Get file or directory stats
+ *
+ * @example
+ * ```ts
+ * import { stat } from "@effectionx/fs";
+ *
+ * const stats = yield* stat("./file.txt");
+ * console.log(stats.isFile());
+ * ```
+ */
+export function* stat(pathOrUrl: string | URL): Operation<Stats> {
+  return yield* until(fsp.stat(toPath(pathOrUrl)));
+}
+
+/**
+ * Get file or directory stats without following symlinks
+ *
+ * @example
+ * ```ts
+ * import { lstat } from "@effectionx/fs";
+ *
+ * const stats = yield* lstat("./symlink");
+ * console.log(stats.isSymbolicLink());
+ * ```
+ */
+export function* lstat(pathOrUrl: string | URL): Operation<Stats> {
+  return yield* until(fsp.lstat(toPath(pathOrUrl)));
 }
 
 /**

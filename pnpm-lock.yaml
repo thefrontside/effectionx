@@ -62,10 +62,6 @@ importers:
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1
-    devDependencies:
-      '@effectionx/bdd':
-        specifier: workspace:*
-        version: 'link:'
 
   chain:
     dependencies:
@@ -86,15 +82,9 @@ importers:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
-      '@effectionx/context-api':
-        specifier: workspace:*
-        version: 'link:'
 
   fs:
     dependencies:
-      '@effectionx/fs':
-        specifier: workspace:*
-        version: 'link:'
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1
@@ -125,9 +115,6 @@ importers:
 
   node-events:
     dependencies:
-      '@effectionx/node-events':
-        specifier: workspace:*
-        version: 'link:'
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1
@@ -191,9 +178,6 @@ importers:
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals
-      '@effectionx/stream-helpers':
-        specifier: workspace:*
-        version: 'link:'
       '@effectionx/timebox':
         specifier: workspace:*
         version: link:../timebox
@@ -213,9 +197,6 @@ importers:
 
   task-buffer:
     dependencies:
-      '@effectionx/task-buffer':
-        specifier: workspace:*
-        version: 'link:'
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1
@@ -238,9 +219,6 @@ importers:
 
   timebox:
     dependencies:
-      '@effectionx/timebox':
-        specifier: workspace:*
-        version: 'link:'
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1
@@ -319,9 +297,6 @@ importers:
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals
-      '@effectionx/worker':
-        specifier: workspace:*
-        version: 'link:'
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1

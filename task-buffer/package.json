@@ -30,8 +30,5 @@
     "@effectionx/bdd": "workspace:*",
     "@sinonjs/fake-timers": "^14",
     "@types/sinonjs__fake-timers": "^8"
-  },
-  "dependencies": {
-    "@effectionx/task-buffer": "workspace:*"
   }
 }

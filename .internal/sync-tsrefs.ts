@@ -588,6 +588,11 @@ function* updateReferences(): Operation<void> {
     let depsChanged = false;
 
     for (const [depName, usage] of workspaceImports) {
+      // Skip self-references - a package cannot depend on itself
+      if (depName === pkg.name) {
+        continue;
+      }
+
       const hasRuntime = usage.runtimeFiles.size > 0;
       const hasTest = usage.testFiles.size > 0;
 

@@ -29,8 +29,7 @@
   "dependencies": {
     "@effectionx/node-events": "workspace:*",
     "@effectionx/signals": "workspace:*",
-    "web-worker": "^1",
-    "@effectionx/worker": "workspace:*"
+    "web-worker": "^1"
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",

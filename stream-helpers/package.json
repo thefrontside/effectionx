@@ -21,8 +21,7 @@
     "@effectionx/signals": "workspace:*",
     "@effectionx/timebox": "workspace:*",
     "immutable": "^5",
-    "remeda": "^2",
-    "@effectionx/stream-helpers": "workspace:*"
+    "remeda": "^2"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",

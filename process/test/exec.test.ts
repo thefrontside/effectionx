@@ -226,7 +226,7 @@ if (process.platform !== "win32") {
 
 describe("when the `shell` option is `false`", () => {
   it("correctly receives literal arguments when shell: false", function* () {
-    // Arguments are passed literally as parsed by shellwords
+    // Arguments are passed literally as parsed by shellwords-ts
     let proc = exec("node ./fixtures/dump-args.js first | echo second", {
       shell: false,
       cwd: import.meta.dirname,

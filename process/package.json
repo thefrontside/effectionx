@@ -31,7 +31,7 @@
     "@effectionx/stream-helpers": "workspace:*",
     "cross-spawn": "^7",
     "ctrlc-windows": "^2",
-    "shellwords": "^0.1.1"
+    "shellwords-ts": "^3.0.1"
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",

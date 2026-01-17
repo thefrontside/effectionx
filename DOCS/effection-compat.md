@@ -223,8 +223,6 @@ on:
   workflow_call:
   pull_request:
     branches: [main]
-  schedule:
-    - cron: '0 6 * * 1'  # Weekly Monday 6am UTC
   workflow_dispatch:
 
 permissions:

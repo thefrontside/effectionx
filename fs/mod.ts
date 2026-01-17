@@ -2,6 +2,7 @@ import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
+  all,
   resource,
   until,
   type Operation,
@@ -87,15 +88,10 @@ export function* emptyDir(pathOrUrl: string | URL): Operation<void> {
 
   try {
     const entries: string[] = yield* until(fsp.readdir(dirPath));
-    yield* until(
-      Promise.all(
-        entries.map((entry) =>
-          fsp.rm(path.join(dirPath, entry), {
-            recursive: true,
-            force: true,
-          }),
-        ),
-      ),
+    yield* all(
+      entries.map((entry) =>
+        remove(path.join(dirPath, entry), { recursive: true, force: true })
+      )
     );
   } catch (error) {
     // If directory doesn't exist, create it

@@ -1,7 +1,7 @@
 import * as fsp from "node:fs/promises";
 import type { Stats } from "node:fs";
 import * as path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import {
   all,
   resource,
@@ -29,8 +29,8 @@ export function toPath(pathOrUrl: string | URL): string {
  * console.log(stats.isFile());
  * ```
  */
-export function* stat(pathOrUrl: string | URL): Operation<Stats> {
-  return yield* until(fsp.stat(toPath(pathOrUrl)));
+export function stat(pathOrUrl: string | URL): Operation<Stats> {
+  return until(fsp.stat(toPath(pathOrUrl)));
 }
 
 /**
@@ -44,8 +44,8 @@ export function* stat(pathOrUrl: string | URL): Operation<Stats> {
  * console.log(stats.isSymbolicLink());
  * ```
  */
-export function* lstat(pathOrUrl: string | URL): Operation<Stats> {
-  return yield* until(fsp.lstat(toPath(pathOrUrl)));
+export function lstat(pathOrUrl: string | URL): Operation<Stats> {
+  return until(fsp.lstat(toPath(pathOrUrl)));
 }
 
 /**
@@ -113,8 +113,8 @@ export function* ensureFile(pathOrUrl: string | URL): Operation<void> {
  * const entries = yield* readdir("./src");
  * ```
  */
-export function* readdir(pathOrUrl: string | URL): Operation<string[]> {
-  return yield* until(fsp.readdir(toPath(pathOrUrl)));
+export function readdir(pathOrUrl: string | URL): Operation<string[]> {
+  return until(fsp.readdir(toPath(pathOrUrl)));
 }
 
 /**
@@ -158,11 +158,11 @@ export function* emptyDir(pathOrUrl: string | URL): Operation<void> {
  * yield* rm("./temp", { recursive: true });
  * ```
  */
-export function* rm(
+export function rm(
   pathOrUrl: string | URL,
   options?: { recursive?: boolean; force?: boolean },
 ): Operation<void> {
-  yield* until(fsp.rm(toPath(pathOrUrl), options));
+  return until(fsp.rm(toPath(pathOrUrl), options));
 }
 
 /**
@@ -175,8 +175,8 @@ export function* rm(
  * yield* copyFile("./source.txt", "./dest.txt");
  * ```
  */
-export function* copyFile(src: string | URL, dest: string | URL): Operation<void> {
-  yield* until(fsp.copyFile(toPath(src), toPath(dest)));
+export function copyFile(src: string | URL, dest: string | URL): Operation<void> {
+  return until(fsp.copyFile(toPath(src), toPath(dest)));
 }
 
 /**
@@ -189,8 +189,8 @@ export function* copyFile(src: string | URL, dest: string | URL): Operation<void
  * const content = yield* readTextFile("./config.json");
  * ```
  */
-export function* readTextFile(pathOrUrl: string | URL): Operation<string> {
-  return yield* until(fsp.readFile(toPath(pathOrUrl), "utf-8"));
+export function readTextFile(pathOrUrl: string | URL): Operation<string> {
+  return until(fsp.readFile(toPath(pathOrUrl), "utf-8"));
 }
 
 /**
@@ -203,11 +203,11 @@ export function* readTextFile(pathOrUrl: string | URL): Operation<string> {
  * yield* writeTextFile("./output.txt", "Hello, World!");
  * ```
  */
-export function* writeTextFile(
+export function writeTextFile(
   pathOrUrl: string | URL,
   content: string,
 ): Operation<void> {
-  yield* until(fsp.writeFile(toPath(pathOrUrl), content));
+  return until(fsp.writeFile(toPath(pathOrUrl), content));
 }
 
 /**

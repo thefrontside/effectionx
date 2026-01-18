@@ -8,6 +8,7 @@ export const PackageJson = z.object({
   name: z.string(),
   version: z.string(),
   license: z.string().optional(),
+  private: z.boolean().optional(),
 });
 
 export type PackageConfig = {

@@ -10,6 +10,11 @@ await main(function* () {
   const npmInclude: Record<string, unknown>[] = [];
 
   for (const pkg of packages) {
+    // Skip private packages
+    if (pkg.private) {
+      continue;
+    }
+
     const tagname = `${pkg.name.split("/")[1]}-v${pkg.version}`;
 
     const git = yield* x("git", ["tag", "--list", tagname]);

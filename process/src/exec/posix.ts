@@ -1,7 +1,7 @@
 import { spawn as spawnProcess } from "node:child_process";
 import process from "node:process";
-import { once } from "@effectionx/node-events";
-import { fromReadable } from "@effectionx/stream-helpers";
+import { once } from "@effectionx/node/events";
+import { fromReadable } from "@effectionx/node/stream";
 import {
   Err,
   Ok,

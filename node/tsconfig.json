@@ -9,18 +9,11 @@
   ],
   "exclude": [
     "**/*.test.ts",
-    "test/**",
     "dist"
   ],
   "references": [
     {
       "path": "../bdd"
-    },
-    {
-      "path": "../node"
-    },
-    {
-      "path": "../stream-helpers"
     }
   ]
 }

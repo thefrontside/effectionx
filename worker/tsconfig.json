@@ -11,9 +11,6 @@
       "path": "../bdd"
     },
     {
-      "path": "../node-events"
-    },
-    {
       "path": "../signals"
     },
     {

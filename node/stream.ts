@@ -8,7 +8,7 @@ import { createSignal, resource } from "effection";
  * @example
  * ```ts
  * import fs from "node:fs";
- * import { fromReadable } from "@effectionx/stream-helpers";
+ * import { fromReadable } from "@effectionx/node/stream";
  * import { each } from "effection";
  *
  * const fileStream = fs.createReadStream("./data.txt");

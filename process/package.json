@@ -27,14 +27,14 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@effectionx/node-events": "workspace:*",
-    "@effectionx/stream-helpers": "workspace:*",
+    "@effectionx/node": "workspace:*",
     "cross-spawn": "^7",
     "ctrlc-windows": "^2",
     "shellwords-ts": "^3.0.1"
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
+    "@effectionx/stream-helpers": "workspace:*",
     "@types/cross-spawn": "^6"
   }
 }

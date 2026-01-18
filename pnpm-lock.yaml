@@ -119,20 +119,21 @@ importers:
         specifier: workspace:*
         version: link:../bdd
 
-  node-events:
+  node:
     dependencies:
       effection:
         specifier: ^3 || ^4.0.0-0
         version: 3.6.1
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
 
   process:
     dependencies:
-      '@effectionx/node-events':
+      '@effectionx/node':
         specifier: workspace:*
-        version: link:../node-events
-      '@effectionx/stream-helpers':
-        specifier: workspace:*
-        version: link:../stream-helpers
+        version: link:../node
       cross-spawn:
         specifier: ^7
         version: 7.0.6
@@ -149,6 +150,9 @@ importers:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      '@effectionx/stream-helpers':
+        specifier: workspace:*
+        version: link:../stream-helpers
       '@types/cross-spawn':
         specifier: ^6
         version: 6.0.6
@@ -313,9 +317,6 @@ importers:
 
   worker:
     dependencies:
-      '@effectionx/node-events':
-        specifier: workspace:*
-        version: link:../node-events
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals

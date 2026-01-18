@@ -4,10 +4,10 @@ packages:
   - "chain"
   - "context-api"
   # deno-deploy excluded - deprecated Deno-only package
-  - "node-events"
   - "fs"
   - "fx"
   - "jsonl-store"
+  - "node"
   - "process"
   - "raf"
   - "signals"

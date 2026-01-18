@@ -5,7 +5,7 @@ import { describe, it } from "@effectionx/bdd";
 import { each } from "effection";
 import { expect } from "expect";
 
-import { fromReadable } from "./readable.ts";
+import { fromReadable } from "./stream.ts";
 
 describe("fromReadable", () => {
   it("reads a file stream", function* () {

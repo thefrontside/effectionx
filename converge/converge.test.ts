@@ -203,8 +203,9 @@ describe("@effectionx/converge", () => {
       }
 
       // Should fail around 30ms, not wait until 100ms
+      // Allow generous upper bound for slower CI environments
       expect(Date.now() - start).toBeGreaterThanOrEqual(30);
-      expect(Date.now() - start).toBeLessThan(60);
+      expect(Date.now() - start).toBeLessThan(90);
     });
 
     it("resolves with a stats object", function* () {

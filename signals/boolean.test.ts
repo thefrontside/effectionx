@@ -7,7 +7,7 @@ import {
   withResolvers,
 } from "effection";
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { createBooleanSignal } from "./boolean.ts";
 
 describe("boolean", () => {
@@ -45,13 +45,13 @@ describe("boolean", () => {
 
         let next = yield* race([
           subscription.next(),
-          function* () {
+          (function* () {
             yield* sleep(1);
-            return `sleep won; update not received`;
-          }(),
+            return "sleep won; update not received";
+          })(),
         ]);
 
-        expect(next).toEqual(`sleep won; update not received`);
+        expect(next).toEqual("sleep won; update not received");
 
         boolean.set(false);
 

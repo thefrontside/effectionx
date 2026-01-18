@@ -8,8 +8,7 @@ import {
   type Process,
 } from "./exec.ts";
 
-export interface Daemon extends Operation<void>, Process {
-}
+export interface Daemon extends Operation<void>, Process {}
 
 /**
  * Start a long-running process, like a web server that run perpetually.

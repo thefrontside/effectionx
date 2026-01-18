@@ -23,28 +23,26 @@ import type { Operation, Stream } from "effection";
 export function filter<T>(
   predicate: (value: T) => Operation<boolean>,
 ): <TDone>(stream: Stream<T, TDone>) => Stream<T, TDone> {
-  return function (stream) {
-    return {
-      *[Symbol.iterator]() {
-        const subscription = yield* stream;
+  return (stream) => ({
+    *[Symbol.iterator]() {
+      const subscription = yield* stream;
 
-        return {
-          *next() {
-            while (true) {
-              const next = yield* subscription.next();
-              if (next.done) {
-                return next;
-              }
-              if (yield* predicate(next.value)) {
-                return {
-                  done: false,
-                  value: next.value,
-                };
-              }
+      return {
+        *next() {
+          while (true) {
+            const next = yield* subscription.next();
+            if (next.done) {
+              return next;
             }
-          },
-        };
-      },
-    };
-  };
+            if (yield* predicate(next.value)) {
+              return {
+                done: false,
+                value: next.value,
+              };
+            }
+          }
+        },
+      };
+    },
+  });
 }

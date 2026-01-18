@@ -32,21 +32,19 @@ export function createTracker(): Operation<Tracker> {
         yield* is(tracked, (set) => set.size === 0);
       },
       passthrough() {
-        return function <T, TDone>(stream: Stream<T, TDone>): Stream<T, TDone> {
-          return {
-            *[Symbol.iterator]() {
-              const subscription = yield* stream;
+        return <T, TDone>(stream: Stream<T, TDone>): Stream<T, TDone> => ({
+          *[Symbol.iterator]() {
+            const subscription = yield* stream;
 
-              return {
-                *next() {
-                  const next = yield* subscription.next();
-                  tracked.add(next.value);
-                  return next;
-                },
-              };
-            },
-          };
-        };
+            return {
+              *next() {
+                const next = yield* subscription.next();
+                tracked.add(next.value);
+                return next;
+              },
+            };
+          },
+        });
       },
       markOne(item) {
         tracked.delete(item);

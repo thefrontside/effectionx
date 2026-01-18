@@ -39,37 +39,35 @@ export interface ValveOptions {
 export function valve(
   options: ValveOptions,
 ): <T>(stream: Stream<T, never>) => Stream<T, never> {
-  return function <T>(stream: Stream<T, never>): Stream<T, never> {
-    return {
-      *[Symbol.iterator]() {
-        const buffer = yield* createArraySignal<T>([]);
-        let open = true;
+  return <T>(stream: Stream<T, never>): Stream<T, never> => ({
+    *[Symbol.iterator]() {
+      const buffer = yield* createArraySignal<T>([]);
+      let open = true;
 
-        yield* spawn(function* () {
-          for (const item of yield* each(stream)) {
-            buffer.push(item);
-            if (open && buffer.length >= options.closeAt) {
-              yield* options.close();
-              open = false;
-            }
-            yield* each.next();
+      yield* spawn(function* () {
+        for (const item of yield* each(stream)) {
+          buffer.push(item);
+          if (open && buffer.length >= options.closeAt) {
+            yield* options.close();
+            open = false;
           }
-        });
+          yield* each.next();
+        }
+      });
 
-        return {
-          *next() {
-            if (!open && buffer.length <= options.openAt) {
-              yield* options.open();
-              open = true;
-            }
-            const value = yield* buffer.shift();
-            return {
-              done: false,
-              value,
-            };
-          },
-        };
-      },
-    };
-  };
+      return {
+        *next() {
+          if (!open && buffer.length <= options.openAt) {
+            yield* options.open();
+            open = true;
+          }
+          const value = yield* buffer.shift();
+          return {
+            done: false,
+            value,
+          };
+        },
+      };
+    },
+  });
 }

@@ -1,14 +1,14 @@
 import {
-  createChannel,
   Err,
   Ok,
   type Operation,
   type Resolve,
-  resource,
   type Result,
-  spawn,
   type Stream,
   type Task,
+  createChannel,
+  resource,
+  spawn,
   useScope,
   withResolvers,
 } from "effection";
@@ -74,7 +74,8 @@ export function useTaskBuffer(max: number): Operation<TaskBuffer> {
         if (requests.length === 0) {
           yield* next(input);
         } else if (buffer.size < max) {
-          let request = requests.pop()!;
+          // biome-ignore lint/style/noNonNullAssertion: requests.length > 0 from else branch
+          const request = requests.pop()!;
           let task = yield* scope.spawn(request.operation);
           buffer.add(task);
           yield* spawn(function* () {

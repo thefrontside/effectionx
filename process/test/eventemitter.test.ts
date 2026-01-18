@@ -1,9 +1,9 @@
-import { expect } from "@std/expect";
-import { spawn, withResolvers } from "effection";
-import { describe, it } from "@effectionx/bdd";
 import { EventEmitter } from "node:events";
+import { describe, it } from "@effectionx/bdd";
+import { spawn, withResolvers } from "effection";
+import { expect } from "expect";
 
-import { once } from "../src/eventemitter.ts";
+import { once } from "@effectionx/node/events";
 
 describe("once", () => {
   it("resolves with single argument as array", function* () {

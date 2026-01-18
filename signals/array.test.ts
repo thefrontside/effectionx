@@ -1,5 +1,5 @@
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { race, sleep, spawn, withResolvers } from "effection";
 
 import { createArraySignal } from "./array.ts";

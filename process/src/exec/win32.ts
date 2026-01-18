@@ -1,19 +1,19 @@
 import { platform } from "node:os";
-import {
-  all,
-  createSignal,
-  Err,
-  Ok,
-  resource,
-  type Result,
-  spawn,
-  withResolvers,
-} from "effection";
+import { once } from "@effectionx/node/events";
+import { fromReadable } from "@effectionx/node/stream";
 // @ts-types="npm:@types/cross-spawn@6.0.6"
 import { spawn as spawnProcess } from "cross-spawn";
 import { ctrlc } from "ctrlc-windows";
-import { once } from "../eventemitter.ts";
-import { useReadable } from "../helpers.ts";
+import {
+  Err,
+  Ok,
+  type Result,
+  all,
+  createSignal,
+  resource,
+  spawn,
+  withResolvers,
+} from "effection";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
 
@@ -32,10 +32,7 @@ function* killTree(pid: number) {
   }
 }
 
-export const createWin32Process: CreateOSProcess = (
-  command,
-  options,
-) => {
+export const createWin32Process: CreateOSProcess = (command, options) => {
   return resource(function* (provide) {
     let processResult = withResolvers<Result<ProcessResultValue>>();
 
@@ -62,9 +59,13 @@ export const createWin32Process: CreateOSProcess = (
 
     let { pid } = childProcess;
 
+    if (!childProcess.stdout || !childProcess.stderr) {
+      throw new Error("stdout and stderr must be available with stdio: pipe");
+    }
+
     let io = {
-      stdout: yield* useReadable(childProcess.stdout),
-      stderr: yield* useReadable(childProcess.stderr),
+      stdout: yield* fromReadable(childProcess.stdout),
+      stderr: yield* fromReadable(childProcess.stderr),
       stdoutDone: withResolvers<void>(),
       stderrDone: withResolvers<void>(),
     };
@@ -114,19 +115,26 @@ export const createWin32Process: CreateOSProcess = (
       if (result.ok) {
         let [code, signal] = result.value;
         return { command, options, code, signal } as ExitStatus;
-      } else {
-        throw result.error;
       }
+      throw result.error;
     }
 
     function* expect() {
       let status = yield* join();
-      if (status.code != 0) {
+      if (status.code !== 0) {
         throw new ExecError(status, command, options);
-      } else {
-        return status;
       }
+      return status;
     }
+
+    // Suppress EPIPE errors on stdin - these occur on Windows when the child
+    // process exits before we finish writing to it. This is expected during
+    // cleanup when we're killing the process.
+    childProcess.stdin.on("error", (err: Error & { code?: string }) => {
+      if (err.code !== "EPIPE") {
+        throw err;
+      }
+    });
 
     try {
       yield* provide({
@@ -145,7 +153,7 @@ export const createWin32Process: CreateOSProcess = (
           childProcess.signalCode === null
         ) {
           if (typeof childProcess.pid === "undefined") {
-            // deno-lint-ignore no-unsafe-finally
+            // biome-ignore lint/correctness/noUnsafeFinally: Intentional error for missing PID
             throw new Error("no pid for childProcess");
           }
 

@@ -1,7 +1,7 @@
-import { spawn, type Task } from "effection";
-import { expect } from "@std/expect";
-import { beforeEach, describe, it } from "@effectionx/bdd";
 import process from "node:process";
+import { beforeEach, describe, it } from "@effectionx/bdd";
+import { type Task, spawn } from "effection";
+import { expect } from "expect";
 
 import {
   captureError,
@@ -10,8 +10,8 @@ import {
   streamClose,
 } from "./helpers.ts";
 
-import { exec, type Process, type ProcessResult } from "../mod.ts";
-import { lines } from "../src/helpers.ts";
+import { lines } from "@effectionx/stream-helpers";
+import { type Process, type ProcessResult, exec } from "../mod.ts";
 
 const SystemRoot = process.env.SystemRoot;
 
@@ -126,14 +126,17 @@ describe("exec", () => {
     let joinStderr: Task<unknown>;
 
     beforeEach(function* () {
-      proc = yield* exec("deno run -A './fixtures/echo-server.ts'", {
-        env: {
-          PORT: "29000",
-          PATH: process.env.PATH as string,
-          ...(SystemRoot ? { SystemRoot } : {}),
+      proc = yield* exec(
+        "node --experimental-strip-types './fixtures/echo-server.ts'",
+        {
+          env: {
+            PORT: "29000",
+            PATH: process.env.PATH as string,
+            ...(SystemRoot ? { SystemRoot } : {}),
+          },
+          cwd: import.meta.dirname,
         },
-        cwd: import.meta.dirname,
-      });
+      );
 
       joinStdout = yield* spawn(streamClose(proc.stdout));
       joinStderr = yield* spawn(streamClose(proc.stderr));
@@ -223,39 +226,39 @@ if (process.platform !== "win32") {
 
 describe("when the `shell` option is `false`", () => {
   it("correctly receives literal arguments when shell: false", function* () {
-    // Arguments are passed literally as parsed by shellwords
-    let proc = exec(`deno run -A ./fixtures/dump-args.js first | echo second`, {
+    // Arguments are passed literally as parsed by shellwords-ts
+    let proc = exec("node ./fixtures/dump-args.js first | echo second", {
       shell: false,
       cwd: import.meta.dirname,
     });
     let { stdout }: ProcessResult = yield* proc.expect();
 
     // Node's console.log uses a single LF (\n) line ending.
-    const expected = JSON.stringify({
+    const expected = `${JSON.stringify({
       args: ["first", "|", "echo", "second"], // Arguments received by Node
       envVar: undefined,
-    }) + "\n";
+    })}\n`;
 
     expect(stdout).toEqual(expected);
   });
 
   it("verifies environment variable handling and literal argument passing", function* () {
     // Execute the custom script with the literal argument
-    let proc = exec(
-      `deno run -A ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL`,
-      {
-        shell: false, // Ensures the argument is passed literally
-        env: { EFFECTION_TEST_ENV_VAL: "boop" }, // Sets the environment variable
-        cwd: import.meta.dirname,
+    let proc = exec("node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL", {
+      shell: false, // Ensures the argument is passed literally
+      env: {
+        EFFECTION_TEST_ENV_VAL: "boop",
+        PATH: process.env.PATH as string,
       },
-    );
+      cwd: import.meta.dirname,
+    });
     let { stdout, code }: ProcessResult = yield* proc.expect();
 
     // The argument is passed literally, and the env var is available in the child process's env.
-    const expected = JSON.stringify({
+    const expected = `${JSON.stringify({
       args: ["$EFFECTION_TEST_ENV_VAL"], // Argument is passed literally
       envVar: "boop", // Env variable is read from process.env
-    }) + "\n";
+    })}\n`;
 
     expect(stdout).toEqual(expected);
     expect(code).toBe(0);
@@ -267,23 +270,20 @@ describe("handles env vars", () => {
     let shell = "bash";
 
     it("can pass in an environment variable", function* () {
-      let proc = exec(
-        "deno run -A ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
-        {
-          shell,
-          env: {
-            EFFECTION_TEST_ENV_VAL: "boop",
-            PATH: process.env.PATH as string,
-          },
-          cwd: import.meta.dirname,
+      let proc = exec("node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL", {
+        shell,
+        env: {
+          EFFECTION_TEST_ENV_VAL: "boop",
+          PATH: process.env.PATH as string,
         },
-      );
+        cwd: import.meta.dirname,
+      });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      const expected = JSON.stringify({
+      const expected = `${JSON.stringify({
         args: ["boop"],
         envVar: "boop",
-      }) + "\n";
+      })}\n`;
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -291,7 +291,7 @@ describe("handles env vars", () => {
 
     it("can pass in an environment variable with curly brace syntax", function* () {
       let proc = exec(
-        "deno run -A ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
+        "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
         {
           shell,
           env: {
@@ -303,10 +303,10 @@ describe("handles env vars", () => {
       );
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      const expected = JSON.stringify({
+      const expected = `${JSON.stringify({
         args: ["boop"],
         envVar: "boop",
-      }) + "\n";
+      })}\n`;
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -317,28 +317,26 @@ describe("handles env vars", () => {
     let shell = true;
 
     it("can pass in an environment variable", function* () {
-      let proc = exec(
-        "deno run -A ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
-        {
-          shell,
-          env: {
-            EFFECTION_TEST_ENV_VAL: "boop",
-            PATH: process.env.PATH as string,
-          },
-          cwd: import.meta.dirname,
+      let proc = exec("node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL", {
+        shell,
+        env: {
+          EFFECTION_TEST_ENV_VAL: "boop",
+          PATH: process.env.PATH as string,
         },
-      );
+        cwd: import.meta.dirname,
+      });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
       // this fails on windows, this shell option doesn't work on windows
       // due to it generally running through cmd.exe which can't handle this syntax
-      let expected = process.platform !== "win32"
-        ? JSON.stringify({ args: ["boop"], envVar: "boop" }) + "\n"
-        // note the additional \r that is added
-        : JSON.stringify({
-          args: ["$EFFECTION_TEST_ENV_VAL"],
-          envVar: "boop",
-        }) + "\n";
+      let expected =
+        process.platform !== "win32"
+          ? `${JSON.stringify({ args: ["boop"], envVar: "boop" })}\n`
+          : // note the additional \r that is added
+            `${JSON.stringify({
+              args: ["$EFFECTION_TEST_ENV_VAL"],
+              envVar: "boop",
+            })}\n`;
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -346,7 +344,7 @@ describe("handles env vars", () => {
 
     it("can pass in an environment variable with curly brace syntax", function* () {
       let proc = exec(
-        "deno run -A ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
+        "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
         {
           shell,
           env: {
@@ -360,13 +358,14 @@ describe("handles env vars", () => {
 
       // this fails on windows, this shell option doesn't work on windows
       // due to it generally running through cmd.exe which can't handle this syntax
-      let expected = process.platform !== "win32"
-        ? JSON.stringify({ args: ["boop"], envVar: "boop" }) + "\n"
-        // note the additional \r that is added
-        : JSON.stringify({
-          args: ["${EFFECTION_TEST_ENV_VAL}"],
-          envVar: "boop",
-        }) + "\n";
+      let expected =
+        process.platform !== "win32"
+          ? `${JSON.stringify({ args: ["boop"], envVar: "boop" })}\n`
+          : // note the additional \r that is added
+            `${JSON.stringify({
+              args: ["${EFFECTION_TEST_ENV_VAL}"],
+              envVar: "boop",
+            })}\n`;
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -377,20 +376,20 @@ describe("handles env vars", () => {
     let shell = false;
 
     it("can pass in an environment variable", function* () {
-      let proc = exec(
-        "deno run -A ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
-        {
-          shell,
-          env: { EFFECTION_TEST_ENV_VAL: "boop" },
-          cwd: import.meta.dirname,
+      let proc = exec("node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL", {
+        shell,
+        env: {
+          EFFECTION_TEST_ENV_VAL: "boop",
+          PATH: process.env.PATH as string,
         },
-      );
+        cwd: import.meta.dirname,
+      });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
-      const expected = JSON.stringify({
+      const expected = `${JSON.stringify({
         args: ["$EFFECTION_TEST_ENV_VAL"],
         envVar: "boop",
-      }) + "\n";
+      })}\n`;
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -398,10 +397,13 @@ describe("handles env vars", () => {
 
     it("can pass in an environment variable with curly brace syntax", function* () {
       let proc = exec(
-        "deno run -A ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
+        "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
         {
           shell,
-          env: { EFFECTION_TEST_ENV_VAL: "boop" },
+          env: {
+            EFFECTION_TEST_ENV_VAL: "boop",
+            PATH: process.env.PATH as string,
+          },
           cwd: import.meta.dirname,
         },
       );
@@ -412,10 +414,10 @@ describe("handles env vars", () => {
       // - Bash (Windows): Normalizes ${VAR} to $VAR during argument processing: $EFFECTION_TEST_ENV_VAL + LF
       // - Bash (Unix): Keeps curly braces intact: ${EFFECTION_TEST_ENV_VAL} + LF
       // Note: Shellwords parsing preserves braces on all platforms, but bash execution normalizes them
-      const expected = JSON.stringify({
+      const expected = `${JSON.stringify({
         args: ["${EFFECTION_TEST_ENV_VAL}"],
         envVar: "boop",
-      }) + "\n";
+      })}\n`;
 
       expect(stdout).toEqual(expected);
       expect(code).toBe(0);
@@ -429,7 +431,7 @@ describe("handles env vars", () => {
 
       it("can pass in an environment variable", function* () {
         let proc = exec(
-          "deno run -A ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
+          "node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
           {
             shell,
             env: {
@@ -442,17 +444,17 @@ describe("handles env vars", () => {
         let { stdout, code }: ProcessResult = yield* proc.expect();
 
         // Windows bash should resolve environment variables
-        const expected = JSON.stringify({
+        const expected = `${JSON.stringify({
           args: ["boop"],
           envVar: "boop",
-        }) + "\n";
+        })}\n`;
         expect(stdout).toEqual(expected);
         expect(code).toBe(0);
       });
 
       it("can pass in an environment variable with curly brace syntax", function* () {
         let proc = exec(
-          "deno run -A ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
+          "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
           {
             shell,
             env: {
@@ -465,10 +467,10 @@ describe("handles env vars", () => {
         let { stdout, code }: ProcessResult = yield* proc.expect();
 
         // Windows bash should resolve environment variables with curly brace syntax
-        const expected = JSON.stringify({
+        const expected = `${JSON.stringify({
           args: ["boop"],
           envVar: "boop",
-        }) + "\n";
+        })}\n`;
         expect(stdout).toEqual(expected);
         expect(code).toBe(0);
       });

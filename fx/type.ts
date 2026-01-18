@@ -1,5 +1,5 @@
 import type { Instruction } from "effection";
 export interface Computation<T = unknown> {
-  // deno-lint-ignore no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: Iterator requires any for yield expressions
   [Symbol.iterator](): Iterator<Instruction, T, any>;
 }

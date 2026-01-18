@@ -1,15 +1,18 @@
 import type { Operation } from "effection";
 
-export type WorkerControl<TSend, TData> = {
-  type: "init";
-  data: TData;
-} | {
-  type: "send";
-  value: TSend;
-  response: MessagePort;
-} | {
-  type: "close";
-};
+export type WorkerControl<TSend, TData> =
+  | {
+      type: "init";
+      data: TData;
+    }
+  | {
+      type: "send";
+      value: TSend;
+      response: MessagePort;
+    }
+  | {
+      type: "close";
+    };
 
 export interface WorkerMainOptions<TSend, TRecv, TData> {
   /**

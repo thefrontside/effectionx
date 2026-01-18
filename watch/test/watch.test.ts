@@ -1,12 +1,12 @@
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "@std/expect";
 import { createArraySignal, is } from "@effectionx/signals";
 import { forEach } from "@effectionx/stream-helpers";
+import { expect } from "expect";
 
 import process from "node:process";
+import { spawn } from "effection";
 import { watch } from "../watch.ts";
 import { inspector, useFixture } from "./helpers.ts";
-import { spawn } from "effection";
 
 describe("watch", () => {
   it("restarts the specified process when files change.", function* () {
@@ -14,12 +14,12 @@ describe("watch", () => {
     let processes = yield* inspector(
       watch({
         path: fixture.path,
-        cmd: `deno run -A cat.ts`,
+        cmd: "node --experimental-strip-types cat.ts",
         event: "change",
         execOptions: {
           cwd: import.meta.dirname,
           env: {
-            PATH: process.env.PATH!,
+            PATH: process.env.PATH ?? "",
           },
           arguments: [fixture.getPath("src/file.txt")],
         },
@@ -54,7 +54,7 @@ describe("watch", () => {
     let processes = yield* inspector(
       watch({
         path: fixture.path,
-        cmd: `echo hello`,
+        cmd: "echo hello",
         event: "change",
       }),
     );
@@ -80,11 +80,11 @@ describe("watch", () => {
     let processes = yield* inspector(
       watch({
         path: fixture.path,
-        cmd: `deno run -A watch-graceful.ts`,
+        cmd: "node --experimental-strip-types watch-graceful.ts",
         execOptions: {
           cwd: import.meta.dirname,
           env: {
-            PATH: process.env.PATH!,
+            PATH: process.env.PATH ?? "",
           },
         },
       }),
@@ -118,4 +118,4 @@ describe("watch", () => {
     // never exit.
     // send the command to exit the watch and the main returns
   });
-}, { sanitizeOps: false, sanitizeResources: false });
+});

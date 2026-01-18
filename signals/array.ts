@@ -1,4 +1,4 @@
-import { createSignal, type Operation, resource } from "effection";
+import { type Operation, createSignal, resource } from "effection";
 import { List } from "immutable";
 
 import { is } from "./helpers.ts";
@@ -77,10 +77,11 @@ export function createArraySignal<T>(
       },
       *shift() {
         yield* is(array, (array) => array.length > 0);
-        let value = ref.current.first();
+        // biome-ignore lint/style/noNonNullAssertion: is() ensures array.length > 0
+        const value = ref.current.first()!;
         ref.current = ref.current.shift();
         signal.send(ref.current.toArray());
-        return value!;
+        return value;
       },
       valueOf() {
         return ref.current.toArray();

@@ -109,9 +109,8 @@ export function useWebSocket<T>(
   protocols?: string,
 ): Operation<WebSocketResource<T>> {
   return resource(function* (provide) {
-    let socket = typeof url === "string"
-      ? new WebSocket(url, protocols)
-      : url();
+    let socket =
+      typeof url === "string" ? new WebSocket(url, protocols) : url();
 
     let messages = createSignal<MessageEvent<T>, CloseEvent>();
     let { operation: closed, resolve: close } = withResolvers<CloseEvent>();
@@ -120,7 +119,10 @@ export function useWebSocket<T>(
       throw yield* once(socket, "error");
     });
 
-    yield* once(socket, "open");
+    // Only wait for 'open' if socket isn't already open
+    if (socket.readyState !== WebSocket.OPEN) {
+      yield* once(socket, "open");
+    }
 
     yield* spawn(function* () {
       let subscription = yield* messages;

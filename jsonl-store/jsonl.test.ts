@@ -1,10 +1,10 @@
-import { expect } from "@std/expect";
-import { dirname, join } from "@std/path";
-import { beforeEach, describe, it } from "@effectionx/bdd";
-import { each, until } from "effection";
 import * as fsp from "node:fs/promises";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { beforeEach, describe, it } from "@effectionx/bdd";
+import { each, until } from "effection";
+import { expect } from "expect";
 
 import { JSONLStore } from "./jsonl.ts";
 import type { Store } from "./types.ts";
@@ -37,13 +37,15 @@ describe("JSONLStore", () => {
   describe("from", () => {
     it("ensures trailing slash for string path", function* () {
       const store = JSONLStore.from({ location: "/foo" });
-      expect(`${store.location}`).toEqual("file:///foo/");
+      expect(store.location.protocol).toEqual("file:");
+      expect(store.location.pathname.endsWith("/foo/")).toBe(true);
     });
     it("ensures trailing slash for URL", function* () {
       const store = JSONLStore.from({
         location: new URL(".cache", "file:///usr/"),
       });
-      expect(`${store.location}`).toEqual("file:///usr/.cache/");
+      expect(store.location.protocol).toEqual("file:");
+      expect(store.location.pathname.endsWith("/usr/.cache/")).toBe(true);
     });
   });
 
@@ -72,7 +74,7 @@ describe("JSONLStore", () => {
   describe("reading content of a file", () => {
     beforeEach(function* () {
       yield* until(
-        fsp.writeFile(join(tmpDir, "test.jsonl"), `1\n2\n3\n`, "utf-8"),
+        fsp.writeFile(join(tmpDir, "test.jsonl"), "1\n2\n3\n", "utf-8"),
       );
     });
     it("streams multiple items", function* () {

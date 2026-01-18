@@ -300,6 +300,12 @@ importers:
         specifier: ^3 || ^4
         version: 4.0.0
     devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+      '@effectionx/process':
+        specifier: workspace:*
+        version: link:../process
       vitest:
         specifier: ^3
         version: 3.2.4(@types/node@22.19.7)(yaml@2.8.2)

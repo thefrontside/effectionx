@@ -1,33 +1,23 @@
-import { sleep } from "effection";
-import { expect } from "vitest";
-import { beforeEach, describe, it } from "./mod.ts";
+import { describe, it } from "@effectionx/bdd";
+import { exec } from "@effectionx/process";
+import { expect } from "expect";
 
 describe("@effectionx/vitest", () => {
-  let counter: number;
+  it("runs vitest tests with effection operations", function* () {
+    let result = yield* exec("npx vitest run --reporter=verbose", {
+      cwd: import.meta.dirname,
+    }).join();
 
-  beforeEach(function* () {
-    counter = 0;
-  });
+    // Verify exit code
+    expect(result.code).toEqual(0);
 
-  it("can run an effection operation", function* () {
-    yield* sleep(10);
-    expect(1 + 1).toBe(2);
-  });
+    // Verify all test names appear in output
+    expect(result.stdout).toContain("can run an effection operation");
+    expect(result.stdout).toContain("runs beforeEach before each test");
+    expect(result.stdout).toContain("resets state between tests");
+    expect(result.stdout).toContain("works in nested suites");
 
-  it("runs beforeEach before each test", function* () {
-    counter += 1;
-    expect(counter).toBe(1);
-  });
-
-  it("resets state between tests", function* () {
-    counter += 1;
-    expect(counter).toBe(1);
-  });
-
-  describe("nested describe", () => {
-    it("works in nested suites", function* () {
-      yield* sleep(5);
-      expect(true).toBe(true);
-    });
+    // Verify pass count
+    expect(result.stdout).toMatch(/4 passed/);
   });
 });

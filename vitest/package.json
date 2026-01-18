@@ -18,6 +18,8 @@
     "@effectionx/test-adapter": "workspace:*"
   },
   "devDependencies": {
+    "@effectionx/bdd": "workspace:*",
+    "@effectionx/process": "workspace:*",
     "vitest": "^3"
   },
   "license": "MIT",

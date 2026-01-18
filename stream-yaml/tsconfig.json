@@ -4,14 +4,16 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["**/*.ts"],
-  "exclude": ["**/*.test.ts", "dist"],
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "dist"
+  ],
   "references": [
     {
       "path": "../bdd"
-    },
-    {
-      "path": "../stream-helpers"
     }
   ]
 }

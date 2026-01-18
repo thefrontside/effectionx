@@ -56,14 +56,44 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build
 
-      - run: npm publish --access=public --tag=latest --provenance
+      - name: Check token for first publish
+        if: matrix.firstPublish == true
+        run: |
+          if [ -z "${{ secrets.NPM_PUBLISH_TOKEN }}" ]; then
+            echo "::error::NPM_PUBLISH_TOKEN is required for first-time publish of ${{ matrix.name }}"
+            echo ""
+            echo "To fix this:"
+            echo "1. Create an npm automation token at https://www.npmjs.com/settings/tokens"
+            echo "2. Add it as a repository secret named NPM_PUBLISH_TOKEN"
+            echo ""
+            echo "After the first publish succeeds, configure OIDC for the package:"
+            echo "1. Go to https://www.npmjs.com/package/${{ matrix.name }}/access"
+            echo "2. Under 'Publishing access', select 'Require two-factor authentication or an automation token or OIDC'"
+            echo "3. Under 'Configure OIDC publishing', add:"
+            echo "   - Repository: thefrontside/effectionx"
+            echo "   - Workflow: .github/workflows/publish.yaml"
+            exit 1
+          fi
+
+      # First-time publish: use token auth
+      - name: Publish (first time)
+        if: matrix.firstPublish == true
+        run: npm publish --access=public --tag=latest --provenance
+        working-directory: ${{ matrix.workspace }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+
+      # Subsequent publishes: use OIDC
+      - name: Publish (OIDC)
+        if: matrix.firstPublish != true
+        run: npm publish --access=public --tag=latest --provenance
         working-directory: ${{ matrix.workspace }}
 
   gather-tags:

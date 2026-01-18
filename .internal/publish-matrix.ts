@@ -30,9 +30,13 @@ await main(function* () {
       const firstPublish = npmExistsOutput.exitCode !== 0;
 
       // Check if this specific version exists
-      const npmVersionCheck = yield* x("npm", ["view", `${pkg.name}@${pkg.version}`], {
-        throwOnError: false,
-      });
+      const npmVersionCheck = yield* x(
+        "npm",
+        ["view", `${pkg.name}@${pkg.version}`],
+        {
+          throwOnError: false,
+        },
+      );
       const npmVersionOutput = yield* npmVersionCheck;
 
       // Only include if this version doesn't exist

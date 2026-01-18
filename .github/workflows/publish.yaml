@@ -57,12 +57,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: 'https://registry.npmjs.org'
 
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build
 
-      - run: npm publish --access=public --tag=latest
+      - run: npm publish --access=public --tag=latest --provenance
         working-directory: ${{ matrix.workspace }}
 
   gather-tags:

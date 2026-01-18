@@ -10,8 +10,8 @@ import {
   streamClose,
 } from "./helpers.ts";
 
+import { lines } from "@effectionx/stream-helpers";
 import { type Process, type ProcessResult, exec } from "../mod.ts";
-import { lines } from "../src/helpers.ts";
 
 const SystemRoot = process.env.SystemRoot;
 

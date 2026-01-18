@@ -3,8 +3,8 @@ import { beforeEach, describe, it } from "@effectionx/bdd";
 import { type Task, spawn, until, withResolvers } from "effection";
 import { expect } from "expect";
 
+import { lines } from "@effectionx/stream-helpers";
 import { type Daemon, daemon } from "../mod.ts";
-import { lines } from "../src/helpers.ts";
 import { captureError, expectMatch, fetchText } from "./helpers.ts";
 
 const SystemRoot = process.env.SystemRoot;

@@ -5,16 +5,13 @@
     "rootDir": "."
   },
   "include": ["**/*.ts"],
-  "exclude": ["**/*.test.ts", "test-assets/**", "dist"],
+  "exclude": ["**/*.test.ts", "dist"],
   "references": [
     {
       "path": "../bdd"
     },
     {
-      "path": "../converge"
-    },
-    {
-      "path": "../signals"
+      "path": "../timebox"
     }
   ]
 }

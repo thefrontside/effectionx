@@ -1,11 +1,10 @@
-import { beforeEach, describe, it } from "@effectionx/bdd";
-import { timebox } from "@effectionx/timebox";
-import assert from "node:assert";
-import { expect } from "expect";
+import { access, mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { scoped, sleep, spawn, suspend, until } from "effection";
-import { access, mkdir, readFile, rm } from "node:fs/promises";
+import { beforeEach, describe, it } from "@effectionx/bdd";
+import { when } from "@effectionx/converge";
+import { scoped, spawn, suspend, until } from "effection";
+import { expect } from "expect";
 
 import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
 import { useWorker } from "./worker.ts";
@@ -89,36 +88,36 @@ describe("worker", () => {
         yield* suspend();
       });
 
-      let started = yield* timebox(10_000, function* () {
-        while (true) {
-          yield* sleep(1);
-          if (
-            yield* until(
-              access(startFile).then(
-                () => true,
-                () => false,
-              ),
-            )
-          ) {
-            break;
-          }
-        }
-      });
+      // Wait for worker to start
+      yield* when(
+        function* () {
+          let exists = yield* until(
+            access(startFile).then(
+              () => true,
+              () => false,
+            ),
+          );
+          if (!exists) throw new Error("start file not found");
+          return true;
+        },
+        { timeout: 10_000 },
+      );
 
-      assert(!started.timeout, "worker did not start after 10s");
       yield* task.halt();
 
-      expect(
-        yield* until(
-          access(endFile).then(
-            () => true,
-            () => false,
-          ),
-        ),
-      ).toEqual(true);
-      expect(yield* until(readFile(endFile, "utf-8"))).toEqual(
-        "goodbye cruel world!",
+      // Wait for the end file to be written with expected content
+      let { value: content } = yield* when(
+        function* () {
+          let text = yield* until(readFile(endFile, "utf-8").catch(() => ""));
+          if (text !== "goodbye cruel world!") {
+            throw new Error(`expected "goodbye cruel world!", got "${text}"`);
+          }
+          return text;
+        },
+        { timeout: 500 },
       );
+
+      expect(content).toEqual("goodbye cruel world!");
     });
   });
 

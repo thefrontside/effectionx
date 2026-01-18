@@ -89,6 +89,19 @@ importers:
         specifier: workspace:*
         version: link:../bdd
 
+  converge:
+    dependencies:
+      '@effectionx/timebox':
+        specifier: workspace:*
+        version: link:../timebox
+      effection:
+        specifier: ^3 || ^4
+        version: 4.0.0
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+
   fs:
     dependencies:
       effection:
@@ -330,9 +343,9 @@ importers:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
-      '@effectionx/timebox':
+      '@effectionx/converge':
         specifier: workspace:*
-        version: link:../timebox
+        version: link:../converge
 
 packages:
 

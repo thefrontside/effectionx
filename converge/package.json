@@ -1,6 +1,6 @@
 {
-  "name": "@effectionx/worker",
-  "version": "0.4.0",
+  "name": "@effectionx/converge",
+  "version": "0.1.0",
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
@@ -12,6 +12,9 @@
   },
   "peerDependencies": {
     "effection": "^3 || ^4"
+  },
+  "dependencies": {
+    "@effectionx/timebox": "workspace:*"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",
@@ -26,12 +29,7 @@
     "node": ">= 22"
   },
   "sideEffects": false,
-  "dependencies": {
-    "@effectionx/signals": "workspace:*",
-    "web-worker": "^1"
-  },
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*",
-    "@effectionx/converge": "workspace:*"
+    "@effectionx/bdd": "workspace:*"
   }
 }

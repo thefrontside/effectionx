@@ -16,6 +16,7 @@
     { "path": "bdd" },
     { "path": "chain" },
     { "path": "context-api" },
+    { "path": "converge" },
     { "path": "fs" },
     { "path": "fx" },
     { "path": "jsonl-store" },

@@ -3,6 +3,7 @@ packages:
   - "bdd"
   - "chain"
   - "context-api"
+  - "converge"
   # deno-deploy excluded - deprecated Deno-only package
   - "fs"
   - "fx"

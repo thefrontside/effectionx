@@ -8,7 +8,7 @@
     "@effectionx/process": "workspace:*",
     "@effectionx/stream-helpers": "workspace:*",
     "@effectionx/tinyexec": "workspace:*",
-    "effection": "^3",
+    "effection": "^4",
     "semver": "^7.6.3",
     "yaml": "^2",
     "zod": "^3"

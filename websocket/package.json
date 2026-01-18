@@ -11,7 +11,7 @@
     }
   },
   "peerDependencies": {
-    "effection": "^3 || ^4.0.0-0"
+    "effection": "^3 || ^4"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",

@@ -7,13 +7,8 @@
     "noEmit": false,
     "emitDeclarationOnly": true
   },
-  "include": [
-    "**/*.ts"
-  ],
-  "exclude": [
-    "dist",
-    "node_modules"
-  ],
+  "include": ["**/*.ts"],
+  "exclude": ["dist", "node_modules"],
   "references": [
     {
       "path": "../fs"

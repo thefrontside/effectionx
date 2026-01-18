@@ -113,11 +113,35 @@ node --env-file=../.env --test "*.test.ts"
 
 ## Publishing
 
-Packages are automatically published to NPM when merged to main. To publish a new version:
+Packages are automatically published to NPM when merged to main using OIDC-based authentication with provenance attestation.
+
+### How It Works
 
 1. Update the version in the package's `package.json`
 2. Merge to main
 3. The CI will automatically publish if the version doesn't exist on NPM
+
+### First-Time Publish (New Packages)
+
+For packages that don't exist on NPM yet, OIDC cannot be used. The workflow requires an `NPM_PUBLISH_TOKEN` secret for the initial publish.
+
+**Setup for first publish:**
+
+1. Create an npm automation token at https://www.npmjs.com/settings/tokens
+2. Add it as a repository secret named `NPM_PUBLISH_TOKEN`
+3. Merge to main - the workflow will use the token for the first publish
+
+### Configuring OIDC (After First Publish)
+
+After a package is published for the first time, configure OIDC to enable tokenless publishing:
+
+1. Go to `https://www.npmjs.com/package/@effectionx/<package-name>/access`
+2. Under **Publishing access**, select **Require two-factor authentication or an automation token or OIDC**
+3. Under **Configure OIDC publishing**, add:
+   - **Repository**: `thefrontside/effectionx`
+   - **Workflow**: `.github/workflows/publish.yaml`
+
+Once OIDC is configured, the package will publish automatically without needing a token.
 
 ## Project Structure
 

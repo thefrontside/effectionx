@@ -22,20 +22,28 @@ await main(function* () {
 
     // if tag doesn't exist, check npm registry
     if (stdout.trim() === "") {
-      const pkgInfo = {
-        workspace: pkg.workspace,
-        tagname,
-        name: pkg.name,
-        version: pkg.version,
-      };
-
-      // Check NPM registry
-      const npmCheck = yield* x("npm", ["view", `${pkg.name}@${pkg.version}`], {
+      // Check if package exists on npm at all (not just this version)
+      const npmExistsCheck = yield* x("npm", ["view", pkg.name], {
         throwOnError: false,
       });
-      const npmOutput = yield* npmCheck;
-      if (npmOutput.exitCode !== 0) {
-        npmInclude.push(pkgInfo);
+      const npmExistsOutput = yield* npmExistsCheck;
+      const firstPublish = npmExistsOutput.exitCode !== 0;
+
+      // Check if this specific version exists
+      const npmVersionCheck = yield* x("npm", ["view", `${pkg.name}@${pkg.version}`], {
+        throwOnError: false,
+      });
+      const npmVersionOutput = yield* npmVersionCheck;
+
+      // Only include if this version doesn't exist
+      if (npmVersionOutput.exitCode !== 0) {
+        npmInclude.push({
+          workspace: pkg.workspace,
+          tagname,
+          name: pkg.name,
+          version: pkg.version,
+          firstPublish,
+        });
       }
     }
   }

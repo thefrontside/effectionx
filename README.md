@@ -27,13 +27,33 @@ pnpm install
 ```bash
 pnpm build          # Build all packages
 pnpm test           # Run all tests
+pnpm test:effection # Test against multiple Effection versions
 pnpm check          # Type-check all packages
 pnpm lint           # Lint all packages
-pnpm format         # Format all files
-pnpm format:check   # Check formatting
-pnpm sync:tsrefs    # Check tsconfig references
-pnpm sync:tsrefs:fix # Fix tsconfig references and dependencies
+pnpm fmt            # Format all files
+pnpm fmt:check      # Check formatting
+pnpm sync           # Check tsconfig references
+pnpm sync:fix       # Fix tsconfig references and dependencies
 ```
+
+### Testing Against Multiple Effection Versions
+
+Packages in this repository declare their compatible Effection versions via
+`peerDependencies`. To verify compatibility across the full range of supported
+versions, run:
+
+```bash
+pnpm test:effection
+```
+
+This command:
+1. Reads each package's `peerDependencies.effection` range
+2. Resolves the minimum and maximum versions that satisfy each range
+3. For each version, installs that specific Effection version and runs tests
+4. Reports a compatibility matrix showing pass/fail status per version
+
+This ensures packages work correctly with both the oldest supported Effection
+version and the latest release.
 
 ### Running Tests for a Specific Package
 

@@ -127,25 +127,23 @@ function* runTestsWithTap(
   let passed = 0;
 
   // Build glob patterns for test files from package names
-  // Package names are like @effectionx/fx -> fx/*.test.ts
-  const testPatterns = packages
-    .map((pkg) => {
-      const shortName = pkg.replace("@effectionx/", "");
-      return `"${shortName}/**/*.test.ts"`;
-    })
-    .join(" ");
+  // Package names are like @effectionx/fx -> fx/**/*.test.ts
+  const testPatterns = packages.map((pkg) => {
+    const shortName = pkg.replace("@effectionx/", "");
+    return `${shortName}/**/*.test.ts`;
+  });
 
   // Build command with TAP reporter
   const baseNodeOptions = process.env.NODE_OPTIONS ?? "";
   const tapNodeOptions = `${baseNodeOptions} --test-reporter=tap`.trim();
-  const command = `node --test ${testPatterns}`;
 
-  const proc = yield* exec(command, {
+  // Pass arguments separately to avoid shell: true which doesn't work on Windows
+  const proc = yield* exec("node", {
+    arguments: ["--test", ...testPatterns],
     env: {
       ...process.env,
       NODE_OPTIONS: tapNodeOptions,
     },
-    shell: true,
   });
 
   // Process stdout in real-time

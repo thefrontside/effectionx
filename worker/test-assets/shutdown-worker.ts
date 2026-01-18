@@ -1,6 +1,7 @@
+import { writeFileSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
 import { suspend, until } from "effection";
 import { workerMain } from "../worker-main.ts";
-import { writeFile } from "node:fs/promises";
 
 export interface ShutdownWorkerParams {
   startFile: string;
@@ -15,6 +16,9 @@ await workerMain(function* ({ data }) {
     yield* until(writeFile(startFile, "started", "utf-8"));
     yield* suspend();
   } finally {
-    yield* until(writeFile(endFile, endText, "utf-8"));
+    // Use sync write to ensure the file is written before the worker exits.
+    // Async writes in finally blocks may not complete during task halt,
+    // especially on Windows where worker termination behaves differently.
+    writeFileSync(endFile, endText, "utf-8");
   }
 });

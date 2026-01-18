@@ -1,9 +1,9 @@
-import { each, exit, main, scoped, spawn } from "effection";
-import { watch } from "./watch.ts";
-import { parser } from "zod-opts";
-import { z } from "zod";
 import process from "node:process";
-import denoJson from "./deno.json" with { type: "json" };
+import { each, exit, main, scoped, spawn } from "effection";
+import { z } from "zod";
+import { parser } from "zod-opts";
+import packageJson from "./package.json" with { type: "json" };
+import { watch } from "./watch.ts";
 
 const builtins = ["-h", "--help", "-V", "--version"];
 
@@ -20,7 +20,7 @@ main(function* (argv) {
         type: z.array(z.string()).optional(),
       },
     ])
-    .version(denoJson.version)
+    .version(packageJson.version)
     .parse(args);
 
   if (rest.length === 0) {
@@ -42,13 +42,13 @@ main(function* (argv) {
         let proc = result.value;
         yield* spawn(function* () {
           for (let chunk of yield* each(proc.stdout)) {
-            process.stdout.write(chunk);
+            process.stdout.write(chunk as Uint8Array);
             yield* each.next();
           }
         });
         yield* spawn(function* () {
           for (let chunk of yield* each(proc.stderr)) {
-            process.stderr.write(chunk);
+            process.stderr.write(chunk as Uint8Array);
             yield* each.next();
           }
         });
@@ -56,7 +56,7 @@ main(function* (argv) {
         console.error(`failed to start: ${result.error}`);
       }
       yield* start.restarting;
-      process.stdout.write(`--> restarting....\n`);
+      process.stdout.write("--> restarting....\n");
       yield* each.next();
     });
   }

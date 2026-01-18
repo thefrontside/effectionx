@@ -1,11 +1,10 @@
+import { access, mkdir, readFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { beforeEach, describe, it } from "@effectionx/bdd";
-import { timebox } from "@effectionx/timebox";
-import { assert } from "@std/assert";
-import { expect } from "@std/expect";
-import { emptyDir, exists } from "@std/fs";
-import { fromFileUrl, join } from "@std/path";
-import { scoped, sleep, spawn, suspend, until } from "effection";
-import { readFile } from "node:fs/promises";
+import { when } from "@effectionx/converge";
+import { scoped, spawn, suspend, until } from "effection";
+import { expect } from "expect";
 
 import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
 import { useWorker } from "./worker.ts";
@@ -65,8 +64,12 @@ describe("worker", () => {
     let url: string;
 
     beforeEach(function* () {
-      let dir = fromFileUrl(import.meta.resolve("./test-tmp"));
-      yield* until(emptyDir(dir));
+      let dir = fileURLToPath(import.meta.resolve("./test-tmp"));
+      yield* until(
+        rm(dir, { recursive: true, force: true }).then(() =>
+          mkdir(dir, { recursive: true }),
+        ),
+      );
       startFile = join(dir, "started.txt");
       endFile = join(dir, "ended.txt");
       url = import.meta.resolve("./test-assets/shutdown-worker.ts");
@@ -85,40 +88,51 @@ describe("worker", () => {
         yield* suspend();
       });
 
-      let started = yield* timebox(10_000, function* () {
-        while (true) {
-          yield* sleep(1);
-          if (yield* until(exists(startFile))) {
-            break;
-          }
-        }
-      });
+      // Wait for worker to start
+      yield* when(
+        function* () {
+          let exists = yield* until(
+            access(startFile).then(
+              () => true,
+              () => false,
+            ),
+          );
+          if (!exists) throw new Error("start file not found");
+          return true;
+        },
+        { timeout: 10_000 },
+      );
 
-      assert(!started.timeout, "worker did not start after 10s");
       yield* task.halt();
 
-      expect(yield* until(exists(endFile))).toEqual(true);
-      expect(yield* until(readFile(endFile, "utf-8"))).toEqual(
-        "goodbye cruel world!",
+      // Wait for the end file to be written with expected content
+      let { value: content } = yield* when(
+        function* () {
+          let text = yield* until(readFile(endFile, "utf-8").catch(() => ""));
+          if (text !== "goodbye cruel world!") {
+            throw new Error(`expected "goodbye cruel world!", got "${text}"`);
+          }
+          return text;
+        },
+        { timeout: 500 },
       );
+
+      expect(content).toEqual("goodbye cruel world!");
     });
   });
 
-  it(
-    "becomes halted if you try and await its value out of scope",
-    function* () {
-      let url = import.meta.resolve("./test-assets/suspend-worker.ts");
-      let worker = yield* scoped(function* () {
-        return yield* useWorker(url, { type: "module" });
-      });
-      try {
-        yield* worker;
-      } catch (e) {
-        expect(e).toBeInstanceOf(Error);
-        expect(e).toMatchObject({ message: "worker terminated" });
-      }
-    },
-  );
+  it("becomes halted if you try and await its value out of scope", function* () {
+    let url = import.meta.resolve("./test-assets/suspend-worker.ts");
+    let worker = yield* scoped(function* () {
+      return yield* useWorker(url, { type: "module" });
+    });
+    try {
+      yield* worker;
+    } catch (e) {
+      expect(e).toBeInstanceOf(Error);
+      expect(e).toMatchObject({ message: "worker terminated" });
+    }
+  });
 
   it("supports stateful operations", function* () {
     expect.assertions(3);

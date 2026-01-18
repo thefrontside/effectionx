@@ -1,5 +1,5 @@
 import type { Operation, Result } from "effection";
-import { call, Err, Ok } from "effection";
+import { Err, Ok, call } from "effection";
 
 /**
  * The goal of `safe` is to wrap Operations to prevent them from raising

@@ -1,4 +1,4 @@
-// import { expect } from "@std/expect";
+// import { expect } from "expect";
 // import { createSignal, each, spawn } from "effection";
 // import { describe, it } from "@effectionx/bdd";
 

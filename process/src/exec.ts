@@ -1,4 +1,4 @@
-import * as shellwords from "shellwords";
+import shellwords from "shellwords-ts";
 
 import { type Operation, spawn } from "effection";
 import type {
@@ -22,9 +22,8 @@ export interface Exec extends Operation<Process> {
 const createProcess: CreateOSProcess = (cmd, opts) => {
   if (isWin32()) {
     return createWin32Process(cmd, opts);
-  } else {
-    return createPosixProcess(cmd, opts);
   }
+  return createPosixProcess(cmd, opts);
 };
 
 /**

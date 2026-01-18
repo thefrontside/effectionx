@@ -1,18 +1,24 @@
-import { JsonParseStream } from "@std/json";
-import { TextLineStream } from "@std/streams";
-import { emptyDir, exists, walk } from "@std/fs";
-import { dirname, fromFileUrl, globToRegExp, join, toFileUrl } from "@std/path";
+import { dirname, join } from "node:path";
+import {
+  emptyDir,
+  exists,
+  fromFileUrl,
+  globToRegExp,
+  toFileUrl,
+  walk,
+} from "./fs-helpers.ts";
+import { JsonParseStream, TextLineStream } from "./stream-helpers.ts";
 
 import {
+  stream,
+  type Operation,
+  type Stream,
   call,
   createChannel,
   createQueue,
   each,
-  type Operation,
   resource,
   spawn,
-  type Stream,
-  stream,
 } from "effection";
 import type { Store, StoreConstructorOptions } from "./types.ts";
 
@@ -30,7 +36,10 @@ function* mkdir(
 }
 
 export class JSONLStore implements Store {
-  constructor(public location: URL) {}
+  location: URL;
+  constructor(location: URL) {
+    this.location = location;
+  }
 
   /**
    * Creates a store with a location that has a trailing slash.
@@ -45,19 +54,15 @@ export class JSONLStore implements Store {
    * @returns
    */
   static from(options: StoreConstructorOptions): JSONLStore {
-    const pathname = options.location instanceof URL
-      ? options.location.pathname
-      : options.location;
+    const pathname =
+      options.location instanceof URL
+        ? options.location.pathname
+        : options.location;
 
     if (pathname.charAt(-1) === "/") {
-      return new JSONLStore(
-        toFileUrl(pathname),
-      );
-    } else {
-      return new JSONLStore(
-        toFileUrl(`${pathname}/`),
-      );
+      return new JSONLStore(toFileUrl(pathname));
     }
+    return new JSONLStore(toFileUrl(`${pathname}/`));
   }
 
   /**
@@ -114,7 +119,7 @@ export class JSONLStore implements Store {
       const fileStream = fs.createReadStream(fromFileUrl(location));
       const webStream = Readable.toWeb(fileStream);
 
-      // deno-lint-ignore no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: Node stream type incompatibility
       const lines = (webStream as any)
         .pipeThrough(new TextDecoderStream())
         .pipeThrough(new TextLineStream())
@@ -156,11 +161,9 @@ export class JSONLStore implements Store {
     yield* mkdir(dirname(fromFileUrl(location)), { recursive: true });
 
     yield* call(() =>
-      fsp.writeFile(
-        fromFileUrl(location),
-        `${JSON.stringify(data)}\n`,
-        { encoding: "utf-8" },
-      )
+      fsp.writeFile(fromFileUrl(location), `${JSON.stringify(data)}\n`, {
+        encoding: "utf-8",
+      }),
     );
   }
 
@@ -181,11 +184,9 @@ export class JSONLStore implements Store {
     const location = new URL(`./${key}.jsonl`, this.location);
 
     yield* call(() =>
-      fsp.appendFile(
-        fromFileUrl(location),
-        `${JSON.stringify(data)}\n`,
-        { encoding: "utf-8" },
-      )
+      fsp.appendFile(fromFileUrl(location), `${JSON.stringify(data)}\n`, {
+        encoding: "utf-8",
+      }),
     );
   }
 
@@ -217,9 +218,7 @@ export class JSONLStore implements Store {
     const files = walk(root, {
       includeDirs: false,
       includeFiles: true,
-      match: [
-        reg,
-      ],
+      match: [reg],
     });
 
     const read = this.read.bind(this);
@@ -231,7 +230,7 @@ export class JSONLStore implements Store {
         for (const file of yield* each(stream(files))) {
           const key = file.path
             .replace(root, "")
-            .replaceAll(`\\`, `/`)
+            .replaceAll("\\", "/")
             .replace(/\.jsonl$/, "");
 
           for (const item of yield* each(read<T>(key))) {

@@ -1,0 +1,47 @@
+{
+  "name": "@effectionx/watch",
+  "version": "0.4.0",
+  "type": "module",
+  "main": "./dist/main.js",
+  "types": "./dist/main.d.ts",
+  "exports": {
+    ".": {
+      "development": "./main.ts",
+      "default": "./dist/main.js"
+    },
+    "./lib": {
+      "development": "./mod.ts",
+      "default": "./dist/mod.js"
+    }
+  },
+  "peerDependencies": {
+    "effection": "^3 || ^4"
+  },
+  "license": "MIT",
+  "author": "engineering@frontside.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thefrontside/effectionx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thefrontside/effectionx/issues"
+  },
+  "engines": {
+    "node": ">= 22"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@effectionx/process": "workspace:*",
+    "chokidar": "^4",
+    "ignore": "^7",
+    "remeda": "^2",
+    "zod": "^3",
+    "zod-opts": "^0",
+    "@effectionx/fs": "workspace:*"
+  },
+  "devDependencies": {
+    "@effectionx/bdd": "workspace:*",
+    "@effectionx/signals": "workspace:*",
+    "@effectionx/stream-helpers": "workspace:*"
+  }
+}

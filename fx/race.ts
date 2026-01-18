@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import type { Operation, Task } from "effection";
 import { resource, spawn, withResolvers } from "effection";
 
@@ -6,13 +5,11 @@ interface OpMap<T = unknown, TArgs extends unknown[] = []> {
   [key: string]: (...args: TArgs) => Operation<T>;
 }
 
-export function raceMap<T>(opMap: OpMap): Operation<
-  {
-    [K in keyof OpMap<T>]: OpMap[K] extends (...args: any[]) => any
-      ? ReturnType<OpMap[K]>
-      : OpMap[K];
-  }
-> {
+export function raceMap<T>(opMap: OpMap): Operation<{
+  [K in keyof OpMap<T>]: OpMap[K] extends (...args: unknown[]) => unknown
+    ? ReturnType<OpMap[K]>
+    : OpMap[K];
+}> {
   return resource(function* Race(provide) {
     const keys = Object.keys(opMap);
     const taskMap: { [key: string]: Task<unknown> } = {};
@@ -27,6 +24,7 @@ export function raceMap<T>(opMap: OpMap): Operation<
         yield* spawn(function* () {
           const task = yield* spawn(opMap[key]);
           taskMap[key] = task;
+          // biome-ignore lint/suspicious/noExplicitAny: Dynamic key assignment
           (resultMap[key] as any) = yield* task;
           resolvers.resolve(task);
         });

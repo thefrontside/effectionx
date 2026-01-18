@@ -1,6 +1,6 @@
 import { describe, it } from "@effectionx/bdd";
 import { createArraySignal, is } from "@effectionx/signals";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { createChannel, sleep, spawn } from "effection";
 
 import { batch } from "./batch.ts";
@@ -54,7 +54,7 @@ describe("batch", () => {
         last = now;
 
         batches.push(batch);
-      }, stream)
+      }, stream),
     );
 
     yield* sleep(1);
@@ -86,7 +86,7 @@ describe("batch", () => {
     yield* spawn(() =>
       forEach<readonly number[], void>(function* (batch) {
         batches.push(batch);
-      }, stream)
+      }, stream),
     );
 
     yield* sleep(1);

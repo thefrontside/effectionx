@@ -1,5 +1,5 @@
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { each, sleep, spawn } from "effection";
 import { pipe } from "remeda";
 
@@ -100,6 +100,10 @@ describe("tracker", () => {
     yield* is(received, (received) => received.flat().length >= 9);
     yield* tracker;
 
-    expect(received.valueOf()).toEqual([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
+    expect(received.valueOf()).toEqual([
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
+    ]);
   });
 });

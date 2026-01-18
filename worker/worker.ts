@@ -1,4 +1,4 @@
-import { assert } from "@std/assert";
+import assert from "node:assert";
 import {
   Err,
   Ok,
@@ -10,6 +10,7 @@ import {
   spawn,
   withResolvers,
 } from "effection";
+import Worker from "web-worker";
 
 import { useMessageChannel } from "./message-channel.ts";
 
@@ -118,19 +119,21 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
       yield* provide({
         *send(value) {
           let channel = yield* useMessageChannel();
-          worker.postMessage({
-            type: "send",
-            value,
-            response: channel.port2,
-          }, [channel.port2]);
+          worker.postMessage(
+            {
+              type: "send",
+              value,
+              response: channel.port2,
+            },
+            [channel.port2],
+          );
           channel.port1.start();
           let event = yield* once(channel.port1, "message");
-          let result = event.data;
+          let result = (event as MessageEvent).data;
           if (result.ok) {
             return result.value;
-          } else {
-            throw result.error;
           }
+          throw result.error;
         },
         [Symbol.iterator]: outcome.operation[Symbol.iterator],
       });

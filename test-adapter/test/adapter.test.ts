@@ -1,12 +1,12 @@
-import { expect } from "@std/expect";
-import { describe, it } from "@std/testing/bdd";
+import { expect } from "expect";
+import { describe, it } from "node:test";
 import { createContext, resource } from "effection";
 import { createTestAdapter } from "../mod.ts";
 
 describe("TestAdapter", () => {
   it("can run a test", async () => {
     let adapter = createTestAdapter();
-    let result: string = "pending";
+    let result = "pending";
     await adapter.runTest(function* () {
       result = "done";
     });
@@ -71,12 +71,12 @@ describe("TestAdapter", () => {
       resource<void>(function* (provide) {
         try {
           sequence.push("parent/setup:once");
-          contexts["parent"] = yield* context.expect();
+          contexts.parent = yield* context.expect();
           yield* provide();
         } finally {
           sequence.push("parent/teardown:once");
         }
-      })
+      }),
     );
 
     parent.addSetup(() =>
@@ -87,7 +87,7 @@ describe("TestAdapter", () => {
         } finally {
           sequence.push("parent/teardown:each");
         }
-      })
+      }),
     );
 
     let first = createTestAdapter({ name: "child", parent });
@@ -138,6 +138,5 @@ describe("TestAdapter", () => {
     });
   });
 
-  it("can run multiple tests", async () => {
-  });
+  it("can run multiple tests", async () => {});
 });

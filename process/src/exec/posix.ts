@@ -1,26 +1,23 @@
 import { spawn as spawnProcess } from "node:child_process";
+import process from "node:process";
+import { once } from "@effectionx/node/events";
+import { fromReadable } from "@effectionx/node/stream";
 import {
-  all,
-  createSignal,
   Err,
   Ok,
-  resource,
   type Result,
+  all,
+  createSignal,
+  resource,
   spawn,
   withResolvers,
 } from "effection";
-import process from "node:process";
-import { once } from "../eventemitter.ts";
-import { useReadable } from "../helpers.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
 
 type ProcessResultValue = [number?, string?];
 
-export const createPosixProcess: CreateOSProcess = (
-  command,
-  options,
-) => {
+export const createPosixProcess: CreateOSProcess = (command, options) => {
   return resource(function* (provide) {
     let processResult = withResolvers<Result<ProcessResultValue>>();
 
@@ -44,9 +41,13 @@ export const createPosixProcess: CreateOSProcess = (
 
     let { pid } = childProcess;
 
+    if (!childProcess.stdout || !childProcess.stderr) {
+      throw new Error("stdout and stderr must be available with stdio: pipe");
+    }
+
     let io = {
-      stdout: yield* useReadable(childProcess.stdout),
-      stderr: yield* useReadable(childProcess.stderr),
+      stdout: yield* fromReadable(childProcess.stdout),
+      stderr: yield* fromReadable(childProcess.stderr),
       stdoutDone: withResolvers<void>(),
       stderrDone: withResolvers<void>(),
     };
@@ -95,18 +96,16 @@ export const createPosixProcess: CreateOSProcess = (
       if (result.ok) {
         let [code, signal] = result.value;
         return { command, options, code, signal } as ExitStatus;
-      } else {
-        throw result.error;
       }
+      throw result.error;
     }
 
     function* expect() {
       let status: ExitStatus = yield* join();
-      if (status.code != 0) {
+      if (status.code !== 0) {
         throw new ExecError(status, command, options);
-      } else {
-        return status;
       }
+      return status;
     }
 
     try {
@@ -121,7 +120,7 @@ export const createPosixProcess: CreateOSProcess = (
     } finally {
       try {
         if (typeof childProcess.pid === "undefined") {
-          // deno-lint-ignore no-unsafe-finally
+          // biome-ignore lint/correctness/noUnsafeFinally: Intentional error for missing PID
           throw new Error("no pid for childProcess");
         }
         process.kill(-childProcess.pid, "SIGTERM");

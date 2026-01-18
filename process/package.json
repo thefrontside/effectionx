@@ -1,0 +1,40 @@
+{
+  "name": "@effectionx/process",
+  "version": "0.7.0",
+  "type": "module",
+  "main": "./dist/mod.js",
+  "types": "./dist/mod.d.ts",
+  "exports": {
+    ".": {
+      "development": "./mod.ts",
+      "default": "./dist/mod.js"
+    }
+  },
+  "peerDependencies": {
+    "effection": "^3 || ^4"
+  },
+  "license": "MIT",
+  "author": "engineering@frontside.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thefrontside/effectionx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thefrontside/effectionx/issues"
+  },
+  "engines": {
+    "node": ">= 22"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@effectionx/node": "workspace:*",
+    "cross-spawn": "^7",
+    "ctrlc-windows": "^2",
+    "shellwords-ts": "^3.0.1"
+  },
+  "devDependencies": {
+    "@effectionx/bdd": "workspace:*",
+    "@effectionx/stream-helpers": "workspace:*",
+    "@types/cross-spawn": "^6"
+  }
+}

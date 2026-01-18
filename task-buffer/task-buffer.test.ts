@@ -1,12 +1,12 @@
-import { FakeTime } from "@std/testing/time";
+import FakeTimers from "@sinonjs/fake-timers";
 import { sleep, spawn, type Task, until } from "effection";
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "@std/expect";
+import { expect } from "expect";
 import { useTaskBuffer } from "./task-buffer.ts";
 
 describe("TaskBuffer", () => {
   it("queues up tasks when the buffer fills up", function* () {
-    const time = new FakeTime();
+    const clock = FakeTimers.install();
 
     try {
       const buffer = yield* useTaskBuffer(2);
@@ -19,22 +19,22 @@ describe("TaskBuffer", () => {
         third = yield* yield* buffer.spawn(() => sleep(10));
       });
 
-      yield* until(time.tickAsync(5));
+      yield* until(clock.tickAsync(5));
 
       // right now the third spawn is queued up, but not spawned.
       expect(third).toBeUndefined();
 
-      yield* until(time.tickAsync(10));
+      yield* until(clock.tickAsync(10));
 
       // the other tasks finished and so the third task is active.
       expect(third).toBeDefined();
     } finally {
-      time.restore();
+      clock.uninstall();
     }
   });
 
   it("allows to wait until buffer is drained", function* () {
-    const time = new FakeTime();
+    const clock = FakeTimers.install();
 
     try {
       let finished = 0;
@@ -48,12 +48,12 @@ describe("TaskBuffer", () => {
 
       expect(finished).toEqual(0);
 
-      yield* until(time.tickAsync(10));
+      yield* until(clock.tickAsync(10));
       yield* buffer;
 
       expect(finished).toEqual(3);
     } finally {
-      time.restore();
+      clock.uninstall();
     }
   });
 });

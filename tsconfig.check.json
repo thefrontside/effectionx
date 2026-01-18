@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "incremental": false,
+    "baseUrl": ".",
+    "paths": {
+      "@effectionx/*": ["*/mod.ts"]
+    }
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["**/dist", "**/node_modules", "deno-deploy", "bdd/mod.deno.ts"]
+}

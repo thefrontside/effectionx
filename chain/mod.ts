@@ -96,27 +96,33 @@ function from<T>(source: Operation<T>): From<T> {
       return yield* resolvers.operation;
     },
     then: (fn) =>
-      from(call(function* () {
-        return yield* fn(yield* chain);
-      })),
+      from(
+        call(function* () {
+          return yield* fn(yield* chain);
+        }),
+      ),
 
     catch: (fn) =>
-      from(call(function* () {
-        try {
-          return yield* chain;
-        } catch (e) {
-          return yield* fn(e);
-        }
-      })),
+      from(
+        call(function* () {
+          try {
+            return yield* chain;
+          } catch (e) {
+            return yield* fn(e);
+          }
+        }),
+      ),
 
     finally: (fn) =>
-      from(call(function* () {
-        try {
-          return yield* chain;
-        } finally {
-          yield* fn();
-        }
-      })),
+      from(
+        call(function* () {
+          try {
+            return yield* chain;
+          } finally {
+            yield* fn();
+          }
+        }),
+      ),
   };
   return chain;
 }

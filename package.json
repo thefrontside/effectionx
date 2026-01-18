@@ -1,0 +1,38 @@
+{
+  "name": "effectionx",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "build": "tsc --build",
+    "check": "tsc -b --emitDeclarationOnly && tsc -p tsconfig.check.json",
+    "test": "node --env-file=.env --test \"**/*.test.ts\"",
+    "test:all": "node --env-file=.env .internal/effection-compat.ts",
+    "lint": "biome lint .",
+    "fmt": "biome format . --write",
+    "fmt:check": "biome format .",
+    "sync": "node --env-file=.env .internal/sync-tsrefs.ts",
+    "sync:fix": "node --env-file=.env .internal/sync-tsrefs.ts fix",
+    "check:tsrefs": "node --env-file=.env .internal/sync-tsrefs.ts check"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1",
+    "@types/node": "^22",
+    "@types/semver": "^7",
+    "effection": "^4",
+    "expect": "^29",
+    "semver": "^7.6.3",
+    "turbo": "^2",
+    "typescript": "^5"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "ignoreMissing": [],
+      "allowAny": []
+    }
+  },
+  "volta": {
+    "node": "22.12.0",
+    "pnpm": "9.15.9"
+  }
+}

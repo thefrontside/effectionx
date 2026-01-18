@@ -46,16 +46,18 @@ export function createSubject<T>(): <TClose>(
 
       let iterator: Subscription<T, TClose> = current
         ? {
-          *next() {
-            iterator = upstream;
-            return current!;
-          },
-        }
+            *next() {
+              iterator = upstream;
+              // biome-ignore lint/style/noNonNullAssertion: current checked in ternary condition
+              return current!;
+            },
+          }
         : {
-          *next() {
-            return current = yield* upstream.next();
-          },
-        };
+            *next() {
+              current = yield* upstream.next();
+              return current;
+            },
+          };
 
       return {
         next: () => iterator.next(),

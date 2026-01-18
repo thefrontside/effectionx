@@ -1,5 +1,6 @@
 import { platform } from "node:os";
 import { once } from "@effectionx/node-events";
+import { fromReadable } from "@effectionx/stream-helpers";
 // @ts-types="npm:@types/cross-spawn@6.0.6"
 import { spawn as spawnProcess } from "cross-spawn";
 import { ctrlc } from "ctrlc-windows";
@@ -13,7 +14,6 @@ import {
   spawn,
   withResolvers,
 } from "effection";
-import { useReadable } from "../helpers.ts";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
 
@@ -59,9 +59,13 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
 
     let { pid } = childProcess;
 
+    if (!childProcess.stdout || !childProcess.stderr) {
+      throw new Error("stdout and stderr must be available with stdio: pipe");
+    }
+
     let io = {
-      stdout: yield* useReadable(childProcess.stdout),
-      stderr: yield* useReadable(childProcess.stderr),
+      stdout: yield* fromReadable(childProcess.stdout),
+      stderr: yield* fromReadable(childProcess.stderr),
       stdoutDone: withResolvers<void>(),
       stderrDone: withResolvers<void>(),
     };

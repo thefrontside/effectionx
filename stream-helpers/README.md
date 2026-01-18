@@ -272,6 +272,44 @@ for (const value of yield* each(track(source))) {
 yield* tracker;
 ```
 
+### fromReadable
+
+Convert a Node.js Readable stream to an Effection Stream. This is useful for
+reading files, HTTP responses, or any other Node.js Readable stream.
+
+```typescript
+import fs from "node:fs";
+import { fromReadable } from "@effectionx/stream-helpers";
+import { each } from "effection";
+
+function* example() {
+  const fileStream = fs.createReadStream("./data.txt");
+
+  for (const chunk of yield* each(fromReadable(fileStream))) {
+    console.log(new TextDecoder().decode(chunk));
+    yield* each.next();
+  }
+}
+```
+
+You can compose it with other stream helpers like `lines()` to process text files:
+
+```typescript
+import fs from "node:fs";
+import { fromReadable, lines } from "@effectionx/stream-helpers";
+import { each, pipe } from "effection";
+
+function* example() {
+  const fileStream = fs.createReadStream("./data.txt");
+  const lineStream = pipe(fromReadable(fileStream), lines());
+
+  for (const line of yield* each(lineStream)) {
+    console.log(line);
+    yield* each.next();
+  }
+}
+```
+
 ### Composing stream helpers
 
 You can use a simple `pipe()` to compose a series of stream helpers together. In

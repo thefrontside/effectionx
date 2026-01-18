@@ -3,8 +3,11 @@ import type { Operation } from "effection";
 
 import * as vitest from "vitest";
 
+// biome-ignore lint/complexity/noBannedTypes: vitest.describe accepts Function as name
+type DescribeName = string | Function;
+
 function describeWithScope(
-  name: string | Function,
+  name: DescribeName,
   factory?: vitest.SuiteFactory,
 ): vitest.SuiteCollector {
   return vitest.describe(name, (...args) => {
@@ -26,7 +29,7 @@ function describeWithScope(
 }
 
 describeWithScope.only = function describeWithScope(
-  name: string | Function,
+  name: DescribeName,
   factory?: vitest.SuiteFactory,
 ): vitest.SuiteCollector {
   return vitest.describe.only(name, (...args) => {
@@ -68,7 +71,7 @@ export function it(
   timeout?: number,
 ): void {
   if (op) {
-    return vitest.it(
+    vitest.it(
       desc,
       async (context) => {
         if (!(context?.task?.suite && "adapter" in context.task.suite)) {
@@ -79,9 +82,9 @@ export function it(
       },
       timeout,
     );
-  } else {
-    return vitest.it.todo(desc);
+    return;
   }
+  vitest.it.todo(desc);
 }
 
 it.only = function only(
@@ -90,7 +93,7 @@ it.only = function only(
   timeout?: number,
 ): void {
   if (op) {
-    return vitest.it.only(
+    vitest.it.only(
       desc,
       async (context) => {
         if (!(context?.task?.suite && "adapter" in context.task.suite)) {
@@ -101,9 +104,9 @@ it.only = function only(
       },
       timeout,
     );
-  } else {
-    return vitest.it.skip(desc, () => {});
+    return;
   }
+  vitest.it.skip(desc, () => {});
 };
 
 it.skip = function skip(
@@ -111,7 +114,7 @@ it.skip = function skip(
   _op?: () => Operation<void>,
   _timeout?: number,
 ): void {
-  return vitest.it.skip(desc, () => {});
+  vitest.it.skip(desc, () => {});
 };
 
 export function* captureError<T>(op: Operation<T>): Operation<Error> {
@@ -121,9 +124,8 @@ export function* captureError<T>(op: Operation<T>): Operation<Error> {
   } catch (error) {
     if (error instanceof Error) {
       return error;
-    } else {
-      return new Error(String(error));
     }
+    return new Error(String(error));
   }
 }
 

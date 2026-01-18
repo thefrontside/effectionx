@@ -85,7 +85,7 @@ jobs:
       # First-time publish: use token auth
       - name: Publish (first time)
         if: matrix.firstPublish == true
-        run: npm publish --access=public --tag=latest --provenance
+        run: pnpm publish --access=public --tag=latest --provenance --no-git-checks
         working-directory: ${{ matrix.workspace }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
@@ -93,7 +93,7 @@ jobs:
       # Subsequent publishes: use OIDC
       - name: Publish (OIDC)
         if: matrix.firstPublish != true
-        run: npm publish --access=public --tag=latest --provenance
+        run: pnpm publish --access=public --tag=latest --provenance --no-git-checks
         working-directory: ${{ matrix.workspace }}
 
   gather-tags:

@@ -63,10 +63,8 @@ jobs:
 
       - run: pnpm build
 
-      - run: npm publish --access=public --tag=latest
+      - run: npm publish --access=public --tag=latest --provenance
         working-directory: ${{ matrix.workspace }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   gather-tags:
     if: github.ref == 'refs/heads/main'

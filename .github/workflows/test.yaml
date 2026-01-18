@@ -63,7 +63,7 @@ jobs:
         run: pnpm test
 
       - name: Run effection compatibility tests
-        run: pnpm test:effection
+        run: pnpm test:all
 
   test-windows:
     name: Test (windows)
@@ -92,4 +92,4 @@ jobs:
         run: pnpm test
 
       - name: Run effection compatibility tests
-        run: pnpm test:effection
+        run: pnpm test:all

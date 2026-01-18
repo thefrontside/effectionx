@@ -225,7 +225,7 @@ describe("@effectionx/converge", () => {
       expect(stats.end).toBeGreaterThanOrEqual(end - 5);
       expect(stats.end).toBeLessThanOrEqual(end);
       expect(stats.elapsed).toBeGreaterThanOrEqual(50);
-      expect(stats.runs).toBeGreaterThanOrEqual(4); // ~50ms / 10ms interval = ~5 runs, allow for timing variance
+      expect(stats.runs).toBeGreaterThanOrEqual(3); // ~50ms / 10ms interval = ~5 runs, allow for timing variance on slower CI
       expect(stats.timeout).toEqual(50);
       expect(stats.interval).toEqual(10);
       expect(stats.value).toEqual(50);

@@ -83,9 +83,9 @@ node --env-file=../.env --test "*.test.ts"
      "scripts": {
        "test": "node --env-file=../.env --test \"*.test.ts\""
      },
-     "dependencies": {
-       "effection": "^3"
-     }
+      "peerDependencies": {
+        "effection": "^3 || ^4"
+      }
    }
    ```
 
@@ -106,7 +106,7 @@ node --env-file=../.env --test "*.test.ts"
 
 4. Add your package to `pnpm-workspace.yaml`
 5. Add your package to `tsconfig.json` references
-6. Run `pnpm sync:tsrefs:fix` to update dependencies
+6. Run `pnpm sync:fix` to update dependencies
 7. Add a `README.md` (text before `---` will be used as a description)
 8. Add your source code and export it from `mod.ts`
 9. Add doc strings to your source code - they will be used for documentation

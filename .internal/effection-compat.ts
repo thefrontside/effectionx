@@ -120,17 +120,25 @@ const resolveVersionGroups = function* (): Operation<VersionGroup[]> {
 };
 
 function* runTestsWithTap(
-  filters: string,
   version: string,
   packages: string[],
 ): Operation<GroupResult> {
   const failures: TapTestResult[] = [];
   let passed = 0;
 
-  // Build command with TAP reporter and grouped output
+  // Build glob patterns for test files from package names
+  // Package names are like @effectionx/fx -> fx/*.test.ts
+  const testPatterns = packages
+    .map((pkg) => {
+      const shortName = pkg.replace("@effectionx/", "");
+      return `"${shortName}/**/*.test.ts"`;
+    })
+    .join(" ");
+
+  // Build command with TAP reporter
   const baseNodeOptions = process.env.NODE_OPTIONS ?? "";
   const tapNodeOptions = `${baseNodeOptions} --test-reporter=tap`.trim();
-  const command = `pnpm turbo run test ${filters} --log-order=grouped`;
+  const command = `node --test ${testPatterns}`;
 
   const proc = yield* exec(command, {
     env: {
@@ -146,15 +154,21 @@ function* runTestsWithTap(
     const tapStream = parseTapResults()(lineStream);
 
     for (const result of yield* each(tapStream)) {
-      // Only count actual tests, not suites
-      if (result.metadata?.type === "test") {
+      // Skip suites, only count actual tests
+      // Tests either have type: 'test' or no type field (but not type: 'suite')
+      const isTest = result.metadata?.type !== "suite";
+
+      if (isTest) {
         if (result.status === "not ok") {
-          failures.push(result);
-          console.log(`  \x1b[31m\u2717 ${result.name}\x1b[0m`);
-          if (result.metadata?.error) {
-            // Print first line of error indented
-            const errorLines = result.metadata.error.split("\n");
-            console.log(`    \x1b[90m${errorLines[0]}\x1b[0m`);
+          // Skip suite-level failures (they just aggregate subtest failures)
+          if (result.metadata?.failureType !== "subtestsFailed") {
+            failures.push(result);
+            console.log(`  \x1b[31m\u2717 ${result.name}\x1b[0m`);
+            if (result.metadata?.error) {
+              // Print first line of error indented
+              const errorLines = result.metadata.error.split("\n");
+              console.log(`    \x1b[90m${errorLines[0]}\x1b[0m`);
+            }
           }
         } else {
           passed++;
@@ -255,7 +269,6 @@ await main(function* () {
 
   for (const group of groups) {
     const { version, packages } = group;
-    const filters = packages.map((pkg) => `--filter=${pkg}`).join(" ");
 
     console.log(`\n${"=".repeat(60)}`);
     console.log(`Testing with Effection ${version}`);
@@ -271,7 +284,7 @@ await main(function* () {
     yield* runCommand("pnpm install --no-frozen-lockfile");
 
     console.log("[3/3] Running tests...\n");
-    const result = yield* runTestsWithTap(filters, version, packages);
+    const result = yield* runTestsWithTap(version, packages);
     results.push(result);
 
     const status =

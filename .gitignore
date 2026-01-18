@@ -18,6 +18,7 @@ dist/
 # Keep explicit type declaration files
 !**/types.d.ts
 !**/global.d.ts
+!.internal/generatorics.d.ts
 
 # Compiled JS files from TypeScript
 # We run .ts directly with --experimental-strip-types
@@ -33,6 +34,6 @@ dist/
 # Test temp directories
 **/test-tmp/
 
-# pnpm config (created by effection-compat runner)
+# pnpm config (created by test-matrix runner)
 .npmrc
 

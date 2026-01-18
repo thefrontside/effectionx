@@ -27,7 +27,7 @@ pnpm install
 ```bash
 pnpm build          # Build all packages
 pnpm test           # Run all tests
-pnpm test:all       # Test against all supported Effection versions
+pnpm test:matrix    # Test against all supported peer dependency versions
 pnpm check          # Type-check all packages
 pnpm lint           # Lint all packages
 pnpm fmt            # Format all files
@@ -36,24 +36,28 @@ pnpm sync           # Check tsconfig references
 pnpm sync:fix       # Fix tsconfig references and dependencies
 ```
 
-### Testing Against Multiple Effection Versions
+### Testing Against Multiple Peer Dependency Versions
 
-Packages in this repository declare their compatible Effection versions via
-`peerDependencies`. To verify compatibility across the full range of supported
-versions, run:
+Packages in this repository declare their compatible versions for peer dependencies
+like Effection, Vitest, etc. via `peerDependencies`. To verify compatibility across
+the full range of supported versions, run:
 
 ```bash
-pnpm test:all
+pnpm test:matrix
 ```
 
 This command:
-1. Reads each package's `peerDependencies.effection` range
+1. Reads each package's `peerDependencies` (e.g., `effection`, `vitest`)
 2. Resolves the minimum and maximum versions that satisfy each range
-3. For each version, installs that specific Effection version and runs tests
-4. Reports a compatibility matrix showing pass/fail status per version
+3. Generates a cartesian product matrix of all version combinations
+4. For each combination, installs the specific versions and runs tests
+5. Reports a compatibility matrix showing pass/fail status per combination
 
-This ensures packages work correctly with both the oldest supported Effection
-version and the latest release.
+For example, a package with `effection: "^3 || ^4"` and `vitest: "^3 || ^4"` will
+be tested with all four combinations: e3+v3, e3+v4, e4+v3, e4+v4.
+
+This ensures packages work correctly with both the oldest supported versions
+and the latest releases of all peer dependencies.
 
 ### Running Tests for a Specific Package
 

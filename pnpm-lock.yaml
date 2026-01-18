@@ -195,6 +195,22 @@ importers:
         specifier: workspace:*
         version: link:../bdd
 
+  stream-yaml:
+    dependencies:
+      effection:
+        specifier: ^3 || ^4.0.0-0
+        version: 3.6.1
+      yaml:
+        specifier: ^2
+        version: 2.8.2
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+      '@effectionx/stream-helpers':
+        specifier: workspace:*
+        version: link:../stream-helpers
+
   task-buffer:
     dependencies:
       effection:
@@ -663,6 +679,11 @@ packages:
       utf-8-validate:
         optional: true
 
+  yaml@2.8.2:
+    resolution: {integrity: sha512-mplynKqc1C2hTVYxd0PU2xQAc22TI1vShAYGksCCfxbn/dFwnHTNi1bvYsBTkhdUNtGIf5xNOg938rrSSYvS9A==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   zod-opts@0.1.8:
     resolution: {integrity: sha512-YZhdEcIL3D2W9fXCCf/UBgrBS90c8w25RTteh5GihGIZzadYr/qIFxyM2L98zHUkZ2S8MMxwn3ny8fzPNnvPlg==}
     engines: {node: '>=16'}
@@ -971,6 +992,8 @@ snapshots:
       isexe: 2.0.0
 
   ws@8.19.0: {}
+
+  yaml@2.8.2: {}
 
   zod-opts@0.1.8:
     dependencies:

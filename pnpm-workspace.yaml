@@ -12,6 +12,7 @@ packages:
   - "raf"
   - "signals"
   - "stream-helpers"
+  - "stream-yaml"
   - "task-buffer"
   - "test-adapter"
   - "timebox"

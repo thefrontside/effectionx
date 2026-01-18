@@ -24,6 +24,7 @@
     { "path": "raf" },
     { "path": "signals" },
     { "path": "stream-helpers" },
+    { "path": "stream-yaml" },
     { "path": "task-buffer" },
     { "path": "test-adapter" },
     { "path": "timebox" },

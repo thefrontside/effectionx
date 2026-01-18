@@ -6,9 +6,28 @@ Adapter to add an effection scope to the test suite to allow writing a
 ---
 
 ```ts
-import { assert, describe, expect, it } from "@effectionx/vitest";
+import {
+  assert,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "@effectionx/vitest";
 
 describe("suite name", () => {
+  let connection: Connection;
+
+  beforeAll(function* () {
+    // Runs once before all tests in this suite
+    connection = yield* connectToDatabase();
+  });
+
+  beforeEach(function* () {
+    // Runs before each test
+    yield* connection.clear();
+  });
+
   it("foo", function* () {
     const thing = yield* otherThing();
     assert.equal(Math.sqrt(4), thing);

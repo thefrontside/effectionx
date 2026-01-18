@@ -57,6 +57,12 @@ describeWithScope.runIf = (condition: unknown) =>
 
 export const describe = <typeof vitest.describe>(<unknown>describeWithScope);
 
+export function beforeAll(op: () => Operation<void>): void {
+  vitest.beforeAll((suite) => {
+    (suite as unknown as { adapter: TestAdapter }).adapter.addOnetimeSetup(op);
+  });
+}
+
 export function beforeEach(op: () => Operation<void>): void {
   vitest.beforeEach<{ task: { suite: { adapter: TestAdapter } } }>(
     (context) => {

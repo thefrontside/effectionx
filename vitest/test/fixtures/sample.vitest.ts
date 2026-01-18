@@ -1,6 +1,6 @@
 import { sleep } from "effection";
 import { expect } from "vitest";
-import { beforeEach, describe, it } from "../../mod.ts";
+import { beforeAll, beforeEach, describe, it } from "../../mod.ts";
 
 describe("@effectionx/vitest", () => {
   let counter: number;
@@ -28,6 +28,26 @@ describe("@effectionx/vitest", () => {
     it("works in nested suites", function* () {
       yield* sleep(5);
       expect(true).toBe(true);
+    });
+  });
+
+  describe("beforeAll", () => {
+    let setupCount: number;
+
+    beforeAll(function* () {
+      setupCount = 0;
+    });
+
+    beforeEach(function* () {
+      setupCount += 1;
+    });
+
+    it("runs beforeAll once before all tests", function* () {
+      expect(setupCount).toBe(1);
+    });
+
+    it("beforeAll ran only once while beforeEach ran again", function* () {
+      expect(setupCount).toBe(2);
     });
   });
 });

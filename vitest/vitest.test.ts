@@ -4,7 +4,7 @@ import { expect } from "expect";
 
 describe("@effectionx/vitest", () => {
   it("runs vitest tests with effection operations", function* () {
-    let result = yield* exec("npx vitest run --reporter=verbose", {
+    let result = yield* exec("pnpm vitest run --reporter=verbose", {
       cwd: import.meta.dirname,
     }).join();
 

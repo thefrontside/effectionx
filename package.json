@@ -7,7 +7,7 @@
     "build": "tsc --build",
     "check": "tsc -b --emitDeclarationOnly && tsc -p tsconfig.check.json",
     "test": "node --env-file=.env --test \"**/*.test.ts\"",
-    "test:effection": "node --env-file=.env .internal/effection-compat.ts",
+    "test:all": "node --env-file=.env .internal/effection-compat.ts",
     "lint": "biome lint .",
     "fmt": "biome format . --write",
     "fmt:check": "biome format .",

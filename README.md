@@ -27,7 +27,7 @@ pnpm install
 ```bash
 pnpm build          # Build all packages
 pnpm test           # Run all tests
-pnpm test:effection # Test against multiple Effection versions
+pnpm test:all       # Test against all supported Effection versions
 pnpm check          # Type-check all packages
 pnpm lint           # Lint all packages
 pnpm fmt            # Format all files
@@ -43,7 +43,7 @@ Packages in this repository declare their compatible Effection versions via
 versions, run:
 
 ```bash
-pnpm test:effection
+pnpm test:all
 ```
 
 This command:

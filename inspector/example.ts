@@ -8,7 +8,7 @@ await main(function* () {
     let task = yield* spawn(function* () {
       let delay = Math.random() * 1000;
       yield* sleep(delay);
-      return i + " is done";
+      return `${i} is done`;
     });
     tasks.push(task);
   }

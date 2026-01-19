@@ -17,6 +17,7 @@
     { "path": "chain" },
     { "path": "context-api" },
     { "path": "converge" },
+    { "path": "effect" },
     { "path": "fs" },
     { "path": "fx" },
     { "path": "jsonl-store" },

@@ -40,14 +40,11 @@ inside Effection operations.
 ```ts
 import { main } from "effection";
 import { Effect } from "effect";
-import { makeEffectRuntime, EffectRuntime } from "@effectionx/effect";
+import { makeEffectRuntime } from "@effectionx/effect";
 
 await main(function* () {
   // Create the Effect runtime (automatically disposed when scope ends)
   const runtime = yield* makeEffectRuntime();
-
-  // Optionally set it in context for child operations
-  yield* EffectRuntime.set(runtime);
 
   // Run Effect programs
   const result = yield* runtime.run(
@@ -137,35 +134,6 @@ Compose multiple layers using Effect's primitives:
 ```ts
 const AppLayer = Layer.mergeAll(DatabaseLive, LoggerLive, CacheLive);
 const runtime = yield* makeEffectRuntime(AppLayer);
-```
-
-### Concurrent Effect Execution
-
-Spawn multiple Effect programs concurrently using Effection's structured concurrency:
-
-```ts
-import { main, spawn } from "effection";
-import { Effect } from "effect";
-import { makeEffectRuntime, EffectRuntime } from "@effectionx/effect";
-
-await main(function* () {
-  const runtime = yield* makeEffectRuntime();
-  yield* EffectRuntime.set(runtime);
-
-  // Spawn concurrent tasks
-  const task1 = yield* spawn(function* () {
-    const rt = yield* EffectRuntime.expect();
-    return yield* rt.run(Effect.sleep("100 millis").pipe(Effect.as("first")));
-  });
-
-  const task2 = yield* spawn(function* () {
-    const rt = yield* EffectRuntime.expect();
-    return yield* rt.run(Effect.sleep("50 millis").pipe(Effect.as("second")));
-  });
-
-  console.log(yield* task1); // "first"
-  console.log(yield* task2); // "second"
-});
 ```
 
 ### Cancellation
@@ -331,13 +299,6 @@ Runs an Effect program and returns its Exit (success or failure). Does not throw
 - `effect: Effect<A, E, R>` - The Effect to run (can require services `R` from the runtime)
 
 **Returns:** `Operation<Exit<A, E>>` - An operation that yields the Exit
-
-#### `EffectRuntime` (Context)
-
-Effection Context for storing/retrieving the runtime:
-- `EffectRuntime.set(runtime)` - Store in context
-- `EffectRuntime.expect()` - Retrieve from context (throws if not set)
-- `EffectRuntime.get()` - Retrieve from context (returns undefined if not set)
 
 ---
 

@@ -1,11 +1,5 @@
 import { type Effect, type Exit, Layer, ManagedRuntime } from "effect";
-import {
-  type Operation,
-  action,
-  call,
-  createContext,
-  resource,
-} from "effection";
+import { type Operation, action, call, resource } from "effection";
 
 /**
  * A runtime for executing Effect programs inside Effection operations.
@@ -54,27 +48,6 @@ export interface EffectRuntime<R = never> {
    */
   runExit<A, E>(effect: Effect.Effect<A, E, R>): Operation<Exit.Exit<A, E>>;
 }
-
-/**
- * Effection Context for accessing the EffectRuntime.
- *
- * Use this to store the runtime in Effection's context so child operations
- * can access it without passing it explicitly.
- *
- * @example
- * ```ts
- * // Set in parent
- * const runtime = yield* makeEffectRuntime();
- * yield* EffectRuntime.set(runtime);
- *
- * // Access in child
- * function* childOperation() {
- *   const rt = yield* EffectRuntime.expect();
- *   return yield* rt.run(Effect.succeed(42));
- * }
- * ```
- */
-export const EffectRuntime = createContext<EffectRuntime>("EffectRuntime");
 
 /**
  * Create an EffectRuntime resource that manages an Effect ManagedRuntime.

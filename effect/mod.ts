@@ -1,6 +1,6 @@
 // Effect -> Effection
-export { EffectRuntime, makeEffectRuntime } from "./effect-runtime.ts";
-export type { EffectRuntime as EffectRuntimeType } from "./effect-runtime.ts";
+export { makeEffectRuntime } from "./effect-runtime.ts";
+export type { EffectRuntime } from "./effect-runtime.ts";
 
 // Effection -> Effect
 export { EffectionRuntime, makeEffectionRuntime } from "./effection-runtime.ts";

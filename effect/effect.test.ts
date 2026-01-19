@@ -1,10 +1,9 @@
 import { describe, it } from "@effectionx/bdd";
 import { Context, Effect, Exit, Fiber, Layer } from "effect";
-import { type Operation, call, scoped, sleep, spawn, suspend } from "effection";
+import { call, scoped, sleep, spawn, suspend } from "effection";
 import { expect } from "expect";
 
 import {
-  EffectRuntime,
   EffectionRuntime,
   makeEffectRuntime,
   makeEffectionRuntime,
@@ -205,29 +204,6 @@ describe("@effectionx/effect", () => {
 
         // Runtime was active during the scope
         expect(runtimeActive).toEqual(true);
-      });
-    });
-
-    describe("context", () => {
-      it("can store and retrieve runtime from Effection context", function* () {
-        const runtime = yield* makeEffectRuntime();
-        yield* EffectRuntime.set(runtime);
-
-        const retrieved = yield* EffectRuntime.expect();
-        expect(retrieved).toBe(runtime);
-      });
-
-      it("child operations can access runtime from context", function* () {
-        const runtime = yield* makeEffectRuntime();
-        yield* EffectRuntime.set(runtime);
-
-        function* childOperation(): Operation<number> {
-          const rt = yield* EffectRuntime.expect();
-          return yield* rt.run(Effect.succeed(42));
-        }
-
-        const result = yield* childOperation();
-        expect(result).toEqual(42);
       });
     });
   });

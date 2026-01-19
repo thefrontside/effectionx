@@ -7,8 +7,8 @@
     "@standard-schema/spec": "npm:@standard-schema/spec@^1.0.0",
     "arktype": "npm:arktype@^2.1.27",
     "@ark/util": "npm:@ark/util@^0.56.0",
-    "effection": "https://esm.sh/pr/thefrontside/effection/effection@1b78beb",
-    "effection/experimental": "https://esm.sh/pr/thefrontside/effection/effection@1b78beb/experimental",
+    "effection": "https://esm.sh/pr/thefrontside/effection/effection@4a984f4",
+    "effection/experimental": "https://esm.sh/pr/thefrontside/effection/effection@4a984f4/experimental",
     "zod": "npm:zod@^4.1.13",
     "@std/expect": "jsr:@std/expect@^1"
   }

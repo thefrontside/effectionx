@@ -25,15 +25,14 @@ This package lets you use both together:
 ## Installation
 
 ```bash
-npm install @effectionx/effect-ts effect effection
+npm install @effectionx/effect-ts
 ```
 
 **Peer dependencies:** Both `effect` (^3) and `effection` (^3 || ^4) must be installed.
 
-## Running Effect inside Effection
+## Effection Host - Effect Guest
 
-Use `makeEffectRuntime()` to create a runtime that can execute Effect programs
-inside Effection operations.
+Use `makeEffectRuntime()` to run Effect programs inside Effection operations.
 
 ### Basic Usage
 
@@ -163,10 +162,9 @@ await main(function* () {
 });
 ```
 
-## Running Effection inside Effect
+## Effect Host - Effection Guest
 
-Use `makeEffectionRuntime()` to create a Layer that can execute Effection operations
-inside Effect programs.
+Use `makeEffectionRuntime()` to run Effection operations inside Effect programs.
 
 ### Basic Usage
 
@@ -258,87 +256,11 @@ await Effect.runPromise(
 );
 ```
 
-## API Reference
-
-### EffectRuntime
-
-#### `makeEffectRuntime<R>(layer?)`
-
-Creates an Effection resource that provides an `EffectRuntime<R>`.
-
-**Type Parameters:**
-- `R` - The services/context provided by the layer (inferred from `layer`)
-
-**Parameters:**
-- `layer` (optional) - An Effect Layer to provide services. Users can compose
-  multiple layers using `Layer.merge()`, `Layer.mergeAll()`, or `Layer.provide()`.
-
-**Returns:** `Operation<EffectRuntime<R>>` - A resource that yields the runtime
-
-**Lifecycle:** The underlying `ManagedRuntime` is automatically disposed when the Effection scope ends.
-
-**Type Safety:** The returned runtime is typed with the services provided by the layer,
-so TypeScript will error if you try to run an effect that requires services not in the layer.
-
-#### `EffectRuntime<R>.run(effect)`
-
-Runs an Effect program and returns its result. Throws on failure.
-
-**Parameters:**
-- `effect: Effect<A, E, R>` - The Effect to run (can require services `R` from the runtime)
-
-**Returns:** `Operation<A>` - An operation that yields the success value
-
-**Throws:** The effect's error `E` if it fails
-
-#### `EffectRuntime<R>.runExit(effect)`
-
-Runs an Effect program and returns its Exit (success or failure). Does not throw.
-
-**Parameters:**
-- `effect: Effect<A, E, R>` - The Effect to run (can require services `R` from the runtime)
-
-**Returns:** `Operation<Exit<A, E>>` - An operation that yields the Exit
-
----
-
-### EffectionRuntime
-
-#### `makeEffectionRuntime(parent?)`
-
-Creates an Effect Layer that provides an `EffectionRuntime`.
-
-**Parameters:**
-- `parent` (optional) - A parent Effection `Scope`. If provided, the runtime's
-  scope will inherit all contexts from the parent scope. This is useful when
-  running Effect code from within an Effection operation and you want the
-  Effection operations inside Effect to have access to Effection contexts.
-
-**Returns:** `Layer.Layer<EffectionRuntime>` - A layer providing the runtime
-
-**Lifecycle:** The underlying Effection scope is automatically closed when the Effect scope ends.
-
-#### `EffectionRuntime.run(operation)`
-
-Runs an Effection operation and returns its result as an Effect.
-
-**Parameters:**
-- `operation: () => Operation<T>` - The operation (generator function) to run
-
-**Returns:** `Effect<T, UnknownException>` - An effect that yields the result
-
-#### `EffectionRuntime` (Tag)
-
-Effect Context Tag for accessing the runtime:
-```ts
-const runtime = yield* EffectionRuntime;
-```
-
 ## Comparison
 
-| Aspect | `EffectRuntime.run()` | `EffectRuntime.runExit()` | `EffectionRuntime.run()` |
-|--------|----------------------|---------------------------|-------------------------|
-| **Direction** | Effect -> Effection | Effect -> Effection | Effection -> Effect |
+| Aspect | Effection Host | | Effect Host |
+|--------|----------------|---|-------------|
+| **Method** | `EffectRuntime.run()` | `EffectRuntime.runExit()` | `EffectionRuntime.run()` |
 | **Error Handling** | Throws JS error | Returns `Exit<A, E>` | Returns `UnknownException` |
 | **Use When** | Simple cases | Need typed errors | Using Effection in Effect |
-| **Cancellation** | Effection halt -> Effect interrupt | Same | Effect interrupt -> Effection halt |
+| **Cancellation** | Effection halt → Effect interrupt | Same | Effect interrupt → Effection halt |

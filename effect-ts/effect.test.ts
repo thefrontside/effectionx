@@ -9,7 +9,7 @@ import {
   makeEffectionRuntime,
 } from "./mod.ts";
 
-describe("@effectionx/effect", () => {
+describe("@effectionx/effect-ts", () => {
   describe("EffectRuntime - Effect inside Effection", () => {
     describe("run()", () => {
       it("runs a successful Effect and returns the value", function* () {

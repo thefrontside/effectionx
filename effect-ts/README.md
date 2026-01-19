@@ -1,6 +1,6 @@
-# Effect
+# Effect-TS
 
-Bidirectional interop between [Effect](https://effect.website/) and [Effection](https://frontside.com/effection).
+Bidirectional interop between [Effect-TS](https://effect.website/) and [Effection](https://frontside.com/effection).
 
 ## Why?
 
@@ -25,7 +25,7 @@ This package lets you use both together:
 ## Installation
 
 ```bash
-npm install @effectionx/effect effect effection
+npm install @effectionx/effect-ts effect effection
 ```
 
 **Peer dependencies:** Both `effect` (^3) and `effection` (^3 || ^4) must be installed.
@@ -40,7 +40,7 @@ inside Effection operations.
 ```ts
 import { main } from "effection";
 import { Effect } from "effect";
-import { makeEffectRuntime } from "@effectionx/effect";
+import { makeEffectRuntime } from "@effectionx/effect-ts";
 
 await main(function* () {
   // Create the Effect runtime (automatically disposed when scope ends)
@@ -62,7 +62,7 @@ Effect failures are thrown as JavaScript errors when using `run()`:
 ```ts
 import { main } from "effection";
 import { Effect } from "effect";
-import { makeEffectRuntime } from "@effectionx/effect";
+import { makeEffectRuntime } from "@effectionx/effect-ts";
 
 await main(function* () {
   const runtime = yield* makeEffectRuntime();
@@ -80,7 +80,7 @@ For type-safe error handling, use `runExit()` which returns an `Exit<A, E>`:
 ```ts
 import { main } from "effection";
 import { Effect, Exit } from "effect";
-import { makeEffectRuntime } from "@effectionx/effect";
+import { makeEffectRuntime } from "@effectionx/effect-ts";
 
 await main(function* () {
   const runtime = yield* makeEffectRuntime();
@@ -104,7 +104,7 @@ You can provide an Effect Layer to pre-configure services:
 ```ts
 import { main } from "effection";
 import { Effect, Context, Layer } from "effect";
-import { makeEffectRuntime } from "@effectionx/effect";
+import { makeEffectRuntime } from "@effectionx/effect-ts";
 
 // Define a service
 class Logger extends Context.Tag("Logger")<Logger, {
@@ -143,7 +143,7 @@ When an Effection scope is halted, any running Effect programs are interrupted:
 ```ts
 import { main, spawn, sleep } from "effection";
 import { Effect } from "effect";
-import { makeEffectRuntime } from "@effectionx/effect";
+import { makeEffectRuntime } from "@effectionx/effect-ts";
 
 await main(function* () {
   const runtime = yield* makeEffectRuntime();
@@ -173,7 +173,7 @@ inside Effect programs.
 ```ts
 import { Effect } from "effect";
 import { sleep } from "effection";
-import { makeEffectionRuntime, EffectionRuntime } from "@effectionx/effect";
+import { makeEffectionRuntime, EffectionRuntime } from "@effectionx/effect-ts";
 
 const program = Effect.gen(function* () {
   const runtime = yield* EffectionRuntime;
@@ -202,7 +202,7 @@ Errors thrown in Effection operations become `UnknownException` in Effect:
 
 ```ts
 import { Effect, Exit } from "effect";
-import { makeEffectionRuntime, EffectionRuntime } from "@effectionx/effect";
+import { makeEffectionRuntime, EffectionRuntime } from "@effectionx/effect-ts";
 
 const program = Effect.gen(function* () {
   const runtime = yield* EffectionRuntime;
@@ -232,7 +232,7 @@ When the Effect scope ends or is interrupted, the Effection scope is closed:
 ```ts
 import { Effect, Fiber } from "effect";
 import { suspend } from "effection";
-import { makeEffectionRuntime, EffectionRuntime } from "@effectionx/effect";
+import { makeEffectionRuntime, EffectionRuntime } from "@effectionx/effect-ts";
 
 const program = Effect.gen(function* () {
   const runtime = yield* EffectionRuntime;

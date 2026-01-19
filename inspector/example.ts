@@ -1,49 +1,21 @@
-import {
-  each,
-  global,
-  main,
-  spawn,
-  type Stream,
-  type Subscription,
-} from "effection";
+import { main, sleep, spawn, type Task } from "effection";
 
-import * as inspectors from "./task/mod.ts";
-import { sleep } from "effection";
-
-await global.run(() =>
-  global.eval(function* () {
-    const inspector = yield* inspectors.scope.attach();
-
-    let taskOps = createStreamableSubscription(
-      yield* inspector.methods.watchTasks(),
-    );
-
-    yield* spawn(function* () {
-      for (let event of yield* each(taskOps)) {
-        console.log(event);
-        yield* each.next();
-      }
-    });
-  })
-);
+import "./inspector.ts";
 
 await main(function* () {
+  let tasks: Task<string>[] = [];
   for (let i = 1; i <= 10; i++) {
-    yield* spawn(function* () {
-      yield* sleep(1);
+    let task = yield* spawn(function* () {
+      let delay = Math.random() * 1000;
+      yield* sleep(delay);
       return i + " is done";
     });
+    tasks.push(task);
   }
 
-  yield* sleep(100);
+  for (let task of tasks) {
+    yield* sleep(Math.random() * 200);
+    yield* task.halt();
+  }
+  console.log("done");
 });
-
-function createStreamableSubscription<T, TClose>(
-  subscription: Subscription<T, TClose>,
-): Stream<T, TClose> {
-  return {
-    *[Symbol.iterator]() {
-      return subscription;
-    },
-  };
-}

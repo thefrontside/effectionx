@@ -6,54 +6,51 @@ import { protocol, type TaskEvent } from "./protocol.ts";
 
 const Id = createContext<number>("@effectionx/inspector.id");
 
-export const scope: Inspector<typeof protocol.methods> = createImplementation(
-  protocol,
-  function* () {
-    let ids = 0;
-    let signal = createSignal<TaskEvent, never>();
+export const scope = createImplementation(protocol, function* () {
+  let ids = 0;
+  let { send, ...stream } = createSignal<TaskEvent, never>();
 
-    yield* Id.set(ids++);
+  yield* Id.set(ids++);
 
-    yield* api.Task.decorate({
-      *run(args, next) {
-        let parentId = String((yield* Id.get()) ?? "global");
-        let id = String(yield* Id.set(ids++));
-        signal.send({
-          type: "started",
-          id,
-          parentId,
-        });
+  yield* api.Task.decorate({
+    *run(args, next) {
+      let parentId = String((yield* Id.get()) ?? "global");
+      let id = String(yield* Id.set(ids++));
+      send({
+        type: "pending",
+        id,
+        parentId,
+      });
 
-        let result: Extract<TaskEvent, { type: "result" }>["result"] = {
-          exists: false,
+      let result: Extract<TaskEvent, { type: "finalized" }>["result"] = {
+        exists: false,
+      };
+
+      try {
+        let value = yield* next(...args);
+        result = {
+          exists: true,
+          value: { ok: true, value: toJson(value) },
         };
 
-        try {
-          let value = yield* next(...args);
-          result = {
-            exists: true,
-            value: { ok: true, value: toJson(value) },
-          };
+        return value;
+      } catch (error) {
+        let { name, message, stack } = error as Error;
+        result = {
+          exists: true,
+          value: {
+            ok: false,
+            error: { name, message, stack },
+          },
+        };
+        throw error;
+      } finally {
+        send({ type: "finalized", id, result });
+      }
+    },
+  });
 
-          return value;
-        } catch (error) {
-          let { name, message, stack } = error as Error;
-          result = {
-            exists: true,
-            value: {
-              ok: false,
-              error: { name, message, stack },
-            },
-          };
-          throw error;
-        } finally {
-          signal.send({ type: "result", id, result });
-        }
-      },
-    });
-
-    return {
-      watchTasks: () => signal,
-    };
-  },
-);
+  return {
+    watchTasks: () => stream,
+  };
+}) as Inspector<typeof protocol.methods>;

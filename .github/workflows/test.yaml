@@ -62,8 +62,8 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      - name: Run effection compatibility tests
-        run: pnpm test:all
+      - name: Run peer dependency matrix tests
+        run: pnpm test:matrix
 
   test-windows:
     name: Test (windows)
@@ -91,5 +91,5 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      - name: Run effection compatibility tests
-        run: pnpm test:all
+      - name: Run peer dependency matrix tests
+        run: pnpm test:matrix

@@ -50,6 +50,9 @@ importers:
       effection:
         specifier: ^4
         version: 4.0.0
+      generatorics:
+        specifier: ^1
+        version: 1.1.0
       semver:
         specifier: ^7.6.3
         version: 7.7.3
@@ -525,6 +528,10 @@ packages:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
     engines: {node: '>=8'}
 
+  generatorics@1.1.0:
+    resolution: {integrity: sha512-LuYDCS1DbKQsvChP1xHmAzHnGdd0z0K1XMebmbNbFzGZI62KODnV2CXA7zOqebiDzlK2sxXrPGfwlDzSm9aP4g==}
+    engines: {node: '>=6.0.0'}
+
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
@@ -871,6 +878,8 @@ snapshots:
   fill-range@7.1.1:
     dependencies:
       to-regex-range: 5.0.1
+
+  generatorics@1.1.0: {}
 
   graceful-fs@4.2.11: {}
 

@@ -143,7 +143,7 @@ global.decorate(api.Main, {
         try {
           // listen on ephemeral port bound to localhost
           yield* action<void>((resolve) => {
-            server.listen(void (0), resolve);
+            server.listen(void 0, resolve);
             return () => {};
           });
 

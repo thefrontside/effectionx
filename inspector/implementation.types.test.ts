@@ -5,7 +5,7 @@ import type { Method } from "./lib/types.ts";
 // This file is a compile-time (type-level) test to ensure that
 // `createImplementation` enforces the method signatures described by the
 // protocol (i.e. the `Implementation<M>` type). If the types below do not
-// conform, the TypeScript type-check will fail when running `deno test`.
+// conform, the TypeScript type-check will fail.
 
 const _schema = scope({
   Args: "string[]",
@@ -27,5 +27,3 @@ const _impl: Implementation<FooMethods> = function* () {
     },
   };
 };
-
-export {};

@@ -16,31 +16,41 @@ const $ = scope({
     stack: "string?",
   },
   Result: () =>
-    $.type.or({
-      ok: "true",
-      value: "object.json",
-    }, {
-      ok: "false",
-      error: "Error",
-    }),
+    $.type.or(
+      {
+        ok: "true",
+        value: "object.json",
+      },
+      {
+        ok: "false",
+        error: "Error",
+      },
+    ),
   TaskEvent: () =>
-    $.type.or({
-      type: "'pending'",
-      id: "string",
-      parentId: "string",
-    }, {
-      type: "'halting'",
-      id: "string",
-    }, {
-      type: "'finalized'",
-      id: "string",
-      result: $.type.or({
-        exists: "true",
-        value: "Result",
-      }, {
-        exists: "false",
-      }),
-    }),
+    $.type.or(
+      {
+        type: "'pending'",
+        id: "string",
+        parentId: "string",
+      },
+      {
+        type: "'halting'",
+        id: "string",
+      },
+      {
+        type: "'finalized'",
+        id: "string",
+        result: $.type.or(
+          {
+            exists: "true",
+            value: "Result",
+          },
+          {
+            exists: "false",
+          },
+        ),
+      },
+    ),
   Never: "never",
   None: "never[]",
 });

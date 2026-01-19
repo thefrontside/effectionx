@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import type { Operation } from "effection";
 import type { Handle, Inspector, Methods, Protocol } from "./types.ts";
 
@@ -37,16 +36,16 @@ export interface Combine {
 }
 
 export const combine: Combine = {
-  protocols: (...protocols: any[]) => {
+  protocols: (...protocols: Protocol<Methods>[]) => {
     return protocols.reduce(
       (acc, protocol) => {
         Object.assign(acc.methods, protocol.methods);
         return acc;
       },
-      { methods: {} },
-    ) as Protocol<Methods>;
+      { methods: {} } as Protocol<Methods>,
+    );
   },
-  inspectors: (...inspectors: any[]) => {
+  inspectors: (...inspectors: Inspector<Methods>[]) => {
     return inspectors.reduce(
       (acc: Inspector<Methods>, inspector: Inspector<Methods>) => {
         let protocol = combine.protocols(acc.protocol, inspector.protocol);

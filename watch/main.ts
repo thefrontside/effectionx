@@ -78,9 +78,10 @@ function extract(argv: string[]): Extract {
     }
     if (builtins.includes(arg)) {
       args.push(arg);
-      if (arg == "--path") {
-        if (rest.length > 0) {
-          args.push(rest.shift()!);
+      if (arg === "--path") {
+        const next = rest.shift();
+        if (next !== undefined) {
+          args.push(next);
         }
       }
     } else {

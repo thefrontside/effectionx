@@ -25,11 +25,14 @@ const $ = scope({
     }),
   TaskEvent: () =>
     $.type.or({
-      type: "'started'",
+      type: "'pending'",
       id: "string",
       parentId: "string",
     }, {
-      type: "'result'",
+      type: "'halting'",
+      id: "string",
+    }, {
+      type: "'finalized'",
       id: "string",
       result: $.type.or({
         exists: "true",

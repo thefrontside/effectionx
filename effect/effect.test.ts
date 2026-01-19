@@ -124,13 +124,12 @@ describe("@effectionx/effect", () => {
         const CounterLive = Layer.succeed(Counter, { value: 100 });
 
         const runtime = yield* makeEffectRuntime(CounterLive);
-        // The layer provides Counter, so we can use it in effects
-        // Use type assertion since the ManagedRuntime internally has the service
+        // Types flow correctly - runtime is EffectRuntime<Counter>
         const result = yield* runtime.run(
           Effect.gen(function* () {
             const counter = yield* Counter;
             return counter.value;
-          }) as Effect.Effect<number, never, never>,
+          }),
         );
         expect(result).toEqual(100);
       });
@@ -144,13 +143,13 @@ describe("@effectionx/effect", () => {
         const AppLayer = Layer.mergeAll(ALive, BLive);
 
         const runtime = yield* makeEffectRuntime(AppLayer);
-        // The layer provides A and B services
+        // Types flow correctly - runtime is EffectRuntime<A | B>
         const result = yield* runtime.run(
           Effect.gen(function* () {
             const a = yield* A;
             const b = yield* B;
             return a.a + b.b;
-          }) as Effect.Effect<number, never, never>,
+          }),
         );
         expect(result).toEqual(3);
       });
@@ -295,18 +294,20 @@ describe("@effectionx/effect", () => {
         expect(Exit.isFailure(exit)).toEqual(true);
       });
 
-      it("can be used in Effect pipelines", function* () {
+      it("returns an Effect", function* () {
         const result = yield* call(() =>
           runWithEffection(
             Effect.gen(function* () {
               const runtime = yield* EffectionRuntime;
-              return yield* runtime.run(function* () {
-                return "hello";
+              const effect = runtime.run(function* () {
+                return 42;
               });
-            }).pipe(Effect.map((s) => s.toUpperCase())),
+              expect(Effect.isEffect(effect)).toEqual(true);
+              return yield* effect;
+            }),
           ),
         );
-        expect(result).toEqual("HELLO");
+        expect(result).toEqual(42);
       });
     });
 

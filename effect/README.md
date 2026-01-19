@@ -294,35 +294,41 @@ await Effect.runPromise(
 
 ### EffectRuntime
 
-#### `makeEffectRuntime(layer?)`
+#### `makeEffectRuntime<R>(layer?)`
 
-Creates an Effection resource that provides an `EffectRuntime`.
+Creates an Effection resource that provides an `EffectRuntime<R>`.
+
+**Type Parameters:**
+- `R` - The services/context provided by the layer (inferred from `layer`)
 
 **Parameters:**
 - `layer` (optional) - An Effect Layer to provide services. Users can compose
   multiple layers using `Layer.merge()`, `Layer.mergeAll()`, or `Layer.provide()`.
 
-**Returns:** `Operation<EffectRuntime>` - A resource that yields the runtime
+**Returns:** `Operation<EffectRuntime<R>>` - A resource that yields the runtime
 
 **Lifecycle:** The underlying `ManagedRuntime` is automatically disposed when the Effection scope ends.
 
-#### `EffectRuntime.run(effect)`
+**Type Safety:** The returned runtime is typed with the services provided by the layer,
+so TypeScript will error if you try to run an effect that requires services not in the layer.
+
+#### `EffectRuntime<R>.run(effect)`
 
 Runs an Effect program and returns its result. Throws on failure.
 
 **Parameters:**
-- `effect: Effect<A, E, never>` - The Effect to run
+- `effect: Effect<A, E, R>` - The Effect to run (can require services `R` from the runtime)
 
 **Returns:** `Operation<A>` - An operation that yields the success value
 
 **Throws:** The effect's error `E` if it fails
 
-#### `EffectRuntime.runExit(effect)`
+#### `EffectRuntime<R>.runExit(effect)`
 
 Runs an Effect program and returns its Exit (success or failure). Does not throw.
 
 **Parameters:**
-- `effect: Effect<A, E, never>` - The Effect to run
+- `effect: Effect<A, E, R>` - The Effect to run (can require services `R` from the runtime)
 
 **Returns:** `Operation<Exit<A, E>>` - An operation that yields the Exit
 
@@ -337,9 +343,15 @@ Effection Context for storing/retrieving the runtime:
 
 ### EffectionRuntime
 
-#### `makeEffectionRuntime()`
+#### `makeEffectionRuntime(parent?)`
 
 Creates an Effect Layer that provides an `EffectionRuntime`.
+
+**Parameters:**
+- `parent` (optional) - A parent Effection `Scope`. If provided, the runtime's
+  scope will inherit all contexts from the parent scope. This is useful when
+  running Effect code from within an Effection operation and you want the
+  Effection operations inside Effect to have access to Effection contexts.
 
 **Returns:** `Layer.Layer<EffectionRuntime>` - A layer providing the runtime
 
@@ -350,7 +362,7 @@ Creates an Effect Layer that provides an `EffectionRuntime`.
 Runs an Effection operation and returns its result as an Effect.
 
 **Parameters:**
-- `operation: Operation<T>` - The operation to run
+- `operation: () => Operation<T>` - The operation (generator function) to run
 
 **Returns:** `Effect<T, UnknownException>` - An effect that yields the result
 

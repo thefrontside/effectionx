@@ -1,6 +1,6 @@
 import { Context, Effect, Layer } from "effect";
 import type { UnknownException } from "effect/Cause";
-import { type Operation, createScope } from "effection";
+import { type Operation, type Scope, createScope } from "effection";
 
 /**
  * A runtime for executing Effection operations inside Effect programs.
@@ -50,9 +50,11 @@ export const EffectionRuntime =
  * The Effection scope is automatically closed when the Effect scope ends,
  * ensuring proper cleanup of Effection resources.
  *
+ * @param parent - Optional parent Effection scope. If provided, the runtime's
+ *                 scope will inherit all contexts from the parent scope.
  * @returns An Effect Layer providing EffectionRuntime
  *
- * @example
+ * @example Basic usage
  * ```ts
  * import { Effect } from "effect";
  * import { sleep } from "effection";
@@ -74,12 +76,37 @@ export const EffectionRuntime =
  *   )
  * );
  * ```
+ *
+ * @example With parent scope (to inherit Effection contexts)
+ * ```ts
+ * import { Effect } from "effect";
+ * import { useScope } from "effection";
+ * import { makeEffectionRuntime, EffectionRuntime } from "@effectionx/effect";
+ *
+ * function* myOperation() {
+ *   const scope = yield* useScope();
+ *   const result = yield* call(() =>
+ *     Effect.runPromise(
+ *       Effect.gen(function* () {
+ *         const runtime = yield* EffectionRuntime;
+ *         return yield* runtime.run(function* () {
+ *           // Can access Effection contexts from parent scope
+ *           return "hello";
+ *         });
+ *       }).pipe(Effect.provide(makeEffectionRuntime(scope)), Effect.scoped)
+ *     )
+ *   );
+ *   return result;
+ * }
+ * ```
  */
-export function makeEffectionRuntime(): Layer.Layer<EffectionRuntime> {
+export function makeEffectionRuntime(
+  parent?: Scope,
+): Layer.Layer<EffectionRuntime> {
   return Layer.scoped(
     EffectionRuntime,
     Effect.gen(function* () {
-      const [scope, close] = createScope();
+      const [scope, close] = createScope(parent);
 
       const run: EffectionRuntime["run"] = <T>(
         operation: () => Operation<T>,

@@ -9,13 +9,12 @@ import {
 
 /**
  * A runtime for executing Effect programs inside Effection operations.
+ *
+ * @typeParam R - The services/context provided by this runtime (from the layer)
  */
-export interface EffectRuntime {
+export interface EffectRuntime<R = never> {
   /**
    * Run an Effect program and return its result as an Effection Operation.
-   *
-   * The Effect must have all dependencies provided (R = never), or dependencies
-   * must be satisfied by the layer passed to `makeEffectRuntime()`.
    *
    * Effect failures will be thrown as JavaScript errors.
    *
@@ -30,7 +29,7 @@ export interface EffectRuntime {
    * // result = 42
    * ```
    */
-  run<A, E>(effect: Effect.Effect<A, E, never>): Operation<A>;
+  run<A, E>(effect: Effect.Effect<A, E, R>): Operation<A>;
 
   /**
    * Run an Effect program and return its Exit (success or failure).
@@ -53,7 +52,7 @@ export interface EffectRuntime {
    * }
    * ```
    */
-  runExit<A, E>(effect: Effect.Effect<A, E, never>): Operation<Exit.Exit<A, E>>;
+  runExit<A, E>(effect: Effect.Effect<A, E, R>): Operation<Exit.Exit<A, E>>;
 }
 
 /**
@@ -125,14 +124,14 @@ export const EffectRuntime = createContext<EffectRuntime>("EffectRuntime");
  */
 export function makeEffectRuntime<R = never>(
   layer?: Layer.Layer<R, never, never>,
-): Operation<EffectRuntime> {
-  return resource<EffectRuntime>(function* (provide) {
+): Operation<EffectRuntime<R>> {
+  return resource<EffectRuntime<R>>(function* (provide) {
     const managedRuntime = ManagedRuntime.make(
       layer ?? Layer.empty,
     ) as ManagedRuntime.ManagedRuntime<R, never>;
 
-    const run: EffectRuntime["run"] = <A, E>(
-      effect: Effect.Effect<A, E, never>,
+    const run: EffectRuntime<R>["run"] = <A, E>(
+      effect: Effect.Effect<A, E, R>,
     ) => {
       return action<A>((resolve, reject) => {
         const controller = new AbortController();
@@ -143,8 +142,8 @@ export function makeEffectRuntime<R = never>(
       });
     };
 
-    const runExit: EffectRuntime["runExit"] = <A, E>(
-      effect: Effect.Effect<A, E, never>,
+    const runExit: EffectRuntime<R>["runExit"] = <A, E>(
+      effect: Effect.Effect<A, E, R>,
     ) => {
       return action<Exit.Exit<A, E>>((resolve, reject) => {
         const controller = new AbortController();

@@ -7,16 +7,16 @@ import {
 } from "../store/selector/data-tree";
 import type { AppState } from "../store/schema";
 
-export function Graphic() {
+export function Graphic({ tick }: { tick?: number }) {
   const ref = useRef<SVGSVGElement>(null);
-  const data = useSelector((s: AppState) => nodeAtTick(s, 0));
+  const data = useSelector((s: AppState) => nodeAtTick(s, tick));
 
   useEffect(() => {
     chart(ref.current, data);
   }, [data]);
 
   return (
-    <svg ref={ref}>
+    <svg ref={ref} width={"100%"}>
       <title>Tasks graph</title>
       <g className="nodes" />
       <g className="links" />
@@ -29,22 +29,26 @@ function chart(ref: SVGSVGElement | null, data: EffectionStateNode[]) {
   const box = ref.getBoundingClientRect();
   const width = box.width;
 
-  const base = d3
+  const root = d3
     .stratify<EffectionStateNode>()
     .id((d) => d.id)
     .parentId((d) => d.parentId)(data);
   // Compute the tree height; this approach will allow the height of the
   // SVG to scale according to the breadth (width) of the tree layout.
-  const root = d3.hierarchy(base);
-  const dx = 10;
+  const dx = 20;
   const dy = width / (root.height + 1);
 
   // Create a tree layout.
   const tree = d3.tree().nodeSize([dx, dy]);
 
   // Sort the tree and apply the layout.
-  root.sort((a, b) => d3.ascending(a.data.name, b.data.name));
-  tree(root);
+  root.sort(
+    (
+      a: d3.HierarchyNode<EffectionStateNode>,
+      b: d3.HierarchyNode<EffectionStateNode>,
+    ) => d3.ascending(a.data.id, b.data.id),
+  );
+  tree(root as unknown as d3.HierarchyNode<unknown>);
 
   // Compute the extent of the tree. Note that x and y are swapped here
   // because in the tree layout, x is the breadth, but when displayed, the
@@ -82,13 +86,19 @@ function chart(ref: SVGSVGElement | null, data: EffectionStateNode[]) {
       (update) => update,
       (exit) => exit.remove(),
     )
-    .attr(
-      "d",
-      d3
-        .linkHorizontal()
-        .x((d) => d.y)
-        .y((d) => d.x),
-    );
+    .attr("d", (link) => {
+      const s = link.source;
+      const t = link.target;
+      if (
+        typeof s.y !== "number" ||
+        typeof s.x !== "number" ||
+        typeof t.y !== "number" ||
+        typeof t.x !== "number"
+      ) {
+        return "";
+      }
+      return `M${s.y},${s.x}C${(s.y + t.y) / 2},${s.x} ${(s.y + t.y) / 2},${t.x} ${t.y},${t.x}`;
+    });
 
   const node = svg
     .select("g.nodes")
@@ -106,7 +116,7 @@ function chart(ref: SVGSVGElement | null, data: EffectionStateNode[]) {
   node
     .append("circle")
     .attr("fill", (d) => (d.children ? "#555" : "#999"))
-    .attr("r", (d) => (d.data.data.current === "finalized" ? 2.5 : 4.5));
+    .attr("r", (d) => (d.data.current === "finalized" ? 2.5 : 4.5));
 
   node
     .append("text")
@@ -114,8 +124,8 @@ function chart(ref: SVGSVGElement | null, data: EffectionStateNode[]) {
     .attr("x", (d) => (d.children ? -6 : 6))
     .attr("text-anchor", (d) => (d.children ? "end" : "start"))
     .text((d) => {
-      return `${d.data.data.id} [${d.data.data.current}]`;
+      return `${d.data.id} [${d.data.current}]`;
     })
-    .attr("stroke", "white")
-    .attr("paint-order", "stroke");
+    .attr("fill", "white")
+    .attr("paint-order", "fill");
 }

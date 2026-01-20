@@ -11,7 +11,7 @@
     }
   },
   "peerDependencies": {
-    "effect": "^3",
+    "effect": "^3 || ^4",
     "effection": "^3 || ^4"
   },
   "devDependencies": {

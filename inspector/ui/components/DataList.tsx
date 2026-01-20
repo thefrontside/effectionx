@@ -14,8 +14,8 @@ import {
   nodeAtTick,
 } from "../store/selector/data-tree";
 
-export function DataList() {
-  const data = useSelector((s: AppState) => nodeAtTick(s, 0));
+export function DataList({ tick }: { tick: number }) {
+  const data = useSelector((s: AppState) => nodeAtTick(s, tick));
 
   const roots = d3
     .stratify<EffectionStateNode>()

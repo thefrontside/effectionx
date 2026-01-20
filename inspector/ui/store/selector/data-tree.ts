@@ -1,5 +1,4 @@
 import { createSelector } from "starfx";
-import type { Result as SelectorResult } from "reselect";
 import * as d3 from "d3";
 import { schema } from "../schema.ts";
 import type { AppState, Inspector } from "../schema.ts";
@@ -67,3 +66,12 @@ export const nodeAtTick: (s: AppState, tick?: number) => EffectionStateNode[] =
       });
     },
   );
+
+export const maxTick: (s: AppState) => number = createAppSelector(
+  [schema.inspect.selectTable],
+  (ticks: Record<string, { id: string }>) => {
+    const keys = Object.keys(ticks);
+    if (keys.length === 0) return 0;
+    return Math.max(...keys.map((k) => Number(k)));
+  },
+);

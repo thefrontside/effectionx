@@ -30,6 +30,9 @@
     "peerDependencyRules": {
       "ignoreMissing": [],
       "allowAny": []
+    },
+    "overrides": {     
+      "effection": "https://pkg.pr.new/thefrontside/effection@5010883"     
     }
   },
   "volta": {

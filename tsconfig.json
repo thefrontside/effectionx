@@ -35,6 +35,7 @@
     { "path": "vitest" },
     { "path": "watch" },
     { "path": "websocket" },
-    { "path": "worker" }
+    { "path": "worker" },
+    { "path": "inspector" }
   ]
 }

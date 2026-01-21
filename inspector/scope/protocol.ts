@@ -44,10 +44,12 @@ const $ = scope({
       },
       {
 	type: "'set'",
+	id: "string",
 	contextName: "string",
 	contextValue: "object.json",
       }, {
 	type: "'delete'",
+	id: "string",
 	contextName: "string",
 	didHave: "boolean",
       }

@@ -1,6 +1,5 @@
 import { main, sleep, spawn, type Task } from "effection";
 
-import "./inspector.ts";
 import { useLabels } from "./lib/labels.ts";
 
 await main(function* () {

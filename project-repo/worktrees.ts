@@ -78,7 +78,7 @@ export function* useWorktree(refname: string): Operation<string> {
   const checkout = path.resolve(basePath, refname);
 
   if (!(yield* exists(checkout))) {
-    yield* exec(`git worktree add --force ${checkout} ${refname}`, {
+    yield* exec(`git worktree add --force "${checkout}" ${refname}`, {
       cwd,
     }).expect();
   }

@@ -20,7 +20,7 @@ export interface CloneOptions {
  *
  * @example
  * ```ts
- * import { initClones, useClone } from "@effectionx/git";
+ * import { initClones, useClone } from "@effectionx/project-repo";
  *
  * yield* initClones("./build/clones");
  * const effectionPath = yield* useClone("thefrontside/effection");
@@ -50,7 +50,7 @@ export function* initClones(
  *
  * @example
  * ```ts
- * import { initClones, useClone } from "@effectionx/git";
+ * import { initClones, useClone } from "@effectionx/project-repo";
  *
  * yield* initClones("./build/clones");
  *
@@ -65,7 +65,7 @@ export function* useClone(nameWithOwner: string): Operation<string> {
 
   if (!(yield* exists(dirpath))) {
     yield* exec(
-      `git clone https://github.com/${nameWithOwner} ${dirpath}`,
+      `git clone https://github.com/${nameWithOwner} "${dirpath}"`,
     ).expect();
   }
 

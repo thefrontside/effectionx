@@ -1,5 +1,5 @@
-import type { Inspector } from "@effectionx/inspector";
-import { createImplementation, toJson } from "@effectionx/inspector";
+import type { Inspector } from "../lib/mod.ts";
+import { createImplementation, toJson } from "../lib/mod.ts";
 import { createContext, createSignal } from "effection";
 import { api } from "effection/experimental";
 import { protocol, type ScopeEvent } from "./protocol.ts";
@@ -20,9 +20,9 @@ export const scope = createImplementation(protocol, function* () {
       let id = scope.set(Id, String(ids++));
 
       send({
-	type: "created",
-	id,
-	parentId,
+        type: "created",
+        id,
+        parentId,
       });
       return [scope, destroy];
     },
@@ -30,14 +30,22 @@ export const scope = createImplementation(protocol, function* () {
       let id = scope.expect(Id);
       send({ type: "destroying", id });
       try {
-	let value =  yield* next(scope);
-	send({ type: "destroyed", id, result: { ok: true, value: toJson(value) }});
+        let value = yield* next(scope);
+        send({
+          type: "destroyed",
+          id,
+          result: { ok: true, value: toJson(value) },
+        });
       } catch (error) {
-	let { name, message, stack } = error as Error;
-	send({ type: "destroyed", id, result: { ok: false, error: { name, message, stack }}});
-	throw error;
+        let { name, message, stack } = error as Error;
+        send({
+          type: "destroyed",
+          id,
+          result: { ok: false, error: { name, message, stack } },
+        });
+        throw error;
       }
-    }
+    },
   });
 
   return {

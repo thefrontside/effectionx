@@ -175,6 +175,12 @@ importers:
       '@types/mdx':
         specifier: ^2
         version: 2.0.13
+      remark-rehype:
+        specifier: ^11
+        version: 11.1.2
+      unified:
+        specifier: ^11
+        version: 11.0.5
 
   node:
     dependencies:

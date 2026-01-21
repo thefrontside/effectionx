@@ -22,7 +22,9 @@
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
-    "@types/mdx": "^2"
+    "@types/mdx": "^2",
+    "remark-rehype": "^11",
+    "unified": "^11"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",

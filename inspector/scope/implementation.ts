@@ -3,6 +3,7 @@ import { createImplementation, toJson } from "../lib/mod.ts";
 import { createContext, createSignal } from "effection";
 import { api } from "effection/experimental";
 import { protocol, type ScopeEvent } from "./protocol.ts";
+import { LabelsContext } from "../lib/labels.ts";
 
 const Id = createContext<string>("@effectionx/inspector.id", "global");
 
@@ -46,6 +47,17 @@ export const scope = createImplementation(protocol, function* () {
         throw error;
       }
     },
+
+    set([contexts, context, value ], next) {
+      if (context.name === LabelsContext.name) {
+	send({
+	  type: "set",
+	  contextName: context.name,
+	  contextValue: toJson(value),
+	});
+      }
+      return next(contexts, context, value);
+    }
   });
 
   return {

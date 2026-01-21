@@ -162,8 +162,8 @@ importers:
         specifier: ^7.9.0
         version: 7.9.0
       effection:
-        specifier: https://pkg.pr.new/thefrontside/effection@0ef3a1d
-        version: https://pkg.pr.new/thefrontside/effection@0ef3a1d
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
       react:
         specifier: ^19.1.0
         version: 19.2.3
@@ -2303,8 +2303,8 @@ packages:
     resolution: {integrity: sha512-JC1RQeCvKrnN6faoY77n2nX+p1ZpZTqd+nncT0HPGAXaj9YVg+caEWcBsdJlpOCel2o1jOn94lwl+dG5X9uRkQ==}
     engines: {node: '>= 16'}
 
-  effection@https://pkg.pr.new/thefrontside/effection@0ef3a1d:
-    resolution: {tarball: https://pkg.pr.new/thefrontside/effection@0ef3a1d}
+  effection@https://pkg.pr.new/thefrontside/effection@5010883:
+    resolution: {tarball: https://pkg.pr.new/thefrontside/effection@5010883}
     version: 4.0.1-pr
     engines: {node: '>= 16'}
 
@@ -5148,7 +5148,7 @@ snapshots:
 
   effection@4.0.1: {}
 
-  effection@https://pkg.pr.new/thefrontside/effection@0ef3a1d: {}
+  effection@https://pkg.pr.new/thefrontside/effection@5010883: {}
 
   electron-to-chromium@1.5.267: {}
 

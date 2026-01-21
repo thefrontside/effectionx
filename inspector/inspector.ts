@@ -22,16 +22,16 @@ global.decorate(api.Main, {
     return next(function* (args) {
       const inspector = yield* inspectors.scope.attach();
 
-      let taskOps = createStreamableSubscription(
+      let scopeOps = createStreamableSubscription(
         yield* inspector.methods.watchScopes(),
       );
 
-      yield* spawn(function* () {
-        for (let event of yield* each(taskOps)) {
-          console.log(event);
-          yield* each.next();
-        }
-      });
+      // yield* spawn(function* () {
+      //   for (let event of yield* each(scopeOps)) {
+      //     console.log(event);
+      //     yield* each.next();
+      //   }
+      // });
 
       let connected = withResolvers<void>();
 
@@ -54,7 +54,7 @@ global.decorate(api.Main, {
                 res.flushHeaders();
 
                 yield* spawn(function* () {
-                  for (let event of yield* each(taskOps)) {
+                  for (let event of yield* each(scopeOps)) {
                     res.write(`event: ${event.type}\n`);
                     res.write(`data: ${JSON.stringify(event)}\n\n`);
                     yield* each.next();

@@ -89,10 +89,10 @@ export interface UseMarkdownOptions extends JSXRuntime {
  * });
  * ```
  */
-export function* useMarkdown<T = unknown>(
+export function* useMarkdown(
   markdown: string,
   options: UseMarkdownOptions,
-): Operation<T> {
+): Operation<unknown> {
   const {
     jsx,
     jsxs,

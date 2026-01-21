@@ -1,8 +1,22 @@
 import { evaluate } from "@mdx-js/mdx";
 import { type Operation, call } from "effection";
-import type { MDXModule } from "mdx/types";
 import type { Options as RemarkRehypeOptions } from "remark-rehype";
 import type { PluggableList } from "unified";
+
+/**
+ * A generic MDX module type.
+ */
+export interface MDXModule {
+  /**
+   * This could be any value that is exported from the MDX file.
+   */
+  [key: string]: unknown;
+
+  /**
+   * A functional JSX component which renders the content of the MDX file.
+   */
+  default: (props?: Record<string, unknown>) => unknown;
+}
 
 /**
  * JSX runtime functions required for MDX evaluation.
@@ -84,13 +98,13 @@ export function* useMDX(
 
   return yield* call(async () => {
     try {
-      return await evaluate(markdown, {
+      return (await evaluate(markdown, {
         jsx,
         jsxs,
         jsxDEV: jsxDEV ?? jsx,
         Fragment,
         ...rest,
-      });
+      })) as MDXModule;
     } catch (error) {
       console.error(
         `Failed to evaluate MDX content: ${markdown.slice(0, 100)}...`,

@@ -22,7 +22,6 @@
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
-    "@types/mdx": "^2",
     "remark-rehype": "^11",
     "unified": "^11"
   },

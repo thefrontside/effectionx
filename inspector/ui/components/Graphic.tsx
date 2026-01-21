@@ -2,14 +2,19 @@ import * as d3 from "d3";
 import { useEffect, useRef } from "react";
 import { useSelector } from "starfx/react";
 import {
-  nodeAtTick,
+  treeAtTick,
   type EffectionStateNode,
 } from "../store/selector/data-tree";
 import type { AppState } from "../store/schema";
 
+const themeBasedFill = (dark: string, light: string) =>
+  window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? dark
+    : light;
+
 export function Graphic({ tick }: { tick?: number }) {
   const ref = useRef<SVGSVGElement>(null);
-  const data = useSelector((s: AppState) => nodeAtTick(s, tick));
+  const data = useSelector((s: AppState) => treeAtTick(s, tick));
 
   useEffect(() => {
     chart(ref.current, data);
@@ -24,15 +29,14 @@ export function Graphic({ tick }: { tick?: number }) {
   );
 }
 
-function chart(ref: SVGSVGElement | null, data: EffectionStateNode[]) {
-  if (!ref) return;
+function chart(
+  ref: SVGSVGElement | null,
+  root: d3.HierarchyNode<EffectionStateNode> | [],
+) {
+  if (!ref || root.length === 0) return;
   const box = ref.getBoundingClientRect();
   const width = box.width;
 
-  const root = d3
-    .stratify<EffectionStateNode>()
-    .id((d) => d.id)
-    .parentId((d) => d.parentId)(data);
   // Compute the tree height; this approach will allow the height of the
   // SVG to scale according to the breadth (width) of the tree layout.
   const dx = 20;
@@ -114,18 +118,39 @@ function chart(ref: SVGSVGElement | null, data: EffectionStateNode[]) {
     .attr("transform", (d) => `translate(${d.y},${d.x})`);
 
   node
-    .append("circle")
+    .selectAll("circle")
+    .data((d) => d)
+    .join(
+      (enter) => enter.append("circle"),
+      (update) => update,
+      (exit) => exit.remove(),
+    )
+    .attr("r", 0)
+    .transition()
+    .duration(500)
+    .ease(d3.easeLinear)
     .attr("fill", (d) => (d.children ? "#555" : "#999"))
     .attr("r", (d) => (d.data.current === "finalized" ? 2.5 : 4.5));
 
   node
-    .append("text")
+    .selectAll("text")
+    .data((d) => d)
+    .join(
+      (enter) => enter.append("text"),
+      (update) => update,
+      (exit) => exit.remove(),
+    )
+    .attr("opacity", 0)
+    .transition()
+    .duration(500)
+    .ease(d3.easeLinear)
     .attr("dy", "0.31em")
     .attr("x", (d) => (d.children ? -6 : 6))
     .attr("text-anchor", (d) => (d.children ? "end" : "start"))
     .text((d) => {
       return `${d.data.id} [${d.data.current}]`;
     })
-    .attr("fill", "white")
+    .attr("opacity", 1)
+    .attr("fill", themeBasedFill("white", "black"))
     .attr("paint-order", "fill");
 }

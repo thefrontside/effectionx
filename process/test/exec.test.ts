@@ -1,14 +1,9 @@
 import process from "node:process";
 import { beforeEach, describe, it } from "@effectionx/bdd";
-import { type Task, spawn } from "effection";
+import { type Task, spawn, withResolvers } from "effection";
 import { expect } from "expect";
 
-import {
-  captureError,
-  expectMatch,
-  fetchText,
-  streamClose,
-} from "./helpers.ts";
+import { captureError, fetchText } from "./helpers.ts";
 
 import { lines } from "@effectionx/stream-helpers";
 import { type Process, type ProcessResult, exec } from "../mod.ts";
@@ -122,10 +117,12 @@ describe("exec", () => {
   });
   describe("successfully", () => {
     let proc: Process;
-    let joinStdout: Task<unknown>;
-    let joinStderr: Task<unknown>;
+    let stdoutTask: Task<{ sawData: boolean; matched: boolean }>;
+    let stderrTask: Task<{ sawData: boolean }>;
 
     beforeEach(function* () {
+      const stdoutReady = withResolvers<boolean>();
+
       proc = yield* exec(
         "node --experimental-strip-types './fixtures/echo-server.ts'",
         {
@@ -138,10 +135,44 @@ describe("exec", () => {
         },
       );
 
-      joinStdout = yield* spawn(streamClose(proc.stdout));
-      joinStderr = yield* spawn(streamClose(proc.stderr));
+      stdoutTask = yield* spawn(function* () {
+        const subscription = yield* lines()(proc.stdout);
+        let sawData = false;
+        let matched = false;
+        let resolved = false;
+        let next = yield* subscription.next();
+        while (!next.done) {
+          sawData = true;
+          if (!matched && /listening/.test(next.value)) {
+            matched = true;
+            if (!resolved) {
+              stdoutReady.resolve(true);
+              resolved = true;
+            }
+          }
+          next = yield* subscription.next();
+        }
+        if (!resolved) {
+          stdoutReady.resolve(false);
+        }
+        return { sawData, matched };
+      });
 
-      yield* expectMatch(/listening/, lines()(proc.stdout));
+      stderrTask = yield* spawn(function* () {
+        const subscription = yield* proc.stderr;
+        let sawData = false;
+        let next = yield* subscription.next();
+        while (!next.done) {
+          sawData = true;
+          next = yield* subscription.next();
+        }
+        return { sawData };
+      });
+
+      const listening = yield* stdoutReady.operation;
+      if (!listening) {
+        throw new Error("Expected echo server to log listening.");
+      }
     });
 
     describe("when it succeeds", () => {
@@ -170,10 +201,14 @@ describe("exec", () => {
       });
 
       it("closes stdout and stderr", function* () {
-        expect.assertions(2);
         yield* proc.expect();
-        expect(yield* joinStdout).toEqual(undefined);
-        expect(yield* joinStderr).toEqual(undefined);
+
+        const stdoutResult = yield* stdoutTask;
+        const stderrResult = yield* stderrTask;
+
+        expect(stdoutResult.matched).toEqual(true);
+        expect(stdoutResult.sawData).toEqual(true);
+        expect(stderrResult.sawData).toEqual(true);
       });
     });
 
@@ -198,11 +233,19 @@ describe("exec", () => {
           error = e as Error;
         }
         expect(error).toBeDefined();
+
+        const stdoutResult = yield* stdoutTask;
+        expect(stdoutResult.matched).toEqual(true);
+        expect(stdoutResult.sawData).toEqual(true);
       });
 
       it("closes stdout and stderr", function* () {
-        expect(yield* joinStdout).toEqual(undefined);
-        expect(yield* joinStderr).toEqual(undefined);
+        const stdoutResult = yield* stdoutTask;
+        const stderrResult = yield* stderrTask;
+
+        expect(stdoutResult.matched).toEqual(true);
+        expect(stdoutResult.sawData).toEqual(true);
+        expect(stderrResult.sawData).toEqual(true);
       });
     });
   });

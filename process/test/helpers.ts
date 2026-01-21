@@ -58,12 +58,10 @@ export function* expectMatch(pattern: RegExp, stream: Stream<string, unknown>) {
   let next = yield* subscription.next();
   while (!next.done) {
     if (pattern.test(next.value)) {
-      return;
+      return true;
     }
     next = yield* subscription.next();
   }
 
-  throw new Error(
-    "Expected the stream to produce at least one value before closing.",
-  );
+  return false;
 }

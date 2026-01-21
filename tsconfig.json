@@ -31,6 +31,7 @@
     { "path": "test-adapter" },
     { "path": "timebox" },
     { "path": "tinyexec" },
+    { "path": "vitest" },
     { "path": "watch" },
     { "path": "websocket" },
     { "path": "worker" }

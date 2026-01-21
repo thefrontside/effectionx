@@ -19,6 +19,7 @@ packages:
   - "test-adapter"
   - "timebox"
   - "tinyexec"
+  - "vitest"
   - "watch"
   - "websocket"
   - "worker"

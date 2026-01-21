@@ -11,17 +11,11 @@ const useSelector: TypedUseSelectorHook<AppState> = useSel;
 
 import {
   type EffectionStateNode,
-  nodeAtTick,
+  treeAtTick,
 } from "../store/selector/data-tree";
 
 export function DataList({ tick }: { tick: number }) {
-  const data = useSelector((s: AppState) => nodeAtTick(s, tick));
-
-  const roots = d3
-    .stratify<EffectionStateNode>()
-    .id((d) => d.id)
-    .parentId((d) => d.parentId)(data);
-  console.log(roots);
+  const data = useSelector((s: AppState) => treeAtTick(s, tick));
 
   function renderNode(item: d3.HierarchyNode<EffectionStateNode>) {
     const value = `${item.data.id} [${item.data.current}]`;
@@ -39,5 +33,7 @@ export function DataList({ tick }: { tick: number }) {
     );
   }
 
-  return <TreeView aria-label="Inspect Tree">{renderNode(roots)}</TreeView>;
+  return data.length === 0 ? null : (
+    <TreeView aria-label="Inspect Tree">{renderNode(data)}</TreeView>
+  );
 }

@@ -4,9 +4,14 @@ import { schema } from "../schema.ts";
 import type { AppState, ScopeEvent } from "../schema.ts";
 
 function viewState(tick: number, state: Record<string, { tick: number }>) {
-  const stateTypes = Object.keys(state);
-  const stateTicks = Object.values(state).map((s) => s.tick);
-  return d3.interpolateArray(stateTicks, stateTypes)(tick);
+  const stateTypes = ["no init"].concat(Object.keys(state));
+  const stateTicks = (
+    Object.values(state)
+      .map((s) => Number(s.tick))
+      .sort(d3.ascending),
+  );
+  const scale = d3.scaleThreshold().domain(stateTicks).range(stateTypes);
+  return scale(tick);
 }
 
 const createAppSelector = createSelector.withTypes<AppState>();
@@ -18,60 +23,51 @@ export interface EffectionStateNode {
   current?: unknown;
 }
 
-export const nodeMap: (s: AppState) => Map<string, EffectionStateNode> =
-	     createAppSelector([schema.events.selectTableAsList], (data: ScopeEvent[]) => {
-    return new Map(
-      data.map((d: ScopeEvent) => [
-        d.id,
-        {
-          id: d.id,
-          parentId: d.parentId ?? (d.id === "0" ? null : "0"),
-          state: {} as Record<
-            string,
-            { tick: number; result?: ScopeEvent["result"] }
-          >,
-        } as EffectionStateNode,
-      ]),
-    );
-  });
-
-type TickEntry = { id: string; type: string; result?: ScopeEvent["result"] };
-
-export const nodesWithTicks: (
-  s: AppState,
-  t?: unknown,
-) => Map<string, EffectionStateNode> = createAppSelector(
-  [nodeMap, schema.events.selectTable],
-  (
-    nodes: Map<string, EffectionStateNode>,
-    ticks: Record<string, TickEntry>,
-  ) => {
-    for (let [tick, d] of Object.entries(ticks)) {
-      const node = nodes.get(d.id as string);
-      if (node) {
-        node.state[d.type] = { tick: Number(tick), result: d.result };
-      }
-    }
-    return nodes;
-  },
-);
-
 export const nodeAtTick: (s: AppState, tick?: number) => EffectionStateNode[] =
   createAppSelector(
-    [nodesWithTicks, (state: AppState, inputTick?: number) => inputTick],
-    (nodes: Map<string, EffectionStateNode>, currentTick: number) => {
-      return [...nodes.values()].map((d: EffectionStateNode) => {
-        d.current = viewState(currentTick, d.state);
-        return d;
+    [
+      schema.events.selectTableAsList,
+      (state: AppState, inputTick?: number) => inputTick,
+    ],
+    (nodes: EffectionStateNode[], currentTick: number) => {
+      return nodes.map((d: EffectionStateNode) => {
+        const next = { ...d };
+        next.current = viewState(currentTick, d.state);
+        return next;
       });
     },
   );
 
+export const treeAtTick: (
+  s: AppState,
+  tick?: number,
+) => d3.HierarchyNode<EffectionStateNode> | null = createAppSelector(
+  [(state: AppState, inputTick?: number) => nodeAtTick(state, inputTick)],
+  (nodes: EffectionStateNode[]) => {
+    if (nodes.length === 0) {
+      return [];
+    }
+    try {
+      const roots = d3
+        .stratify<EffectionStateNode>()
+        .id((d) => d.id)
+        .parentId((d) => d.parentId)(nodes.filter((n) => n.current !== "no init"));
+      return roots;
+    } catch (error) {
+      // console.error("Error creating stratified data:", error);
+      // console.dir({ nodes });
+      return [];
+    }
+  },
+);
+
 export const maxTick: (s: AppState) => number = createAppSelector(
-  [schema.events.selectTable],
-  (ticks: Record<string, { id: string }>) => {
-    const keys = Object.keys(ticks);
-    if (keys.length === 0) return 0;
-    return Math.max(...keys.map((k) => Number(k)));
+  [schema.events.selectTableAsList],
+  (events: EffectionStateNode[]) => {
+    return Math.max(
+      ...events
+        .map((event) => Object.values(event.state).map((s) => s.tick))
+        .flat(),
+    );
   },
 );

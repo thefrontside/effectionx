@@ -26,7 +26,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - run: pnpm install --frozen-lockfile
 
@@ -56,7 +56,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           registry-url: 'https://registry.npmjs.org'
 
       - run: pnpm install --frozen-lockfile
@@ -70,7 +70,7 @@ jobs:
             echo "::error::NPM_PUBLISH_TOKEN is required for first-time publish of ${{ matrix.name }}"
             echo ""
             echo "To fix this:"
-            echo "1. Create an npm automation token at https://www.npmjs.com/settings/tokens"
+            echo "1. Update npm automation token at https://www.npmjs.com/settings/tokens"
             echo "2. Add it as a repository secret named NPM_PUBLISH_TOKEN"
             echo ""
             echo "After the first publish succeeds, configure OIDC for the package:"
@@ -111,7 +111,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - run: pnpm install --frozen-lockfile
 
@@ -150,7 +150,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - run: pnpm install --frozen-lockfile
 

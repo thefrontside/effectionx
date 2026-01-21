@@ -1,0 +1,53 @@
+{
+  "name": "@effectionx/inspector",
+  "version": "0.0.1",
+  "type": "module",
+  "license": "MIT",
+  "author": "engineering@frontside.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thefrontside/effectionx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thefrontside/effectionx/issues"
+  },
+  "engines": {
+    "node": ">= 22"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "start": "vite --host 0.0.0.0",
+    "build": "tsc && vite build"
+  },
+  "peerDependencies": {
+    "effection": "^4.x.x"
+  },
+  "dependencies": {
+    "@ark/util": "^0.56.0",
+    "@standard-schema/spec": "^1.0.0",
+    "arktype": "^2.1.27",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@effectionx/bdd": "workspace:*",
+    "@react-spectrum/s2": "^1.0.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@types/d3": "^7.4.3",
+    "@vitejs/plugin-react": "^5.1.2",
+    "d3": "^7.9.0",
+    "effection": "https://pkg.pr.new/thefrontside/effection@0ef3a1d",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-redux": "^9.2.0",
+    "starfx": "https://pkg.pr.new/fxforge/starfx/starfx@3c2b1e29251d32c8232597295ee970fc7f0f054a",
+    "unplugin-parcel-macros": "^0.1.1",
+    "vite": "^7.3.1"
+  },
+  "exports": {
+    ".": {
+      "development": "./mod.ts",
+      "default": "./dist/mod.js"
+    }
+  }
+}

@@ -7,6 +7,7 @@ packages:
   # deno-deploy excluded - deprecated Deno-only package
   - "fs"
   - "fx"
+  - "inspector"
   - "jsonl-store"
   - "node"
   - "process"

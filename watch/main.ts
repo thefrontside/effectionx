@@ -5,7 +5,7 @@ import { parser } from "zod-opts";
 import packageJson from "./package.json" with { type: "json" };
 import { watch } from "./watch.ts";
 
-const builtins = ["-h", "--help", "-V", "--version"];
+const builtins = ["-h", "--help", "-V", "--version", "--path"];
 
 main(function* (argv) {
   let { args, rest } = extract(argv);
@@ -72,8 +72,18 @@ function extract(argv: string[]): Extract {
   let rest: string[] = argv.slice();
 
   for (let arg = rest.shift(); arg; arg = rest.shift()) {
+    if (!arg.startsWith("-")) {
+      rest.push(arg);
+      break;
+    }
     if (builtins.includes(arg)) {
       args.push(arg);
+      if (arg === "--path") {
+        const next = rest.shift();
+        if (next !== undefined) {
+          args.push(next);
+        }
+      }
     } else {
       rest.unshift(arg);
       break;

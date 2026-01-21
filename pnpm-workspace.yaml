@@ -8,6 +8,7 @@ packages:
   - "effect-ts"
   - "fs"
   - "fx"
+  - "mdx"
   - "jsonl-store"
   - "node"
   - "process"

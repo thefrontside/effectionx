@@ -27,7 +27,11 @@ import { initWorktrees, useWorktree } from "@effectionx/project-repo";
 
 await main(function* () {
   // Initialize the worktrees directory
+  // By default, uses the current working directory as the git repository
   yield* initWorktrees("./build/worktrees");
+
+  // Or specify a different git repository
+  yield* initWorktrees("./build/worktrees", { cwd: "/path/to/repo" });
 
   // Create worktrees for different versions
   const v3Path = yield* useWorktree("v3.0.0");
@@ -67,9 +71,17 @@ import { main } from "effection";
 import { createRepo } from "@effectionx/project-repo";
 
 await main(function* () {
+  // Create a repo abstraction (uses current working directory by default)
   const repo = createRepo({
     owner: "thefrontside",
     name: "effection",
+  });
+
+  // Or specify a different git repository
+  const repo2 = createRepo({
+    owner: "thefrontside",
+    name: "effection",
+    cwd: "/path/to/repo",
   });
 
   // Get all v4.x tags
@@ -106,16 +118,22 @@ console.log(latest?.name); // "v2.0.0"
 ### Worktrees
 
 - `initWorktrees(basePath, options?)` - Initialize the worktrees base directory
+  - `options.clean` - Clean the directory before initializing (default: `true`)
+  - `options.cwd` - The git repository directory to create worktrees from
 - `useWorktree(refname)` - Get or create a worktree for a git ref
 
 ### Clones
 
 - `initClones(basePath, options?)` - Initialize the clones base directory
+  - `options.clean` - Clean the directory before initializing (default: `true`)
 - `useClone(nameWithOwner)` - Clone or use cached GitHub repository
 
 ### Repository
 
 - `createRepo(options)` - Create a repository abstraction
+  - `options.owner` - Repository owner (organization or user)
+  - `options.name` - Repository name
+  - `options.cwd` - The git repository directory to run commands in
 - `repo.tags(pattern)` - Get tags matching a regex pattern
 - `repo.latest(pattern)` - Get the latest semver tag matching a pattern
 

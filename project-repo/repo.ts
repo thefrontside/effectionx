@@ -22,6 +22,8 @@ export interface RepoOptions {
   name: string;
   /** Repository owner (organization or user) */
   owner: string;
+  /** The git repository directory to run commands in */
+  cwd?: string;
 }
 
 /**
@@ -55,11 +57,10 @@ export interface Repo {
 
 /**
  * Create a repository abstraction for working with git tags.
- * This assumes you're running commands from within the repository.
  *
  * @example
  * ```ts
- * import { createRepo } from "@effectionx/git";
+ * import { createRepo } from "@effectionx/project-repo";
  *
  * const repo = createRepo({ owner: "thefrontside", name: "effection" });
  *
@@ -71,20 +72,30 @@ export interface Repo {
  * console.log(latest.name); // "v4.2.1"
  * console.log(latest.url);  // "https://github.com/thefrontside/effection/tree/v4.2.1"
  * ```
+ *
+ * @example
+ * ```ts
+ * // Specify which git repository to use
+ * const repo = createRepo({
+ *   owner: "thefrontside",
+ *   name: "effection",
+ *   cwd: "/path/to/repo"
+ * });
+ * ```
  */
 export function createRepo(options: RepoOptions): Repo {
-  const { name, owner } = options;
+  const { name, owner, cwd } = options;
 
   const repo: Repo = {
     name,
     owner,
 
     *tags(matching: RegExp): Operation<Ref[]> {
-      const result = yield* exec("git tag").expect();
+      const result = yield* exec("git tag", { cwd }).expect();
       const names = result.stdout
         .trim()
         .split(/\s+/)
-        .filter((tag: string) => matching.test(tag));
+        .filter((tag: string) => tag && matching.test(tag));
 
       return names.map((tagname: string) => ({
         name: tagname,

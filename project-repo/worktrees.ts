@@ -3,7 +3,14 @@ import { emptyDir, ensureDir, exists } from "@effectionx/fs";
 import { exec } from "@effectionx/process";
 import { type Operation, createContext } from "effection";
 
-const WorktreesContext = createContext<string>("git.worktrees");
+interface WorktreeConfig {
+  basePath: string;
+  cwd?: string;
+}
+
+const WorktreesContext = createContext<WorktreeConfig>(
+  "project-repo.worktrees",
+);
 
 /**
  * Options for initializing worktrees
@@ -11,6 +18,8 @@ const WorktreesContext = createContext<string>("git.worktrees");
 export interface WorktreeOptions {
   /** Clean the directory before initializing (default: true) */
   clean?: boolean;
+  /** The git repository directory to create worktrees from */
+  cwd?: string;
 }
 
 /**
@@ -20,17 +29,23 @@ export interface WorktreeOptions {
  *
  * @example
  * ```ts
- * import { initWorktrees, useWorktree } from "@effectionx/git";
+ * import { initWorktrees, useWorktree } from "@effectionx/project-repo";
  *
  * yield* initWorktrees("./build/worktrees");
  * const v3Path = yield* useWorktree("v3.0.0");
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Specify which git repository to use
+ * yield* initWorktrees("./build/worktrees", { cwd: "/path/to/repo" });
  * ```
  */
 export function* initWorktrees(
   basePath: string,
   options: WorktreeOptions = {},
 ): Operation<void> {
-  const { clean = true } = options;
+  const { clean = true, cwd } = options;
 
   if (clean) {
     yield* emptyDir(basePath);
@@ -38,7 +53,7 @@ export function* initWorktrees(
     yield* ensureDir(basePath);
   }
 
-  yield* WorktreesContext.set(basePath);
+  yield* WorktreesContext.set({ basePath, cwd });
 }
 
 /**
@@ -47,7 +62,7 @@ export function* initWorktrees(
  *
  * @example
  * ```ts
- * import { initWorktrees, useWorktree } from "@effectionx/git";
+ * import { initWorktrees, useWorktree } from "@effectionx/project-repo";
  *
  * yield* initWorktrees("./build/worktrees");
  *
@@ -59,11 +74,13 @@ export function* initWorktrees(
  * ```
  */
 export function* useWorktree(refname: string): Operation<string> {
-  const basePath = yield* WorktreesContext.expect();
+  const { basePath, cwd } = yield* WorktreesContext.expect();
   const checkout = path.resolve(basePath, refname);
 
   if (!(yield* exists(checkout))) {
-    yield* exec(`git worktree add --force ${checkout} ${refname}`).expect();
+    yield* exec(`git worktree add --force ${checkout} ${refname}`, {
+      cwd,
+    }).expect();
   }
 
   return checkout;

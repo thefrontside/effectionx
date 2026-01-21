@@ -1,8 +1,8 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "build": {
-      "outputs": ["dist/**", "*.tsbuildinfo"]
+    "build:bundle": {
+      "outputs": ["dist/**"]
     },
     "lint": {
       "outputs": []

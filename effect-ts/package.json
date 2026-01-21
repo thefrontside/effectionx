@@ -1,0 +1,34 @@
+{
+  "name": "@effectionx/effect-ts",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/mod.js",
+  "types": "./dist/mod.d.ts",
+  "exports": {
+    ".": {
+      "development": "./mod.ts",
+      "default": "./dist/mod.js"
+    }
+  },
+  "peerDependencies": {
+    "effect": "^3",
+    "effection": "^3 || ^4"
+  },
+  "devDependencies": {
+    "@effectionx/bdd": "workspace:*",
+    "effect": "^3"
+  },
+  "license": "MIT",
+  "author": "engineering@frontside.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thefrontside/effectionx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thefrontside/effectionx/issues"
+  },
+  "engines": {
+    "node": ">= 22"
+  },
+  "sideEffects": false
+}

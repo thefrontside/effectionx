@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  effection: https://pkg.pr.new/thefrontside/effection@5010883
+
 importers:
 
   .:
@@ -18,8 +21,8 @@ importers:
         specifier: ^7
         version: 7.7.1
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
       expect:
         specifier: ^29
         version: 29.7.0
@@ -48,8 +51,8 @@ importers:
         specifier: workspace:*
         version: link:../tinyexec
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
       generatorics:
         specifier: ^1
         version: 1.1.0
@@ -69,14 +72,14 @@ importers:
         specifier: workspace:*
         version: link:../test-adapter
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
 
   chain:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -85,8 +88,8 @@ importers:
   context-api:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -98,8 +101,8 @@ importers:
         specifier: workspace:*
         version: link:../timebox
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -108,8 +111,8 @@ importers:
   fs:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -118,8 +121,8 @@ importers:
   fx:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -136,6 +139,9 @@ importers:
       arktype:
         specifier: ^2.1.27
         version: 2.1.29
+      sse-stream-transform:
+        specifier: ^1.0.0
+        version: 1.0.0
       zod:
         specifier: ^4.1.13
         version: 4.3.5
@@ -186,8 +192,8 @@ importers:
   jsonl-store:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -196,8 +202,8 @@ importers:
   node:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -215,8 +221,8 @@ importers:
         specifier: ^2
         version: 2.2.0
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
       shellwords-ts:
         specifier: ^3.0.1
         version: 3.0.1
@@ -234,8 +240,8 @@ importers:
   raf:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -247,8 +253,8 @@ importers:
   signals:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
       immutable:
         specifier: ^5
         version: 5.1.4
@@ -266,8 +272,8 @@ importers:
         specifier: workspace:*
         version: link:../timebox
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
       immutable:
         specifier: ^5
         version: 5.1.4
@@ -282,8 +288,8 @@ importers:
   stream-yaml:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
       yaml:
         specifier: ^2
         version: 2.8.2
@@ -298,8 +304,8 @@ importers:
   task-buffer:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -314,14 +320,14 @@ importers:
   test-adapter:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
 
   timebox:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -330,8 +336,8 @@ importers:
   tinyexec:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
       tinyexec:
         specifier: ^0.3.2
         version: 0.3.2
@@ -348,8 +354,8 @@ importers:
         specifier: ^4
         version: 4.0.3
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
       ignore:
         specifier: ^7
         version: 7.0.5
@@ -376,8 +382,8 @@ importers:
   websocket:
     dependencies:
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -395,8 +401,8 @@ importers:
         specifier: workspace:*
         version: link:../signals
       effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@5010883
+        version: https://pkg.pr.new/thefrontside/effection@5010883
       web-worker:
         specifier: ^1
         version: 1.5.0
@@ -2295,14 +2301,6 @@ packages:
     resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
     engines: {node: '>=12'}
 
-  effection@4.0.0:
-    resolution: {integrity: sha512-eW2yqhyBdey4k8lkp7hpiev2FSHvJvQqvaIebI3EGikHZvfUWvNy7SmkwOnJa6WcsUtSh7VHUwdjHTbV++8M9w==}
-    engines: {node: '>= 16'}
-
-  effection@4.0.1:
-    resolution: {integrity: sha512-JC1RQeCvKrnN6faoY77n2nX+p1ZpZTqd+nncT0HPGAXaj9YVg+caEWcBsdJlpOCel2o1jOn94lwl+dG5X9uRkQ==}
-    engines: {node: '>= 16'}
-
   effection@https://pkg.pr.new/thefrontside/effection@5010883:
     resolution: {tarball: https://pkg.pr.new/thefrontside/effection@5010883}
     version: 4.0.1-pr
@@ -2604,6 +2602,9 @@ packages:
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
+
+  sse-stream-transform@1.0.0:
+    resolution: {integrity: sha512-2qhugYdDiuqJ35BpaKBg3U+T6nZUuJ3HqEk+6HVuEygUrhas+5nFXW7KzC4EXmMIUAoHehY7SEKKnOTbwCzkTg==}
 
   stack-utils@2.0.6:
     resolution: {integrity: sha512-XlkWvfIm6RmsWtNJx+uqtKLS8eqFbxUg0ZzLXqY0caEy9l7hruX8IpiDnjsLavoBgqCCR71TqWO8MaXYheJ3RQ==}
@@ -5144,10 +5145,6 @@ snapshots:
 
   dotenv@16.6.1: {}
 
-  effection@4.0.0: {}
-
-  effection@4.0.1: {}
-
   effection@https://pkg.pr.new/thefrontside/effection@5010883: {}
 
   electron-to-chromium@1.5.267: {}
@@ -5560,13 +5557,15 @@ snapshots:
 
   source-map-js@1.2.1: {}
 
+  sse-stream-transform@1.0.0: {}
+
   stack-utils@2.0.6:
     dependencies:
       escape-string-regexp: 2.0.0
 
   starfx@https://pkg.pr.new/fxforge/starfx/starfx@3c2b1e29251d32c8232597295ee970fc7f0f054a(react-dom@19.2.3(react@19.2.3))(react-redux@9.2.0(@types/react@19.2.8)(react@19.2.3))(react@19.2.3):
     dependencies:
-      effection: 4.0.1
+      effection: https://pkg.pr.new/thefrontside/effection@5010883
       immer: 11.1.3
       reselect: 5.1.1
     optionalDependencies:

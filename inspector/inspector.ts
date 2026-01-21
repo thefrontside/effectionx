@@ -26,13 +26,6 @@ global.decorate(api.Main, {
         yield* inspector.methods.watchScopes(),
       );
 
-      // yield* spawn(function* () {
-      //   for (let event of yield* each(scopeOps)) {
-      //     console.log(event);
-      //     yield* each.next();
-      //   }
-      // });
-
       let connected = withResolvers<void>();
 
       let port = yield* resource(function* (provide) {

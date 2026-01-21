@@ -8,6 +8,11 @@ export default defineConfig({
     macros.vite(), // Must be first!
     react(),
   ],
+  server: {
+    proxy: {
+      "/events": "http://localhost:41000"
+    }
+  },
   build: {
     target: ["es2022"],
     // Lightning CSS produces a much smaller CSS bundle than the default minifier.

@@ -52,6 +52,7 @@ export const scope = createImplementation(protocol, function* () {
       if (context.name === LabelsContext.name) {
 	send({
 	  type: "set",
+	  id: String(contexts[Id.name]),
 	  contextName: context.name,
 	  contextValue: toJson(value),
 	});

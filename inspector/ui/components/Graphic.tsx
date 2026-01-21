@@ -73,7 +73,7 @@ function chart(ref: SVGSVGElement | null, data: EffectionStateNode[]) {
     .attr("viewBox", [-dy / 3, x0 - dx, width, height])
     .attr("style", "max-width: 100%; height: auto; font: 10px sans-serif;");
 
-  const link = svg
+  svg
     .select("g.links")
     .attr("fill", "none")
     .attr("stroke", "#555")

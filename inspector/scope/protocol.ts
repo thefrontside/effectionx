@@ -26,30 +26,31 @@ const $ = scope({
         error: "Error",
       },
     ),
-  TaskEvent: () =>
+  ScopeEvent: () =>
     $.type.or(
       {
-        type: "'pending'",
+        type: "'created'",
         id: "string",
         parentId: "string",
       },
       {
-        type: "'halting'",
+        type: "'destroying'",
         id: "string",
       },
       {
-        type: "'finalized'",
+        type: "'destroyed'",
         id: "string",
-        result: $.type.or(
-          {
-            exists: "true",
-            value: "Result",
-          },
-          {
-            exists: "false",
-          },
-        ),
+        result: "Result",
       },
+      {
+	type: "'set'",
+	contextName: "string",
+	contextValue: "object.json",
+      }, {
+	type: "'delete'",
+	contextName: "string",
+	didHave: "boolean",
+      }
     ),
   Never: "never",
   None: "never[]",
@@ -57,16 +58,13 @@ const $ = scope({
 
 const schema = $.export();
 
-export type ContextData = typeof schema.ContextData.infer;
 
-export type ContextNode = typeof schema.ContextNode.infer;
-
-export type TaskEvent = typeof schema.TaskEvent.infer;
+export type ScopeEvent = typeof schema.ScopeEvent.infer;
 
 export const protocol = createProtocol({
-  watchTasks: {
+  watchScopes: {
     args: schema.None,
-    progress: schema.TaskEvent,
+    progress: schema.ScopeEvent,
     returns: schema.Never,
   },
 });

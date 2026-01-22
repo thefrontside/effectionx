@@ -4,6 +4,7 @@ import { createProtocol } from "../lib/mod.ts";
 const $ = scope({
   ScopeNode: {
     id: "string",
+    parentId: "string",
     labels: "object.json",
   },
   ScopeTree: "ScopeNode[]",

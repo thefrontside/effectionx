@@ -70,18 +70,22 @@ export const scope = createImplementation(protocol, function* () {
     watchScopes: () => stream,
     getScopes: op(function*() {
       let scopes: ScopeNode[] = [];
-      let visit: Array<typeof root> = [root];
+      let visit: Array<{
+	parentId: string;
+	scope: typeof root;
+      }> = [{ scope: root, parentId: "global" }];
       let current = visit.pop();
       while (current) {
+	let id = current.scope.expect(Id);
 	scopes.push({
-	  id: current.expect(Id),
-	  labels: getLabels(current),
+	  id,
+	  parentId: current.parentId,
+	  labels: getLabels(current.scope),
 	});
-	let children = current.expect(Children);
-	visit.push(...children);
+	let children = current.scope.expect(Children);
+	visit.push(...[...children].map((scope) => ({ scope, parentId: id })));
 	current = visit.pop();
       }
-
       return scopes;
     }),
   };

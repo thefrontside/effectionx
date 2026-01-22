@@ -2,14 +2,11 @@ import { scope } from "arktype";
 import { createProtocol } from "../lib/mod.ts";
 
 const $ = scope({
-  ContextData: {
+  ScopeNode: {
     id: "string",
-    values: "object.json",
+    labels: "object.json",
   },
-  ContextNode: {
-    data: "ContextData",
-    children: "ContextNode[]",
-  },
+  ScopeTree: "ScopeNode[]",
   Error: {
     name: "string",
     message: "string",
@@ -18,29 +15,29 @@ const $ = scope({
   Result: () =>
     $.type.or(
       {
-        ok: "true",
-        value: "object.json",
+	ok: "true",
+	value: "object.json",
       },
       {
-        ok: "false",
-        error: "Error",
+	ok: "false",
+	error: "Error",
       },
     ),
   ScopeEvent: () =>
     $.type.or(
       {
-        type: "'created'",
-        id: "string",
-        parentId: "string",
+	type: "'created'",
+	id: "string",
+	parentId: "string",
       },
       {
-        type: "'destroying'",
-        id: "string",
+	type: "'destroying'",
+	id: "string",
       },
       {
-        type: "'destroyed'",
-        id: "string",
-        result: "Result",
+	type: "'destroyed'",
+	id: "string",
+	result: "Result",
       },
       {
 	type: "'set'",
@@ -60,8 +57,8 @@ const $ = scope({
 
 const schema = $.export();
 
-
 export type ScopeEvent = typeof schema.ScopeEvent.infer;
+export type ScopeNode = typeof schema.ScopeNode.infer;
 
 export const protocol = createProtocol({
   watchScopes: {
@@ -69,4 +66,9 @@ export const protocol = createProtocol({
     progress: schema.ScopeEvent,
     returns: schema.Never,
   },
+  getScopes: {
+    args: schema.None,
+    progress: schema.Never,
+    returns: schema.ScopeTree,
+  }
 });

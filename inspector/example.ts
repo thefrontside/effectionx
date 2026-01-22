@@ -1,10 +1,8 @@
-import { main, sleep, spawn, type Task } from "effection";
+import { main, sleep, spawn, suspend, type Task } from "effection";
 
 import { useLabels } from "./lib/labels.ts";
 
 await main(function* () {
-  yield* useLabels({ name: "main"});
-
   let tasks: Task<string>[] = [];
   for (let i = 1; i <= 10; i++) {
     let task = yield* spawn(function* () {
@@ -20,5 +18,7 @@ await main(function* () {
     yield* sleep(Math.random() * 200);
     yield* task.halt();
   }
+
+  yield* suspend();
   console.log("done");
 });

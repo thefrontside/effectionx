@@ -22,8 +22,6 @@ export function useSSEServer<M extends Methods>(handle: Handle<M>, options: SSES
 	return;
       }
 
-      console.log(`req.url = ${req.url}`);
-      
       let url = req.url.startsWith("http") ? new URL(req.url) : new URL(`http://localhost${req.url}`)
       
       let name = methodNames.find((name) => url.pathname === `/${String(name)}`);

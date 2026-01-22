@@ -10,7 +10,7 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      "/events": "http://localhost:41000"
+      "/watchScopes": "http://localhost:41000"
     }
   },
   build: {

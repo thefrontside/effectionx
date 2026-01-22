@@ -2,7 +2,7 @@ import { call, each } from "effection";
 import { createThunks, mdw, put, select } from "starfx";
 import { schema, ScopeEvent } from "./schema";
 import { createSSEClient } from "../client";
-import { protocol } from "../../mod";
+import { protocol } from "../../scope/protocol.ts";
 
 const { methods } = createSSEClient(protocol);
 
@@ -47,7 +47,8 @@ let patchEvent = thunk.create<{ data: ScopeEvent; tick: number }>(
 );
 
 thunk.manage("watchScopes", call(function* () {
-  for (let data of yield* each(methods.watchScopes)) {
+  for (let data of yield* each(methods.watchScopes())) {
+    console.log({ data });
     yield* put(patchEvent({ data, tick: tick++ }));
     yield* each.next();
   }

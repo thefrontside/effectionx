@@ -1,9 +1,10 @@
 import { resource, spawn, stream, until } from "effection";
-import type { Handle, InvocationArgs, InvocationResult, Methods, Protocol } from "../mod.ts";
+import { toJson, type Handle, type InvocationArgs, type InvocationResult, type Methods, type Protocol } from "../mod.ts";
 import { createChannel, useAbortSignal } from "starfx";
 import { StandardSchemaV1 } from "@standard-schema/spec";
 import { type SSEMessage, SseStreamTransform } from "sse-stream-transform";
 import { useLabels } from "../lib/labels.ts";
+import { validateUnsafe } from "../lib/validate.ts";
 
 /**
  * Implement a protocol by calling it over SSE. if the protocl has a method `.foo()`, it
@@ -19,8 +20,10 @@ export function createSSEClient<M extends Methods>(protocol: Protocol<M>): Handl
   let handle: Handle<M> = {
     protocol,
     invoke<N extends keyof M>({ name, args }: InvocationArgs<M, N>): InvocationResult<M, N> {
+
+      console.log('invoke', { name, args });
       // validate the arguments against the protocol
-      validate(protocol.methods[name].args, args);
+      validateUnsafe(protocol.methods[name].args, args);
 
       let methodName = String(name);
 
@@ -29,9 +32,11 @@ export function createSSEClient<M extends Methods>(protocol: Protocol<M>): Handl
 	let signal = yield* useAbortSignal();
 	let response = yield* until(fetch(`/${methodName}`, {
 	  signal,
+	  method: "POST",
 	  headers: {
 	    "Accept": "text/event-stream",
-	  }
+	  },
+	  body: JSON.stringify(toJson(args)),
 	}));
 	if (!response.body) {
 	  throw new TypeError(`${methodName}(): response contained no body`)
@@ -46,19 +51,32 @@ export function createSSEClient<M extends Methods>(protocol: Protocol<M>): Handl
 	let events = stream(response.body.pipeThrough(new SseStreamTransform()) as unknown as AsyncIterable<SSEMessage>);
 
 	yield* spawn(function*() {
+	  console.log('subscribing to events');
+	  console.log(response);
 	  let subscription = yield* events;
+	  console.log('subscribed to events')
 	  let next = yield* subscription.next();
+	  console.log({ next });
 	  while (!next.value) {
 	    // validate the progress event from the server
-	    let { data } = next.value;
-	    validate(protocol.methods[name].progress, JSON.parse(data));
+	    let { event, data } = next.value;
+	    if ( event === "progress") {
 
-	    yield* channel.send(data);
-	    next = yield* subscription.next();
+	      validateUnsafe(protocol.methods[name].progress, JSON.parse(data));
+	      yield* channel.send(data);
+	      next = yield* subscription.next();
+	      console.log({ next });
+	      continue;
+	    } else if (event === "return") {
+
+	      validateUnsafe(protocol.methods[name].returns, JSON.parse(data));
+	      yield* channel.close(data);
+	      break;
+	    }
 	  }
 
 	  // validate the return value
-	  validate(protocol.methods[name].returns, next.value);
+	  validateUnsafe(protocol.methods[name].returns, next.value);
 	  yield* channel.close(next.value);
 	});
 
@@ -69,14 +87,4 @@ export function createSSEClient<M extends Methods>(protocol: Protocol<M>): Handl
   };
 
   return handle;
-}
-
-function validate<T>(schema: StandardSchemaV1<T>, value: unknown): asserts value is StandardSchemaV1.InferInput<StandardSchemaV1<T>> {
-  let validation = schema["~standard"].validate(value);
-  if (validation instanceof Promise) {
-    throw new TypeError(`invalid protocol: async validations are not allowed`);
-  }
-  if (validation.issues) {
-    throw new TypeError(validation.issues.join("\n"));
-  }
 }

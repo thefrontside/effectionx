@@ -1,7 +1,10 @@
-import { call, each, stream, until, useAbortSignal } from "effection";
-import { createThunks, mdw, put, select, sleep } from "starfx";
-import { SSEMessage, SseStreamTransform } from "sse-stream-transform";
+import { call, each } from "effection";
+import { createThunks, mdw, put, select } from "starfx";
 import { schema, ScopeEvent } from "./schema";
+import { createSSEClient } from "../client";
+import { protocol } from "../../mod";
+
+const { methods } = createSSEClient(protocol);
 
 const thunk = createThunks();
 // catch errors from task and logs them with extra info
@@ -43,41 +46,10 @@ let patchEvent = thunk.create<{ data: ScopeEvent; tick: number }>(
   },
 );
 
-thunk.manage(
-  "watchScopes",
-  call(function* () {
-    try {
-      let signal = yield* useAbortSignal();
-      let response = yield* until(
-        fetch("/events", {
-          signal,
-          headers: {
-            Accept: "text/event-stream",
-          },
-        }),
-      );
-
-      if (!response.body) {
-        return;
-      }
-
-      // TODO: why is the vite app not recognizing ReadableStream as AsyncIterable??
-      let events = stream(
-        response.body.pipeThrough(
-          new SseStreamTransform(),
-        ) as unknown as AsyncIterable<SSEMessage>,
-      );
-
-      let tick = 1;
-      for (let item of yield* each(events)) {
-        let data = JSON.parse(item.data) as ScopeEvent;
-        yield* put(patchEvent({ data, tick: tick++ }));
-        yield* each.next();
-      }
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
-  }),
-);
+thunk.manage("watchScopes", call(function* () {
+  for (let data of yield* each(methods.watchScopes)) {
+    yield* put(patchEvent({ data, tick: tick++ }));
+    yield* each.next();
+  }
+}));
 export { thunk };

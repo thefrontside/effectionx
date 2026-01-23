@@ -16,41 +16,42 @@ const $ = scope({
   Result: () =>
     $.type.or(
       {
-	ok: "true",
-	value: "object.json",
+        ok: "true",
+        value: "object.json",
       },
       {
-	ok: "false",
-	error: "Error",
+        ok: "false",
+        error: "Error",
       },
     ),
   ScopeEvent: () =>
     $.type.or(
       {
-	type: "'created'",
-	id: "string",
-	parentId: "string",
+        type: "'created'",
+        id: "string",
+        parentId: "string",
       },
       {
-	type: "'destroying'",
-	id: "string",
+        type: "'destroying'",
+        id: "string",
       },
       {
-	type: "'destroyed'",
-	id: "string",
-	result: "Result",
+        type: "'destroyed'",
+        id: "string",
+        result: "Result",
       },
       {
-	type: "'set'",
-	id: "string",
-	contextName: "string",
-	contextValue: "object.json",
-      }, {
-	type: "'delete'",
-	id: "string",
-	contextName: "string",
-	didHave: "boolean",
-      }
+        type: "'set'",
+        id: "string",
+        contextName: "string",
+        contextValue: "object.json",
+      },
+      {
+        type: "'delete'",
+        id: "string",
+        contextName: "string",
+        didHave: "boolean",
+      },
     ),
   Never: "never",
   None: "never[]",
@@ -71,5 +72,5 @@ export const protocol = createProtocol({
     args: schema.None,
     progress: schema.Never,
     returns: schema.ScopeTree,
-  }
+  },
 });

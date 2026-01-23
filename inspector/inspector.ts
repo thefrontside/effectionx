@@ -20,12 +20,11 @@ global.decorate(api.Main, {
 
       console.log(`inspector started on ${address.port}`);
 
-      if (args.includes('--break')) {
-	yield* pause();
+      if (args.includes("--break")) {
+        yield* pause();
       }
 
       yield* body(args);
-
     });
   },
 });

@@ -44,6 +44,7 @@ export const treeAtTick: (
 ) => d3.HierarchyNode<EffectionStateNode> | null = createAppSelector(
   [(state: AppState, inputTick?: number) => nodeAtTick(state, inputTick)],
   (nodes: EffectionStateNode[]) => {
+    console.log({ nodes });
     if (nodes.length === 0) {
       return [];
     }
@@ -54,7 +55,7 @@ export const treeAtTick: (
         .parentId((d) => d.parentId)(nodes.filter((n) => n.current !== "no init"));
       return roots;
     } catch (error) {
-      // console.error("Error creating stratified data:", error);
+      console.error("Error creating stratified data:", error);
       // console.dir({ nodes });
       return [];
     }

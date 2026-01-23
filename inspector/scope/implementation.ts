@@ -37,11 +37,11 @@ export const scope = createImplementation(protocol, function* () {
       let id = scope.expect(Id);
       send({ type: "destroying", id });
       try {
-        let value = yield* next(scope);
+        yield* next(scope);
         send({
           type: "destroyed",
           id,
-          result: { ok: true, value: toJson(value) },
+          result: { ok: true },
         });
       } catch (error) {
         let { name, message, stack } = error as Error;
@@ -81,7 +81,7 @@ export const scope = createImplementation(protocol, function* () {
         scopes.push({
           id,
           parentId: current.parentId,
-          labels: getLabels(current.scope),
+          data: { [LabelsContext.name]: getLabels(current.scope )}
         });
         let children = current.scope.expect(Children);
         visit.push(...[...children].map((scope) => ({ scope, parentId: id })));

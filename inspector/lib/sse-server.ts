@@ -17,6 +17,7 @@ import type { AddressInfo } from "node:net";
 import EventEmitter from "node:events";
 import { Readable } from "node:stream";
 import { validate } from "./validate.ts";
+import { useLabels } from "./labels.ts";
 
 export interface SSEServerOptions {
   port: number;
@@ -30,6 +31,7 @@ export function useSSEServer<M extends Methods>(
   let methodNames = Object.keys(protocol.methods) as Array<keyof M>;
 
   return resource(function* (provide) {
+    yield* useLabels({ name: "inspector/SSEServer", port: options.port });
     let scope = yield* useScope();
     const server = createServer(async (req, res) => {
       if (!req.url) {
@@ -45,6 +47,7 @@ export function useSSEServer<M extends Methods>(
       );
 
       await scope.run(function* () {
+	yield* useLabels({ name: "request", url: req.url!, method: req.method ?? "UKNOWN"})
         if (!name) {
           res.statusCode = 404;
           res.statusMessage = "Not Found";
@@ -54,6 +57,7 @@ export function useSSEServer<M extends Methods>(
 
         try {
           yield* scoped(function* () {
+	    yield* useLabels({ name: "transport" });
             let args =
               req.method?.toUpperCase() === "POST"
                 ? JSON.parse(yield* read(req))

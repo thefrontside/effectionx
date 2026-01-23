@@ -24,8 +24,10 @@
   },
   "dependencies": {
     "@ark/util": "^0.56.0",
+    "@effectionx/stream-helpers": "workspace:*",
     "@standard-schema/spec": "^1.0.0",
     "arktype": "^2.1.27",
+    "remeda": "^2",
     "sse-stream-transform": "^1.0.0",
     "zod": "^4.1.13"
   },

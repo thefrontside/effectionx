@@ -10,8 +10,9 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      "/watchScopes": "http://localhost:41000"
-    }
+      "/watchScopes": "http://localhost:41000",
+      "/play": "http://localhost:41000",
+    },
   },
   build: {
     target: ["es2022"],

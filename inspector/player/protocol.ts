@@ -11,5 +11,5 @@ export const protocol = createProtocol({
     args: type("never[]"),
     progress: type("never"),
     returns: type("undefined"),
-  }
+  },
 });

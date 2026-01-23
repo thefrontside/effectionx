@@ -7,5 +7,3 @@ export function createProtocol<
     methods,
   };
 }
-
-

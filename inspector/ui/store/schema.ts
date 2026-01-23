@@ -1,10 +1,10 @@
 import { createSchema, slice } from "starfx";
-import type { ScopeEvent } from "../../mod.ts";
 
-export type { ScopeEvent } from "../../mod.ts";
+import type { ScopeNode } from "../../scope/protocol.ts";
+export { ScopeNode };
 
 export const [schema, initialState] = createSchema({
-  events: slice.table<ScopeEvent>(),
+  snapshot: slice.table<ScopeNode>(),
   cache: slice.table(),
   loaders: slice.loaders(),
 });

@@ -1,4 +1,4 @@
-import { type TypedUseSelectorHook, useSelector as useSel } from "starfx/react";
+import { useSelector as useSel } from "starfx/react";
 import type { AppState } from "../store/schema";
 import {
   TreeView,
@@ -7,7 +7,7 @@ import {
 } from "@react-spectrum/s2";
 import * as d3 from "d3";
 
-const useSelector: TypedUseSelectorHook<AppState> = useSel;
+const useSelector = useSel.withTypes<AppState>();
 
 import {
   type EffectionStateNode,

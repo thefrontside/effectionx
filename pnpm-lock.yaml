@@ -133,12 +133,18 @@ importers:
       '@ark/util':
         specifier: ^0.56.0
         version: 0.56.0
+      '@effectionx/stream-helpers':
+        specifier: workspace:*
+        version: link:../stream-helpers
       '@standard-schema/spec':
         specifier: ^1.0.0
         version: 1.1.0
       arktype:
         specifier: ^2.1.27
         version: 2.1.29
+      remeda:
+        specifier: ^2
+        version: 2.33.4
       sse-stream-transform:
         specifier: ^1.0.0
         version: 1.0.0

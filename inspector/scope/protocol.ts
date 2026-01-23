@@ -5,7 +5,7 @@ const $ = scope({
   ScopeNode: {
     id: "string",
     parentId: "string",
-    labels: "object.json",
+    data: "Record<string, object.json>",
   },
   ScopeTree: "ScopeNode[]",
   Error: {
@@ -17,7 +17,6 @@ const $ = scope({
     $.type.or(
       {
         ok: "true",
-        value: "object.json",
       },
       {
         ok: "false",
@@ -53,8 +52,9 @@ const $ = scope({
         didHave: "boolean",
       },
     ),
-  Never: "never",
+  Never: "never",  
   None: "never[]",
+  Undef: "undefined",
 });
 
 const schema = $.export();
@@ -66,7 +66,7 @@ export const protocol = createProtocol({
   watchScopes: {
     args: schema.None,
     progress: schema.ScopeEvent,
-    returns: schema.Never,
+    returns: schema.Undef,
   },
   getScopes: {
     args: schema.None,

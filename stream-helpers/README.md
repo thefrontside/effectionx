@@ -63,6 +63,27 @@ function* example(stream: Stream<number, unknown>) {
 }
 ```
 
+### Reduce
+
+The `reduce` helper transforms each item in a stream by applying it to
+an accumulated value.
+
+```typescript
+import { reduce } from "@effectionx/stream-helpers";
+import { each } from "effection";
+
+function* example(stream: Stream<number, unknown>) {
+  let sum = reduce(function* (total: number, current: number) {
+    return total + current;
+  }, 0);
+
+  for (let value of yield* each(sum(streamOf([1,2,3]))) {
+    console.log(value) // logs 1 -> 3 -> 6
+    yield* each.next();
+  }
+}
+```
+
 ### Batch
 
 The `batch` helper is useful when you want to convert individual items passing

@@ -52,7 +52,7 @@ const $ = scope({
         didHave: "boolean",
       },
     ),
-  Never: "never",  
+  Never: "never",
   None: "never[]",
   Undef: "undefined",
 });

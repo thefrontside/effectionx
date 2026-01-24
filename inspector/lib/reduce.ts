@@ -34,10 +34,10 @@ export function reduce<T, TSum>(
           let next = yield* subscription.next();
           while (!next.done) {
             let reduction = yield* fn(current, next.value);
-	    //            if (reduction !== current) {
+            //            if (reduction !== current) {
             current = reduction;
             return { done: false, value: current } as const;
-	    //            }
+            //            }
 
             next = yield* subscription.next();
           }

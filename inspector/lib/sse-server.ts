@@ -87,6 +87,7 @@ export function useSSEServer<M extends Methods>(
               withResolvers<void>();
 
             yield* spawn(function* () {
+	      yield* useLabels({ name: "streamEvents"})
               let next = yield* subscription.next();
 
               while (!next.done) {

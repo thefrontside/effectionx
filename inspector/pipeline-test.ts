@@ -23,13 +23,13 @@ await main(function*() {
   let pipeline = pipe(
     liveStream,
     updateModel(initial),
-    record('recording.effection'),
     stratify(),
   );
 
   for (let item of yield* each(pipeline)) {
     console.dir(item, { depth: 20 });
     yield* each.next();
+    console.log(`============================================`);
   }
 });
 

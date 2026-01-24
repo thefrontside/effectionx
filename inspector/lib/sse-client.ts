@@ -1,4 +1,11 @@
-import { createChannel, resource, spawn, stream, until, useAbortSignal } from "effection";
+import {
+  createChannel,
+  resource,
+  spawn,
+  stream,
+  until,
+  useAbortSignal,
+} from "effection";
 import {
   toJson,
   type Handle,
@@ -11,7 +18,6 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { type SSEMessage, SseStreamTransform } from "sse-stream-transform";
 import { useLabels } from "../lib/labels.ts";
 import { validateUnsafe } from "../lib/validate.ts";
-
 
 export interface SSEClientOptions {
   url?: string;
@@ -38,19 +44,22 @@ export function createSSEClient<M extends Methods>(
       args,
     }: InvocationArgs<M, N>): InvocationResult<M, N> {
       let methodName = String(name);
-      
-      // validate the arguments against the protocol
-      validateUnsafe(protocol.methods[name].args, args, `arguments ${methodName}()`);
 
+      // validate the arguments against the protocol
+      validateUnsafe(
+        protocol.methods[name].args,
+        args,
+        `arguments ${methodName}()`,
+      );
 
       return resource(function* (provide) {
         yield* useLabels({ name: `inspector.${methodName}()` });
         let signal = yield* useAbortSignal();
 
-	let pathname = `/${methodName}`;
+        let pathname = `/${methodName}`;
 
-	let url = options.url ? new URL(pathname, options.url) : pathname;
-	
+        let url = options.url ? new URL(pathname, options.url) : pathname;
+
         let response = yield* until(
           fetch(url, {
             signal,
@@ -85,17 +94,24 @@ export function createSSEClient<M extends Methods>(
             let { event, data } = next.value;
             let parsed = JSON.parse(data);
             if (event === "progress") {
-              validateUnsafe(protocol.methods[name].progress, parsed, `progress ${methodName}()`);
+              validateUnsafe(
+                protocol.methods[name].progress,
+                parsed,
+                `progress ${methodName}()`,
+              );
               yield* channel.send(parsed);
               next = yield* subscription.next();
-
             } else if (event === "return") {
               next = { done: true, value: parsed };
             }
           }
 
           // validate the return value
-          validateUnsafe(protocol.methods[name].returns, next.value, `return value ${methodName}`);
+          validateUnsafe(
+            protocol.methods[name].returns,
+            next.value,
+            `return value ${methodName}`,
+          );
           yield* channel.close(next.value);
         });
 

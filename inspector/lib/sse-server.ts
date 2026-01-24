@@ -47,7 +47,11 @@ export function useSSEServer<M extends Methods>(
       );
 
       await scope.run(function* () {
-	yield* useLabels({ name: "request", url: req.url!, method: req.method ?? "UKNOWN"})
+        yield* useLabels({
+          name: "request",
+          url: req.url!,
+          method: req.method ?? "UKNOWN",
+        });
         if (!name) {
           res.statusCode = 404;
           res.statusMessage = "Not Found";
@@ -57,7 +61,7 @@ export function useSSEServer<M extends Methods>(
 
         try {
           yield* scoped(function* () {
-	    yield* useLabels({ name: "transport" });
+            yield* useLabels({ name: "transport" });
             let args =
               req.method?.toUpperCase() === "POST"
                 ? JSON.parse(yield* read(req))
@@ -87,7 +91,7 @@ export function useSSEServer<M extends Methods>(
               withResolvers<void>();
 
             yield* spawn(function* () {
-	      yield* useLabels({ name: "streamEvents"})
+              yield* useLabels({ name: "streamEvents" });
               let next = yield* subscription.next();
 
               while (!next.done) {

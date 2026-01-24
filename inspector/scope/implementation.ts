@@ -81,7 +81,7 @@ export const scope = createImplementation(protocol, function* () {
         scopes.push({
           id,
           parentId: current.parentId,
-          data: { [LabelsContext.name]: getLabels(current.scope )}
+          data: { [LabelsContext.name]: getLabels(current.scope) },
         });
         let children = current.scope.expect(Children);
         visit.push(...[...children].map((scope) => ({ scope, parentId: id })));

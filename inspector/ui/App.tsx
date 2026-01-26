@@ -7,7 +7,7 @@ import { Graphic } from "./components/Graphic";
 import { DataList } from "./components/DataList";
 import { AppState, schema } from "./store/schema";
 import { maxTick } from "./store/selector/data-tree";
-import { useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { playEvents } from "./store/thunks";
 import { RecordingUpload } from "./components/RecordingUpload";
 import { createSignal, each, run, sleep, spawn, until } from "effection";
@@ -17,15 +17,34 @@ import { arrayLoader, Recording, useRecording } from "./data/recording";
 import { box } from "./data/box";
 import { Hierarchy } from "./data/types";
 
-function App() {
-  // const dispatch = useDispatch();
-  // const max = useSelector(schema.snapshot.selectTableAsList).length;
+function useRecordingStream() {
   const [hierarchy, setHierarchy] = useState<Hierarchy>();
   const [recording, setRecording] = useState<Recording>();
 
   const files = useMemo(() => {
     return createSignal<File, never>();
   }, []);
+
+  useEffect(() => {
+    if (!recording) return;
+    const task = run(function* () {
+      const result = yield* box(function* () {
+        console.log({ recording });
+        const hierarchies = pipe(recording.replayStream(), stratify());
+        for (let item of yield* each(hierarchies)) {
+          console.dir(item, { depth: 20 });
+          setHierarchy(item);
+          yield* each.next();
+        }
+      });
+      if (!result.ok) {
+        console.error("Error processing file:", result.error);
+      }
+    });
+    return () => {
+      task.halt().catch((e) => console.error(e));
+    };
+  }, [recording]);
 
   useEffect(() => {
     const task = run(function* () {
@@ -36,16 +55,6 @@ function App() {
 
           const recording = yield* useRecording(arrayLoader(json));
           setRecording(recording);
-          console.log({ recording });
-          yield* sleep(0);
-          // TODO the setRecording above doesn't seem to set where we can call it later
-          const hierarchies = pipe(recording.replayStream(), stratify());
-
-          console.log({ hierarchies });
-          for (let item of yield* each(hierarchies)) {
-            console.dir(item, { depth: 20 });
-            setHierarchy(item);
-          }
 
           yield* each.next();
         }
@@ -59,34 +68,47 @@ function App() {
     };
   }, [files]);
 
+  return {
+    setFile: files.send,
+    hierarchy,
+    recording,
+  };
+}
+
+function App() {
+  // const dispatch = useDispatch();
+  // const max = useSelector(schema.snapshot.selectTableAsList).length;
+  const { hierarchy, recording, setFile } = useRecordingStream();
+
   return (
     <div>
       {/* <Button onPress={() => dispatch(playEvents())}>Toggle Events</Button> */}
-      <Slider
-        label="Event Tick"
-        minValue={0}
-        maxValue={recording?.length || 1}
-        value={recording?.offset || 0}
-        onChange={(v) => recording?.setOffset(v)}
-        formatOptions={{ maximumFractionDigits: 0 }}
-      />
+      {!recording ? (
+        <RecordingUpload setFile={setFile} />
+      ) : (
+        <>
+          <Slider
+            label="Event Tick"
+            minValue={0}
+            defaultValue={0}
+            maxValue={recording.length}
+            onChange={(v) => recording.setOffset(v)}
+            formatOptions={{ maximumFractionDigits: 0 }}
+          />
 
-      <Tabs aria-label="Tabs" styles={style({ minWidth: 250 })}>
-        <TabList aria-label="Tabs">
-          <Tab id="upload">Upload</Tab>
+          <Graphic hierarchy={hierarchy} />
+          {/* <Tabs aria-label="Tabs" styles={style({ minWidth: 250 })}>
+            <TabList aria-label="Tabs"> */}
           {/* <Tab id="tree">Tree</Tab> */}
-          <Tab id="vis">Visualize</Tab>
-        </TabList>
-        <TabPanel id="upload">
-          <RecordingUpload setFiles={files.send} />
-        </TabPanel>
-        {/* <TabPanel id="tree">
+          {/* <Tab id="vis">Visualize</Tab>
+            </TabList> */}
+          {/* <TabPanel id="tree">
           <DataList tick={tick} />
         </TabPanel> */}
-        <TabPanel id="vis">
-          <Graphic hierarchy={hierarchy} />
-        </TabPanel>
-      </Tabs>
+          {/* <TabPanel id="vis"></TabPanel> */}
+          {/* </Tabs> */}
+        </>
+      )}
     </div>
   );
 }

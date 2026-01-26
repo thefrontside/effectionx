@@ -55,7 +55,7 @@ export function RecordingUpload(props) {
               onSelect={async (files) => {
                 if (!files) return;
                 const firstFile = files[0];
-                props.setFiles(firstFile);
+                props.setFile(firstFile);
               }}
             >
               <Button variant="accent">Browse files</Button>

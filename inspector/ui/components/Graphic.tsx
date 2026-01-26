@@ -1,12 +1,10 @@
 import * as d3 from "d3";
 import { useEffect, useRef } from "react";
 import { useSelector } from "starfx/react";
-import {
-  treeAtTick,
-  type EffectionStateNode,
-} from "../store/selector/data-tree";
+import { treeAtTick } from "../store/selector/data-tree";
 import { schema, type AppState } from "../store/schema";
 import { Hierarchy } from "../data/types";
+import { Tree } from "react-d3-tree";
 
 const themeBasedFill = (dark: string, light: string) =>
   window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -14,6 +12,14 @@ const themeBasedFill = (dark: string, light: string) =>
     : light;
 
 export function Graphic({ hierarchy }: { hierarchy?: Hierarchy }) {
+  return (
+    <div id="treeWrapper" style={{ width: "100vh", height: "100%" }}>
+      <Tree data={d3.hierarchy(hierarchy)} />
+    </div>
+  );
+}
+
+export function GraphicOld({ hierarchy }: { hierarchy?: Hierarchy }) {
   const ref = useRef<SVGSVGElement>(null);
 
   // const data = useSelector((s: AppState) =>
@@ -35,14 +41,16 @@ export function Graphic({ hierarchy }: { hierarchy?: Hierarchy }) {
   );
 }
 
-function chart(
-  ref: SVGSVGElement | null,
-  root: d3.HierarchyNode<EffectionStateNode> | [],
-) {
-  if (!ref || root.length === 0) return;
+function textValue(node: d3.HierarchyNode<Hierarchy>) {
+  return `${node.data.id} [${node.data.data["@effectionx/inspector.labels"]?.name}]`;
+}
+
+function chart(ref: SVGSVGElement | null, data: Hierarchy) {
+  if (!ref) return;
   const box = ref.getBoundingClientRect();
   const width = box.width;
 
+  const root = d3.hierarchy(data);
   // Compute the tree height; this approach will allow the height of the
   // SVG to scale according to the breadth (width) of the tree layout.
   const dx = 20;
@@ -52,12 +60,7 @@ function chart(
   const tree = d3.tree().nodeSize([dx, dy]);
 
   // Sort the tree and apply the layout.
-  root.sort(
-    (
-      a: d3.HierarchyNode<EffectionStateNode>,
-      b: d3.HierarchyNode<EffectionStateNode>,
-    ) => d3.ascending(a.data.id, b.data.id),
-  );
+  root.sort((a, b) => d3.ascending(a.data.id, b.data.id));
   tree(root as unknown as d3.HierarchyNode<unknown>);
 
   // Compute the extent of the tree. Note that x and y are swapped here
@@ -110,6 +113,7 @@ function chart(
       return `M${s.y},${s.x}C${(s.y + t.y) / 2},${s.x} ${(s.y + t.y) / 2},${t.x} ${t.y},${t.x}`;
     });
 
+  console.log(root.descendants());
   const node = svg
     .select("g.nodes")
     .selectAll("g")
@@ -119,28 +123,43 @@ function chart(
       (update) => update,
       (exit) => exit.remove(),
     )
+    .attr("id", (d) => `g-${d.data.id}`)
     .attr("stroke-linejoin", "round")
     .attr("stroke-width", 3)
     .attr("transform", (d) => `translate(${d.y},${d.x})`);
 
-  node
+  const circle = node
     .selectAll("circle")
-    .data((d) => d)
+    .filter((d) => `#g-${d.data.id}`)
+    .data((d, i) => {
+      console.log({ d, i });
+      return d;
+    })
     .join(
       (enter) => enter.append("circle"),
       (update) => update,
-      (exit) => exit.remove(),
+      (exit) =>
+        exit
+          .remove()
+          .attr("fill", "red")
+          .transition()
+          .duration(500)
+          .attr("r", 0),
     )
     .attr("r", 0)
     .transition()
     .duration(500)
     .ease(d3.easeLinear)
     .attr("fill", (d) => (d.children ? "#555" : "#999"))
-    .attr("r", (d) => (d.data.current === "finalized" ? 2.5 : 4.5));
+    .attr("r", 2.5);
 
   node
     .selectAll("text")
-    .data((d) => d)
+    .filter((d) => `#g-${d.data.id}`)
+    .data((d) => {
+      console.log({ textD: d });
+      return d;
+    })
     .join(
       (enter) => enter.append("text"),
       (update) => update,
@@ -153,9 +172,7 @@ function chart(
     .attr("dy", "0.31em")
     .attr("x", (d) => (d.children ? -6 : 6))
     .attr("text-anchor", (d) => (d.children ? "end" : "start"))
-    .text((d) => {
-      return `${d.data.id} [${d.data.current}]`;
-    })
+    .text((d) => textValue(d))
     .attr("opacity", 1)
     .attr("fill", themeBasedFill("white", "black"))
     .attr("paint-order", "fill");

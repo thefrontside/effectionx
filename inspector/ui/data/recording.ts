@@ -1,8 +1,15 @@
-import { type Stream, type Operation, resource, createSignal, spawn } from "effection";
+import {
+  type Stream,
+  type Operation,
+  resource,
+  createSignal,
+  spawn,
+} from "effection";
 import type { NodeMap } from "./types";
 
 export interface Recording {
   length: number;
+  offset: number;
   replayStream(): Stream<NodeMap, never>;
   setOffset(offset: number): void;
 }
@@ -22,39 +29,44 @@ export interface Tick {
   nodemap: NodeMap;
 }
 
-export function* useRecording(load: () => Operation<Cassette>): Operation<Recording> {
+export function* useRecording(
+  load: () => Operation<Cassette>,
+): Operation<Recording> {
   let { length, loadOffset } = yield* load();
   let offsets = createSignal<number, never>();
+  let offset = 0;
 
   return {
     length,
+    offset,
     setOffset: offsets.send,
     *replayStream() {
       let subscription = yield* offsets;
 
       return {
-	*next() {
-	  let next = yield* subscription.next();
-	  let tick = yield* loadOffset(next.value);
-	  return {
-	    done: false,
-	    value: tick.nodemap,
-	  }
-	},
-      }
+        *next() {
+          let next = yield* subscription.next();
+          let tick = yield* loadOffset(next.value);
+          offset = next.value;
+          return {
+            done: false,
+            value: tick.nodemap,
+          };
+        },
+      };
     },
   };
 }
 
 export function arrayLoader(array: NodeMap[]): () => Operation<Cassette> {
-  return function*() {
+  return function* () {
     return {
       length: array.length,
       *loadOffset(offset) {
-	return {
-	  nodemap: array[offset],
-	}
+        return {
+          nodemap: array[offset],
+        };
       },
-    }
-  }
+    };
+  };
 }

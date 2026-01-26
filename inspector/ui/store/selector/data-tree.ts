@@ -26,7 +26,7 @@ export interface EffectionStateNode {
 export const nodeAtTick: (s: AppState, tick?: number) => EffectionStateNode[] =
   createAppSelector(
     [
-      schema.events.selectTableAsList,
+      schema.snapshot.selectTableAsList,
       (state: AppState, inputTick?: number) => inputTick,
     ],
     (nodes: EffectionStateNode[], currentTick: number) => {
@@ -63,10 +63,10 @@ export const treeAtTick: (
 );
 
 export const maxTick: (s: AppState) => number = createAppSelector(
-  [schema.events.selectTableAsList],
-  (events: EffectionStateNode[]) => {
+  [schema.snapshot.selectTableAsList],
+  (snapshots: EffectionStateNode[]) => {
     return Math.max(
-      ...events
+      ...snapshots
         .map((event) => Object.values(event.state).map((s) => s.tick))
         .flat(),
     );

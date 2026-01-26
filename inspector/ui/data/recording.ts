@@ -6,10 +6,11 @@ import {
   spawn,
 } from "effection";
 import type { NodeMap } from "./types";
+import { createSubject } from "@effectionx/stream-helpers";
+import { pipe } from "remeda";
 
 export interface Recording {
   length: number;
-  offset: number;
   replayStream(): Stream<NodeMap, never>;
   setOffset(offset: number): void;
 }
@@ -33,13 +34,13 @@ export function* useRecording(
   load: () => Operation<Cassette>,
 ): Operation<Recording> {
   let { length, loadOffset } = yield* load();
-  let offsets = createSignal<number, never>();
-  let offset = 0;
+  let stream = createSignal<number, never>();
+
+  const offsets = pipe(stream, createSubject<number>(0));
 
   return {
     length,
-    offset,
-    setOffset: offsets.send,
+    setOffset: stream.send,
     *replayStream() {
       let subscription = yield* offsets;
 
@@ -47,7 +48,6 @@ export function* useRecording(
         *next() {
           let next = yield* subscription.next();
           let tick = yield* loadOffset(next.value);
-          offset = next.value;
           return {
             done: false,
             value: tick.nodemap,

@@ -5,7 +5,6 @@ import { each, main } from "effection";
 import { forEach } from "@effectionx/stream-helpers";
 import type { NodeMap } from "./ui/data/types.ts";
 import { updateNodeMap } from "./ui/data/update-node-map.ts";
-import { stratify } from "./ui/data/stratify.ts";
 
 await main(function* () {
   let client = createSSEClient(protocol, {
@@ -28,12 +27,14 @@ await main(function* () {
     updateNodeMap(initial),
 
     // nodemap -> tree
-    stratify(),
+    //    stratify(),
   );
 
+  console.log('[')
   for (let item of yield* each(pipeline)) {
-    console.dir(item, { depth: 20 });
+    console.log(JSON.stringify(item, null, 2));
     yield* each.next();
-    console.log(`============================================`);
+    console.log(`,`);
   }
+  console.log(']')
 });

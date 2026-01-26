@@ -4,7 +4,7 @@ import { schema, ScopeEvent } from "../schema.ts";
 import { createSSEClient } from "../../client.ts";
 import { protocol } from "../../../scope/protocol.ts";
 
-const { methods } = createSSEClient(protocol);
+// const { methods } = createSSEClient(protocol);
 
 thunks.manage(
   "watchScopes",
@@ -13,11 +13,11 @@ thunks.manage(
       let tick = 0;
       console.log("Starting watchScopes SSE connection");
 
-      for (let data of yield* each(methods.watchScopes())) {
-        console.log({ data });
-        // yield* put(patchEvent({ data, tick: tick++ }));
-        yield* each.next();
-      }
+      // for (let data of yield* each(methods.watchScopes())) {
+      //   console.log({ data });
+      //   // yield* put(patchEvent({ data, tick: tick++ }));
+      //   yield* each.next();
+      // }
     } catch (error) {
       console.error("Error in watchScopes thunk:", error);
     } finally {

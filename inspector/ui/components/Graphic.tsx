@@ -5,20 +5,26 @@ import {
   treeAtTick,
   type EffectionStateNode,
 } from "../store/selector/data-tree";
-import type { AppState } from "../store/schema";
+import { schema, type AppState } from "../store/schema";
+import { Hierarchy } from "../data/types";
 
 const themeBasedFill = (dark: string, light: string) =>
   window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
     ? dark
     : light;
 
-export function Graphic({ tick }: { tick?: number }) {
+export function Graphic({ hierarchy }: { hierarchy?: Hierarchy }) {
   const ref = useRef<SVGSVGElement>(null);
-  const data = useSelector((s: AppState) => treeAtTick(s, tick));
+
+  // const data = useSelector((s: AppState) =>
+  //   schema.snapshot.selectById(s, { id: tick }),
+  // );
+
+  console.log({ hierarchy });
 
   useEffect(() => {
-    chart(ref.current, data);
-  }, [data]);
+    chart(ref.current, hierarchy);
+  }, [hierarchy]);
 
   return (
     <svg ref={ref} width={"100%"}>

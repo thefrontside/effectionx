@@ -1,0 +1,1393 @@
+[
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {}
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {}
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    },
+    "59": {
+      "id": "59",
+      "parentId": "50",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    },
+    "59": {
+      "id": "59",
+      "parentId": "50",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    },
+    "59": {
+      "id": "59",
+      "parentId": "50",
+      "data": {}
+    },
+    "60": {
+      "id": "60",
+      "parentId": "0",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    },
+    "59": {
+      "id": "59",
+      "parentId": "50",
+      "data": {}
+    },
+    "60": {
+      "id": "60",
+      "parentId": "0",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    },
+    "59": {
+      "id": "59",
+      "parentId": "50",
+      "data": {}
+    },
+    "60": {
+      "id": "60",
+      "parentId": "0",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    },
+    "59": {
+      "id": "59",
+      "parentId": "50",
+      "data": {}
+    },
+    "60": {
+      "id": "60",
+      "parentId": "0",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    },
+    "59": {
+      "id": "59",
+      "parentId": "50",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    },
+    "59": {
+      "id": "59",
+      "parentId": "50",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    },
+    "59": {
+      "id": "59",
+      "parentId": "50",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    },
+    "59": {
+      "id": "59",
+      "parentId": "50",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    },
+    "59": {
+      "id": "59",
+      "parentId": "50",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    },
+    "59": {
+      "id": "59",
+      "parentId": "50",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    }
+  },
+  {
+    "0": {
+      "id": "0",
+      "parentId": "global",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "main",
+          "args": []
+        }
+      }
+    },
+    "1": {
+      "id": "1",
+      "parentId": "0",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "inspector/SSEServer",
+          "port": 41000
+        }
+      }
+    },
+    "37": {
+      "id": "37",
+      "parentId": "1",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "request",
+          "url": "/getScopes",
+          "method": "POST"
+        }
+      }
+    },
+    "38": {
+      "id": "38",
+      "parentId": "37",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "transport"
+        }
+      }
+    },
+    "44": {
+      "id": "44",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "45": {
+      "id": "45",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "46": {
+      "id": "46",
+      "parentId": "38",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "anonymous"
+        }
+      }
+    },
+    "57": {
+      "id": "57",
+      "parentId": "50",
+      "data": {
+        "@effectionx/inspector.labels": {
+          "name": "streamEvents"
+        }
+      }
+    },
+    "58": {
+      "id": "58",
+      "parentId": "50",
+      "data": {}
+    }
+  }
+]

@@ -67,14 +67,7 @@ describe("WebSocket", () => {
   });
 
   it("cleans up when spawned task containing websocket is halted", function* () {
-    const httpServer = createServer();
-    const wss = new WebSocketServer({ server: httpServer });
-
-    const listening = withResolvers<void>();
-    httpServer.listen(0, () => listening.resolve());
-    yield* listening.operation;
-
-    const port = (httpServer.address() as { port: number }).port;
+    const { port } = yield* useTestServer();
 
     const task = yield* spawn(function* () {
       yield* useWebSocket(`ws://localhost:${port}`);
@@ -89,23 +82,12 @@ describe("WebSocket", () => {
       yield* task.halt();
     });
 
-    // Cleanup server
-    wss.close();
-    httpServer.close();
-
     // If this fails, cleanup deadlocked
     expect(result.timeout).toBe(false);
   });
 
   it("cleans up when resource containing websocket with spawned consumer is torn down", function* () {
-    const httpServer = createServer();
-    const wss = new WebSocketServer({ server: httpServer });
-
-    const listening = withResolvers<void>();
-    httpServer.listen(0, () => listening.resolve());
-    yield* listening.operation;
-
-    const port = (httpServer.address() as { port: number }).port;
+    const { port } = yield* useTestServer();
 
     // This pattern mirrors createWebSocketPrincipal in sweatpants:
     // - resource containing useWebSocket
@@ -136,10 +118,6 @@ describe("WebSocket", () => {
     const result = yield* timebox(1000, function* () {
       yield* task.halt();
     });
-
-    // Cleanup server
-    wss.close();
-    httpServer.close();
 
     // If this fails, cleanup deadlocked
     expect(result.timeout).toBe(false);
@@ -218,4 +196,28 @@ function* drain<T, TClose>(
     next = yield* subscription.next();
   }
   return next.value;
+}
+
+interface TestServer {
+  port: number;
+}
+
+function useTestServer(): Operation<TestServer> {
+  return resource(function* (provide) {
+    const httpServer = createServer();
+    const wss = new WebSocketServer({ server: httpServer });
+
+    const listening = withResolvers<void>();
+    httpServer.listen(0, () => listening.resolve());
+    yield* listening.operation;
+
+    const port = (httpServer.address() as { port: number }).port;
+
+    try {
+      yield* provide({ port });
+    } finally {
+      wss.close();
+      httpServer.close();
+    }
+  });
 }

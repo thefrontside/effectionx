@@ -28,6 +28,7 @@
   "sideEffects": false,
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
+    "@effectionx/timebox": "workspace:*",
     "@types/ws": "^8",
     "ws": "^8"
   }

@@ -356,6 +356,9 @@ importers:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      '@effectionx/timebox':
+        specifier: workspace:*
+        version: link:../timebox
       '@types/ws':
         specifier: ^8
         version: 8.18.1

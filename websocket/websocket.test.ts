@@ -5,10 +5,13 @@ import {
   type Subscription,
   createQueue,
   resource,
+  sleep,
+  spawn,
   suspend,
   useScope,
   withResolvers,
 } from "effection";
+import { timebox } from "@effectionx/timebox";
 import { expect } from "expect";
 import { WebSocketServer, type WebSocket as WsWebSocket } from "ws";
 
@@ -61,6 +64,37 @@ describe("WebSocket", () => {
 
     expect(event.type).toEqual("close");
     expect(event.wasClean).toEqual(true);
+  });
+
+  it("cleans up when spawned task containing websocket is halted", function* () {
+    const httpServer = createServer();
+    const wss = new WebSocketServer({ server: httpServer });
+
+    const listening = withResolvers<void>();
+    httpServer.listen(0, () => listening.resolve());
+    yield* listening.operation;
+
+    const port = (httpServer.address() as { port: number }).port;
+
+    const task = yield* spawn(function* () {
+      yield* useWebSocket(`ws://localhost:${port}`);
+      yield* suspend();
+    });
+
+    // Give connection time to establish
+    yield* sleep(50);
+
+    // Halt the task - this triggers useWebSocket cleanup
+    const result = yield* timebox(1000, function* () {
+      yield* task.halt();
+    });
+
+    // Cleanup server
+    wss.close();
+    httpServer.close();
+
+    // If this fails, cleanup deadlocked
+    expect(result.timeout).toBe(false);
   });
 });
 

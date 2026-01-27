@@ -1,21 +1,14 @@
-import { Tabs, TabList, Tab, TabPanel, Button } from "@react-spectrum/s2";
-import { style } from "@react-spectrum/s2/style" with { type: "macro" };
-import { useDispatch, useSelector } from "starfx/react";
 import { Slider } from "@react-spectrum/s2";
 
-import { Graphic } from "./components/Graphic";
-import { DataList } from "./components/DataList";
-import { AppState, schema } from "./store/schema";
-import { maxTick } from "./store/selector/data-tree";
-import { use, useEffect, useMemo, useState } from "react";
-import { playEvents } from "./store/thunks";
-import { RecordingUpload } from "./components/RecordingUpload";
-import { createSignal, each, run, sleep, spawn, until } from "effection";
-import { stratify } from "./data/stratify";
+import { Graphic } from "./components/Graphic.tsx";
+import { useEffect, useMemo, useState } from "react";
+import { RecordingUpload } from "./components/RecordingUpload.tsx";
+import { createSignal, each, run, until } from "effection";
+import { stratify } from "./data/stratify.ts";
 import { pipe } from "remeda";
-import { arrayLoader, Recording, useRecording } from "./data/recording";
-import { box } from "./data/box";
-import { Hierarchy } from "./data/types";
+import { arrayLoader, Recording, useRecording } from "./data/recording.ts";
+import { box } from "./data/box.ts";
+import { Hierarchy } from "./data/types.ts";
 
 function useRecordingStream() {
   const [hierarchy, setHierarchy] = useState<Hierarchy>();

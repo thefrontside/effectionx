@@ -10,13 +10,10 @@ import {
 import React, { useState } from "react";
 import CloudUpload from "@react-spectrum/s2/illustrations/gradient/generic1/CloudUpload";
 import { style } from "@react-spectrum/s2/style" with { type: "macro" };
-import { first } from "remeda";
-import { useDispatch } from "starfx/react";
-import { handleFileRecording } from "../store/thunks/recordings";
 
 const fileTypes = ["text/plain", "application/json"];
 
-export function RecordingUpload(props) {
+export function RecordingUpload(props: { setFile: (file: File) => void }) {
   //   const dispatch = useDispatch();
   let [content, setContent] = useState<React.ReactNode>(null);
   return (
@@ -46,7 +43,7 @@ export function RecordingUpload(props) {
     >
       {content || (
         <IllustratedMessage>
-          <CloudUpload />
+          <CloudUpload aria-hidden={false}/>
           <Heading>Drag and drop your file</Heading>
           <Content>Or, select a file from your computer</Content>
           <ButtonGroup>

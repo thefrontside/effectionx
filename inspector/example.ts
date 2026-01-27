@@ -1,7 +1,6 @@
 import { main, sleep, spawn, suspend, type Task } from "effection";
 
 import { useLabels } from "./lib/labels.ts";
-import { pause } from "./player/implementation.ts";
 
 await main(function* () {
   let tasks: Task<string>[] = [];
@@ -19,7 +18,6 @@ await main(function* () {
     yield* sleep(Math.random() * 200);
     yield* task.halt();
   }
-
-  yield* pause();
+  
   console.log("done");
 });

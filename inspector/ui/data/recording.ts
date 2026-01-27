@@ -5,7 +5,7 @@ import {
   createSignal,
   spawn,
 } from "effection";
-import type { NodeMap } from "./types";
+import type { NodeMap } from "./types.ts";
 import { createSubject } from "@effectionx/stream-helpers";
 import { pipe } from "remeda";
 

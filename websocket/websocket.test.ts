@@ -96,6 +96,54 @@ describe("WebSocket", () => {
     // If this fails, cleanup deadlocked
     expect(result.timeout).toBe(false);
   });
+
+  it("cleans up when resource containing websocket with spawned consumer is torn down", function* () {
+    const httpServer = createServer();
+    const wss = new WebSocketServer({ server: httpServer });
+
+    const listening = withResolvers<void>();
+    httpServer.listen(0, () => listening.resolve());
+    yield* listening.operation;
+
+    const port = (httpServer.address() as { port: number }).port;
+
+    // This pattern mirrors createWebSocketPrincipal in sweatpants:
+    // - resource containing useWebSocket
+    // - spawned task that subscribes to the socket
+    const task = yield* spawn(function* () {
+      yield* resource(function* (provide) {
+        const socket = yield* useWebSocket(`ws://localhost:${port}`);
+
+        // Spawn a consumer task (like createWebSocketPrincipal does)
+        yield* spawn(function* () {
+          const subscription = yield* socket;
+          let result = yield* subscription.next();
+          while (!result.done) {
+            result = yield* subscription.next();
+          }
+        });
+
+        yield* provide(socket);
+      });
+
+      yield* suspend();
+    });
+
+    // Give connection time to establish
+    yield* sleep(50);
+
+    // Halt the task - this triggers cleanup of the resource containing useWebSocket
+    const result = yield* timebox(1000, function* () {
+      yield* task.halt();
+    });
+
+    // Cleanup server
+    wss.close();
+    httpServer.close();
+
+    // If this fails, cleanup deadlocked
+    expect(result.timeout).toBe(false);
+  });
 });
 
 interface TestSocket {

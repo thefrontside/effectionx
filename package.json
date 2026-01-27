@@ -20,7 +20,7 @@
     "@biomejs/biome": "^1",
     "@types/node": "^22",
     "@types/semver": "^7",
-    "effection": "^4",
+    "effection": "^4.0.1",
     "expect": "^29",
     "semver": "^7.6.3",
     "turbo": "^2",

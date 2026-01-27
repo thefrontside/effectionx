@@ -18,8 +18,8 @@ importers:
         specifier: ^7
         version: 7.7.1
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: ^4.0.1
+        version: 4.0.1
       expect:
         specifier: ^29
         version: 29.7.0
@@ -908,6 +908,10 @@ packages:
     resolution: {integrity: sha512-eW2yqhyBdey4k8lkp7hpiev2FSHvJvQqvaIebI3EGikHZvfUWvNy7SmkwOnJa6WcsUtSh7VHUwdjHTbV++8M9w==}
     engines: {node: '>= 16'}
 
+  effection@4.0.1:
+    resolution: {integrity: sha512-JC1RQeCvKrnN6faoY77n2nX+p1ZpZTqd+nncT0HPGAXaj9YVg+caEWcBsdJlpOCel2o1jOn94lwl+dG5X9uRkQ==}
+    engines: {node: '>= 16'}
+
   es-module-lexer@1.7.0:
     resolution: {integrity: sha512-jEQoCwk8hyb2AZziIOLhDqpm5+2ww5uIE6lkO/6jcOCusfk6LhMHpXXfBLXTZ7Ydyt0j4VoUQv6uGNYbdW+kBA==}
 
@@ -1675,6 +1679,8 @@ snapshots:
       fast-check: 3.23.2
 
   effection@4.0.0: {}
+
+  effection@4.0.1: {}
 
   es-module-lexer@1.7.0: {}
 

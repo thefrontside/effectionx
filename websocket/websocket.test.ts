@@ -66,7 +66,7 @@ describe("WebSocket", () => {
     expect(event.wasClean).toEqual(true);
   });
 
-  it("cleans up when spawned task containing websocket is halted", function* () {
+  it("cleans up when spawned task containing websocket is halted (sleep)", function* () {
     const { port } = yield* useTestServer();
 
     const task = yield* spawn(function* () {
@@ -86,7 +86,27 @@ describe("WebSocket", () => {
     expect(result.timeout).toBe(false);
   });
 
-  it("cleans up when resource containing websocket with spawned consumer is torn down", function* () {
+  it("cleans up when spawned task containing websocket is halted (connected)", function* () {
+    const { port, connected } = yield* useTestServer();
+
+    const task = yield* spawn(function* () {
+      yield* useWebSocket(`ws://localhost:${port}`);
+      yield* suspend();
+    });
+
+    // Wait for connection to establish
+    yield* connected;
+
+    // Halt the task - this triggers useWebSocket cleanup
+    const result = yield* timebox(1000, function* () {
+      yield* task.halt();
+    });
+
+    // If this fails, cleanup deadlocked
+    expect(result.timeout).toBe(false);
+  });
+
+  it("cleans up when resource containing websocket with spawned consumer is torn down (sleep)", function* () {
     const { port } = yield* useTestServer();
 
     // This pattern mirrors createWebSocketPrincipal in sweatpants:
@@ -113,6 +133,43 @@ describe("WebSocket", () => {
 
     // Give connection time to establish
     yield* sleep(50);
+
+    // Halt the task - this triggers cleanup of the resource containing useWebSocket
+    const result = yield* timebox(1000, function* () {
+      yield* task.halt();
+    });
+
+    // If this fails, cleanup deadlocked
+    expect(result.timeout).toBe(false);
+  });
+
+  it("cleans up when resource containing websocket with spawned consumer is torn down (connected)", function* () {
+    const { port, connected } = yield* useTestServer();
+
+    // This pattern mirrors createWebSocketPrincipal in sweatpants:
+    // - resource containing useWebSocket
+    // - spawned task that subscribes to the socket
+    const task = yield* spawn(function* () {
+      yield* resource(function* (provide) {
+        const socket = yield* useWebSocket(`ws://localhost:${port}`);
+
+        // Spawn a consumer task (like createWebSocketPrincipal does)
+        yield* spawn(function* () {
+          const subscription = yield* socket;
+          let result = yield* subscription.next();
+          while (!result.done) {
+            result = yield* subscription.next();
+          }
+        });
+
+        yield* provide(socket);
+      });
+
+      yield* suspend();
+    });
+
+    // Wait for connection to establish
+    yield* connected;
 
     // Halt the task - this triggers cleanup of the resource containing useWebSocket
     const result = yield* timebox(1000, function* () {
@@ -200,6 +257,7 @@ function* drain<T, TClose>(
 
 interface TestServer {
   port: number;
+  connected: Operation<void>;
 }
 
 function useTestServer(): Operation<TestServer> {
@@ -213,8 +271,11 @@ function useTestServer(): Operation<TestServer> {
 
     const port = (httpServer.address() as { port: number }).port;
 
+    const connectionReady = withResolvers<void>();
+    wss.on("connection", () => connectionReady.resolve());
+
     try {
-      yield* provide({ port });
+      yield* provide({ port, connected: connectionReady.operation });
     } finally {
       wss.close();
       httpServer.close();

@@ -18,8 +18,8 @@ importers:
         specifier: ^7
         version: 7.7.1
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: ^4.0.1
+        version: 4.0.1
       expect:
         specifier: ^29
         version: 29.7.0
@@ -49,7 +49,7 @@ importers:
         version: link:../tinyexec
       effection:
         specifier: ^4
-        version: 4.0.0
+        version: 4.0.1
       generatorics:
         specifier: ^1
         version: 1.1.0
@@ -70,13 +70,13 @@ importers:
         version: link:../test-adapter
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
 
   chain:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -86,7 +86,7 @@ importers:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -99,7 +99,7 @@ importers:
         version: link:../timebox
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -109,7 +109,7 @@ importers:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -122,7 +122,7 @@ importers:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -132,7 +132,7 @@ importers:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -142,7 +142,7 @@ importers:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -152,7 +152,7 @@ importers:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -171,7 +171,7 @@ importers:
         version: 2.2.0
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
       shellwords-ts:
         specifier: ^3.0.1
         version: 3.0.1
@@ -190,7 +190,7 @@ importers:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -203,7 +203,7 @@ importers:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
       immutable:
         specifier: ^5
         version: 5.1.4
@@ -222,7 +222,7 @@ importers:
         version: link:../timebox
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
       immutable:
         specifier: ^5
         version: 5.1.4
@@ -238,7 +238,7 @@ importers:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
       yaml:
         specifier: ^2
         version: 2.8.2
@@ -254,7 +254,7 @@ importers:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -270,13 +270,13 @@ importers:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
 
   timebox:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -286,7 +286,7 @@ importers:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
       tinyexec:
         specifier: ^0.3.2
         version: 0.3.2
@@ -298,7 +298,7 @@ importers:
         version: link:../test-adapter
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -323,7 +323,7 @@ importers:
         version: 4.0.3
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
       ignore:
         specifier: ^7
         version: 7.0.5
@@ -351,11 +351,14 @@ importers:
     dependencies:
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      '@effectionx/timebox':
+        specifier: workspace:*
+        version: link:../timebox
       '@types/ws':
         specifier: ^8
         version: 8.18.1
@@ -370,7 +373,7 @@ importers:
         version: link:../signals
       effection:
         specifier: ^3 || ^4
-        version: 4.0.0
+        version: 4.0.1
       web-worker:
         specifier: ^1
         version: 1.5.0
@@ -901,8 +904,8 @@ packages:
   effect@3.19.14:
     resolution: {integrity: sha512-3vwdq0zlvQOxXzXNKRIPKTqZNMyGCdaFUBfMPqpsyzZDre67kgC1EEHDV4EoQTovJ4w5fmJW756f86kkuz7WFA==}
 
-  effection@4.0.0:
-    resolution: {integrity: sha512-eW2yqhyBdey4k8lkp7hpiev2FSHvJvQqvaIebI3EGikHZvfUWvNy7SmkwOnJa6WcsUtSh7VHUwdjHTbV++8M9w==}
+  effection@4.0.1:
+    resolution: {integrity: sha512-JC1RQeCvKrnN6faoY77n2nX+p1ZpZTqd+nncT0HPGAXaj9YVg+caEWcBsdJlpOCel2o1jOn94lwl+dG5X9uRkQ==}
     engines: {node: '>= 16'}
 
   es-module-lexer@1.7.0:
@@ -1671,7 +1674,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
 
-  effection@4.0.0: {}
+  effection@4.0.1: {}
 
   es-module-lexer@1.7.0: {}
 

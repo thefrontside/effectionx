@@ -1,0 +1,34 @@
+@media (prefers-color-scheme: dark) {
+  /* styles for the nodes aka the circles */
+  .node__root > circle {
+    fill: steelblue;
+    stroke: lightblue;
+  }
+
+  .node__branch > circle {
+    fill: slategray;
+    stroke: grey;
+  }
+
+  .node__leaf > circle {
+    fill: green;
+    stroke: darkgreen;
+    opacity: 80%;
+    r: 10;
+  }
+
+  /* connection links */
+  path.rd3t-link {
+    stroke-width: 2px;
+    stroke: white;
+  }
+
+  /* the text in the graphic */
+  text.rd3t-label__title {
+    fill: ivory;
+  }
+
+  text.rd3t-label__attributes {
+    fill: lightblue;
+  }
+}

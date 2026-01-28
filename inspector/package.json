@@ -17,6 +17,7 @@
   "sideEffects": false,
   "scripts": {
     "start": "vite --host 0.0.0.0",
+    "dev:demo": "VITE_DEMO=true vite --host 0.0.0.0",
     "build": "tsc && vite build"
   },
   "peerDependencies": {

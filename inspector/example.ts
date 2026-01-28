@@ -18,6 +18,6 @@ await main(function* () {
     yield* sleep(Math.random() * 200);
     yield* task.halt();
   }
-  
+
   console.log("done");
 });

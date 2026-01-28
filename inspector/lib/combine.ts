@@ -1,4 +1,4 @@
-import type { Operation } from "effection";
+import type { Operation, Scope } from "effection";
 import type { Handle, Inspector, Methods, Protocol } from "./types.ts";
 
 export interface Combine {
@@ -49,9 +49,9 @@ export const combine: Combine = {
     return inspectors.reduce(
       (acc: Inspector<Methods>, inspector: Inspector<Methods>) => {
         let protocol = combine.protocols(acc.protocol, inspector.protocol);
-        let attach = function* (): Operation<Handle<Methods>> {
-          let a = yield* acc.attach();
-          let b = yield* inspector.attach();
+        let attach = function* (scope: Scope): Operation<Handle<Methods>> {
+          let a = yield* acc.attach(scope);
+          let b = yield* inspector.attach(scope);
           let methods = Object.assign({}, a.methods, b.methods);
           return {
             protocol,

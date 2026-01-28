@@ -1,4 +1,4 @@
-import type { Operation } from "effection";
+import type { Operation, Scope } from "effection";
 import type {
   Handle,
   Implementation,
@@ -13,8 +13,8 @@ export function createImplementation<M extends Methods>(
 ): Inspector<M> {
   return {
     protocol,
-    *attach(): Operation<Handle<M>> {
-      let methods = yield* create();
+    *attach(scope: Scope): Operation<Handle<M>> {
+      let methods = yield* create(scope);
       return {
         protocol,
         methods,

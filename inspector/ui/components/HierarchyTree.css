@@ -60,10 +60,7 @@
 
 /* selected row styling (applies to the whole row) */
 .hierarchyRowSelected {
-  background: var(
-    --spectrum-alias-background-selected,
-    rgba(0, 120, 212, 0.08)
-  );
+  background: var(--spectrum-alias-background-selected, rgba(0, 120, 212, 0.08));
 }
 
 .hierarchyNodeIcon {

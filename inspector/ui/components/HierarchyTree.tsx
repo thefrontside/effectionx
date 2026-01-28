@@ -14,6 +14,66 @@ import ClockPending from "@react-spectrum/s2/icons/ClockPending";
 import Circle from "@react-spectrum/s2/icons/Circle";
 import { iconStyle } from "@react-spectrum/s2/style" with { type: "macro" };
 
+const labelAttribute = "@effectionx/inspector.labels";
+
+function getNodeLabel(node: Hierarchy) {
+  const inspectorLabels = (
+    node?.data && labelAttribute in node.data ? node.data[labelAttribute] : {}
+  ) as Record<string, unknown>;
+  const label = String(inspectorLabels?.name ?? node.id);
+  return label === "anonymous" ? `${label} [${node.id}]` : label;
+}
+
+function getOperationKind(_node: Hierarchy) {
+  return "Operation";
+}
+
+const statusOptions = ["completed", "error", "running", "pending"] as const;
+function getNodeStatus(node: Hierarchy): (typeof statusOptions)[number] {
+  return String(
+    node?.data?.status ?? "pending",
+  ) as (typeof statusOptions)[number];
+}
+
+function StatusIcon({ status }: { status: string }) {
+  const cls = `hierarchyNodeIcon status-${status}`;
+  const title = status ? `Status: ${status}` : "Status";
+
+  return (
+    <span className={cls} aria-hidden="false" title={title}>
+      {status === "completed" ? (
+        <Checkmark styles={iconStyle({ size: "S" })} />
+      ) : status === "error" ? (
+        <AlertTriangle styles={iconStyle({ size: "S" })} />
+      ) : status === "running" ? (
+        <Play styles={iconStyle({ size: "S" })} />
+      ) : status === "pending" ? (
+        <ClockPending styles={iconStyle({ size: "S" })} />
+      ) : (
+        <Circle styles={iconStyle({ size: "XS" })} />
+      )}
+    </span>
+  );
+}
+
+function matches(filter: string | undefined, node: Hierarchy): boolean {
+  if (!filter) return true;
+  const search = filter.toLowerCase();
+
+  const nodeLabel = getNodeLabel(node);
+  const opKind = getOperationKind(node);
+  const status = getNodeStatus(node);
+
+  if (nodeLabel.toLowerCase().includes(search)) return true;
+  if (opKind.toLowerCase().includes(search)) return true;
+  if (status.toLowerCase().includes(search)) return true;
+
+  for (let c of node.children ?? []) {
+    if (matches(filter, c)) return true;
+  }
+  return false;
+}
+
 export function HierarchyTree(props: {
   hierarchy?: Hierarchy;
   selectedKey?: string | undefined;
@@ -22,82 +82,15 @@ export function HierarchyTree(props: {
 }) {
   const { hierarchy, selectedKey, onSelectionChange, filter } = props;
 
-  function matches(node: Hierarchy, q?: string): boolean {
-    if (!q) return true;
-    const search = q.toLowerCase();
-
-    const name = String(node.data?.name ?? node.id).toLowerCase();
-    const type = String(node.data?.type ?? "").toLowerCase();
-    const status = String(node.data?.status ?? "").toLowerCase();
-
-    if (name.includes(search)) return true;
-    if (type.includes(search)) return true;
-    if (status.includes(search)) return true;
-
-    // include labels in search
-    const labels =
-      (node.data && (node.data["@effectionx/inspector.labels"] as any)) ?? {};
-    for (let k of Object.keys(labels)) {
-      const v = String(labels[k] ?? "").toLowerCase();
-      if (v.includes(search)) return true;
-    }
-
-    for (let c of node.children ?? []) {
-      if (matches(c, q)) return true;
-    }
-    return false;
-  }
-
-  function getTypeLabel(node: Hierarchy) {
-    // Favor explicit `type` on the node, otherwise infer from labels.
-    const explicit = node.data?.type;
-    if (explicit) return String(explicit);
-
-    const labels =
-      (node.data && (node.data["@effectionx/inspector.labels"] as any)) ?? {};
-    if (!labels || typeof labels !== "object") return "";
-
-    if (labels.port || labels.url || labels.method) return "Resource";
-    if (labels.args || (Array.isArray(labels) && labels.length > 0))
-      return "Task";
-    if (labels.name && String(labels.name).includes("/")) return "Service";
-
-    return "";
-  }
-
-  function StatusIcon({ status }: { status: string }) {
-    const cls = `hierarchyNodeIcon status-${status}`;
-    const title = status ? `Status: ${status}` : "Status";
-
-    return (
-      <span className={cls} aria-hidden="false" title={title}>
-        {status === "completed" ? (
-          <Checkmark styles={iconStyle({ size: "S" })} />
-        ) : status === "error" ? (
-          <AlertTriangle styles={iconStyle({ size: "S" })} />
-        ) : status === "running" ? (
-          <Play styles={iconStyle({ size: "S" })} />
-        ) : status === "pending" ? (
-          <ClockPending styles={iconStyle({ size: "S" })} />
-        ) : (
-          <Circle styles={iconStyle({ size: "XS" })} />
-        )}
-      </span>
-    );
-  }
-
   function renderItem(node: Hierarchy): React.ReactNode {
-    if (!matches(node, filter)) return null;
-
     const isSelected = node.id === selectedKey;
-    const typeLabel = getTypeLabel(node);
-    const status = String(node.data?.status ?? "").toLowerCase();
+    const nodeLabel = getNodeLabel(node);
+    const opKind = getOperationKind(node);
+    const status = getNodeStatus(node);
+    if (!matches(filter, node)) return null;
 
     return (
-      <TreeViewItem
-        key={node.id}
-        textValue={String(node.data?.name ?? node.id)}
-      >
+      <TreeViewItem key={node.id} textValue={nodeLabel}>
         <TreeViewItemContent>
           <div
             className={`hierarchyNode ${isSelected ? "hierarchyRowSelected" : ""}`}
@@ -126,11 +119,9 @@ export function HierarchyTree(props: {
           >
             <StatusIcon status={status} />
 
-            <Text UNSAFE_className={`hierarchyNodeName`}>
-              {String(node.data?.name ?? node.id)}
-            </Text>
+            <Text UNSAFE_className={`hierarchyNodeName`}>{nodeLabel}</Text>
 
-            <Text UNSAFE_className="hierarchyNodeType">{typeLabel}</Text>
+            <Text UNSAFE_className="hierarchyNodeType">{opKind}</Text>
           </div>
         </TreeViewItemContent>
         {node.children?.map((c) => renderItem(c))}

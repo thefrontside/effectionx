@@ -31,11 +31,11 @@ await main(function* () {
     stratify(),
   );
 
-  console.log('[')
+  console.log("[");
   for (let item of yield* each(pipeline)) {
     console.log(JSON.stringify(item, null, 2));
     yield* each.next();
     console.log(`,`);
   }
-  console.log(']')
+  console.log("]");
 });

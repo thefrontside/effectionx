@@ -1,4 +1,4 @@
-import type { Operation, Stream, Yielded } from "effection";
+import type { Operation, Scope, Stream, Yielded } from "effection";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 export interface Method<TArgs extends unknown[], TProgress, TReturn> {
@@ -23,7 +23,7 @@ export interface Protocol<M extends Methods> {
   methods: M;
 }
 
-export type Implementation<M extends Methods> = () => Operation<{
+export type Implementation<M extends Methods> = (scope: Scope) => Operation<{
   [N in keyof M]: (
     ...args: InvocationArgs<M, N>["args"]
   ) => InvocationResult<M, N>;
@@ -37,5 +37,5 @@ export type Handle<M extends Methods> = {
 
 export interface Inspector<M extends Methods> {
   protocol: Protocol<M>;
-  attach(): Operation<Handle<M>>;
+  attach(scope: Scope): Operation<Handle<M>>;
 }

@@ -43,7 +43,7 @@ export function RecordingUpload(props: { setFile: (file: File) => void }) {
     >
       {content || (
         <IllustratedMessage>
-          <CloudUpload aria-hidden={false}/>
+          <CloudUpload aria-hidden={false} />
           <Heading>Drag and drop your file</Heading>
           <Content>Or, select a file from your computer</Content>
           <ButtonGroup>

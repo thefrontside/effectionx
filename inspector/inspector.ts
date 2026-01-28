@@ -3,6 +3,7 @@ import { api } from "effection/experimental";
 import { combine } from "./mod.ts";
 import { scope } from "./scope/implementation.ts";
 import { player } from "./player/implementation.ts";
+import { attach } from "./lib/attach.ts";
 import { useSSEServer } from "./lib/sse-server.ts";
 import { useLabels } from "./lib/labels.ts";
 import { pause } from "./player/implementation.ts";
@@ -14,11 +15,11 @@ global.decorate(api.Main, {
     return next(function* (args) {
       yield* useLabels({ name: "main", args });
 
-      let handle = yield* inspector.attach();
+      yield* attach(global, inspector, function* (handle) {
+        let address = yield* useSSEServer(handle, { port: 41000 });
 
-      let address = yield* useSSEServer(handle, { port: 41000 });
-
-      console.log(`inspector started on ${address.port}`);
+        console.log(`inspector started on ${address.port}`);
+      });
 
       if (args.includes("--break")) {
         yield* pause();

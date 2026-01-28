@@ -1,7 +1,7 @@
 import type { Inspector } from "../lib/mod.ts";
 import { createImplementation, toJson } from "../lib/mod.ts";
 import { op } from "../lib/impl.ts";
-import { createContext, createSignal, type Scope, useScope } from "effection";
+import { createContext, createSignal, type Scope } from "effection";
 import { api } from "effection/experimental";
 import { protocol, type ScopeNode, type ScopeEvent } from "./protocol.ts";
 import { getLabels, LabelsContext } from "../lib/labels.ts";
@@ -12,14 +12,12 @@ const Children = createContext<Set<Scope>>(
   new Set(),
 );
 
-export const scope = createImplementation(protocol, function* () {
-  let root = yield* useScope();
+export const scope = createImplementation(protocol, function* (root) {
   let ids = 0;
   let { send, ...stream } = createSignal<ScopeEvent, never>();
+  root.set(Id, String(ids++));
 
-  yield* Id.set(String(ids++));
-
-  yield* api.Scope.decorate({
+  root.decorate(api.Scope, {
     create([parent], next) {
       let parentId = parent.expect(Id);
       let [scope, destroy] = next(parent);

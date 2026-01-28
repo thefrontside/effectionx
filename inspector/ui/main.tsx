@@ -6,7 +6,7 @@ import "@react-spectrum/s2/page.css";
 
 const root = document.getElementById("root") as HTMLElement;
 ReactDOM.createRoot(root).render(
-    <SpectrumProvider background="base">
-      <App />
-    </SpectrumProvider>
+  <SpectrumProvider background="base">
+    <App />
+  </SpectrumProvider>,
 );

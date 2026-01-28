@@ -28,8 +28,8 @@ const PlayerContext = createContext<{ ref: PlayerContext }>(
 
 const state = createChannel<PlayerStatus, never>();
 
-export const player = createImplementation(protocol, function* () {
-  yield* initContext();
+export const player = createImplementation(protocol, function* (root) {
+  root.set(PlayerContext, { ref: { status: "playing" } });
   return {
     play: op(function* () {
       let cxt = yield* getContext();
@@ -66,10 +66,6 @@ export function* pause() {
   });
 
   yield* resumed.operation;
-}
-
-function* initContext(): Operation<void> {
-  yield* PlayerContext.set({ ref: { status: "playing" } });
 }
 
 function* setContext(value: PlayerContext): Operation<void> {

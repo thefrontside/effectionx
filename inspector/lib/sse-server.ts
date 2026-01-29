@@ -31,7 +31,7 @@ export function useSSEServer<M extends Methods>(
   let methodNames = Object.keys(protocol.methods) as Array<keyof M>;
 
   return resource(function* (provide) {
-    yield* useLabels({ name: "inspector/SSEServer", port: options.port });
+    yield* useLabels({ name: "SSEServer", port: options.port });
     let scope = yield* useScope();
     const server = createServer(async (req, res) => {
       if (!req.url) {
@@ -48,7 +48,7 @@ export function useSSEServer<M extends Methods>(
 
       await scope.run(function* () {
         yield* useLabels({
-          name: "request",
+          name: "RequestHandler",
           url: req.url!,
           method: req.method ?? "UKNOWN",
         });
@@ -61,7 +61,7 @@ export function useSSEServer<M extends Methods>(
 
         try {
           yield* scoped(function* () {
-            yield* useLabels({ name: "transport" });
+            yield* useLabels({ name: "Transport" });
             let args =
               req.method?.toUpperCase() === "POST"
                 ? JSON.parse(yield* read(req))
@@ -95,6 +95,7 @@ export function useSSEServer<M extends Methods>(
               let next = yield* subscription.next();
 
               while (!next.done) {
+                console.dir(next.value, { depth: 20 });
                 res.write(`event: progress\n`);
                 res.write(`data: ${JSON.stringify(next.value)}\n\n`);
                 next = yield* subscription.next();
@@ -108,6 +109,8 @@ export function useSSEServer<M extends Methods>(
             yield* race([onceEmit(res, "close"), done]);
           });
         } finally {
+          res.write(`event: return\n`);
+          res.write(`data: ${null}\n\n`);
           res.end();
         }
       });

@@ -6,6 +6,15 @@ export function updateNodeMap(
   initial: NodeMap,
 ): Transform<ScopeEvent, NodeMap> {
   return reduce(function* (nodemap, item) {
+    if (item.type === "tree") {
+      for (let node of item.value) {
+        nodemap[node.id] = {
+          id: node.id,
+          parentId: node.parentId,
+          data: node.data,
+        };
+      }
+    }
     if (item.type === "created") {
       nodemap[item.id] = {
         id: item.id,

@@ -4,7 +4,7 @@ import { createProtocol } from "../lib/mod.ts";
 const $ = scope({
   ScopeNode: {
     id: "string",
-    parentId: "string",
+    "parentId?": "string",
     data: "Record<string, object.json>",
   },
   ScopeTree: "ScopeNode[]",
@@ -25,6 +25,10 @@ const $ = scope({
     ),
   ScopeEvent: () =>
     $.type.or(
+      {
+        type: "'tree'",
+        value: "ScopeTree",
+      },
       {
         type: "'created'",
         id: "string",
@@ -61,6 +65,7 @@ const schema = $.export();
 
 export type ScopeEvent = typeof schema.ScopeEvent.infer;
 export type ScopeNode = typeof schema.ScopeNode.infer;
+export type ScopeTree = typeof schema.ScopeTree.infer;
 
 export const protocol = createProtocol({
   watchScopes: {

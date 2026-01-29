@@ -2,7 +2,7 @@ import type { Stream } from "effection";
 
 export interface Node {
   id: string;
-  parentId: string | "global";
+  parentId?: string;
   data: Record<string, unknown>;
 }
 

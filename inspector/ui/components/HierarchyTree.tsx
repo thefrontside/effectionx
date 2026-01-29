@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import {
   TreeView,
   TreeViewItem,
@@ -14,15 +14,8 @@ import ClockPending from "@react-spectrum/s2/icons/ClockPending";
 import Circle from "@react-spectrum/s2/icons/Circle";
 import { iconStyle } from "@react-spectrum/s2/style" with { type: "macro" };
 
-const labelAttribute = "@effectionx/inspector.labels";
-
-function getNodeLabel(node: Hierarchy) {
-  const inspectorLabels = (
-    node?.data && labelAttribute in node.data ? node.data[labelAttribute] : {}
-  ) as Record<string, unknown>;
-  const label = String(inspectorLabels?.name ?? node.id);
-  return label === "anonymous" ? `${label} [${node.id}]` : label;
-}
+import { getNodeLabel } from "../data/labels";
+import { useParams } from "react-router";
 
 function getOperationKind(_node: Hierarchy) {
   return "Operation";
@@ -74,16 +67,18 @@ function matches(filter: string | undefined, node: Hierarchy): boolean {
   return false;
 }
 
+// TODO not use event emitter
+const onSelectionChange: ((id: string) => void) | undefined = undefined;
+
 export function HierarchyTree(props: {
   hierarchy?: Hierarchy;
-  selectedKey?: string | undefined;
-  onSelectionChange?: (key?: string) => void;
   filter?: string;
 }) {
-  const { hierarchy, selectedKey, onSelectionChange, filter } = props;
+  const { hierarchy, filter } = props;
+  const params = useParams();
 
   function renderItem(node: Hierarchy): React.ReactNode {
-    const isSelected = node.id === selectedKey;
+    const isSelected = node.id === params.nodeId;
     const nodeLabel = getNodeLabel(node);
     const opKind = getOperationKind(node);
     const status = getNodeStatus(node);
@@ -119,7 +114,7 @@ export function HierarchyTree(props: {
           >
             <StatusIcon status={status} />
 
-            <Text UNSAFE_className={`hierarchyNodeName`}>{nodeLabel}</Text>
+            <Text UNSAFE_className={"hierarchyNodeName"}>{nodeLabel}</Text>
 
             <Text UNSAFE_className="hierarchyNodeType">{opKind}</Text>
           </div>

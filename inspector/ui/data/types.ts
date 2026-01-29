@@ -10,6 +10,7 @@ export type NodeMap = Record<string, Node>;
 
 export interface Hierarchy {
   id: string;
+  parentId?: string;
   data: Record<string, unknown>;
   children: Hierarchy[];
 }
@@ -17,6 +18,5 @@ export interface Hierarchy {
 /**
  * A function that transforms one stream into another
  */
-export interface Transform<A, B> {
-  <TClose>(input: Stream<A, TClose>): Stream<B, TClose>;
-}
+export type Transform<A, B> = 
+  <TClose>(input: Stream<A, TClose>) => Stream<B, TClose>

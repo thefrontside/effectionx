@@ -1,9 +1,16 @@
 import type { Hierarchy } from "../data/types";
 import { Divider } from "@react-spectrum/s2";
 import "./DetailsPanel.css";
+import { flattenNodeData } from "../utils/labels";
+import { getNodeLabel } from "../data/labels";
+import { findParent } from "../data/findParent";
+import { EntityRow } from "./EntityRow";
 
-export function DetailsPanel(props: { node?: Hierarchy | undefined }) {
-  const { node } = props;
+export function DetailsPanel(props: {
+  node?: Hierarchy | undefined;
+  hierarchy?: Hierarchy | undefined;
+}) {
+  const { node, hierarchy } = props;
 
   if (!node) {
     return (
@@ -14,10 +21,9 @@ export function DetailsPanel(props: { node?: Hierarchy | undefined }) {
     );
   }
 
-  const properties = Object.entries(node.data ?? {}).map(([k, v]) => ({
-    k,
-    v,
-  }));
+  const properties: Array<{ k: string; v: string }> = flattenNodeData(
+    node.data,
+  );
 
   function copyAllProperties() {
     if (!node) return;
@@ -34,9 +40,7 @@ export function DetailsPanel(props: { node?: Hierarchy | undefined }) {
     <div className="detailsContainer">
       <div className="headerRow">
         <div>
-          <div className="detailsHeading">
-            {String(node.data?.name ?? node.id)}
-          </div>
+          <div className="detailsHeading">{getNodeLabel(node)}</div>
           <div className="mutedText">{String(node.data?.type ?? "")}</div>
         </div>
         <div className="statusText">● {String(node.data?.status ?? "")}</div>
@@ -70,13 +74,22 @@ export function DetailsPanel(props: { node?: Hierarchy | undefined }) {
 
       <Divider size="S" />
 
+      <div className="parentSection">
+        <div className="detailsHeading">Parent</div>
+        {(() => {
+          const providedHierarchy = hierarchy as Hierarchy | undefined;
+          const realParent = findParent(providedHierarchy, node.id);
+
+          if (!realParent) return <div className="mutedText">No parent</div>;
+
+          return <EntityRow node={realParent} />;
+        })()}
+      </div>
+
       <div className="childrenList">
         <div className="detailsHeading">Children</div>
-        {node.children?.map((c) => (
-          <div key={c.id} className="childRow">
-            <div>{String(c.data?.name ?? c.id)}</div>
-            <div className="childType">{String(c.data?.type ?? "")}</div>
-          </div>
+        {node.children?.map((c: Hierarchy) => (
+          <EntityRow key={c.id} node={c} />
         ))}
       </div>
     </div>

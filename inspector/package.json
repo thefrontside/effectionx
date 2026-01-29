@@ -17,7 +17,6 @@
   "sideEffects": false,
   "scripts": {
     "start": "vite --host 0.0.0.0",
-    "dev:demo": "VITE_DEMO=true vite --host 0.0.0.0",
     "build": "tsc && vite build"
   },
   "peerDependencies": {
@@ -30,6 +29,7 @@
     "arktype": "^2.1.27",
     "canvg": "^4.0.3",
     "react-d3-tree": "^3.6.6",
+    "react-router": "^7.13.0",
     "remeda": "^2",
     "sse-stream-transform": "^1.0.0",
     "zod": "^4.1.13"

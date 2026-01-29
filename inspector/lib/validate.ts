@@ -18,7 +18,7 @@ export function validate<T>(
   let validation = schema["~standard"].validate(value);
   if (validation instanceof Promise) {
     return Err(
-      new TypeError(`invalid protocol: async validations are not allowed`),
+      new TypeError("invalid protocol: async validations are not allowed"),
     );
   }
   if (validation.issues) {

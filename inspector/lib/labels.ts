@@ -15,16 +15,14 @@ export function* useLabels(labels: Labels): Operation<Labels> {
       ...LabelsContext.defaultValue,
       ...labels,
     });
-  } else {
+  }
     let current = yield* LabelsContext.expect();
     return yield* LabelsContext.set({ ...current, ...labels });
-  }
 }
 
 export function getLabels(scope: Scope) {
   if (scope.hasOwn(LabelsContext)) {
     return scope.expect(LabelsContext);
-  } else {
-    return LabelsContext.defaultValue as Labels;
   }
+    return LabelsContext.defaultValue as Labels;
 }

@@ -78,6 +78,16 @@
   border-bottom: 1px solid var(--spectrum-global-color-gray-100);
 }
 
+.childRow.clickable {
+  cursor: pointer;
+}
+
+.childRow.clickable:focus,
+.childRow.clickable:hover {
+  background: rgba(0, 0, 0, 0.03);
+  outline: none;
+}
+
 .childType {
   color: var(--spectrum-global-color-gray-600);
 }

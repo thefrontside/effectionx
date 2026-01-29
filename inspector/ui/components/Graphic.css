@@ -32,3 +32,23 @@
     fill: lightblue;
   }
 }
+
+#treeWrapper {
+  position: relative;
+}
+
+.graphicControls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+
+.graphicControls .spectrum-ActionButton {
+  /* keep the button compact */
+  padding: 6px 10px;
+}
+
+.graphicControls .spectrum-ActionButton + .spectrum-ActionButton {
+  margin-left: 8px;
+}

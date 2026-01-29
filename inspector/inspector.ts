@@ -13,7 +13,7 @@ const inspector = combine.inspectors(scope, player);
 global.decorate(api.Main, {
   main([body], next) {
     return next(function* (args) {
-      yield* useLabels({ name: "main", args });
+      yield* useLabels({ name: "main", args: args.join(' ') });
 
       yield* attach(global, inspector, function* (handle) {
         let address = yield* useSSEServer(handle, { port: 41000 });

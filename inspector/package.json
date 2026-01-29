@@ -41,7 +41,7 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^5.1.2",
     "d3": "^7.9.0",
-    "effection": "https://pkg.pr.new/thefrontside/effection@5010883",
+    "effection": "https://pkg.pr.new/thefrontside/effection@6a01504",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-redux": "^9.2.0",

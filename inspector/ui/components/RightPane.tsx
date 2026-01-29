@@ -1,5 +1,5 @@
 import { Tabs, TabList, Tab, TabPanel } from "@react-spectrum/s2";
-import { Hierarchy } from "../data/types";
+import type { Hierarchy } from "../data/types";
 import { Graphic } from "./Graphic";
 import { DetailsPanel } from "./DetailsPanel";
 
@@ -49,7 +49,7 @@ export default function RightPane({
             <TabPanel id="attributes">
               <div className="tabPanelContent">
                 <div className="detailsWrap">
-                  <DetailsPanel node={node} />
+                  <DetailsPanel node={node} hierarchy={hierarchy} />
                 </div>
               </div>
             </TabPanel>

@@ -1,19 +1,13 @@
 import { SearchField } from "@react-spectrum/s2";
 import { useState } from "react";
-import { Hierarchy } from "../data/types";
+import type { Hierarchy } from "../data/types";
 import { HierarchyTree } from "./HierarchyTree";
 
 interface Props {
   hierarchy?: Hierarchy;
-  selectedKey?: string;
-  onSelectionChange: (key?: string) => void;
 }
 
-export default function LeftPane({
-  hierarchy,
-  selectedKey,
-  onSelectionChange,
-}: Props) {
+export default function LeftPane({ hierarchy }: Props) {
   const [filter, setFilter] = useState("");
 
   return (
@@ -29,12 +23,7 @@ export default function LeftPane({
       </div>
 
       <div className="leftPaneContent">
-        <HierarchyTree
-          hierarchy={hierarchy}
-          selectedKey={selectedKey}
-          onSelectionChange={onSelectionChange}
-          filter={filter}
-        />
+        <HierarchyTree hierarchy={hierarchy} filter={filter} />
       </div>
     </div>
   );

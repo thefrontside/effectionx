@@ -14,8 +14,8 @@ import {
 import type { Handle, Methods } from "./types.ts";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import EventEmitter from "node:events";
-import { Readable } from "node:stream";
+import type EventEmitter from "node:events";
+import type { Readable } from "node:stream";
 import { validate } from "./validate.ts";
 import { useLabels } from "./labels.ts";
 
@@ -96,11 +96,11 @@ export function useSSEServer<M extends Methods>(
 
               while (!next.done) {
                 console.dir(next.value, { depth: 20 });
-                res.write(`event: progress\n`);
+                res.write("event: progress\n");
                 res.write(`data: ${JSON.stringify(next.value)}\n\n`);
                 next = yield* subscription.next();
               }
-              res.write(`event: return\n`);
+              res.write("event: return\n");
               res.write(`data: ${JSON.stringify(next.value ?? null)}\n\n`);
 
               resolveDone();
@@ -109,7 +109,7 @@ export function useSSEServer<M extends Methods>(
             yield* race([onceEmit(res, "close"), done]);
           });
         } finally {
-          res.write(`event: return\n`);
+          res.write("event: return\n");
           res.write(`data: ${null}\n\n`);
           res.end();
         }

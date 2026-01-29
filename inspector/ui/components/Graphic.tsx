@@ -1,7 +1,7 @@
 import { createRef, useEffect, useState } from "react";
 import type { Hierarchy } from "../data/types.ts";
-import { Tree, RawNodeDatum } from "react-d3-tree";
-import { Labels, LabelsContext } from "../../lib/labels.ts";
+import { Tree, type RawNodeDatum } from "react-d3-tree";
+import { type Labels, LabelsContext } from "../../lib/labels.ts";
 import "./Graphic.css";
 import { ActionButton, ToastQueue } from "@react-spectrum/s2";
 import { exportSvgElementToPng, exportSvgElement } from "./exportGraphic";
@@ -125,7 +125,7 @@ export function Graphic({ hierarchy }: { hierarchy?: Hierarchy }) {
       />
     </div>
   ) : (
-    <div></div>
+    <div />
   );
 }
 
@@ -135,7 +135,6 @@ function transform2D3(hierarchy: Hierarchy): RawNodeDatum {
     LabelsContext.defaultValue) as Labels;
   return {
     name: name as string,
-    //@ts-expect-error let us just see
     attributes,
     // to set as proper leaf nodes when no children
     ...(hierarchy.children.length === 0

@@ -1,20 +1,15 @@
-import TopControls from "./components/TopControls";
-import LeftPane from "./components/LeftPane";
-import RightPane from "./components/RightPane";
-
 import { useEffect, useMemo, useState } from "react";
-import { RecordingUpload } from "./components/RecordingUpload.tsx";
+import { RecordingUpload } from "../../components/RecordingUpload.tsx";
 import { createSignal, each, run, until } from "effection";
-import { stratify } from "./data/stratify.ts";
+import { stratify } from "../../data/stratify.ts";
 import { pipe } from "remeda";
-import { arrayLoader, Recording, useRecording } from "./data/recording.ts";
-import { box } from "./data/box.ts";
-import { Hierarchy } from "./data/types.ts";
+import { arrayLoader, type Recording, useRecording } from "../../data/recording.ts";
+import { box } from "../../data/box.ts";
+import type { Hierarchy } from "../../data/types.ts";
+import TopControls from "../../components/TopControls.tsx";
 
-import pipeline from "../pipeline.json";
-import "./AppLayout.css";
-
-const isDemo = import.meta.env.VITE_DEMO === "true";
+import "../AppLayout.css";
+import Inspector from "../../components/Inspector.tsx";
 
 function useRecordingStream() {
   const [hierarchy, setHierarchy] = useState<Hierarchy>();
@@ -66,23 +61,6 @@ function useRecordingStream() {
       task.halt().catch((e) => console.error(e));
     };
   }, [files]);
-
-  useEffect(() => {
-    // Load the demo pipeline fixture when no file was uploaded
-    if (!isDemo || recording) return;
-    const task = run(function* () {
-      const result = yield* box(function* () {
-        const r = yield* useRecording(arrayLoader(pipeline as any));
-        setRecording(r);
-      });
-      if (!result.ok) {
-        console.error("Error loading pipeline fixture:", result.error);
-      }
-    });
-    return () => {
-      task.halt().catch((e) => console.error(e));
-    };
-  }, [recording]);
 
   return {
     setFile: files.send,
@@ -138,40 +116,9 @@ function App() {
   useEffect(() => {
     if (!hierarchy) return;
     if (selectedKey) return; // don't override user selection
-    const first = hierarchy.children && hierarchy.children[0];
+    const first = hierarchy.children?.[0];
     if (first) setSelectedKey(first.id);
   }, [hierarchy, selectedKey]);
-
-  // which tab is active in the right pane (logical name)
-  const [activeTab, setActiveTab] = useState<"graph" | "attributes">("graph");
-
-  // when a row dispatches the reveal event, switch to Attributes tab
-  useEffect(() => {
-    const onReveal = () => setActiveTab("attributes");
-    window.addEventListener(
-      "inspector:reveal-attributes",
-      onReveal as EventListener,
-    );
-    return () =>
-      window.removeEventListener(
-        "inspector:reveal-attributes",
-        onReveal as EventListener,
-      );
-  }, []);
-
-  function findNode(root?: Hierarchy, id?: string): Hierarchy | undefined {
-    if (!root || !id) return undefined;
-    if (root.id === id) return root;
-    for (let child of root.children ?? []) {
-      const found = findNode(child, id);
-      if (found) return found;
-    }
-    return undefined;
-  }
-
-  const selectedNode = selectedKey
-    ? findNode(hierarchy, selectedKey)
-    : undefined;
 
   return (
     <div className="appRoot">
@@ -199,19 +146,7 @@ function App() {
             }}
           />
 
-          <div className="mainContent">
-            <LeftPane
-              hierarchy={hierarchy}
-              selectedKey={selectedKey}
-              onSelectionChange={setSelectedKey}
-            />
-            <RightPane
-              hierarchy={hierarchy}
-              node={selectedNode}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            />
-          </div>
+          <Inspector hierarchy={hierarchy} />
         </div>
       )}
     </div>

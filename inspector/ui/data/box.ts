@@ -1,4 +1,4 @@
-import { Err, Ok, Operation, type Result } from "effection";
+import { Err, Ok, type Operation, type Result } from "effection";
 
 export function* box<T>(op: () => Operation<T>): Operation<Result<T>> {
   try {

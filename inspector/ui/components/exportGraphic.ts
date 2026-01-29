@@ -4,7 +4,7 @@ function serializeSvgElement(el: SVGElement) {
   for (const sheet of Array.from(document.styleSheets)) {
     try {
       for (const rule of Array.from((sheet as CSSStyleSheet).cssRules || [])) {
-        cssText += (rule as CSSRule).cssText + "\n";
+        cssText += `${(rule as CSSRule).cssText}\n`;
       }
     } catch (e) {
       // ignore cross-origin stylesheets
@@ -97,7 +97,7 @@ export async function exportSvgElementToPng(
       const svgBase64 = btoa(unescape(encodeURIComponent(svgStr)));
       imgSrc = `data:image/svg+xml;base64,${svgBase64}`;
     } catch (e) {
-      imgSrc = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgStr);
+      imgSrc = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgStr)}`;
     }
 
     await new Promise<void>((resolve, reject) => {
@@ -106,8 +106,8 @@ export async function exportSvgElementToPng(
       img.src = imgSrc;
     });
 
-    ctx!.setTransform(scale, 0, 0, scale, 0, 0);
-    ctx!.drawImage(img, 0, 0);
+    ctx?.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx?.drawImage(img, 0, 0);
   }
 
   async function tryBlobRoute(svgStr: string) {
@@ -122,8 +122,8 @@ export async function exportSvgElementToPng(
         img.src = blobUrl;
       });
 
-      ctx!.setTransform(scale, 0, 0, scale, 0, 0);
-      ctx!.drawImage(img, 0, 0);
+      ctx?.setTransform(scale, 0, 0, scale, 0, 0);
+      ctx?.drawImage(img, 0, 0);
     } finally {
       URL.revokeObjectURL(blobUrl);
     }

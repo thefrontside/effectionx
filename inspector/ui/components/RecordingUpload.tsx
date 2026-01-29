@@ -7,7 +7,8 @@ import {
   Button,
   FileTrigger,
 } from "@react-spectrum/s2";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import CloudUpload from "@react-spectrum/s2/illustrations/gradient/generic1/CloudUpload";
 import { style } from "@react-spectrum/s2/style" with { type: "macro" };
 

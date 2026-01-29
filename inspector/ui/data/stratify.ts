@@ -14,10 +14,15 @@ export function stratify(): Transform<NodeMap, Hierarchy> {
           id,
           (stratum = {
             id,
+            parentId: node.parentId,
             data: node.data,
             children: [],
           }),
         );
+      } else {
+        // ensure parentId/data are set if this record was created earlier
+        stratum.parentId = node.parentId;
+        stratum.data = node.data;
       }
       if (!node.parentId) {
         if (typeof rootId === "string") {

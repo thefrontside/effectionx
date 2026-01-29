@@ -5,21 +5,7 @@ export function stratify(): Transform<NodeMap, Hierarchy> {
   return map(function* (nodes) {
     let stratii = new Map<string, Hierarchy>();
 
-    let root: Hierarchy = {
-      id: "root",
-      data: {},
-      children: [],
-    };
-
-    let orphans: Hierarchy = {
-      id: "orphans",
-      data: {},
-      children: [],
-    };
-
-    root.children.push(orphans);
-
-    stratii.set(root.id, root);
+    let rootId: string | undefined = undefined;
 
     for (let [id, node] of Object.entries(nodes)) {
       let stratum = stratii.get(id);
@@ -33,14 +19,27 @@ export function stratify(): Transform<NodeMap, Hierarchy> {
           }),
         );
       }
-      if (node.parentId === "global") {
-        root.children.push(stratum);
+      if (!node.parentId) {
+        if (typeof rootId === "string") {
+          let current = stratii.get(rootId);
+          throw new TypeError(
+            `duplicate roots: [${JSON.stringify(current)}, ${JSON.stringify(node)}]`,
+          );
+        }
+        rootId = node.id;
       } else {
-        let parent = stratii.get(node.parentId) ?? orphans;
-        parent.children.push(stratum);
+        let parent = stratii.get(node.parentId);
+        if (!parent) {
+          console.warn(`unknown parent id: ${node.parentId}`);
+        } else {
+          parent.children.push(stratum);
+        }
       }
     }
 
-    return root;
+    if (!rootId) {
+      throw new TypeError(`Hierarchy did not contain a root node`);
+    }
+    return stratii.get(rootId)!;
   });
 }

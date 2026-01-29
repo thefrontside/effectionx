@@ -3,6 +3,8 @@ import type { Hierarchy } from "../data/types.ts";
 import { Tree, RawNodeDatum } from "react-d3-tree";
 import { Labels, LabelsContext } from "../../lib/labels.ts";
 import "./Graphic.css";
+import { ActionButton, ToastQueue } from "@react-spectrum/s2";
+import { exportSvgElementToPng, exportSvgElement } from "./exportGraphic";
 
 // const themeBasedFill = (dark: string, light: string) =>
 //   window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -45,8 +47,68 @@ export function Graphic({ hierarchy }: { hierarchy?: Hierarchy }) {
     };
   }, [ref]);
 
+  async function exportToPng() {
+    if (!ref.current) return;
+    const svg = ref.current.querySelector("svg");
+    if (!svg) return;
+
+    try {
+      const res = await exportSvgElementToPng(
+        svg as SVGElement,
+        "effectionx-graph",
+      );
+      ToastQueue.positive(`Saved ${res.fileName}`, { timeout: 5000 });
+    } catch (err) {
+      console.error("export failed", err);
+      const debug = (err as any)?.debugSvg as string | undefined;
+      ToastQueue.negative("Export failed", {
+        actionLabel: "Show details",
+        onAction: () => {
+          if (debug) {
+            const b = new Blob([debug], {
+              type: "image/svg+xml;charset=utf-8",
+            });
+            const url = URL.createObjectURL(b);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `effectionx-graph-debug-${Date.now()}.svg`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+          } else {
+            // no debug available — do nothing (toast will close)
+          }
+        },
+        shouldCloseOnAction: true,
+      });
+    }
+  }
+
+  function exportToSvg() {
+    if (!ref.current) return;
+    const svg = ref.current.querySelector("svg");
+    if (!svg) return;
+
+    try {
+      const res = exportSvgElement(svg as SVGElement, "effectionx-graph");
+      ToastQueue.positive(`Saved ${res.fileName}`, { timeout: 5000 });
+    } catch (err) {
+      console.error("SVG export failed", err);
+      ToastQueue.negative("Export SVG failed", { timeout: 5000 });
+    }
+  }
+
   return hierarchy ? (
     <div id="treeWrapper" ref={ref}>
+      <div className="graphicControls">
+        <ActionButton aria-label="Export PNG" onPress={exportToPng}>
+          Export PNG
+        </ActionButton>
+        <ActionButton aria-label="Export SVG" onPress={exportToSvg}>
+          Export SVG
+        </ActionButton>
+      </div>
       <Tree
         data={transform2D3(hierarchy)}
         orientation="vertical"

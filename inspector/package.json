@@ -28,6 +28,7 @@
     "@effectionx/stream-helpers": "workspace:*",
     "@standard-schema/spec": "^1.0.0",
     "arktype": "^2.1.27",
+    "canvg": "^4.0.3",
     "react-d3-tree": "^3.6.6",
     "remeda": "^2",
     "sse-stream-transform": "^1.0.0",

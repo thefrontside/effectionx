@@ -1,9 +1,6 @@
 import { createContext, type Scope, useScope, type Operation } from "effection";
 
-export type Labels = Record<
-  string,
-  string | number | boolean | Array<string | number | boolean>
->;
+export type Labels = Record<string, string | number | boolean>;
 
 export const LabelsContext = createContext<Labels>(
   "@effectionx/inspector.labels",

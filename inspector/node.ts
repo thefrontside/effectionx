@@ -7,6 +7,7 @@ import { attach } from "./lib/attach.ts";
 import { useSSEServer } from "./lib/sse-server.ts";
 import { useLabels } from "./lib/labels.ts";
 import { pause } from "./player/implementation.ts";
+import packageJSON from "./package.json" with { type: "json" };
 
 const inspector = combine.inspectors(scope, player);
 
@@ -18,14 +19,21 @@ global.decorate(api.Main, {
       yield* attach(global, inspector, function* (handle) {
         let address = yield* useSSEServer(handle, { port: 41000 });
 
-        console.log(`inspector started on ${address.port}`);
+        let { version } = packageJSON;
+        console.log(
+          `effection inspector@${version} running at http://localhost:${address.port}/live`,
+        );
       });
 
-      if (args.includes("--break")) {
+      if (args.includes("--suspend")) {
         yield* pause();
       }
 
       yield* body(args);
+
+      if (args.includes("--suspend")) {
+        yield* pause();
+      }
     });
   },
 });

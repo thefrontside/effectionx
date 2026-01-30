@@ -1,6 +1,6 @@
-import { main, sleep, spawn, suspend, type Task } from "effection";
+import { main, sleep, spawn, type Task } from "effection";
 
-import { useLabels } from "./lib/labels.ts";
+import { useLabels } from ".././lib/labels.ts";
 
 await main(function* () {
   let tasks: Task<string>[] = [];

@@ -4,7 +4,7 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "package.json"],
   "exclude": [
     "ui",
     "*.config.ts",

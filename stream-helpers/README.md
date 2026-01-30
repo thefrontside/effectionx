@@ -165,6 +165,56 @@ function* example() {
 }
 ```
 
+### Drain
+
+The `drain` helper exhausts a stream, discarding all yielded values, and returns
+the close value. This is useful when you only care about the final result of a
+stream, not the intermediate values.
+
+```typescript
+import { drain } from "@effectionx/stream-helpers";
+
+function* example() {
+  // Get the response from a request channel (ignoring any progress)
+  const channel = yield* transport.send(request);
+  const response = yield* drain(channel);
+  console.log(response); // The close value
+}
+```
+
+### First
+
+The `first` helper returns the first value yielded by a stream. It throws an
+error if the stream closes without yielding any values.
+
+```typescript
+import { first } from "@effectionx/stream-helpers";
+import { streamOf } from "@effectionx/stream-helpers";
+
+function* example() {
+  const stream = streamOf([1, 2, 3]);
+  const value = yield* first(stream);
+  console.log(value); // 1
+}
+```
+
+### Last
+
+The `last` helper returns the last value yielded by a stream. It exhausts the
+entire stream to find the last value. It throws an error if the stream closes
+without yielding any values.
+
+```typescript
+import { last } from "@effectionx/stream-helpers";
+import { streamOf } from "@effectionx/stream-helpers";
+
+function* example() {
+  const stream = streamOf([1, 2, 3]);
+  const value = yield* last(stream);
+  console.log(value); // 3
+}
+```
+
 ### ForEach
 
 The `forEach` helper invokes a function for each item passing through a stream.

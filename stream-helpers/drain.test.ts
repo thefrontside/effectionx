@@ -32,21 +32,23 @@ describe("drain", () => {
     expect(closeValue).toBe("empty");
   });
 
-  it("should discard all yielded values", function* () {
-    const stream = createChannel<number, void>();
-    const sideEffects: number[] = [];
+  it("should exhaust all values before returning close value", function* () {
+    const stream = createChannel<number, string>();
+    let itemsSent = 0;
 
     yield* spawn(function* () {
       yield* sleep(0);
-      // These values should be discarded, not processed
-      yield* stream.send(1);
-      yield* stream.send(2);
-      yield* stream.send(3);
-      yield* stream.close();
+      for (let i = 0; i < 100; i++) {
+        yield* stream.send(i);
+        itemsSent++;
+      }
+      yield* stream.close("all-sent");
     });
 
-    yield* drain(stream);
-    // No side effects from processing values
-    expect(sideEffects).toEqual([]);
+    const closeValue = yield* drain(stream);
+
+    // drain should have consumed all items before getting close value
+    expect(itemsSent).toBe(100);
+    expect(closeValue).toBe("all-sent");
   });
 });

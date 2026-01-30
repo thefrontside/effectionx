@@ -5,7 +5,14 @@
     "rootDir": "."
   },
   "include": ["**/*.ts"],
-  "exclude": ["ui", "**/*.test.ts", "dist", "example.ts", "pipeline-test.ts"],
+  "exclude": [
+    "ui",
+    "*.config.ts",
+    "**/*.test.ts",
+    "dist",
+    "example.ts",
+    "pipeline-test.ts"
+  ],
   "references": [
     {
       "path": "../bdd"

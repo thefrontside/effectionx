@@ -15,6 +15,7 @@ export default defineConfig({
     },
   },
   build: {
+    outDir: "ui/dist",
     target: ["es2022"],
     // Lightning CSS produces a much smaller CSS bundle than the default minifier.
     cssMinify: "lightningcss",

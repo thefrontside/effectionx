@@ -1,6 +1,6 @@
-import type { Implementation } from "./lib/types.ts";
+import type { Implementation } from "../lib/types.ts";
 import { scope } from "arktype";
-import type { Method } from "./lib/types.ts";
+import type { Method } from "../lib/types.ts";
 
 // This file is a compile-time (type-level) test to ensure that
 // `createImplementation` enforces the method signatures described by the

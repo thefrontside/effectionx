@@ -28,7 +28,7 @@ export const scope = createImplementation(protocol, function* (root) {
   // give every node an id that does not have it.
   reduce(
     root,
-    (_, { scope }) => {
+    (_current, { scope }) => {
       scope.set(Id, String(ids++));
     },
     null,
@@ -113,7 +113,7 @@ function reduce<T>(
   visitor: (
     current: T,
     node: { parentId?: string; scope: Scope },
-  ) => T | undefined,
+  ) => T | void | undefined,
   initial: T,
 ): T {
   let sum = initial;

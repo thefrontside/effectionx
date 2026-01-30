@@ -4,7 +4,8 @@
   "type": "module",
   "packageManager": "pnpm@9.15.9",
   "scripts": {
-    "build": "tsc --build",
+    "build": "pnpm run build:tsc && turbo run build:bundle",
+    "build:tsc": "tsc --build",
     "check": "tsc -b --emitDeclarationOnly && tsc -p tsconfig.check.json",
     "test": "node --env-file=.env --test \"**/*.test.ts\"",
     "test:matrix": "node --env-file=.env .internal/test-matrix.ts",

@@ -6,3 +6,5 @@ export * from "./tracker.ts";
 export * from "./for-each.ts";
 export * from "./subject.ts";
 export * from "./lines.ts";
+export * from "./stream-of.ts";
+export * from "./reduce.ts";

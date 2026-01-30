@@ -5,10 +5,16 @@
     "rootDir": "."
   },
   "include": ["**/*.ts"],
-  "exclude": ["ui", "**/*.test.ts", "dist", "example.ts", "pipeline-test.ts"],
+  "exclude": ["**/*.test.ts", "dist"],
   "references": [
     {
       "path": "../bdd"
+    },
+    {
+      "path": "../process"
+    },
+    {
+      "path": "../test-adapter"
     }
   ]
 }

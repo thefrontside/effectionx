@@ -25,7 +25,8 @@ pnpm install
 ### Available Commands
 
 ```bash
-pnpm build          # Build all packages
+pnpm build          # Build all packages (TypeScript + optional bundling)
+pnpm build:tsc      # Build TypeScript only
 pnpm test           # Run all tests
 pnpm test:matrix    # Test against all supported peer dependency versions
 pnpm check          # Type-check all packages
@@ -176,6 +177,24 @@ node --env-file=../.env --test "*.test.ts"
 7. Add a `README.md` (text before `---` will be used as a description)
 8. Add your source code and export it from `mod.ts`
 9. Add doc strings to your source code - they will be used for documentation
+
+### Custom Build Steps (Optional)
+
+Most packages only need TypeScript compilation, which is handled automatically by the root `tsc --build` command. However, if your package requires additional build steps (like bundling), you can add a `build:bundle` script:
+
+```json
+{
+  "scripts": {
+    "build:bundle": "esbuild mod.ts --bundle --outfile=dist/bundle.js --format=esm"
+  }
+}
+```
+
+The build process runs in two phases:
+1. **TypeScript compilation** (`tsc --build`) - produces `.js` and `.d.ts` files in `dist/`
+2. **Bundling** (`turbo run build:bundle`) - runs only for packages with a `build:bundle` script
+
+Bundle output should go to a separate file (e.g., `dist/bundle.js`) rather than overwriting the tsc output, so consumers can choose between bundled and unbundled versions.
 
 ## Publishing
 

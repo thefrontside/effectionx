@@ -38,7 +38,22 @@ export function RecordingUpload(props: { setFile: (file: File) => void }) {
           let text = await item.getText("text/plain");
           setContent(text);
         } else if (item?.kind === "file") {
-          console.error(item);
+          try {
+            // Try to extract a File object from the drop item if available
+            const maybeFile = (item as any).getFile
+              ? await (item as any).getFile()
+              : (item as any).getAsFile
+                ? (item as any).getAsFile()
+                : null;
+            if (maybeFile) {
+              setContent(maybeFile.name);
+              props.setFile(maybeFile);
+            } else {
+              console.error(item);
+            }
+          } catch (e) {
+            console.error(e);
+          }
         }
       }}
     >

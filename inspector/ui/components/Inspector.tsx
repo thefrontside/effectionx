@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import LeftPane from "./LeftPane";
 import RightPane from "./RightPane";
+import { useParams } from "react-router";
 import type { Hierarchy } from "../data/types";
+import { findNode } from "../data/findNode";
 
 type InspectorProps = {
   hierarchy?: Hierarchy;
@@ -10,28 +12,24 @@ type InspectorProps = {
 export default function Inspector({ hierarchy }: InspectorProps) {
   // which tab is active in the right pane (logical name)
   const [activeTab, setActiveTab] = useState<"graph" | "attributes">("graph");
+  const params = useParams();
 
-  // TODO remove event emitter
   useEffect(() => {
-    const onReveal = (event: Event) => {
+    if (params.nodeId) {
       setActiveTab("attributes");
-    };
-    window.addEventListener(
-      "inspector:reveal-attributes",
-      onReveal as EventListener,
-    );
-    return () =>
-      window.removeEventListener(
-        "inspector:reveal-attributes",
-        onReveal as EventListener,
-      );
-  }, []);
+    }
+  }, [params.nodeId]);
+
+  const selectedNode = useMemo(() => {
+    return findNode(hierarchy, params.nodeId as string | undefined);
+  }, [hierarchy, params.nodeId]);
 
   return (
     <div className="mainContent">
       <LeftPane hierarchy={hierarchy} />
       <RightPane
         hierarchy={hierarchy}
+        node={selectedNode}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
       />

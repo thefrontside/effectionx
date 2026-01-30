@@ -8,3 +8,6 @@ export * from "./subject.ts";
 export * from "./lines.ts";
 export * from "./stream-of.ts";
 export * from "./reduce.ts";
+export * from "./drain.ts";
+export * from "./first.ts";
+export * from "./last.ts";

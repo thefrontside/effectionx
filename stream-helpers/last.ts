@@ -27,9 +27,7 @@ import type { Operation, Stream } from "effection";
  * const value = yield* last(empty); // throws Error
  * ```
  */
-export function* last<T, TClose>(
-  stream: Stream<T, TClose>,
-): Operation<T> {
+export function* last<T, TClose>(stream: Stream<T, TClose>): Operation<T> {
   const subscription = yield* stream;
   let hasValue = false;
   let lastValue: T;

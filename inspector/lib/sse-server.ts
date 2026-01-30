@@ -32,11 +32,11 @@ export function useSSEServer<M extends Methods>(
 ): Operation<AddressInfo> {
   let { protocol } = handle;
   let methodNames = Object.keys(protocol.methods) as Array<keyof M>;
+  const base = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
   const uiDist = path.join(
-    path.dirname(fileURLToPath(import.meta.url)),
-    "..",
-    "ui",
-    "dist",
+    ...(base.endsWith("dist")
+      ? [base, "..", "ui", "dist"]
+      : [base, "..", "ui", "dist"]),
   );
 
   return resource(function* (provide) {

@@ -29,16 +29,19 @@ import type { Operation, Stream } from "effection";
  */
 export function* last<T, TClose>(stream: Stream<T, TClose>): Operation<T> {
   const subscription = yield* stream;
-  let hasValue = false;
-  let lastValue: T;
+  const first = yield* subscription.next();
+
+  if (first.done) {
+    throw new Error("Stream closed without yielding any values");
+  }
+
+  let lastValue: T = first.value;
   let result = yield* subscription.next();
+
   while (!result.done) {
-    hasValue = true;
     lastValue = result.value;
     result = yield* subscription.next();
   }
-  if (!hasValue) {
-    throw new Error("Stream closed without yielding any values");
-  }
-  return lastValue!;
+
+  return lastValue;
 }

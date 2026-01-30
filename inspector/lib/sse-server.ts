@@ -95,7 +95,6 @@ export function useSSEServer<M extends Methods>(
               let next = yield* subscription.next();
 
               while (!next.done) {
-                console.dir(next.value, { depth: 20 });
                 res.write("event: progress\n");
                 res.write(`data: ${JSON.stringify(next.value)}\n\n`);
                 next = yield* subscription.next();

@@ -37,4 +37,4 @@ jobs:
             dirs="$dirs './$workspace'"
           done
           echo $dirs
-          pnpx pkg-pr-new publish --commentWithSha $dirs
+          pnpx pkg-pr-new publish --pnpm --commentWithSha $dirs

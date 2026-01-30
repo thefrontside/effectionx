@@ -31,4 +31,10 @@ jobs:
 
       - name: Publish previews
         if: steps.changed.outputs.workspaces != ''
-        run: pnpx pkg-pr-new publish --pnpm --commentWithSha
+        run: |
+          dirs=""
+          for workspace in ${{ steps.changed.outputs.workspaces }}; do
+            dirs="$dirs ./$workspace"
+          done
+          echo $dirs
+          npx pkg-pr-new publish --pnpm --commentWithSha $dirs

@@ -110,7 +110,10 @@ function readTree(root: Scope): ScopeTree {
 
 function reduce<T>(
   scope: Scope,
-  visitor: (current: T, node: { parentId?: string; scope: Scope }) => T | undefined,
+  visitor: (
+    current: T,
+    node: { parentId?: string; scope: Scope },
+  ) => T | undefined,
   initial: T,
 ): T {
   let sum = initial;

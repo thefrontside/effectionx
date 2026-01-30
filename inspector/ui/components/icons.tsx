@@ -1,5 +1,3 @@
-import React from "react";
-
 export function PauseIcon(props: { size?: number }) {
   const s = props.size ?? 16;
   return (
@@ -8,7 +6,7 @@ export function PauseIcon(props: { size?: number }) {
       height={s}
       viewBox="0 0 24 24"
       fill="none"
-      aria-hidden
+      aria-hidden="true"
       focusable={false}
     >
       <rect x="6" y="5" width="4" height="14" fill="currentColor" rx="1" />
@@ -25,7 +23,7 @@ export function RefreshIcon(props: { size?: number }) {
       height={s}
       viewBox="0 0 24 24"
       fill="none"
-      aria-hidden
+      aria-hidden="true"
       focusable={false}
     >
       <path
@@ -52,7 +50,7 @@ export function PlayIcon(props: { size?: number }) {
       height={s}
       viewBox="0 0 24 24"
       fill="none"
-      aria-hidden
+      aria-hidden="true"
       focusable={false}
     >
       <path d="M8 5v14l11-7z" fill="currentColor" />
@@ -68,7 +66,7 @@ export function StepBackIcon(props: { size?: number }) {
       height={s}
       viewBox="0 0 24 24"
       fill="none"
-      aria-hidden
+      aria-hidden="true"
       focusable={false}
     >
       <path d="M11 18V6l-8 6 8 6zM21 6v12h-2V6h2z" fill="currentColor" />
@@ -84,7 +82,7 @@ export function StepForwardIcon(props: { size?: number }) {
       height={s}
       viewBox="0 0 24 24"
       fill="none"
-      aria-hidden
+      aria-hidden="true"
       focusable={false}
     >
       <path d="M13 6v12l8-6-8-6zM3 6v12h2V6H3z" fill="currentColor" />

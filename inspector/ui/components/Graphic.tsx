@@ -21,6 +21,7 @@ export function Graphic({ hierarchy }: { hierarchy?: Hierarchy }) {
     | undefined
   >();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dimensions handled if not defined as a comparator
   useEffect(() => {
     const handleResize = () => {
       if (ref.current) {
@@ -58,9 +59,12 @@ export function Graphic({ hierarchy }: { hierarchy?: Hierarchy }) {
         "effectionx-graph",
       );
       ToastQueue.positive(`Saved ${res.fileName}`, { timeout: 5000 });
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("export failed", err);
-      const debug = (err as any)?.debugSvg as string | undefined;
+      const debug =
+        typeof err === "object" && err !== null && "debugSvg" in err
+          ? (err as { debugSvg?: string }).debugSvg
+          : undefined;
       ToastQueue.negative("Export failed", {
         actionLabel: "Show details",
         onAction: () => {

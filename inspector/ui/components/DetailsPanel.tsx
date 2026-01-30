@@ -52,7 +52,11 @@ export function DetailsPanel(props: {
         <div className="propertiesHeader">
           <div className="detailsHeading">Properties</div>
           <div>
-            <button className="copyAll" onClick={copyAllProperties}>
+            <button
+              type="button"
+              className="copyAll"
+              onClick={copyAllProperties}
+            >
               Copy all
             </button>
           </div>

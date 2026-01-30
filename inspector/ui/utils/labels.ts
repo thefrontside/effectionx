@@ -25,10 +25,10 @@ export function flattenNodeData(
           v: valueToString(subv),
         }));
       }
-        return entries.map(([subk, subv]) => ({
-          k: `${k}.${subk}`,
-          v: valueToString(subv),
-        }));
+      return entries.map(([subk, subv]) => ({
+        k: `${k}.${subk}`,
+        v: valueToString(subv),
+      }));
     }
     return [{ k, v: valueToString(v) }];
   });

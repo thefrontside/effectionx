@@ -40,10 +40,14 @@ export function RecordingUpload(props: { setFile: (file: File) => void }) {
         } else if (item?.kind === "file") {
           try {
             // Try to extract a File object from the drop item if available
-            const maybeFile = (item as any).getFile
-              ? await (item as any).getFile()
-              : (item as any).getAsFile
-                ? (item as any).getAsFile()
+            const accessors = item as unknown as {
+              getFile?: () => Promise<File>;
+              getAsFile?: () => File | null;
+            };
+            const maybeFile = accessors.getFile
+              ? await accessors.getFile()
+              : accessors.getAsFile
+                ? accessors.getAsFile()
                 : null;
             if (maybeFile) {
               setContent(maybeFile.name);

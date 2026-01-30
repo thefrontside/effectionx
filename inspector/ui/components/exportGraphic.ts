@@ -131,11 +131,21 @@ export async function exportSvgElementToPng(
 
   async function tryCanvg(svgStr: string) {
     // dynamic import so it isn't bundled unless needed
-    const module = await import("canvg");
+    const module: unknown = await import("canvg");
     // v4 API: Canvg.from(ctx, svgStr)
-    const Canvg = (module as any).Canvg;
-    if (!Canvg) throw new Error("canvg not available");
-    const v = await Canvg.from(ctx, svgStr);
+    const Canvg = (
+      module as {
+        Canvg?: {
+          from?: (
+            ctx: CanvasRenderingContext2D,
+            svg: string,
+          ) => Promise<{ render: () => Promise<void> }>;
+        };
+      }
+    ).Canvg;
+    if (!Canvg || typeof Canvg.from !== "function")
+      throw new Error("canvg not available");
+    const v = await Canvg.from(ctx as CanvasRenderingContext2D, svgStr);
     await v.render();
   }
 
@@ -166,9 +176,10 @@ export async function exportSvgElementToPng(
       } catch (e3) {
         lastErr = e3 as Error;
         // attach debug svg to the thrown error for upstream handling
-        const err = new Error("All export routes failed");
-        (err as any).debugSvg = svgString;
-        (err as any).inner = lastErr;
+        type DebugError = Error & { debugSvg?: string; inner?: unknown };
+        const err = new Error("All export routes failed") as DebugError;
+        err.debugSvg = svgString;
+        err.inner = lastErr;
         throw err;
       }
     }

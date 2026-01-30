@@ -7,7 +7,9 @@ export function findNode(
   if (!root || !id) return undefined;
   const stack: Hierarchy[] = [root];
   while (stack.length) {
-    const current = stack.pop()!;
+    const popped = stack.pop();
+    if (!popped) break;
+    const current = popped;
     if (current.id === id) return current;
     for (const c of current.children ?? []) {
       stack.push(c);

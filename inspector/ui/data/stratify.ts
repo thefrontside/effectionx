@@ -10,15 +10,14 @@ export function stratify(): Transform<NodeMap, Hierarchy> {
     for (let [id, node] of Object.entries(nodes)) {
       let stratum = stratii.get(id);
       if (!stratum) {
-        stratii.set(
+        const s: Hierarchy = {
           id,
-          (stratum = {
-            id,
-            parentId: node.parentId,
-            data: node.data,
-            children: [],
-          }),
-        );
+          parentId: node.parentId,
+          data: node.data,
+          children: [],
+        };
+        stratii.set(id, s);
+        stratum = s;
       } else {
         // ensure parentId/data are set if this record was created earlier
         stratum.parentId = node.parentId;
@@ -43,8 +42,13 @@ export function stratify(): Transform<NodeMap, Hierarchy> {
     }
 
     if (!rootId) {
-      throw new TypeError(`Hierarchy did not contain a root node`);
+      throw new TypeError("Hierarchy did not contain a root node");
     }
-    return stratii.get(rootId)!;
+
+    const root = stratii.get(rootId as string);
+    if (!root) {
+      throw new TypeError("Hierarchy did not contain a root node");
+    }
+    return root;
   });
 }

@@ -7,7 +7,9 @@ export function findParent(
   if (!root || !childId) return undefined;
   let stack: Hierarchy[] = [root];
   while (stack.length) {
-    const current = stack.pop()!;
+    const popped = stack.pop();
+    if (!popped) break;
+    const current = popped;
     for (const c of current.children ?? []) {
       if (c.id === childId) return current;
       stack.push(c);

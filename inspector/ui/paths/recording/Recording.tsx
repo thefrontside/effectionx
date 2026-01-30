@@ -1,17 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
-import { RecordingUpload } from "../../components/RecordingUpload.tsx";
-import { createSignal, each, run, until } from "effection";
+import { useLocation, useNavigate } from "react-router";
+import { call, createSignal, each, run, until } from "effection";
 import { stratify } from "../../data/stratify.ts";
 import { pipe } from "remeda";
-import { arrayLoader, type Recording, useRecording } from "../../data/recording.ts";
+import {
+  arrayLoader,
+  type Recording,
+  useRecording,
+} from "../../data/recording.ts";
 import { box } from "../../data/box.ts";
 import type { Hierarchy } from "../../data/types.ts";
 import TopControls from "../../components/TopControls.tsx";
 
 import "../AppLayout.css";
 import Inspector from "../../components/Inspector.tsx";
+import { RecordingUpload } from "../../components/RecordingUpload.tsx";
 
 function useRecordingStream() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [hierarchy, setHierarchy] = useState<Hierarchy>();
   const [recording, setRecording] = useState<Recording>();
 
@@ -27,6 +34,7 @@ function useRecordingStream() {
         const hierarchies = pipe(recording.replayStream(), stratify());
         for (let item of yield* each(hierarchies)) {
           console.dir(item, { depth: 20 });
+          yield* call(() => navigate(`/recording/${item?.id}`));
           setHierarchy(item);
           yield* each.next();
         }
@@ -62,6 +70,13 @@ function useRecordingStream() {
     };
   }, [files]);
 
+  useEffect(() => {
+    const file = (location.state as any)?.file as File | undefined;
+    if (file) {
+      files.send(file);
+    }
+  }, [location.state]);
+
   return {
     setFile: files.send,
     hierarchy,
@@ -70,8 +85,6 @@ function useRecordingStream() {
 }
 
 function App() {
-  // const dispatch = useDispatch();
-  // const max = useSelector(schema.snapshot.selectTableAsList).length;
   const { hierarchy, recording, setFile } = useRecordingStream();
 
   const [selectedKey, setSelectedKey] = useState<string | undefined>();
@@ -112,14 +125,6 @@ function App() {
     return () => clearInterval(id);
   }, [playing, recording]);
 
-  // Auto-select the first top-level child when the hierarchy updates
-  useEffect(() => {
-    if (!hierarchy) return;
-    if (selectedKey) return; // don't override user selection
-    const first = hierarchy.children?.[0];
-    if (first) setSelectedKey(first.id);
-  }, [hierarchy, selectedKey]);
-
   return (
     <div className="appRoot">
       {!recording ? (
@@ -139,9 +144,6 @@ function App() {
               setOffset(0);
               recording.setOffset(0);
               setPlaying(false);
-              if (hierarchy?.children?.[0]) {
-                setSelectedKey(hierarchy.children[0].id);
-              }
               console.log("refresh");
             }}
           />

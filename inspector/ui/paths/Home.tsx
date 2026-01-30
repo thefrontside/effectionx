@@ -1,5 +1,6 @@
 import type React from "react";
-import { useRef } from "react";
+import { useNavigate } from "react-router";
+import { RecordingUpload } from "../components/RecordingUpload.tsx";
 
 type HomeProps = {
   onStart?: () => void;
@@ -243,15 +244,11 @@ function PlayIcon() {
 }
 
 export default function Home({ onStart, onLoadFile, onLaunchDemo }: HomeProps) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const navigate = useNavigate();
 
-  const triggerFile = () => {
-    inputRef.current?.click();
-  };
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && onLoadFile) onLoadFile(file);
+  const handleUpload = (file: File) => {
+    if (onLoadFile) onLoadFile(file);
+    navigate("/recording", { state: { file } });
   };
 
   return (
@@ -291,7 +288,10 @@ export default function Home({ onStart, onLoadFile, onLaunchDemo }: HomeProps) {
             <div style={styles.footer}>
               <button
                 style={{ ...styles.btn, ...styles.btnSecondary }}
-                onClick={onStart}
+                onClick={() => {
+                  if (onStart) onStart();
+                  navigate("/live");
+                }}
                 aria-label="Start connection"
               >
                 Start Connection
@@ -317,22 +317,7 @@ export default function Home({ onStart, onLoadFile, onLaunchDemo }: HomeProps) {
             </div>
 
             <div style={styles.footer}>
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".json,.effection"
-                onChange={handleFile}
-                style={{ display: "none" }}
-              />
-              <button
-                style={{ ...styles.btn, ...styles.btnSecondary }}
-                onClick={() => {
-                  triggerFile();
-                }}
-                aria-label="Choose file"
-              >
-                Choose File
-              </button>
+              <RecordingUpload setFile={(file) => handleUpload(file)} />
               <div style={styles.meta}>.json, .effection files</div>
             </div>
           </div>
@@ -357,7 +342,10 @@ export default function Home({ onStart, onLoadFile, onLaunchDemo }: HomeProps) {
             <div style={styles.footer}>
               <button
                 style={{ ...styles.btn, ...styles.btnPrimary }}
-                onClick={onLaunchDemo}
+                onClick={() => {
+                  if (onLaunchDemo) onLaunchDemo();
+                  navigate("/demo");
+                }}
                 aria-label="Launch demo"
               >
                 Launch Demo

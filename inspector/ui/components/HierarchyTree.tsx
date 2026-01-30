@@ -1,4 +1,5 @@
 import type React from "react";
+import { useEffect } from "react";
 import {
   TreeView,
   TreeViewItem,
@@ -15,7 +16,7 @@ import Circle from "@react-spectrum/s2/icons/Circle";
 import { iconStyle } from "@react-spectrum/s2/style" with { type: "macro" };
 
 import { getNodeLabel } from "../data/labels";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 
 function getOperationKind(_node: Hierarchy) {
   return "Operation";
@@ -76,6 +77,16 @@ export function HierarchyTree(props: {
 }) {
   const { hierarchy, filter } = props;
   const params = useParams();
+  const navigate = useNavigate();
+
+  function navigateToNode(id: string) {
+    onSelectionChange?.(id);
+    const encoded = encodeURIComponent(id);
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    const base = parts[0] ? `/${parts[0]}` : "";
+    // navigate to absolute base route to avoid appending when we're already on a node path
+    navigate(`${base}/${encoded}`);
+  }
 
   function renderItem(node: Hierarchy): React.ReactNode {
     const isSelected = node.id === params.nodeId;
@@ -92,23 +103,13 @@ export function HierarchyTree(props: {
             onClick={(e) => {
               // ensure clicking the row selects it and reveals attributes
               e.stopPropagation();
-              onSelectionChange?.(node.id);
-              window.dispatchEvent(
-                new CustomEvent("inspector:reveal-attributes", {
-                  detail: node.id,
-                }),
-              );
+              navigateToNode(node.id);
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 e.stopPropagation();
-                onSelectionChange?.(node.id);
-                window.dispatchEvent(
-                  new CustomEvent("inspector:reveal-attributes", {
-                    detail: node.id,
-                  }),
-                );
+                navigateToNode(node.id);
               }
             }}
           >
@@ -140,10 +141,7 @@ export function HierarchyTree(props: {
         defaultExpandedKeys={defaultExpandedKeys}
         onAction={(key) => {
           const id = String(key);
-          onSelectionChange?.(id);
-          window.dispatchEvent(
-            new CustomEvent("inspector:reveal-attributes", { detail: id }),
-          );
+          navigateToNode(id);
         }}
       >
         {renderItem(hierarchy)}

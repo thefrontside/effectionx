@@ -1,18 +1,24 @@
 import TopControls from "../../components/TopControls.tsx";
 
 import { useEffect, useMemo, useState } from "react";
-import { createSignal, each, run } from "effection";
+import { call, createSignal, each, run } from "effection";
 import { stratify } from "../../data/stratify.ts";
 import { pipe } from "remeda";
-import { arrayLoader, type Recording, useRecording } from "../../data/recording.ts";
+import {
+  arrayLoader,
+  type Recording,
+  useRecording,
+} from "../../data/recording.ts";
 import { box } from "../../data/box.ts";
 import type { Hierarchy } from "../../data/types.ts";
 
 import pipeline from "./pipeline.json" with { type: "json" };
 import "../AppLayout.css";
 import Inspector from "../../components/Inspector.tsx";
+import { useNavigate } from "react-router";
 
 function useDemoStream() {
+  const navigate = useNavigate();
   const [hierarchy, setHierarchy] = useState<Hierarchy>();
   const [recording, setRecording] = useState<Recording>();
 
@@ -29,6 +35,7 @@ function useDemoStream() {
         for (let item of yield* each(hierarchies)) {
           console.dir(item, { depth: 20 });
           setHierarchy(item);
+          yield* call(() => navigate(`/demo/${item.id}`, { replace: true }));
           yield* each.next();
         }
       });

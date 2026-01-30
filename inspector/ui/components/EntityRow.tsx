@@ -1,18 +1,21 @@
 import type { Hierarchy } from "../data/types";
 import { getNodeLabel } from "../data/labels";
+import { useNavigate } from "react-router";
 
 export function EntityRow(props: {
   node: Hierarchy;
   onActivate?: (id: string) => void;
 }) {
   const { node, onActivate } = props;
+  const navigate = useNavigate();
 
   function activate() {
     const id = node.id;
-    window.dispatchEvent(
-      new CustomEvent("inspector:reveal-attributes", { detail: id }),
-    );
     onActivate?.(id);
+    const encoded = encodeURIComponent(id);
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    const base = parts[0] ? `/${parts[0]}` : "";
+    navigate(`${base}/${encoded}`);
   }
 
   return (

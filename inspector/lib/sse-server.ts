@@ -13,6 +13,9 @@ import {
 } from "effection";
 import type { Handle, Methods } from "./types.ts";
 import { createServer } from "node:http";
+import { createReadStream, promises as fsPromises } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import type { AddressInfo } from "node:net";
 import type EventEmitter from "node:events";
 import type { Readable } from "node:stream";
@@ -29,6 +32,12 @@ export function useSSEServer<M extends Methods>(
 ): Operation<AddressInfo> {
   let { protocol } = handle;
   let methodNames = Object.keys(protocol.methods) as Array<keyof M>;
+  const uiDist = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "ui",
+    "dist",
+  );
 
   return resource(function* (provide) {
     yield* useLabels({ name: "SSEServer", port: options.port });
@@ -53,6 +62,89 @@ export function useSSEServer<M extends Methods>(
           method: req.method ?? "UKNOWN",
         });
         if (!name) {
+          // Attempt to serve static UI (SPA) from inspector/ui/dist when no RPC method matches.
+          if (req.method === "GET" || req.method === "HEAD") {
+            try {
+              // map "/" to index.html for SPA
+              let pathname =
+                url.pathname === "/"
+                  ? "/index.html"
+                  : decodeURIComponent(url.pathname);
+              // prevent path traversal
+              let relPath = pathname.replace(/^\/+/, "");
+              let filePath = path.join(uiDist, relPath);
+
+              // avoid default file viewing outside of ui/dist
+              if (!filePath.startsWith(uiDist)) {
+                res.statusCode = 403;
+                res.statusMessage = "Forbidden";
+                res.end();
+                return;
+              }
+
+              try {
+                let stat = yield* action<import("node:fs").Stats>(
+                  (resolve, reject) => {
+                    fsPromises.stat(filePath).then(resolve).catch(reject);
+                    return () => {};
+                  },
+                );
+                if (stat.isDirectory()) {
+                  filePath = path.join(filePath, "index.html");
+                  stat = yield* action<import("node:fs").Stats>(
+                    (resolve, reject) => {
+                      fsPromises.stat(filePath).then(resolve).catch(reject);
+                      return () => {};
+                    },
+                  );
+                }
+
+                // set headers
+                let ext = path.extname(filePath).toLowerCase();
+                let contentType = getContentType(ext);
+                let headers: Record<string, string> = {
+                  "Content-Type": contentType,
+                  "Cache-Control":
+                    ext === ".html" ? "no-cache" : "public, max-age=31536000",
+                };
+
+                res.writeHead(200, headers);
+                if (req.method === "HEAD") {
+                  res.end();
+                  return;
+                }
+                createReadStream(filePath).pipe(res);
+                return;
+              } catch (err) {
+                // if file not found and path looks like a SPA route (no extension),
+                // serve index.html as a fallback so client-side routing works.
+                if (!path.extname(relPath)) {
+                  let indexPath = path.join(uiDist, "index.html");
+                  try {
+                    yield* action<void>((resolve, reject) => {
+                      fsPromises
+                        .access(indexPath)
+                        .then(() => resolve())
+                        .catch(reject);
+                      return () => {};
+                    });
+                    res.writeHead(200, {
+                      "Content-Type": "text/html; charset=utf-8",
+                      "Cache-Control": "no-cache",
+                    });
+                    createReadStream(indexPath).pipe(res);
+                    return;
+                  } catch {
+                    // fall through to 404
+                  }
+                }
+                // fall through to 404
+              }
+            } catch {
+              // any error -> fall through to 404
+            }
+          }
+
           res.statusCode = 404;
           res.statusMessage = "Not Found";
           res.end();
@@ -174,4 +266,33 @@ function read(readable: Readable): Operation<string> {
     yield* onceEmit(readable, "end");
     return buffer;
   });
+}
+
+function getContentType(ext: string): string {
+  switch (ext) {
+    case ".html":
+      return "text/html; charset=utf-8";
+    case ".js":
+    case ".mjs":
+      return "application/javascript; charset=utf-8";
+    case ".css":
+      return "text/css; charset=utf-8";
+    case ".json":
+      return "application/json; charset=utf-8";
+    case ".png":
+      return "image/png";
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".svg":
+      return "image/svg+xml";
+    case ".ico":
+      return "image/x-icon";
+    case ".wasm":
+      return "application/wasm";
+    case ".map":
+      return "application/json; charset=utf-8";
+    default:
+      return "application/octet-stream";
+  }
 }

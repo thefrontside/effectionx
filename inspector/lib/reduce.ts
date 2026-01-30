@@ -32,16 +32,14 @@ export function reduce<T, TSum>(
       return {
         *next() {
           let next = yield* subscription.next();
-          while (!next.done) {
-            let reduction = yield* fn(current, next.value);
-            //            if (reduction !== current) {
-            current = reduction;
-            return { done: false, value: current } as const;
-            //            }
-
-            next = yield* subscription.next();
+          if (next.done) {
+            return next;
           }
-          return next;
+          let reduction = yield* fn(current, next.value);
+
+          current = reduction;
+
+          return { done: false, value: current } as const;
         },
       };
     },

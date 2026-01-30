@@ -49,7 +49,7 @@ export function useSSEServer<M extends Methods>(
       await scope.run(function* () {
         yield* useLabels({
           name: "RequestHandler",
-          url: req.url!,
+          url: req.url ?? "UKNOWN",
           method: req.method ?? "UKNOWN",
         });
         if (!name) {
@@ -70,7 +70,7 @@ export function useSSEServer<M extends Methods>(
 
             if (!result.ok) {
               res.statusCode = 400;
-              req.statusMessage = "Invalid Arguments";
+              res.statusMessage = "Invalid Arguments";
               let { name, message } = result.error;
               res.write(JSON.stringify({ name, message }, null, 2));
               return;

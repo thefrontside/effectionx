@@ -19,20 +19,13 @@ export function EntityRow(props: {
   }
 
   return (
-    <div
+    <button
+      type="button"
       className="childRow clickable"
-      role="button"
-      tabIndex={0}
       onClick={() => activate()}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          activate();
-        }
-      }}
     >
       <div>{getNodeLabel(node)}</div>
       <div className="childType">{String(node.data?.type ?? "")}</div>
-    </div>
+    </button>
   );
 }

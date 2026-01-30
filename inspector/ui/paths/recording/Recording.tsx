@@ -46,7 +46,7 @@ function useRecordingStream() {
     return () => {
       task.halt().catch((e) => console.error(e));
     };
-  }, [recording]);
+  }, [recording, navigate]);
 
   useEffect(() => {
     const task = run(function* () {
@@ -68,14 +68,15 @@ function useRecordingStream() {
     return () => {
       task.halt().catch((e) => console.error(e));
     };
-  }, [files]);
+  }, [files, files.send]);
 
   useEffect(() => {
-    const file = (location.state as any)?.file as File | undefined;
+    const maybeState = location.state as { file?: File } | undefined;
+    const file = maybeState?.file;
     if (file) {
       files.send(file);
     }
-  }, [location.state]);
+  }, [location.state, files.send]);
 
   return {
     setFile: files.send,
@@ -86,8 +87,6 @@ function useRecordingStream() {
 
 function App() {
   const { hierarchy, recording, setFile } = useRecordingStream();
-
-  const [selectedKey, setSelectedKey] = useState<string | undefined>();
 
   // playback state
   const [playing, setPlaying] = useState(false);

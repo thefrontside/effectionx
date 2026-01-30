@@ -4,5 +4,5 @@ export function unbox<T>(result: Result<T>): T {
   if (result.ok) {
     return result.value;
   }
-    throw result.error;
+  throw result.error;
 }

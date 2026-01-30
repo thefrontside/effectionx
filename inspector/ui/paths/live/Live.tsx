@@ -7,7 +7,11 @@ import { RecordingUpload } from "../../components/RecordingUpload.tsx";
 import { createSignal, each, run, until } from "effection";
 import { stratify } from "../../data/stratify.ts";
 import { pipe } from "remeda";
-import { arrayLoader, type Recording, useRecording } from "../../data/recording.ts";
+import {
+  arrayLoader,
+  type Recording,
+  useRecording,
+} from "../../data/recording.ts";
 import { box } from "../../data/box.ts";
 import type { Hierarchy } from "../../data/types.ts";
 

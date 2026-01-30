@@ -187,7 +187,13 @@ const styles: { [k: string]: React.CSSProperties } = {
 
 function WifiIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
         d="M2 9.5a16 16 0 0 1 20 0"
         stroke="#cbd5da"
@@ -216,7 +222,13 @@ function WifiIcon() {
 
 function LoadIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
         d="M21 12a9 9 0 1 0-8.94 9"
         stroke="#cbd5da"
@@ -237,7 +249,13 @@ function LoadIcon() {
 
 function PlayIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
       <path d="M5 3v18l15-9L5 3z" fill="#cbd5da" />
     </svg>
   );
@@ -287,6 +305,7 @@ export default function Home({ onStart, onLoadFile, onLaunchDemo }: HomeProps) {
 
             <div style={styles.footer}>
               <button
+                type="button"
                 style={{ ...styles.btn, ...styles.btnSecondary }}
                 onClick={() => {
                   if (onStart) onStart();
@@ -341,6 +360,7 @@ export default function Home({ onStart, onLoadFile, onLaunchDemo }: HomeProps) {
 
             <div style={styles.footer}>
               <button
+                type="button"
                 style={{ ...styles.btn, ...styles.btnPrimary }}
                 onClick={() => {
                   if (onLaunchDemo) onLaunchDemo();
@@ -358,7 +378,11 @@ export default function Home({ onStart, onLoadFile, onLaunchDemo }: HomeProps) {
         <section style={styles.recentSection}>
           <div style={styles.recentHeader}>
             <h2 style={{ margin: 0, color: "#ffffff" }}>Recent Sessions</h2>
-            <button style={styles.clearHistory} aria-label="Clear History">
+            <button
+              type="button"
+              style={styles.clearHistory}
+              aria-label="Clear History"
+            >
               🗑 Clear History
             </button>
           </div>
@@ -408,7 +432,10 @@ export default function Home({ onStart, onLoadFile, onLaunchDemo }: HomeProps) {
                   <div style={styles.sessionMeta}>Last accessed yesterday</div>
                 </div>
                 <div style={{ marginLeft: "auto" }}>
-                  <button style={{ ...styles.btn, ...styles.btnSecondary }}>
+                  <button
+                    type="button"
+                    style={{ ...styles.btn, ...styles.btnSecondary }}
+                  >
                     Open
                   </button>
                 </div>

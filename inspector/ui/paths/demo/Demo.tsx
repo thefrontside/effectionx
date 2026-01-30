@@ -10,7 +10,7 @@ import {
   useRecording,
 } from "../../data/recording.ts";
 import { box } from "../../data/box.ts";
-import type { Hierarchy } from "../../data/types.ts";
+import type { Hierarchy, NodeMap } from "../../data/types.ts";
 
 import pipeline from "./pipeline.json" with { type: "json" };
 import "../AppLayout.css";
@@ -46,13 +46,15 @@ function useDemoStream() {
     return () => {
       task.halt().catch((e) => console.error(e));
     };
-  }, [recording]);
+  }, [recording, navigate]);
 
   useEffect(() => {
     // Load the demo pipeline fixture when no file was uploaded
     const task = run(function* () {
       const result = yield* box(function* () {
-        const r = yield* useRecording(arrayLoader(pipeline as any));
+        const r = yield* useRecording(
+          arrayLoader(pipeline as unknown as NodeMap[]),
+        );
         setRecording(r);
       });
       if (!result.ok) {

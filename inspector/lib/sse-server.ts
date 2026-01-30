@@ -200,9 +200,10 @@ export function useSSEServer<M extends Methods>(
             yield* race([onceEmit(res, "close"), done]);
           });
         } finally {
-          res.write("event: return\n");
-          res.write(`data: ${null}\n\n`);
-          res.end();
+          yield* action<void>((resolve) => {
+            res.end(resolve);
+            return () => {};
+          });
         }
       });
     });

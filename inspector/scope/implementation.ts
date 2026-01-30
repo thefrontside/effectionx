@@ -26,7 +26,7 @@ export const scope = createImplementation(protocol, function* (root) {
   root.set(LabelsContext, { name: "Global" });
 
   // give every node an id that does not have it.
-  reduce(
+  visit(
     root,
     (_, { scope }) => {
       scope.set(Id, String(ids++));
@@ -95,7 +95,7 @@ export const scope = createImplementation(protocol, function* (root) {
 }) as Inspector<typeof protocol.methods>;
 
 function readTree(root: Scope): ScopeTree {
-  return reduce(
+  return visit(
     root,
     (nodes, { scope, parentId }) => {
       nodes.push({
@@ -108,12 +108,9 @@ function readTree(root: Scope): ScopeTree {
   );
 }
 
-function reduce<T>(
+function visit<T>(
   scope: Scope,
-  visitor: (
-    current: T,
-    node: { parentId?: string; scope: Scope },
-  ) => T | undefined,
+  visitor: (current: T, node: { parentId?: string; scope: Scope }) => void,
   initial: T,
 ): T {
   let sum = initial;

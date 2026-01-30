@@ -5,7 +5,7 @@
     "rootDir": ".",
     "jsx": "react-jsx"
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "package.json"],
   "exclude": [
     "ui",
     "*.config.ts",

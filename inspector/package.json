@@ -15,10 +15,7 @@
     "node": ">= 22"
   },
   "sideEffects": false,
-  "files": [
-    "dist",
-    "ui/dist"
-  ],
+  "files": ["dist", "ui/dist"],
   "scripts": {
     "start": "vite --host 0.0.0.0",
     "build:bundle": "vite build"
@@ -58,6 +55,10 @@
     ".": {
       "development": "./mod.ts",
       "default": "./dist/mod.js"
+    },
+    "./node": {
+      "development": "./node.ts",
+      "default": "./dist/node.js"
     },
     "./package.json": "./package.json"
   }

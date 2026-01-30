@@ -1,145 +1,88 @@
-import TopControls from "../../components/TopControls.tsx";
-import LeftPane from "../../components/LeftPane.tsx";
-import RightPane from "../../components/RightPane.tsx";
-
 import { useEffect, useMemo, useState } from "react";
-import { RecordingUpload } from "../../components/RecordingUpload.tsx";
-import { createSignal, each, run, until } from "effection";
+import { run, type Stream } from "effection";
+import { createSSEClient } from "../../../lib/sse-client.ts";
 import { stratify } from "../../data/stratify.ts";
 import { pipe } from "remeda";
-import {
-  arrayLoader,
-  type Recording,
-  useRecording,
-} from "../../data/recording.ts";
-import { box } from "../../data/box.ts";
-import type { Hierarchy } from "../../data/types.ts";
+import { protocol } from "../../../scope/protocol.ts";
 
 import "../AppLayout.css";
 import Inspector from "../../components/Inspector.tsx";
-
-function useRecordingStream() {
-  const [hierarchy, setHierarchy] = useState<Hierarchy>();
-  const [recording, setRecording] = useState<Recording>();
-
-  const files = useMemo(() => {
-    return createSignal<File, never>();
-  }, []);
-
-  useEffect(() => {
-    if (!recording) return;
-    const task = run(function* () {
-      const result = yield* box(function* () {
-        console.log({ recording });
-        const hierarchies = pipe(recording.replayStream(), stratify());
-        for (let item of yield* each(hierarchies)) {
-          console.dir(item, { depth: 20 });
-          setHierarchy(item);
-          yield* each.next();
-        }
-      });
-      if (!result.ok) {
-        console.error("Error processing file:", result.error);
-      }
-    });
-    return () => {
-      task.halt().catch((e) => console.error(e));
-    };
-  }, [recording]);
-
-  useEffect(() => {
-    const task = run(function* () {
-      const result = yield* box(function* () {
-        for (let file of yield* each(files)) {
-          const text = yield* until(file.text());
-          const json = JSON.parse(text);
-
-          const recording = yield* useRecording(arrayLoader(json));
-          setRecording(recording);
-
-          yield* each.next();
-        }
-      });
-      if (!result.ok) {
-        console.error("Error processing file:", result.error);
-      }
-    });
-    return () => {
-      task.halt().catch((e) => console.error(e));
-    };
-  }, [files]);
-
-  return {
-    setFile: files.send,
-    hierarchy,
-    recording,
-  };
-}
+import { updateNodeMap } from "../../data/update-node-map.ts";
 
 function Live() {
-  // const dispatch = useDispatch();
-  // const max = useSelector(schema.snapshot.selectTableAsList).length;
-  const { hierarchy, recording, setFile } = useRecordingStream();
+  let stream = useMemo(() => {
+    let client = createSSEClient(protocol);
 
-  const [selectedKey, setSelectedKey] = useState<string | undefined>();
+    return pipe(client.methods.watchScopes(), updateNodeMap({}), stratify());
+  }, []);
 
-  // playback state
-  const [playing, setPlaying] = useState(false);
-  const [offset, setOffset] = useState(0);
-  const tickIntervalMs = 250;
+  let next = useEach(stream);
+  if (!next.ok) {
+    if (next.pending) {
+      return <div>connecting...</div>;
+    } else {
+      return (
+        <pre>
+          {String(next.error)}\n{(next.error as Error).stack}
+        </pre>
+      );
+    }
+  } else if (next.value.done) {
+    return <div>connection closed</div>;
+  }
 
-  // keep offset and recording in sync
-  useEffect(() => {
-    if (!recording) return;
-    // initialize offset to 0 when a recording loads
-    setOffset(0);
-    recording.setOffset(0);
-  }, [recording]);
-
-  // when offset changes by user or timer, update the recording
-  useEffect(() => {
-    if (!recording) return;
-    recording.setOffset(offset);
-  }, [offset, recording]);
-
-  // playback auto-advance
-  useEffect(() => {
-    if (!playing || !recording) return;
-    const id = setInterval(() => {
-      setOffset((prev) => {
-        const next = prev + 1;
-        if (recording && next >= recording.length) {
-          // stop at end
-          setPlaying(false);
-          return recording.length - 1;
-        }
-        return next;
-      });
-    }, tickIntervalMs);
-    return () => clearInterval(id);
-  }, [playing, recording]);
-
-  // Auto-select the first top-level child when the hierarchy updates
-  useEffect(() => {
-    if (!hierarchy) return;
-    if (selectedKey) return; // don't override user selection
-    const first = hierarchy.children?.[0];
-    if (first) setSelectedKey(first.id);
-  }, [hierarchy, selectedKey]);
+  let hierarchy = next.value.value;
 
   return (
     <div className="appRoot">
-      {!recording ? (
-        <div className="fullWidthPane">
-          <RecordingUpload setFile={setFile} />
-        </div>
-      ) : (
-        <div className="bodyRoot">
-          <Inspector hierarchy={hierarchy} />
-        </div>
-      )}
+      <div className="bodyRoot">
+        <Inspector hierarchy={hierarchy} />
+      </div>
     </div>
   );
+}
+
+export type AsyncResult<T> =
+  | {
+      pending: true;
+      ok: false;
+    }
+  | {
+      pending: false;
+      ok: true;
+      value: T;
+    }
+  | {
+      pending: false;
+      ok: false;
+      error: unknown;
+    };
+
+export function useEach<T, TClose>(stream: Stream<T, TClose>) {
+  let [next, setNext] = useState<AsyncResult<IteratorResult<T, TClose>>>({
+    pending: true,
+    ok: false,
+  });
+
+  useEffect(() => {
+    let task = run(function* () {
+      let subscription = yield* stream;
+      let current = yield* subscription.next();
+      console.log({ current });
+      while (!current.done) {
+        setNext({ pending: false, ok: true, value: current });
+        current = yield* subscription.next();
+        console.log({ current });
+      }
+      setNext({ pending: false, ok: true, value: current });
+    });
+    task.catch((error) => setNext({ pending: false, ok: false, error }));
+    return () => {
+      task.halt().catch((error) => console.error(error));
+    };
+  }, [stream]);
+
+  return next;
 }
 
 export default Live;

@@ -2,9 +2,9 @@ import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
 import type { Stream } from "effection";
 import { scope } from "arktype";
-import type { Method } from "./lib/types.ts";
+import type { Method } from "../lib/types.ts";
 
-import { createImplementation, createProtocol } from "./lib/mod.ts";
+import { createImplementation, createProtocol } from "../lib/mod.ts";
 
 describe("createImplementation()", () => {
   it("attach yields a handle with protocol and methods and invoke calls the method", function* () {

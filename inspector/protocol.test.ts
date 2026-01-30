@@ -1,9 +1,9 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
-import type { Methods } from "./lib/types.ts";
+import type { Methods } from "../lib/types.ts";
 import { scope } from "arktype";
 
-import { createProtocol } from "./lib/mod.ts";
+import { createProtocol } from "../lib/mod.ts";
 
 describe("createProtocol()", () => {
   it("returns a protocol object containing the provided methods", function* () {

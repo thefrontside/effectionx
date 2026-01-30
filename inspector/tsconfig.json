@@ -5,8 +5,15 @@
     "rootDir": ".",
     "jsx": "react-jsx"
   },
-  "include": ["**/*.ts", "**/*.json", "**/*.tsx"],
-  "exclude": ["**/*.test.ts", "dist"],
+  "include": ["**/*.ts"],
+  "exclude": [
+    "ui",
+    "*.config.ts",
+    "**/*.test.ts",
+    "dist",
+    "example.ts",
+    "pipeline-test.ts"
+  ],
   "references": [
     {
       "path": "../bdd"

@@ -15,9 +15,13 @@
     "node": ">= 22"
   },
   "sideEffects": false,
+  "files": [
+    "dist",
+    "ui/dist"
+  ],
   "scripts": {
     "start": "vite --host 0.0.0.0",
-    "build": "tsc && vite build"
+    "build:bundle": "vite build"
   },
   "peerDependencies": {
     "effection": "^4.x.x"
@@ -54,6 +58,7 @@
     ".": {
       "development": "./mod.ts",
       "default": "./dist/mod.js"
-    }
+    },
+    "./package.json": "./package.json"
   }
 }

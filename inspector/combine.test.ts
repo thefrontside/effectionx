@@ -1,9 +1,9 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
-import { combine, createImplementation, createProtocol } from "./lib/mod.ts";
+import { combine, createImplementation, createProtocol } from "../lib/mod.ts";
 import { scope } from "arktype";
 import type { Stream } from "effection";
-import type { Method } from "./lib/types.ts";
+import type { Method } from "../lib/types.ts";
 
 describe("combine", () => {
   it("combines protocols methods", function* () {

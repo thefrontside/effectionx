@@ -23,25 +23,27 @@ import type { Operation, Stream } from "effection";
  * const value = yield* last(empty); // returns undefined
  * ```
  */
-function* _last<T, TClose>(
-  stream: Stream<T, TClose>,
-): Operation<T | undefined> {
-  const subscription = yield* stream;
-  const first = yield* subscription.next();
+function _last<T, TClose>(stream: Stream<T, TClose>): Operation<T | undefined> {
+  return {
+    *[Symbol.iterator]() {
+      const subscription = yield* stream;
+      const first = yield* subscription.next();
 
-  if (first.done) {
-    return undefined;
-  }
+      if (first.done) {
+        return undefined;
+      }
 
-  let lastValue: T = first.value;
-  let result = yield* subscription.next();
+      let lastValue: T = first.value;
+      let result = yield* subscription.next();
 
-  while (!result.done) {
-    lastValue = result.value;
-    result = yield* subscription.next();
-  }
+      while (!result.done) {
+        lastValue = result.value;
+        result = yield* subscription.next();
+      }
 
-  return lastValue;
+      return lastValue;
+    },
+  };
 }
 
 /**
@@ -66,23 +68,27 @@ function* _last<T, TClose>(
  * const value = yield* last.expect(empty); // throws Error
  * ```
  */
-function* expectLast<T, TClose>(stream: Stream<T, TClose>): Operation<T> {
-  const subscription = yield* stream;
-  const first = yield* subscription.next();
+function expectLast<T, TClose>(stream: Stream<T, TClose>): Operation<T> {
+  return {
+    *[Symbol.iterator]() {
+      const subscription = yield* stream;
+      const first = yield* subscription.next();
 
-  if (first.done) {
-    throw new Error("Stream closed without yielding any values");
-  }
+      if (first.done) {
+        throw new Error("Stream closed without yielding any values");
+      }
 
-  let lastValue: T = first.value;
-  let result = yield* subscription.next();
+      let lastValue: T = first.value;
+      let result = yield* subscription.next();
 
-  while (!result.done) {
-    lastValue = result.value;
-    result = yield* subscription.next();
-  }
+      while (!result.done) {
+        lastValue = result.value;
+        result = yield* subscription.next();
+      }
 
-  return lastValue;
+      return lastValue;
+    },
+  };
 }
 
 export const last = Object.assign(_last, { expect: expectLast });

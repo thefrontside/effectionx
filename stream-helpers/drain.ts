@@ -21,13 +21,15 @@ import type { Operation, Stream } from "effection";
  * const response = yield* drain(channel);
  * ```
  */
-export function* drain<T, TClose>(
-  stream: Stream<T, TClose>,
-): Operation<TClose> {
-  const subscription = yield* stream;
-  let result = yield* subscription.next();
-  while (!result.done) {
-    result = yield* subscription.next();
-  }
-  return result.value;
+export function drain<T, TClose>(stream: Stream<T, TClose>): Operation<TClose> {
+  return {
+    *[Symbol.iterator]() {
+      const subscription = yield* stream;
+      let result = yield* subscription.next();
+      while (!result.done) {
+        result = yield* subscription.next();
+      }
+      return result.value;
+    },
+  };
 }

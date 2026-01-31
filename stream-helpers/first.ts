@@ -22,15 +22,19 @@ import type { Operation, Stream } from "effection";
  * const value = yield* first(empty); // returns undefined
  * ```
  */
-function* _first<T, TClose>(
+function _first<T, TClose>(
   stream: Stream<T, TClose>,
 ): Operation<T | undefined> {
-  const subscription = yield* stream;
-  const result = yield* subscription.next();
-  if (result.done) {
-    return undefined;
-  }
-  return result.value;
+  return {
+    *[Symbol.iterator]() {
+      const subscription = yield* stream;
+      const result = yield* subscription.next();
+      if (result.done) {
+        return undefined;
+      }
+      return result.value;
+    },
+  };
 }
 
 /**
@@ -54,13 +58,17 @@ function* _first<T, TClose>(
  * const value = yield* first.expect(empty); // throws Error
  * ```
  */
-function* expectFirst<T, TClose>(stream: Stream<T, TClose>): Operation<T> {
-  const subscription = yield* stream;
-  const result = yield* subscription.next();
-  if (result.done) {
-    throw new Error("Stream closed without yielding any values");
-  }
-  return result.value;
+function expectFirst<T, TClose>(stream: Stream<T, TClose>): Operation<T> {
+  return {
+    *[Symbol.iterator]() {
+      const subscription = yield* stream;
+      const result = yield* subscription.next();
+      if (result.done) {
+        throw new Error("Stream closed without yielding any values");
+      }
+      return result.value;
+    },
+  };
 }
 
 export const first = Object.assign(_first, { expect: expectFirst });

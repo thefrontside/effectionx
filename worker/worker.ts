@@ -1,10 +1,13 @@
 import assert from "node:assert";
 import {
+  createSignal,
+  each,
   Err,
   Ok,
   on,
   once,
   type Operation,
+  race,
   resource,
   type Result,
   spawn,
@@ -13,17 +16,35 @@ import {
 import Worker from "web-worker";
 
 import { useMessageChannel } from "./message-channel.ts";
+import {
+  serializeError,
+  errorFromSerialized,
+  type SerializedError,
+} from "./types.ts";
 
 /**
- * Argument received by workerMain function
+ * Resource returned by useWorker, providing APIs for worker communication.
  *
  * @template TSend - value main thread will send to the worker
  * @template TRecv - value main thread will receive from the worker
- * @template TData - data passed from the main thread to the worker during initialization
+ * @template TReturn - worker operation return value
  */
 export interface WorkerResource<TSend, TRecv, TReturn>
   extends Operation<TReturn> {
+  /**
+   * Send a message to the worker and wait for a response.
+   */
   send(data: TSend): Operation<TRecv>;
+  /**
+   * Handle requests initiated by the worker.
+   * Only one forEach can be active at a time.
+   *
+   * @template TRequest - value worker sends to host
+   * @template TResponse - value host sends back to worker
+   */
+  forEach<TRequest, TResponse>(
+    fn: (request: TRequest) => Operation<TResponse>,
+  ): Operation<TReturn>;
 }
 
 /**
@@ -84,18 +105,39 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
     let worker = new Worker(url, options);
     let subscription = yield* on(worker, "message");
 
-    let onclose = (event: MessageEvent) => {
-      if (event.data.type === "close") {
-        let { result } = event.data as { result: Result<TReturn> };
+    // Signal for worker-initiated requests
+    let requestSignal = createSignal<{
+      value: unknown;
+      response: MessagePort;
+    }>();
+
+    // R6: Flag to prevent concurrent forEach calls
+    let forEachInProgress = false;
+    // Track if worker has closed
+    let closed = false;
+
+    let onmessage = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg.type === "close") {
+        closed = true;
+        let { result } = msg as { result: Result<TReturn> };
         if (result.ok) {
           outcome.resolve(result.value);
         } else {
-          outcome.reject(result.error);
+          // R2: wrap error with cause
+          const serializedError = result.error as unknown as SerializedError;
+          outcome.reject(errorFromSerialized("Worker failed", serializedError));
         }
+      } else if (msg.type === "request") {
+        // Forward requests to the signal for forEach to consume
+        requestSignal.send({
+          value: msg.value,
+          response: msg.response,
+        });
       }
     };
 
-    worker.addEventListener("message", onclose);
+    worker.addEventListener("message", onmessage);
 
     let first = yield* subscription.next();
 
@@ -129,18 +171,80 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
           );
           channel.port1.start();
           let event = yield* once(channel.port1, "message");
-          let result = (event as MessageEvent).data;
+          let result = (event as MessageEvent).data as Result<
+            TRecv | SerializedError
+          >;
           if (result.ok) {
-            return result.value;
+            return result.value as TRecv;
           }
-          throw result.error;
+          // R2: wrap error with cause
+          throw errorFromSerialized(
+            "Worker handler failed",
+            result.error as unknown as SerializedError,
+          );
         },
+
+        *forEach<TRequest, TResponse>(
+          fn: (request: TRequest) => Operation<TResponse>,
+        ): Operation<TReturn> {
+          // R6: check closed FIRST, before setting flag
+          if (closed) {
+            return yield* outcome.operation;
+          }
+
+          // R6: prevent concurrent forEach
+          if (forEachInProgress) {
+            throw new Error("forEach is already in progress");
+          }
+          forEachInProgress = true;
+
+          try {
+            // Helper to handle a single request
+            function* handleRequest(msg: {
+              value: unknown;
+              response: MessagePort;
+            }): Operation<void> {
+              try {
+                const result = yield* fn(msg.value as TRequest);
+                msg.response.postMessage(Ok(result));
+              } catch (error) {
+                // R2: serialize error
+                msg.response.postMessage(
+                  Err(serializeError(error as Error) as unknown as Error),
+                );
+              } finally {
+                // R3: cleanup
+                msg.response.close();
+              }
+            }
+
+            // Operation to process requests from the signal
+            function* processRequests(): Operation<void> {
+              for (const request of yield* each(requestSignal)) {
+                yield* spawn(function* () {
+                  yield* handleRequest(request);
+                });
+                yield* each.next();
+              }
+            }
+
+            // Race between processing requests and the worker closing
+            // outcome.operation resolves when the worker sends "close" message
+            yield* race([processRequests(), outcome.operation]);
+
+            return yield* outcome.operation;
+          } finally {
+            // R6: always reset flag, even on error
+            forEachInProgress = false;
+          }
+        },
+
         [Symbol.iterator]: outcome.operation[Symbol.iterator],
       });
     } finally {
       worker.postMessage({ type: "close" });
       yield* settled(outcome.operation);
-      worker.removeEventListener("message", onclose);
+      worker.removeEventListener("message", onmessage);
     }
   });
 }

@@ -1,6 +1,6 @@
 # Policies Index
 
-This is the **single source of truth** for all policies in this repository. The [Policy Officer](../policy-officer.md) agent uses this index to determine which policies to enforce.
+This is the **single source of truth** for all policies in this repository.
 
 ## Policy States
 
@@ -15,6 +15,7 @@ This is the **single source of truth** for all policies in this repository. The 
 | Policy | State | Description |
 |--------|-------|-------------|
 | [No-Sleep Test Synchronization](./no-sleep-test-sync.md) | Recommended | Use deterministic helpers instead of sleep() for test synchronization |
+| [Stateless Stream Operations](./stateless-streams.md) | Recommended | Use `*[Symbol.iterator]` pattern for reusable stream operations |
 
 <!-- Example entries:
 | [Naming Conventions](./naming-conventions.md) | Strict | File and function naming patterns |
@@ -24,16 +25,8 @@ This is the **single source of truth** for all policies in this repository. The 
 
 ## Adding a New Policy
 
-1. Copy [POLICY_TEMPLATE.md](./POLICY_TEMPLATE.md) to a new file (e.g., `my-policy.md`)
+1. Copy [template.md](./template.md) to a new file (e.g., `my-policy.md`)
 2. Fill in all sections following the template structure
 3. Add an entry to the **Policy Documents** table above
 4. Set the appropriate state (Strict, Recommended, or Experimental)
 
-## For AI Agents
-
-When reviewing code changes:
-
-1. Read this index to get the list of applicable policies
-2. For each policy in the table, read the linked document
-3. Apply each policy's checks to the changed artifacts
-4. Report violations using the format in [policy-officer.md](../policy-officer.md)

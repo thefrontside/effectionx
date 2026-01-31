@@ -20,12 +20,12 @@ export type WorkerControl<TSend, TData> =
 /**
  * Messages sent from worker to host.
  *
- * @template TRequest - value worker sends to host in requests
+ * @template WRequest - value worker sends to host in requests
  * @template TReturn - return value when worker completes
  */
-export type WorkerToHost<TRequest, TReturn> =
+export type WorkerToHost<WRequest, TReturn> =
   | { type: "open" }
-  | { type: "request"; value: TRequest; response: MessagePort }
+  | { type: "request"; value: WRequest; response: MessagePort }
   | { type: "close"; result: Result<TReturn> };
 
 /**
@@ -70,15 +70,15 @@ export function errorFromSerialized(
  * @template TSend - value host sends to worker
  * @template TRecv - value host receives from worker (response to host's send)
  * @template TData - initial data passed to worker
- * @template TRequest - value worker sends to host in requests
- * @template TResponse - value worker receives from host (response to worker's send)
+ * @template WRequest - value worker sends to host in requests
+ * @template WResponse - value worker receives from host (response to worker's send)
  */
 export interface WorkerMainOptions<
   TSend,
   TRecv,
   TData,
-  TRequest = never,
-  TResponse = never,
+  WRequest = never,
+  WResponse = never,
 > {
   /**
    * Namespace that provides APIs for working with incoming messages from host.
@@ -90,9 +90,9 @@ export interface WorkerMainOptions<
   data: TData;
   /**
    * Send a request to the host and wait for a response.
-   * Only available if TRequest and TResponse type parameters are provided.
+   * Only available if WRequest and WResponse type parameters are provided.
    */
-  send: (value: TRequest) => Operation<TResponse>;
+  send: (value: WRequest) => Operation<WResponse>;
 }
 
 /**

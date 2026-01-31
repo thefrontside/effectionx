@@ -423,5 +423,25 @@ describe("worker", () => {
         expect(cause.message).toEqual("worker range error");
       }
     });
+
+    it("worker can call send inside messages.forEach handler", function* () {
+      const worker = yield* useWorker<string, string, string, void>(
+        import.meta.resolve("./test-assets/send-inside-foreach-worker.ts"),
+        { type: "module" },
+      );
+
+      // Handle worker-initiated requests
+      yield* spawn(function* () {
+        yield* worker.forEach<string, string>(function* (request) {
+          return `host-handled: ${request}`;
+        });
+      });
+
+      // Send message to worker, which triggers it to call send() back to host
+      const result = yield* worker.send("trigger");
+      expect(result).toEqual(
+        "processed: trigger with host-handled: worker-request-for: trigger",
+      );
+    });
   });
 });

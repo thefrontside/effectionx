@@ -1,8 +1,40 @@
 import type { Operation, Stream } from "effection";
 
 /**
- * Returns the first value yielded by a stream.
+ * Returns the first value yielded by a stream, or `undefined` if the stream
+ * closes without yielding any values.
  *
+ * Use `first.expect()` if you want to throw an error when the stream is empty.
+ *
+ * @template T - The type of items in the stream
+ * @template TClose - The type of the close value (unused)
+ * @param stream - The stream to get the first value from
+ * @returns The first value yielded by the stream, or `undefined` if empty
+ *
+ * @example
+ * ```typescript
+ * import { first } from "./first.ts";
+ *
+ * const stream = streamOf([1, 2, 3]);
+ * const value = yield* first(stream); // returns 1
+ *
+ * const empty = streamOf([]);
+ * const value = yield* first(empty); // returns undefined
+ * ```
+ */
+function* _first<T, TClose>(
+  stream: Stream<T, TClose>,
+): Operation<T | undefined> {
+  const subscription = yield* stream;
+  const result = yield* subscription.next();
+  if (result.done) {
+    return undefined;
+  }
+  return result.value;
+}
+
+/**
+ * Returns the first value yielded by a stream.
  * Throws an error if the stream closes without yielding any values.
  *
  * @template T - The type of items in the stream
@@ -16,17 +48,13 @@ import type { Operation, Stream } from "effection";
  * import { first } from "./first.ts";
  *
  * const stream = streamOf([1, 2, 3]);
- * const value = yield* first(stream); // returns 1
- * ```
+ * const value = yield* first.expect(stream); // returns 1
  *
- * @example
- * ```typescript
- * // Throws if stream is empty
  * const empty = streamOf([]);
- * const value = yield* first(empty); // throws Error
+ * const value = yield* first.expect(empty); // throws Error
  * ```
  */
-export function* first<T, TClose>(stream: Stream<T, TClose>): Operation<T> {
+function* expectFirst<T, TClose>(stream: Stream<T, TClose>): Operation<T> {
   const subscription = yield* stream;
   const result = yield* subscription.next();
   if (result.done) {
@@ -34,3 +62,5 @@ export function* first<T, TClose>(stream: Stream<T, TClose>): Operation<T> {
   }
   return result.value;
 }
+
+export const first = Object.assign(_first, { expect: expectFirst });

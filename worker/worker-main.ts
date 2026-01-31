@@ -5,16 +5,23 @@ import {
   Err,
   Ok,
   type Operation,
+  type Result,
   type Task,
   createSignal,
   each,
   main,
   on,
+  once,
   resource,
   spawn,
 } from "effection";
 
 import type { WorkerControl, WorkerMainOptions } from "./types.ts";
+import {
+  serializeError,
+  errorFromSerialized,
+  type SerializedError,
+} from "./types.ts";
 
 // Get the appropriate worker port for the current environment as a resource
 function useWorkerPort(): Operation<MessagePort> {
@@ -74,15 +81,38 @@ function useWorkerPort(): Operation<MessagePort> {
  * );
  * ```
  *
+ * @example Sending requests to the host
+ * ```ts
+ * import { workerMain } from "../worker.ts";
+ *
+ * await workerMain<never, never, string, void, string, string>(
+ *   function* ({ send }) {
+ *     const response = yield* send("hello");
+ *     return `received: ${response}`;
+ *   },
+ * );
+ * ```
+ *
  * @template TSend - value main thread will send to the worker
  * @template TRecv - value main thread will receive from the worker
  * @template TReturn - worker operation return value
  * @template TData - data passed from the main thread to the worker during initialization
- * @param {(options: WorkerMainOptions<TSend, TRecv, TData>) => Operation<TReturn>} body
+ * @template TRequest - value worker sends to the host in requests
+ * @template TResponse - value worker receives from the host (response to worker's send)
+ * @param {(options: WorkerMainOptions<TSend, TRecv, TData, TRequest, TResponse>) => Operation<TReturn>} body
  * @returns {Promise<void>}
  */
-export async function workerMain<TSend, TRecv, TReturn, TData>(
-  body: (options: WorkerMainOptions<TSend, TRecv, TData>) => Operation<TReturn>,
+export async function workerMain<
+  TSend,
+  TRecv,
+  TReturn,
+  TData,
+  TRequest = never,
+  TResponse = never,
+>(
+  body: (
+    options: WorkerMainOptions<TSend, TRecv, TData, TRequest, TResponse>,
+  ) => Operation<TReturn>,
 ): Promise<void> {
   await main(function* () {
     const port = yield* useWorkerPort();
@@ -98,6 +128,34 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
             worker.start(
               yield* spawn(function* () {
                 try {
+                  // Create send function for worker-initiated requests
+                  function* send(requestValue: TRequest): Operation<TResponse> {
+                    const channel = new MessageChannel();
+                    port.postMessage(
+                      {
+                        type: "request",
+                        value: requestValue,
+                        response: channel.port2,
+                      },
+                      // biome-ignore lint/suspicious/noExplicitAny: cross-env MessagePort compatibility
+                      [channel.port2] as any,
+                    );
+                    channel.port1.start();
+                    const event = yield* once(channel.port1, "message");
+                    channel.port1.close(); // R3: cleanup
+                    const result = (event as MessageEvent).data as Result<
+                      TResponse | SerializedError
+                    >;
+                    if (result.ok) {
+                      return result.value as TResponse;
+                    }
+                    // R2: wrap error with cause
+                    throw errorFromSerialized(
+                      "Host handler failed",
+                      result.error as unknown as SerializedError,
+                    );
+                  }
+
                   let value = yield* body({
                     data: control.data,
                     messages: {
@@ -108,13 +166,21 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
                               let result = yield* fn(value);
                               response.postMessage(Ok(result));
                             } catch (error) {
-                              response.postMessage(Err(error as Error));
+                              // R2: serialize error for transmission
+                              response.postMessage(
+                                Err(
+                                  serializeError(
+                                    error as Error,
+                                  ) as unknown as Error,
+                                ),
+                              );
                             }
                           });
                           yield* each.next();
                         }
                       },
                     },
+                    send,
                   });
 
                   worker.complete(value);

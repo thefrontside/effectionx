@@ -31,7 +31,7 @@ describe("worker", () => {
       yield* worker.send();
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e).toMatchObject({ message: "boom!" });
+      expect((e as Error).message).toContain("boom!");
     }
   });
   it("produces its return value", function* () {
@@ -55,7 +55,7 @@ describe("worker", () => {
       yield* worker;
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e).toMatchObject({ message: "boom!" });
+      expect((e as Error).message).toContain("boom!");
     }
   });
   describe("shutdown", () => {
@@ -130,7 +130,7 @@ describe("worker", () => {
       yield* worker;
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e).toMatchObject({ message: "worker terminated" });
+      expect((e as Error).message).toContain("worker terminated");
     }
   });
 

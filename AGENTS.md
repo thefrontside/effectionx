@@ -2,6 +2,15 @@
 
 This repository uses AI agents to assist with development tasks. This file provides entry points for agent discovery.
 
+## Effection
+
+This repository builds on [Effection](https://github.com/thefrontside/effection), a structured concurrency library. Before working with code here, read the [Effection AGENTS.md](https://github.com/thefrontside/effection/blob/v4/AGENTS.md) for essential concepts:
+
+- Operations vs Promises (lazy vs eager execution)
+- Scope ownership and structured concurrency
+- Entry points (`main()`, `run()`, `createScope()`)
+- Streams, channels, and the `each()` pattern
+
 ## Available Agents
 
 | Agent | Purpose | Location |

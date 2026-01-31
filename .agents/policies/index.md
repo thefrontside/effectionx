@@ -14,7 +14,7 @@ This is the **single source of truth** for all policies in this repository. The 
 
 | Policy | State | Description |
 |--------|-------|-------------|
-| *No policies defined yet* | - | Add your first policy using the [template](./POLICY_TEMPLATE.md) |
+| [No-Sleep Test Synchronization](./no-sleep-test-sync.md) | Recommended | Use deterministic helpers instead of sleep() for test synchronization |
 
 <!-- Example entries:
 | [Naming Conventions](./naming-conventions.md) | Strict | File and function naming patterns |

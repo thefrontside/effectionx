@@ -217,9 +217,8 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
               }
             }
 
-            // Spawn request processor in background - it will be halted
-            // when this scope exits (after outcome resolves)
-            yield* spawn(function* () {
+            // Spawn request processor in background
+            const processorTask = yield* spawn(function* () {
               for (const request of yield* each(requestSignal)) {
                 yield* spawn(function* () {
                   yield* handleRequest(request);
@@ -228,8 +227,12 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
               }
             });
 
-            // Wait for worker to close
-            return yield* outcome.operation;
+            // Wait for worker to close, then halt the processor
+            try {
+              return yield* outcome.operation;
+            } finally {
+              yield* processorTask.halt();
+            }
           } finally {
             // R6: always reset flag, even on error
             forEachInProgress = false;

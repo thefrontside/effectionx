@@ -19,7 +19,7 @@ describe("useFaucet", () => {
     });
 
     yield* spawn(function* () {
-      yield* sleep(1);
+      yield* sleep(0);
       // Pour an array of items
       yield* faucet.pour([1, 2, 3]);
     });
@@ -71,7 +71,7 @@ describe("useFaucet", () => {
 
     // Pour using a generator function
     yield* spawn(function* () {
-      yield* sleep(1);
+      yield* sleep(0);
       yield* faucet.pour(function* (send) {
         yield* send(1);
         yield* sleep(10);
@@ -100,7 +100,7 @@ describe("useFaucet", () => {
 
     // Start pouring with a generator
     yield* spawn(function* () {
-      yield* sleep(1);
+      yield* sleep(0);
       yield* faucet.pour(function* (send) {
         yield* send(1);
         yield* sleep(10);

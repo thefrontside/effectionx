@@ -7,7 +7,6 @@ import {
   on,
   once,
   type Operation,
-  race,
   resource,
   type Result,
   spawn,
@@ -39,11 +38,11 @@ export interface WorkerResource<TSend, TRecv, TReturn>
    * Handle requests initiated by the worker.
    * Only one forEach can be active at a time.
    *
-   * @template TRequest - value worker sends to host
-   * @template TResponse - value host sends back to worker
+   * @template WRequest - value worker sends to host
+   * @template WResponse - value host sends back to worker
    */
-  forEach<TRequest, TResponse>(
-    fn: (request: TRequest) => Operation<TResponse>,
+  forEach<WRequest, WResponse>(
+    fn: (request: WRequest) => Operation<WResponse>,
   ): Operation<TReturn>;
 }
 
@@ -184,8 +183,8 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
           );
         },
 
-        *forEach<TRequest, TResponse>(
-          fn: (request: TRequest) => Operation<TResponse>,
+        *forEach<WRequest, WResponse>(
+          fn: (request: WRequest) => Operation<WResponse>,
         ): Operation<TReturn> {
           // R6: check closed FIRST, before setting flag
           if (closed) {
@@ -205,7 +204,7 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
               response: MessagePort;
             }): Operation<void> {
               try {
-                const result = yield* fn(msg.value as TRequest);
+                const result = yield* fn(msg.value as WRequest);
                 msg.response.postMessage(Ok(result));
               } catch (error) {
                 // R2: serialize error
@@ -218,20 +217,18 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
               }
             }
 
-            // Operation to process requests from the signal
-            function* processRequests(): Operation<void> {
+            // Spawn request processor in background - it will be halted
+            // when this scope exits (after outcome resolves)
+            yield* spawn(function* () {
               for (const request of yield* each(requestSignal)) {
                 yield* spawn(function* () {
                   yield* handleRequest(request);
                 });
                 yield* each.next();
               }
-            }
+            });
 
-            // Race between processing requests and the worker closing
-            // outcome.operation resolves when the worker sends "close" message
-            yield* race([processRequests(), outcome.operation]);
-
+            // Wait for worker to close
             return yield* outcome.operation;
           } finally {
             // R6: always reset flag, even on error

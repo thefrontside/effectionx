@@ -97,9 +97,9 @@ function useWorkerPort(): Operation<MessagePort> {
  * @template TRecv - value main thread will receive from the worker
  * @template TReturn - worker operation return value
  * @template TData - data passed from the main thread to the worker during initialization
- * @template TRequest - value worker sends to the host in requests
- * @template TResponse - value worker receives from the host (response to worker's send)
- * @param {(options: WorkerMainOptions<TSend, TRecv, TData, TRequest, TResponse>) => Operation<TReturn>} body
+ * @template WRequest - value worker sends to the host in requests
+ * @template WResponse - value worker receives from the host (response to worker's send)
+ * @param {(options: WorkerMainOptions<TSend, TRecv, TData, WRequest, WResponse>) => Operation<TReturn>} body
  * @returns {Promise<void>}
  */
 export async function workerMain<
@@ -107,11 +107,11 @@ export async function workerMain<
   TRecv,
   TReturn,
   TData,
-  TRequest = never,
-  TResponse = never,
+  WRequest = never,
+  WResponse = never,
 >(
   body: (
-    options: WorkerMainOptions<TSend, TRecv, TData, TRequest, TResponse>,
+    options: WorkerMainOptions<TSend, TRecv, TData, WRequest, WResponse>,
   ) => Operation<TReturn>,
 ): Promise<void> {
   await main(function* () {
@@ -129,7 +129,7 @@ export async function workerMain<
               yield* spawn(function* () {
                 try {
                   // Create send function for worker-initiated requests
-                  function* send(requestValue: TRequest): Operation<TResponse> {
+                  function* send(requestValue: WRequest): Operation<WResponse> {
                     const channel = new MessageChannel();
                     port.postMessage(
                       {
@@ -144,10 +144,10 @@ export async function workerMain<
                     const event = yield* once(channel.port1, "message");
                     channel.port1.close(); // R3: cleanup
                     const result = (event as MessageEvent).data as Result<
-                      TResponse | SerializedError
+                      WResponse | SerializedError
                     >;
                     if (result.ok) {
-                      return result.value as TResponse;
+                      return result.value as WResponse;
                     }
                     // R2: wrap error with cause
                     throw errorFromSerialized(

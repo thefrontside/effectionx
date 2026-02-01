@@ -29,6 +29,7 @@
   "sideEffects": false,
   "dependencies": {
     "@effectionx/signals": "workspace:*",
+    "@effectionx/timebox": "workspace:*",
     "web-worker": "^1"
   },
   "devDependencies": {

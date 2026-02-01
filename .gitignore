@@ -43,3 +43,6 @@ dist/
 # Agent shell directories
 .agent-shell/
 
+# Plans directory (working documents)
+.opencode/plans/
+

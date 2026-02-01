@@ -140,49 +140,52 @@ it("responder handles requester cancellation gracefully", function* () {
   channel.port1.start();
   channel.port2.start();
 
-  let responderCompleted = false;
+  const responderSentResponse = withResolvers<void>();
+  const responderCompleted = withResolvers<void>();
 
   // Spawn responder
   yield* spawn(function* () {
     const { resolve } = yield* useChannelRequest<string>(channel.port2);
-    yield* resolve("response");
-    responderCompleted = true;
+    
+    // Signal before sending (so we know responder is waiting for ACK after this)
+    responderSentResponse.resolve();
+    
+    yield* resolve("response");  // This will wait for ACK, but detect close instead
+    
+    responderCompleted.resolve();
   });
 
-  // Give responder time to send response and start waiting for ACK
-  yield* sleep(10);
+  // Wait for responder to send response and start waiting for ACK
+  yield* responderSentResponse.operation;
 
   // Close port1 (simulates requester cancellation)
   channel.port1.close();
 
-  // Give responder time to detect close and exit
-  yield* sleep(10);
-
-  // Responder should have completed (not hung)
-  expect(responderCompleted).toBe(true);
+  // Responder should complete (not hang) - race detects close
+  yield* responderCompleted.operation;
 });
 ```
 
 **2. ACK is sent and received on error path (full round-trip):**
 ```typescript
 it("ACK is sent for error responses", function* () {
-  const { port, operation } = yield* useChannelResponse<Error>();
+  const { port, operation } = yield* useChannelResponse<string>();
 
-  let ackWasReceived = false;
+  const ackReceived = withResolvers<void>();
 
   // Spawn responder that tracks ACK receipt
   yield* spawn(function* () {
     const { reject } = yield* useChannelRequest<string>(port);
     yield* reject(new Error("test error"));
     // If we get here, ACK was received (reject waits for ACK)
-    ackWasReceived = true;
+    ackReceived.resolve();
   });
 
+  // Requester receives response (and sends ACK)
   yield* operation;
 
   // Verify responder completed (meaning ACK was received)
-  yield* sleep(10);
-  expect(ackWasReceived).toBe(true);
+  yield* ackReceived.operation;
 });
 ```
 
@@ -191,26 +194,27 @@ it("ACK is sent for error responses", function* () {
 it("port closes if responder exits without responding", function* () {
   const channel = new MessageChannel();
   channel.port1.start();
+  channel.port2.start();
+
+  const closeReceived = withResolvers<void>();
+
+  // Set up close listener before spawning responder
+  channel.port1.addEventListener("close", () => {
+    closeReceived.resolve();
+  });
 
   // Spawn responder that exits without responding
-  yield* spawn(function* () {
+  const responderTask = yield* spawn(function* () {
     const _request = yield* useChannelRequest<string>(channel.port2);
     // Exit without calling resolve or reject
     // The finally block should close the port
   });
 
-  // Give time for responder to run and exit
-  yield* sleep(10);
+  // Wait for responder to complete
+  yield* responderTask;
 
-  // port2 should be closed by useChannelRequest's finally block
-  // port1 should receive close event
-  let closeReceived = false;
-  channel.port1.addEventListener("close", () => {
-    closeReceived = true;
-  });
-
-  yield* sleep(10);
-  expect(closeReceived).toBe(true);
+  // Wait for close event (no sleep needed)
+  yield* closeReceived.operation;
 });
 ```
 
@@ -219,30 +223,104 @@ it("port closes if responder exits without responding", function* () {
 it("port closes if responder throws before responding", function* () {
   const channel = new MessageChannel();
   channel.port1.start();
+  channel.port2.start();
 
-  let errorCaught = false;
+  const closeReceived = withResolvers<void>();
+
+  // Set up close listener before spawning responder
+  channel.port1.addEventListener("close", () => {
+    closeReceived.resolve();
+  });
 
   // Spawn responder that throws
   yield* spawn(function* () {
-    try {
-      const _request = yield* useChannelRequest<string>(channel.port2);
-      throw new Error("responder crashed");
-    } catch (e) {
-      errorCaught = true;
-      throw e; // re-throw to let finally run
-    }
+    const _request = yield* useChannelRequest<string>(channel.port2);
+    throw new Error("responder crashed");
+    // finally block in useChannelRequest will close port2
   });
 
-  yield* sleep(10);
+  // Wait for close event (no sleep needed - withResolvers blocks until resolved)
+  yield* closeReceived.operation;
+  
+  // If we get here, close was received
+});
+```
 
-  // port2 should be closed by useChannelRequest's finally block
-  let closeReceived = false;
-  channel.port1.addEventListener("close", () => {
-    closeReceived = true;
+**5. Requester cancels while waiting for response (useChannelResponse cancellation):**
+```typescript
+it("responder sees close if requester cancels while waiting", function* () {
+  const closeReceived = withResolvers<void>();
+  const responderReady = withResolvers<void>();
+
+  let transferredPort: MessagePort;
+
+  // Start requester in a task we can halt
+  const requesterTask = yield* spawn(function* () {
+    const { port, operation } = yield* useChannelResponse<string>();
+    transferredPort = port;
+    
+    // Signal that port is available
+    responderReady.resolve();
+    
+    // Wait for response (will be cancelled)
+    return yield* operation;
   });
 
-  yield* sleep(10);
-  expect(closeReceived).toBe(true);
+  // Wait for port to be available
+  yield* responderReady.operation;
+
+  // Set up responder with the transferred port
+  yield* spawn(function* () {
+    transferredPort.start();
+    transferredPort.addEventListener("close", () => {
+      closeReceived.resolve();
+    });
+    
+    // Don't send response - just wait for close
+    yield* suspend();
+  });
+
+  // Cancel the requester
+  yield* requesterTask.halt();
+
+  // Verify responder saw close (no sleep - blocks until resolved)
+  yield* closeReceived.operation;
+});
+```
+
+**6. Requester scope exits before calling operation:**
+```typescript
+it("port closes if requester scope exits without awaiting operation", function* () {
+  const closeReceived = withResolvers<void>();
+  const responderReady = withResolvers<void>();
+
+  let transferredPort: MessagePort;
+
+  // Start requester in a task that exits without calling operation
+  const requesterTask = yield* spawn(function* () {
+    const { port } = yield* useChannelResponse<string>();
+    transferredPort = port;
+    
+    responderReady.resolve();
+    
+    // Exit WITHOUT calling yield* operation
+    // Resource cleanup should still close port1
+  });
+
+  // Wait for port to be available
+  yield* responderReady.operation;
+
+  // Set up close listener on transferred port
+  transferredPort.start();
+  transferredPort.addEventListener("close", () => {
+    closeReceived.resolve();
+  });
+
+  // Wait for requester task to complete (it exits immediately)
+  yield* requesterTask;
+
+  // Verify close was received
+  yield* closeReceived.operation;
 });
 ```
 

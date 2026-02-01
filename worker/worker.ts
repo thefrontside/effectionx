@@ -1,5 +1,5 @@
-import assert from "node:assert";
 import {
+  createChannel,
   Err,
   Ok,
   on,
@@ -7,9 +7,7 @@ import {
   type Operation,
   resource,
   type Result,
-  type Scope,
   spawn,
-  useScope,
   withResolvers,
 } from "effection";
 import Worker from "web-worker";
@@ -97,62 +95,93 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
 ): Operation<WorkerResource<TSend, TRecv, TReturn>> {
   return resource(function* (provide) {
     let outcome = withResolvers<TReturn>();
+    let outcomeSettled = false;
+
+    const resolveOutcome = (value: TReturn) => {
+      if (outcomeSettled) {
+        return;
+      }
+      outcomeSettled = true;
+      outcome.resolve(value);
+    };
+
+    const rejectOutcome = (error: Error) => {
+      if (outcomeSettled) {
+        return;
+      }
+      outcomeSettled = true;
+      outcome.reject(error);
+    };
 
     let worker = new Worker(url, options);
     let subscription = yield* on(worker, "message");
 
-    // Queue for requests that arrive before forEach is called
-    const pendingRequests: Array<{ value: unknown; response: MessagePort }> =
-      [];
+    // Channel for worker-initiated requests (buffered via eager subscription)
+    const requests = createChannel<
+      { value: unknown; response: MessagePort },
+      void
+    >();
+    // Subscribe immediately so messages buffer before forEach is called
+    const requestSubscription = yield* requests;
 
-    // Handler function set while forEach is active (null otherwise)
-    let requestHandler:
-      | ((msg: { value: unknown; response: MessagePort }) => void)
-      | null = null;
-
-    // Flag to prevent concurrent forEach calls
+    // Flags for forEach state
     let forEachInProgress = false;
-    // Track if worker has closed
-    let closed = false;
+    let forEachCompleted = false;
+    let opened = false;
 
-    // Capture scope to spawn handlers from onmessage callback
-    const scope: Scope = yield* useScope();
+    // Signal for when worker is ready (received "open" message)
+    const ready = withResolvers<void>();
 
-    let onmessage = (event: MessageEvent) => {
-      const msg = event.data;
-      if (msg.type === "close") {
-        closed = true;
-        // Clear pending requests on close
-        pendingRequests.length = 0;
-        let { result } = msg as { result: Result<TReturn> };
-        if (result.ok) {
-          outcome.resolve(result.value);
-        } else {
-          // Wrap error with cause
-          const serializedError = result.error as unknown as SerializedError;
-          outcome.reject(errorFromSerialized("Worker failed", serializedError));
+    // Spawned message loop - handles incoming messages using each pattern
+    yield* spawn(function* () {
+      while (true) {
+        const next = yield* subscription.next();
+        if (next.done) {
+          break;
         }
-      } else if (msg.type === "request") {
-        const request = { value: msg.value, response: msg.response };
-        if (requestHandler) {
-          // Handler is active - dispatch immediately
-          requestHandler(request);
-        } else {
-          // Queue for later when forEach is called
-          pendingRequests.push(request);
+
+        const msg = next.value.data;
+        if (!opened && msg.type !== "open") {
+          const error = new Error(
+            `expected first message to arrive from worker to be of type "open", but was: ${msg.type}`,
+          );
+          ready.reject(error);
+          throw error;
+        }
+
+        if (msg.type === "open") {
+          opened = true;
+          ready.resolve();
+        } else if (msg.type === "close") {
+          const { result } = msg as { result: Result<TReturn> };
+          if (result.ok) {
+            resolveOutcome(result.value);
+          } else {
+            const serializedError = result.error as unknown as SerializedError;
+            rejectOutcome(
+              errorFromSerialized("Worker failed", serializedError),
+            );
+          }
+          // Close channel so forEach terminates naturally
+          yield* requests.close(undefined);
+        } else if (msg.type === "request") {
+          yield* requests.send({ value: msg.value, response: msg.response });
         }
       }
-    };
 
-    worker.addEventListener("message", onmessage);
+      if (!opened) {
+        const error = new Error(
+          "worker terminated before sending open message",
+        );
+        ready.reject(error);
+        throw error;
+      }
+    });
 
-    let first = yield* subscription.next();
+    // Wait for "open" message before proceeding
+    yield* ready.operation;
 
-    assert(
-      first.value.data.type === "open",
-      `expected first message to arrive from worker to be of type "open", but was: ${first.value.data.type}`,
-    );
-
+    // Handle worker errors
     yield* spawn(function* () {
       let event = yield* once(worker, "error");
       event.preventDefault();
@@ -186,9 +215,9 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
         *forEach<WRequest, WResponse>(
           fn: (request: WRequest) => Operation<WResponse>,
         ): Operation<TReturn> {
-          // Check closed FIRST, before setting flag
-          if (closed) {
-            return yield* outcome.operation;
+          // Prevent calling forEach more than once
+          if (forEachCompleted) {
+            throw new Error("forEach has already completed");
           }
 
           // Prevent concurrent forEach
@@ -198,39 +227,27 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
           forEachInProgress = true;
 
           try {
-            // Helper to handle a single request
-            function* handleRequest(msg: {
-              value: unknown;
-              response: MessagePort;
-            }): Operation<void> {
-              const { resolve, reject } = yield* useChannelRequest<WResponse>(
-                msg.response,
-              );
-              try {
-                const result = yield* fn(msg.value as WRequest);
-                yield* resolve(result);
-              } catch (error) {
-                yield* reject(error as Error);
-              }
-            }
-
-            // Set handler - requests will be dispatched via scope.run()
-            requestHandler = (request) => {
-              scope.run(function* () {
-                yield* handleRequest(request);
+            // Iterate until channel closes (when worker sends "close")
+            let next = yield* requestSubscription.next();
+            while (!next.done) {
+              const request = next.value;
+              yield* spawn(function* () {
+                const { resolve, reject } = yield* useChannelRequest<WResponse>(
+                  request.response,
+                );
+                try {
+                  const result = yield* fn(request.value as WRequest);
+                  yield* resolve(result);
+                } catch (error) {
+                  yield* reject(error as Error);
+                }
               });
-            };
-
-            // Drain any requests that arrived before forEach was called
-            for (const request of pendingRequests.splice(0)) {
-              requestHandler(request);
+              next = yield* requestSubscription.next();
             }
-
-            // Wait for worker to close
             return yield* outcome.operation;
           } finally {
-            requestHandler = null;
             forEachInProgress = false;
+            forEachCompleted = true;
           }
         },
 
@@ -238,8 +255,25 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
       });
     } finally {
       worker.postMessage({ type: "close" });
+      if (!outcomeSettled) {
+        while (!outcomeSettled) {
+          const event = yield* once(worker, "message");
+          const msg = event.data;
+          if (msg.type === "close") {
+            const { result } = msg as { result: Result<TReturn> };
+            if (result.ok) {
+              resolveOutcome(result.value);
+            } else {
+              const serializedError =
+                result.error as unknown as SerializedError;
+              rejectOutcome(
+                errorFromSerialized("Worker failed", serializedError),
+              );
+            }
+          }
+        }
+      }
       yield* settled(outcome.operation);
-      worker.removeEventListener("message", onmessage);
     }
   });
 }

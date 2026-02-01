@@ -13,41 +13,41 @@ function* sleepThenTimeout(ms: number) {
 describe("channel", () => {
   describe("useChannelResponse", () => {
     it("creates a channel with a transferable port", function* () {
-      const { port } = yield* useChannelResponse<string>();
+      const response = yield* useChannelResponse<string>();
 
-      expect(port).toBeInstanceOf(MessagePort);
+      expect(response.port).toBeInstanceOf(MessagePort);
     });
 
     it("receives response data via operation", function* () {
-      const { port, operation } = yield* useChannelResponse<string>();
+      const response = yield* useChannelResponse<string>();
 
       // Simulate responder sending a SerializedResult
       yield* spawn(function* () {
-        port.start();
+        response.port.start();
         const result: SerializedResult<string> = {
           ok: true,
           value: "hello from responder",
         };
-        port.postMessage(result);
+        response.port.postMessage(result);
         // Responder would wait for ACK here in real usage
       });
 
-      const result = yield* operation;
+      const result = yield* response;
       expect(result).toEqual({ ok: true, value: "hello from responder" });
     });
 
     it("sends ACK after receiving response", function* () {
       // Use full round-trip to verify ACK is received
-      const { port, operation } = yield* useChannelResponse<string>();
+      const response = yield* useChannelResponse<string>();
 
       // Spawn responder - it uses useChannelRequest which waits for ACK
       yield* spawn(function* () {
-        const { resolve } = yield* useChannelRequest<string>(port);
+        const { resolve } = yield* useChannelRequest<string>(response.port);
         // This will block until ACK is received
         yield* resolve("response data");
       });
 
-      const result = yield* operation;
+      const result = yield* response;
       // If we got here, the ACK was sent and received
       expect(result).toEqual({ ok: true, value: "response data" });
     });
@@ -129,30 +129,30 @@ describe("channel", () => {
 
   describe("full round-trip", () => {
     it("requester sends, responder resolves, requester receives", function* () {
-      const { port, operation } = yield* useChannelResponse<string>();
+      const response = yield* useChannelResponse<string>();
 
       // Spawn responder
       yield* spawn(function* () {
-        const { resolve } = yield* useChannelRequest<string>(port);
+        const { resolve } = yield* useChannelRequest<string>(response.port);
         yield* resolve("response from responder");
       });
 
-      const result = yield* operation;
+      const result = yield* response;
       expect(result).toEqual({ ok: true, value: "response from responder" });
     });
 
     it("requester sends, responder rejects, requester receives error", function* () {
-      const { port, operation } = yield* useChannelResponse<string>();
+      const response = yield* useChannelResponse<string>();
 
       const testError = new Error("responder error");
 
       // Spawn responder
       yield* spawn(function* () {
-        const { reject } = yield* useChannelRequest<string>(port);
+        const { reject } = yield* useChannelRequest<string>(response.port);
         yield* reject(testError);
       });
 
-      const result = yield* operation;
+      const result = yield* response;
       // Error is serialized and wrapped in SerializedResult
       expect(result.ok).toBe(false);
       if (!result.ok) {
@@ -168,7 +168,7 @@ describe("channel", () => {
         nested: { items: string[] };
       }
 
-      const { port, operation } = yield* useChannelResponse<ComplexData>();
+      const response = yield* useChannelResponse<ComplexData>();
 
       const testData: ComplexData = {
         name: "test",
@@ -178,29 +178,31 @@ describe("channel", () => {
 
       // Spawn responder
       yield* spawn(function* () {
-        const { resolve } = yield* useChannelRequest<ComplexData>(port);
+        const { resolve } = yield* useChannelRequest<ComplexData>(
+          response.port,
+        );
         yield* resolve(testData);
       });
 
-      const result = yield* operation;
+      const result = yield* response;
       expect(result).toEqual({ ok: true, value: testData });
     });
   });
 
   describe("close detection (useChannelResponse)", () => {
     it("errors if responder closes port without responding", function* () {
-      const { port, operation } = yield* useChannelResponse<string>();
+      const response = yield* useChannelResponse<string>();
 
       // Spawn responder that closes without responding
       yield* spawn(function* () {
-        port.start();
-        port.close(); // Close without calling resolve/reject
+        response.port.start();
+        response.port.close(); // Close without calling resolve/reject
       });
 
       // Requester should get an error
       let error: Error | undefined;
       try {
-        yield* operation;
+        yield* response;
       } catch (e) {
         error = e as Error;
       }
@@ -210,11 +212,11 @@ describe("channel", () => {
     });
 
     it("errors if responder scope exits without responding", function* () {
-      const { port, operation } = yield* useChannelResponse<string>();
+      const response = yield* useChannelResponse<string>();
 
       // Spawn responder that exits without responding
       yield* spawn(function* () {
-        const _request = yield* useChannelRequest<string>(port);
+        const _request = yield* useChannelRequest<string>(response.port);
         // Exit without calling resolve or reject
         // finally block in useChannelRequest closes port
       });
@@ -222,7 +224,7 @@ describe("channel", () => {
       // Requester should get an error
       let error: Error | undefined;
       try {
-        yield* operation;
+        yield* response;
       } catch (e) {
         error = e as Error;
       }
@@ -234,20 +236,20 @@ describe("channel", () => {
 
   describe("timeout (useChannelResponse)", () => {
     it("times out if responder is slow", function* () {
-      const { port, operation } = yield* useChannelResponse<string>({
+      const response = yield* useChannelResponse<string>({
         timeout: 50,
       });
 
       // Spawn responder that never responds
       yield* spawn(function* () {
-        port.start();
+        response.port.start();
         yield* suspend(); // Never respond
       });
 
       // Requester should timeout
       let error: Error | undefined;
       try {
-        yield* operation;
+        yield* response;
       } catch (e) {
         error = e as Error;
       }
@@ -257,34 +259,34 @@ describe("channel", () => {
     });
 
     it("succeeds if response arrives before timeout", function* () {
-      const { port, operation } = yield* useChannelResponse<string>({
+      const response = yield* useChannelResponse<string>({
         timeout: 1000,
       });
 
       // Spawn responder that responds quickly
       yield* spawn(function* () {
-        const { resolve } = yield* useChannelRequest<string>(port);
+        const { resolve } = yield* useChannelRequest<string>(response.port);
         yield* resolve("fast response");
       });
 
-      const result = yield* operation;
+      const result = yield* response;
       expect(result).toEqual({ ok: true, value: "fast response" });
     });
 
     it("no timeout waits indefinitely but detects close", function* () {
-      const { port, operation } = yield* useChannelResponse<string>(); // No timeout
+      const response = yield* useChannelResponse<string>(); // No timeout
 
       // Close port after a delay
       yield* spawn(function* () {
-        port.start();
+        response.port.start();
         yield* sleep(10);
-        port.close();
+        response.port.close();
       });
 
       // Should error on close, not hang
       let error: Error | undefined;
       try {
-        yield* operation;
+        yield* response;
       } catch (e) {
         error = e as Error;
       }
@@ -338,20 +340,20 @@ describe("channel", () => {
     });
 
     it("ACK is sent for error responses", function* () {
-      const { port, operation } = yield* useChannelResponse<string>();
+      const response = yield* useChannelResponse<string>();
 
       const ackReceived = withResolvers<void>();
 
       // Spawn responder that tracks ACK receipt
       yield* spawn(function* () {
-        const { reject } = yield* useChannelRequest<string>(port);
+        const { reject } = yield* useChannelRequest<string>(response.port);
         yield* reject(new Error("test error"));
         // If we get here, ACK was received (reject waits for ACK)
         ackReceived.resolve();
       });
 
       // Requester receives response (and sends ACK)
-      const result = yield* operation;
+      const result = yield* response;
       expect(result.ok).toBe(false);
 
       // Verify responder completed (meaning ACK was received)
@@ -428,14 +430,14 @@ describe("channel", () => {
 
       // Start requester in a task we can halt
       const requesterTask = yield* spawn(function* () {
-        const { port, operation } = yield* useChannelResponse<string>();
-        transferredPort = port;
+        const response = yield* useChannelResponse<string>();
+        transferredPort = response.port;
 
         // Signal that port is available
         responderReady.resolve();
 
         // Wait for response (will be cancelled)
-        return yield* operation;
+        return yield* response;
       });
 
       // Wait for port to be available
@@ -464,20 +466,20 @@ describe("channel", () => {
       expect(result).not.toBe("timeout");
     });
 
-    it("port closes if requester scope exits without awaiting operation", function* () {
+    it("port closes if requester scope exits without yielding response", function* () {
       const closeReceived = withResolvers<void>();
       const responderReady = withResolvers<void>();
 
       let transferredPort!: MessagePort;
 
-      // Start requester in a task that exits without calling operation
+      // Start requester in a task that exits without yielding response
       const requesterTask = yield* spawn(function* () {
-        const { port } = yield* useChannelResponse<string>();
-        transferredPort = port;
+        const response = yield* useChannelResponse<string>();
+        transferredPort = response.port;
 
         responderReady.resolve();
 
-        // Exit WITHOUT calling yield* operation
+        // Exit WITHOUT calling yield* response
         // Resource cleanup should still close port1
       });
 

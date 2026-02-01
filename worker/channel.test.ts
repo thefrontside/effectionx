@@ -54,6 +54,9 @@ describe("channel", () => {
   });
 
   describe("useChannelRequest", () => {
+    // These tests use raw MessageChannel to isolate useChannelRequest behavior.
+    // This provides unit test coverage independent of useChannelResponse.
+
     it("resolve sends value and waits for ACK", function* () {
       const channel = new MessageChannel();
       channel.port1.start();

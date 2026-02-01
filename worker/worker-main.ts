@@ -5,23 +5,18 @@ import {
   Err,
   Ok,
   type Operation,
-  type Result,
   type Task,
   createSignal,
   each,
   main,
   on,
-  once,
   resource,
   spawn,
 } from "effection";
 
 import type { WorkerControl, WorkerMainOptions } from "./types.ts";
-import {
-  serializeError,
-  errorFromSerialized,
-  type SerializedError,
-} from "./types.ts";
+import { errorFromSerialized } from "./types.ts";
+import { useChannelResponse, useChannelRequest } from "./channel.ts";
 
 // Get the appropriate worker port for the current environment as a resource
 function useWorkerPort(): Operation<MessagePort> {
@@ -130,29 +125,24 @@ export async function workerMain<
                 try {
                   // Create send function for worker-initiated requests
                   function* send(requestValue: WRequest): Operation<WResponse> {
-                    const channel = new MessageChannel();
+                    const { port: responsePort, operation } =
+                      yield* useChannelResponse<WResponse>();
                     port.postMessage(
                       {
                         type: "request",
                         value: requestValue,
-                        response: channel.port2,
+                        response: responsePort,
                       },
                       // biome-ignore lint/suspicious/noExplicitAny: cross-env MessagePort compatibility
-                      [channel.port2] as any,
+                      [responsePort] as any,
                     );
-                    channel.port1.start();
-                    const event = yield* once(channel.port1, "message");
-                    channel.port1.close(); // R3: cleanup
-                    const result = (event as MessageEvent).data as Result<
-                      WResponse | SerializedError
-                    >;
+                    const result = yield* operation;
                     if (result.ok) {
-                      return result.value as WResponse;
+                      return result.value;
                     }
-                    // R2: wrap error with cause
                     throw errorFromSerialized(
                       "Host handler failed",
-                      result.error as unknown as SerializedError,
+                      result.error,
                     );
                   }
 
@@ -162,18 +152,15 @@ export async function workerMain<
                       *forEach(fn: (value: TSend) => Operation<TRecv>) {
                         for (let { value, response } of yield* each(sent)) {
                           yield* spawn(function* () {
+                            const { resolve, reject } =
+                              yield* useChannelRequest<TRecv>(
+                                response as unknown as globalThis.MessagePort,
+                              );
                             try {
                               let result = yield* fn(value);
-                              response.postMessage(Ok(result));
+                              yield* resolve(result);
                             } catch (error) {
-                              // R2: serialize error for transmission
-                              response.postMessage(
-                                Err(
-                                  serializeError(
-                                    error as Error,
-                                  ) as unknown as Error,
-                                ),
-                              );
+                              yield* reject(error as Error);
                             }
                           });
                           yield* each.next();

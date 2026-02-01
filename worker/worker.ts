@@ -14,12 +14,9 @@ import {
 } from "effection";
 import Worker from "web-worker";
 
-import { useMessageChannel } from "./message-channel.ts";
-import {
-  serializeError,
-  errorFromSerialized,
-  type SerializedError,
-} from "./types.ts";
+import { useChannelResponse, useChannelRequest } from "./channel.ts";
+import { errorFromSerialized, type SerializedError } from "./types.ts";
+// Note: Ok/Err still used for outcome handling; serializeError no longer needed here
 
 /**
  * Resource returned by useWorker, providing APIs for worker communication.
@@ -170,28 +167,20 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
 
       yield* provide({
         *send(value) {
-          let channel = yield* useMessageChannel();
+          const { port, operation } = yield* useChannelResponse<TRecv>();
           worker.postMessage(
             {
               type: "send",
               value,
-              response: channel.port2,
+              response: port,
             },
-            [channel.port2],
+            [port],
           );
-          channel.port1.start();
-          let event = yield* once(channel.port1, "message");
-          let result = (event as MessageEvent).data as Result<
-            TRecv | SerializedError
-          >;
+          const result = yield* operation;
           if (result.ok) {
-            return result.value as TRecv;
+            return result.value;
           }
-          // R2: wrap error with cause
-          throw errorFromSerialized(
-            "Worker handler failed",
-            result.error as unknown as SerializedError,
-          );
+          throw errorFromSerialized("Worker handler failed", result.error);
         },
 
         *forEach<WRequest, WResponse>(
@@ -214,15 +203,14 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
               value: unknown;
               response: MessagePort;
             }): Operation<void> {
+              const { resolve, reject } = yield* useChannelRequest<WResponse>(
+                msg.response,
+              );
               try {
                 const result = yield* fn(msg.value as WRequest);
-                msg.response.postMessage(Ok(result));
+                yield* resolve(result);
               } catch (error) {
-                msg.response.postMessage(
-                  Err(serializeError(error as Error) as unknown as Error),
-                );
-              } finally {
-                msg.response.close();
+                yield* reject(error as Error);
               }
             }
 

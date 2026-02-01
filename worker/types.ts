@@ -39,6 +39,16 @@ export interface SerializedError {
 }
 
 /**
+ * A Result type for cross-boundary communication where errors are serialized.
+ * Unlike effection's Result<T> which uses Error, this uses SerializedError.
+ *
+ * Used by channel primitives to send success/error responses over MessageChannel.
+ */
+export type SerializedResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: SerializedError };
+
+/**
  * Serialize an Error for transmission via postMessage.
  */
 export function serializeError(error: Error): SerializedError {

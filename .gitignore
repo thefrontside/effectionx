@@ -37,3 +37,6 @@ dist/
 # pnpm config (created by test-matrix runner)
 .npmrc
 
+# Plans directory (working documents)
+.opencode/plans/
+

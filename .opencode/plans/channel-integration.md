@@ -150,6 +150,156 @@ it("responder handles requester cancellation gracefully", function* () {
 
 ---
 
+## PREREQUISITE: Fix Error Typing with SerializedResult
+
+The current code has a type mismatch when sending errors across the channel boundary.
+
+### The Problem
+
+Current pattern uses unsafe casts:
+
+```typescript
+// Sending error (worker-main.ts, worker.ts):
+msg.response.postMessage(Err(serializeError(error as Error) as unknown as Error));
+//                                                          ^^^^^^^^^^^^^^^^^^
+//                        SerializedError cast to Error - type mismatch!
+
+// Receiving (worker.ts):
+const result = yield* operation;  // typed as Result<TRecv | SerializedError>
+if (!result.ok) {
+  throw errorFromSerialized("...", result.error as unknown as SerializedError);
+  //                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  //                               error is typed as Error but is SerializedError
+}
+```
+
+The `as unknown as` casts mask the real types. Effection's `Result<T>` type hardcodes `Error` for the error case, but we're actually sending `SerializedError`.
+
+### The Fix
+
+Create a `SerializedResult<T>` type that properly types the error case.
+
+#### Add to `worker/types.ts`
+
+```typescript
+/**
+ * A Result type for cross-boundary communication where errors are serialized.
+ * Unlike effection's Result<T> which uses Error, this uses SerializedError.
+ */
+export type SerializedResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: SerializedError };
+
+/**
+ * Create a successful SerializedResult
+ */
+export function SerializedOk<T>(value: T): SerializedResult<T> {
+  return { ok: true, value };
+}
+
+/**
+ * Create a failed SerializedResult with a serialized error
+ */
+export function SerializedErr<T>(error: SerializedError): SerializedResult<T> {
+  return { ok: false, error };
+}
+```
+
+#### Update Usage in `worker.ts`
+
+**Imports:**
+```typescript
+import {
+  serializeError,
+  errorFromSerialized,
+  type SerializedError,
+  type SerializedResult,
+  SerializedOk,
+  SerializedErr,
+} from "./types.ts";
+```
+
+**In `send()` method:**
+```typescript
+*send(value) {
+  const { port, operation } = yield* useChannelResponse<SerializedResult<TRecv>>();
+  worker.postMessage(
+    { type: "send", value, response: port },
+    [port],
+  );
+  const result = yield* operation;
+  if (result.ok) {
+    return result.value;  // No cast needed - properly typed as TRecv
+  }
+  throw errorFromSerialized("Worker handler failed", result.error);  // No cast needed
+}
+```
+
+**In `handleRequest`:**
+```typescript
+function* handleRequest(msg: { value: unknown; response: MessagePort }): Operation<void> {
+  const { resolve, reject } = yield* useChannelRequest<SerializedResult<WResponse>>(msg.response);
+  try {
+    const result = yield* fn(msg.value as WRequest);
+    yield* resolve(SerializedOk(result));
+  } catch (error) {
+    yield* resolve(SerializedErr(serializeError(error as Error)));  // Note: use resolve, not reject
+  }
+}
+```
+
+**Note:** We use `resolve()` for both success and error because the channel's `reject()` is for Operation-level errors (like ACK timeout), not application-level errors. The `SerializedResult` discriminated union carries the application success/error.
+
+#### Update Usage in `worker-main.ts`
+
+**Imports:**
+```typescript
+import {
+  serializeError,
+  errorFromSerialized,
+  type SerializedError,
+  type SerializedResult,
+  SerializedOk,
+  SerializedErr,
+} from "./types.ts";
+```
+
+**In `send()` function:**
+```typescript
+function* send(requestValue: WRequest): Operation<WResponse> {
+  const { port: responsePort, operation } = yield* useChannelResponse<SerializedResult<WResponse>>();
+  port.postMessage(
+    { type: "request", value: requestValue, response: responsePort },
+    [responsePort] as any,
+  );
+  const result = yield* operation;
+  if (result.ok) {
+    return result.value;  // No cast needed
+  }
+  throw errorFromSerialized("Host handler failed", result.error);  // No cast needed
+}
+```
+
+**In `messages.forEach` handler:**
+```typescript
+*forEach(fn: (value: TSend) => Operation<TRecv>) {
+  for (let { value, response } of yield* each(sent)) {
+    yield* spawn(function* () {
+      const { resolve } = yield* useChannelRequest<SerializedResult<TRecv>>(response);
+      try {
+        let result = yield* fn(value);
+        yield* resolve(SerializedOk(result));
+      } catch (error) {
+        yield* resolve(SerializedErr(serializeError(error as Error)));
+      }
+    });
+    yield* each.next();
+  }
+}
+```
+
+---
+
 ## Files to Modify
 
 ### 1. `worker/worker.ts` (Host Side)
@@ -164,6 +314,11 @@ import { useMessageChannel } from "./message-channel.ts";
 **Add:**
 ```typescript
 import { useChannelResponse, useChannelRequest } from "./channel.ts";
+import {
+  type SerializedResult,
+  SerializedOk,
+  SerializedErr,
+} from "./types.ts";
 ```
 
 #### Change 2: Update `send()` method (lines 172-195)
@@ -189,16 +344,16 @@ import { useChannelResponse, useChannelRequest } from "./channel.ts";
 **Replace with:**
 ```typescript
 *send(value) {
-  const { port, operation } = yield* useChannelResponse<Result<TRecv | SerializedError>>();
+  const { port, operation } = yield* useChannelResponse<SerializedResult<TRecv>>();
   worker.postMessage(
     { type: "send", value, response: port },
     [port],
   );
   const result = yield* operation;
   if (result.ok) {
-    return result.value as TRecv;
+    return result.value;
   }
-  throw errorFromSerialized("Worker handler failed", result.error as unknown as SerializedError);
+  throw errorFromSerialized("Worker handler failed", result.error);
 }
 ```
 
@@ -221,17 +376,17 @@ function* handleRequest(msg: { value: unknown; response: MessagePort }): Operati
 **Replace with:**
 ```typescript
 function* handleRequest(msg: { value: unknown; response: MessagePort }): Operation<void> {
-  const { resolve, reject } = yield* useChannelRequest<Result<WResponse>>(msg.response);
+  const { resolve } = yield* useChannelRequest<SerializedResult<WResponse>>(msg.response);
   try {
     const result = yield* fn(msg.value as WRequest);
-    yield* resolve(Ok(result));
+    yield* resolve(SerializedOk(result));
   } catch (error) {
-    yield* reject(Err(serializeError(error as Error) as unknown as Error));
+    yield* resolve(SerializedErr(serializeError(error as Error)));
   }
 }
 ```
 
-**Note:** Remove the `finally` block - `useChannelRequest` handles port cleanup.
+**Note:** Remove the `finally` block - `useChannelRequest` handles port cleanup. We use `resolve()` for both success and error because the channel's `reject()` is for Operation-level errors, not application-level errors wrapped in `SerializedResult`.
 
 ---
 
@@ -242,6 +397,11 @@ function* handleRequest(msg: { value: unknown; response: MessagePort }): Operati
 **Add:**
 ```typescript
 import { useChannelResponse, useChannelRequest } from "./channel.ts";
+import {
+  type SerializedResult,
+  SerializedOk,
+  SerializedErr,
+} from "./types.ts";
 ```
 
 #### Change 2: Update `send()` function (lines 132-157)
@@ -268,16 +428,16 @@ function* send(requestValue: WRequest): Operation<WResponse> {
 **Replace with:**
 ```typescript
 function* send(requestValue: WRequest): Operation<WResponse> {
-  const { port: responsePort, operation } = yield* useChannelResponse<Result<WResponse | SerializedError>>();
+  const { port: responsePort, operation } = yield* useChannelResponse<SerializedResult<WResponse>>();
   port.postMessage(
     { type: "request", value: requestValue, response: responsePort },
     [responsePort] as any,
   );
   const result = yield* operation;
   if (result.ok) {
-    return result.value as WResponse;
+    return result.value;
   }
-  throw errorFromSerialized("Host handler failed", result.error as unknown as SerializedError);
+  throw errorFromSerialized("Host handler failed", result.error);
 }
 ```
 
@@ -305,12 +465,12 @@ function* send(requestValue: WRequest): Operation<WResponse> {
 *forEach(fn: (value: TSend) => Operation<TRecv>) {
   for (let { value, response } of yield* each(sent)) {
     yield* spawn(function* () {
-      const { resolve, reject } = yield* useChannelRequest<Result<TRecv>>(response);
+      const { resolve } = yield* useChannelRequest<SerializedResult<TRecv>>(response);
       try {
         let result = yield* fn(value);
-        yield* resolve(Ok(result));
+        yield* resolve(SerializedOk(result));
       } catch (error) {
-        yield* reject(Err(serializeError(error as Error) as unknown as Error));
+        yield* resolve(SerializedErr(serializeError(error as Error)));
       }
     });
     yield* each.next();
@@ -343,6 +503,28 @@ Requester                    Responder
 
 This guarantees the response was received before either side cleans up.
 
+### ACK Behavior Clarification
+
+**Important:** The ACK is sent for BOTH success and error responses. In `useChannelResponse`, the `operation` sends an ACK immediately after receiving any message, before the caller inspects whether it's an `Ok` or `Err`:
+
+```typescript
+operation: {
+  *[Symbol.iterator]() {
+    const event = yield* once(channel.port1, "message");
+    const data = (event as MessageEvent).data as T;  // Could be Ok or Err
+    
+    channel.port1.postMessage({ type: "ack" });  // ACK sent regardless
+    
+    return data;
+  },
+}
+```
+
+This means:
+- `resolve(Ok(value))` receives ACK ✓
+- `reject(Err(error))` receives ACK ✓
+- Neither will hang waiting for ACK
+
 ---
 
 ## Verification Steps
@@ -361,6 +543,7 @@ All 31 existing worker tests should pass. The ACK mechanism is transparent to th
 
 After this integration is verified:
 - Remove `worker/message-channel.ts` (no longer used)
+- Consider removing `Ok`/`Err` imports from effection if no longer needed in worker files
 
 ---
 
@@ -368,9 +551,12 @@ After this integration is verified:
 
 | File | Location | Current | New |
 |------|----------|---------|-----|
-| `worker.ts` | imports | `useMessageChannel` | `useChannelResponse`, `useChannelRequest` |
-| `worker.ts` | `send()` | Manual channel management | `useChannelResponse` |
-| `worker.ts` | `handleRequest` | Manual port.postMessage/close | `useChannelRequest` |
-| `worker-main.ts` | imports | (none) | `useChannelResponse`, `useChannelRequest` |
-| `worker-main.ts` | `send()` | Manual channel management | `useChannelResponse` |
-| `worker-main.ts` | `forEach` handler | Manual port.postMessage | `useChannelRequest` |
+| `types.ts` | new types | (none) | `SerializedResult<T>`, `SerializedOk`, `SerializedErr` |
+| `channel.ts` | imports | `once` | `once`, `race` |
+| `channel.ts` | `resolve`/`reject` | `once(port, "message")` | `race([once(port, "message"), once(port, "close")])` |
+| `worker.ts` | imports | `useMessageChannel`, `Ok`, `Err` | `useChannelResponse`, `useChannelRequest`, `SerializedResult`, `SerializedOk`, `SerializedErr` |
+| `worker.ts` | `send()` | Manual channel + `Result` | `useChannelResponse` + `SerializedResult` |
+| `worker.ts` | `handleRequest` | Manual port + `Ok`/`Err` | `useChannelRequest` + `SerializedOk`/`SerializedErr` |
+| `worker-main.ts` | imports | (none for channel) | `useChannelResponse`, `useChannelRequest`, `SerializedResult`, `SerializedOk`, `SerializedErr` |
+| `worker-main.ts` | `send()` | Manual channel + `Result` | `useChannelResponse` + `SerializedResult` |
+| `worker-main.ts` | `forEach` handler | Manual port + `Ok`/`Err` | `useChannelRequest` + `SerializedOk`/`SerializedErr` |

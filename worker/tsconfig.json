@@ -4,8 +4,14 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["**/*.ts"],
-  "exclude": ["**/*.test.ts", "test-assets/**", "dist"],
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "test-assets/**",
+    "dist"
+  ],
   "references": [
     {
       "path": "../bdd"
@@ -15,6 +21,9 @@
     },
     {
       "path": "../signals"
+    },
+    {
+      "path": "../timebox"
     }
   ]
 }

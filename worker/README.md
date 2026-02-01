@@ -17,6 +17,7 @@ thread.
 - Gracefully shutdowns the worker from the main thread
 - Propagates errors from the worker to the main thread
 - Type-safe message handling with TypeScript
+- Supports worker-initiated requests handled by the host
 
 ## Usage: Get worker's return value
 
@@ -83,6 +84,51 @@ try {
   console.error(e); // error will be available here
 }
 ```
+
+## Usage: Worker-initiated requests
+
+Workers can initiate requests to the host using the `send` function provided to
+`workerMain`. The host handles these requests with `worker.forEach`, returning a
+response for each request.
+
+### Worker Thread
+
+```ts
+import { workerMain } from "@effectionx/worker";
+
+await workerMain<never, never, string, void, string, string>(
+  function* ({ send }) {
+    const response = yield* send("hello");
+    return `received: ${response}`;
+  },
+);
+```
+
+### Main Thread
+
+```ts
+import { run } from "effection";
+import { useWorker } from "@effectionx/worker";
+
+await run(function* () {
+  const worker = yield* useWorker<never, never, string, void>(
+    "./worker.ts",
+    { type: "module" },
+  );
+
+  const result = yield* worker.forEach<string, string>(function* (request) {
+    return `echo: ${request}`;
+  });
+
+  console.log(result); // Output: received: echo: hello
+});
+```
+
+### Notes
+
+- Only one `forEach` can be active at a time; concurrent calls throw.
+- Requests are queued until `forEach` is called.
+- Errors are serialized and rethrown on the caller side.
 
 ## Usage: Sending messages to the worker
 

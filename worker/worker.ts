@@ -167,16 +167,16 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
 
       yield* provide({
         *send(value) {
-          const { port, operation } = yield* useChannelResponse<TRecv>();
+          const response = yield* useChannelResponse<TRecv>();
           worker.postMessage(
             {
               type: "send",
               value,
-              response: port,
+              response: response.port,
             },
-            [port],
+            [response.port],
           );
-          const result = yield* operation;
+          const result = yield* response;
           if (result.ok) {
             return result.value;
           }

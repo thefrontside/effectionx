@@ -125,18 +125,17 @@ export async function workerMain<
                 try {
                   // Create send function for worker-initiated requests
                   function* send(requestValue: WRequest): Operation<WResponse> {
-                    const { port: responsePort, operation } =
-                      yield* useChannelResponse<WResponse>();
+                    const response = yield* useChannelResponse<WResponse>();
                     port.postMessage(
                       {
                         type: "request",
                         value: requestValue,
-                        response: responsePort,
+                        response: response.port,
                       },
                       // biome-ignore lint/suspicious/noExplicitAny: cross-env MessagePort compatibility
-                      [responsePort] as any,
+                      [response.port] as any,
                     );
-                    const result = yield* operation;
+                    const result = yield* response;
                     if (result.ok) {
                       return result.value;
                     }

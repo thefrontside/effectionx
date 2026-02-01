@@ -13,16 +13,17 @@ export interface ChannelResponseOptions {
 /**
  * Requester side - creates channel, waits for SerializedResult response.
  *
+ * This interface is both:
+ * - An object with a `port` property to transfer to the responder
+ * - An `Operation` that can be yielded to wait for the response
+ *
  * The operation returns `SerializedResult<T>` which the caller must handle:
  * - `{ ok: true, value: T }` for success
  * - `{ ok: false, error: SerializedError }` for error
  */
-export interface ChannelResponse<T> {
+export interface ChannelResponse<T> extends Operation<SerializedResult<T>> {
   /** Port to transfer to the responder */
   port: MessagePort;
-
-  /** Operation that waits for SerializedResult<T> response (sends ACK after receiving) */
-  operation: Operation<SerializedResult<T>>;
 }
 
 /**
@@ -55,7 +56,8 @@ export interface ChannelRequest<T> {
 
 /**
  * Create a MessageChannel for request-response communication.
- * Returns a port to transfer and an operation to await the response.
+ * Returns a `ChannelResponse` that is both an object with a `port` property
+ * and an `Operation` that can be yielded to wait for the response.
  *
  * The operation:
  * - Races between receiving a message and the port closing (responder crash detection)
@@ -65,13 +67,13 @@ export interface ChannelRequest<T> {
  *
  * @example
  * ```ts
- * const { port, operation } = yield* useChannelResponse<string>();
+ * const response = yield* useChannelResponse<string>();
  *
  * // Transfer port to responder
- * worker.postMessage({ type: "request", response: port }, [port]);
+ * worker.postMessage({ type: "request", response: response.port }, [response.port]);
  *
  * // Wait for response (automatically sends ACK)
- * const result = yield* operation;
+ * const result = yield* response;
  * if (result.ok) {
  *   console.log(result.value);
  * } else {
@@ -81,10 +83,10 @@ export interface ChannelRequest<T> {
  *
  * @example With timeout
  * ```ts
- * const { port, operation } = yield* useChannelResponse<string>({ timeout: 5000 });
+ * const response = yield* useChannelResponse<string>({ timeout: 5000 });
  *
  * // If responder doesn't respond within 5 seconds, throws error
- * const result = yield* operation;
+ * const result = yield* response;
  * ```
  */
 export function useChannelResponse<T>(
@@ -98,42 +100,40 @@ export function useChannelResponse<T>(
       yield* provide({
         port: channel.port2,
 
-        operation: {
-          *[Symbol.iterator]() {
-            function* waitForResponse(): Operation<SerializedResult<T>> {
-              // Race between response message and port close (responder crashed/exited)
-              const event = yield* race([
-                once(channel.port1, "message"),
-                once(channel.port1, "close"),
-              ]);
+        *[Symbol.iterator]() {
+          function* waitForResponse(): Operation<SerializedResult<T>> {
+            // Race between response message and port close (responder crashed/exited)
+            const event = yield* race([
+              once(channel.port1, "message"),
+              once(channel.port1, "close"),
+            ]);
 
-              // If port closed, responder never responded
-              if ((event as Event).type === "close") {
-                throw new Error("Channel closed before response received");
-              }
-
-              const data = (event as MessageEvent).data as SerializedResult<T>;
-
-              // Send ACK
-              channel.port1.postMessage({ type: "ack" });
-
-              return data;
+            // If port closed, responder never responded
+            if ((event as Event).type === "close") {
+              throw new Error("Channel closed before response received");
             }
 
-            // If timeout specified, use timebox
-            if (options?.timeout !== undefined) {
-              const result = yield* timebox(options.timeout, waitForResponse);
-              if (result.timeout) {
-                throw new Error(
-                  `Channel response timed out after ${options.timeout}ms`,
-                );
-              }
-              return result.value;
-            }
+            const data = (event as MessageEvent).data as SerializedResult<T>;
 
-            // No timeout - wait indefinitely (with close detection)
-            return yield* waitForResponse();
-          },
+            // Send ACK
+            channel.port1.postMessage({ type: "ack" });
+
+            return data;
+          }
+
+          // If timeout specified, use timebox
+          if (options?.timeout !== undefined) {
+            const result = yield* timebox(options.timeout, waitForResponse);
+            if (result.timeout) {
+              throw new Error(
+                `Channel response timed out after ${options.timeout}ms`,
+              );
+            }
+            return result.value;
+          }
+
+          // No timeout - wait indefinitely (with close detection)
+          return yield* waitForResponse();
         },
       });
     } finally {

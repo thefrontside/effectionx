@@ -1,4 +1,4 @@
-import type { Operation, Result } from "effection";
+import type { Operation, Result, Subscription } from "effection";
 
 /**
  * Messages sent from host to worker (control messages).
@@ -49,6 +49,36 @@ export type SerializedResult<T> =
   | { ok: false; error: SerializedError };
 
 /**
+ * Messages sent over a channel that supports progress streaming.
+ * Used by useChannelRequest to send progress updates and final response.
+ */
+export type ChannelMessage<TResponse, TProgress> =
+  | { type: "progress"; data: TProgress }
+  | { type: "response"; result: SerializedResult<TResponse> };
+
+/**
+ * Acknowledgement messages sent back over a channel.
+ * Used by useChannelResponse to acknowledge receipt of messages.
+ */
+export type ChannelAck = { type: "ack" } | { type: "progress_ack" };
+
+/**
+ * Context passed to forEach handler for progress streaming.
+ * Allows the handler to send progress updates back to the requester.
+ *
+ * @template TProgress - The progress data type
+ */
+export interface ForEachContext<TProgress> {
+  /**
+   * Send a progress update to the requester.
+   * This operation blocks until the requester acknowledges receipt (backpressure).
+   *
+   * @param data - The progress data to send
+   */
+  progress(data: TProgress): Operation<void>;
+}
+
+/**
  * Serialize an Error for transmission via postMessage.
  */
 export function serializeError(error: Error): SerializedError {
@@ -72,6 +102,41 @@ export function errorFromSerialized(
   return new Error(`${context}: ${serialized.message}`, {
     cause: serialized,
   });
+}
+
+/**
+ * A send function that supports both simple request/response and progress streaming.
+ *
+ * @template WRequest - value worker sends to host
+ * @template WResponse - value worker receives from host
+ */
+export interface WorkerSend<WRequest, WResponse> {
+  /**
+   * Send a request to the host and wait for a response.
+   * Ignores any progress updates from the host.
+   */
+  (value: WRequest): Operation<WResponse>;
+
+  /**
+   * Send a request to the host and receive a subscription that yields
+   * progress updates and returns the final response.
+   *
+   * @template WProgress - progress type from host
+   *
+   * @example
+   * ```ts
+   * const subscription = yield* send.stream<number>(request);
+   * let next = yield* subscription.next();
+   * while (!next.done) {
+   *   console.log("Progress:", next.value);
+   *   next = yield* subscription.next();
+   * }
+   * const response = next.value;
+   * ```
+   */
+  stream<WProgress>(
+    value: WRequest,
+  ): Operation<Subscription<WProgress, WResponse>>;
 }
 
 /**
@@ -100,9 +165,9 @@ export interface WorkerMainOptions<
   data: TData;
   /**
    * Send a request to the host and wait for a response.
-   * Only available if WRequest and WResponse type parameters are provided.
+   * Also supports progress streaming via `send.stream()`.
    */
-  send: (value: WRequest) => Operation<WResponse>;
+  send: WorkerSend<WRequest, WResponse>;
 }
 
 /**

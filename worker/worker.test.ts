@@ -3,7 +3,15 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeEach, describe, it } from "@effectionx/bdd";
 import { when } from "@effectionx/converge";
-import { all, scoped, sleep, spawn, suspend, until } from "effection";
+import {
+  all,
+  scoped,
+  sleep,
+  spawn,
+  suspend,
+  until,
+  withResolvers,
+} from "effection";
 import { expect } from "expect";
 
 import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
@@ -345,8 +353,9 @@ describe("worker", () => {
         { type: "module" },
       );
 
-      // Small delay to ensure worker sends request before forEach is set up
-      yield* sleep(10);
+      // Yield control to allow worker to send request before forEach is set up
+      // The channel implementation buffers requests, so sleep(0) is sufficient
+      yield* sleep(0);
 
       const result = yield* worker.forEach<string, string>(function* (request) {
         return `echo: ${request}`;
@@ -362,16 +371,19 @@ describe("worker", () => {
         { type: "module" },
       );
 
+      const forEachStarted = withResolvers<void>();
+
       // Start first forEach in background
       yield* spawn(function* () {
         yield* worker.forEach<string, string>(function* (_request) {
-          yield* sleep(100); // Slow handler
+          forEachStarted.resolve();
+          yield* sleep(100); // Slow handler - inside handler, this is allowed
           return "slow response";
         });
       });
 
-      // Give first forEach time to start
-      yield* sleep(10);
+      // Wait for first forEach to start handling a request
+      yield* forEachStarted.operation;
 
       // Second forEach should throw
       try {

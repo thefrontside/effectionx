@@ -1,6 +1,17 @@
-import { type Operation, resource, once, race } from "effection";
 import { timebox } from "@effectionx/timebox";
-import { serializeError, type SerializedResult } from "./types.ts";
+import {
+  type Operation,
+  type Subscription,
+  once,
+  race,
+  resource,
+} from "effection";
+import {
+  type ChannelAck,
+  type ChannelMessage,
+  type SerializedResult,
+  serializeError,
+} from "./types.ts";
 
 /**
  * Options for creating a channel response.
@@ -20,10 +31,34 @@ export interface ChannelResponseOptions {
  * The operation returns `SerializedResult<T>` which the caller must handle:
  * - `{ ok: true, value: T }` for success
  * - `{ ok: false, error: SerializedError }` for error
+ *
+ * For progress streaming, use the `progress` property which returns a Subscription
+ * that yields progress values and returns the final response.
+ *
+ * @template TResponse - The response type
+ * @template TProgress - The progress type (defaults to `never` for no progress)
  */
-export interface ChannelResponse<T> extends Operation<SerializedResult<T>> {
+export interface ChannelResponse<TResponse, TProgress = never>
+  extends Operation<SerializedResult<TResponse>> {
   /** Port to transfer to the responder */
   port: MessagePort;
+
+  /**
+   * Get a subscription that yields progress values and returns the final response.
+   * Use this when you want to receive progress updates during the request.
+   *
+   * @example
+   * ```ts
+   * const subscription = yield* response.progress;
+   * let next = yield* subscription.next();
+   * while (!next.done) {
+   *   console.log("Progress:", next.value);
+   *   next = yield* subscription.next();
+   * }
+   * const result = next.value; // SerializedResult<TResponse>
+   * ```
+   */
+  progress: Operation<Subscription<TProgress, SerializedResult<TResponse>>>;
 }
 
 /**
@@ -40,10 +75,13 @@ export interface ChannelResponse<T> extends Operation<SerializedResult<T>> {
  * Port cleanup is handled by the resource's finally block. The close event on
  * MessagePort is used to detect requester cancellation; behavior may vary slightly
  * across runtimes (Node.js worker_threads, browser, Deno).
+ *
+ * @template TResponse - The response type
+ * @template TProgress - The progress type (defaults to `never` for no progress)
  */
-export interface ChannelRequest<T> {
+export interface ChannelRequest<TResponse, TProgress = never> {
   /** Send success response (wraps in SerializedResult internally) and wait for ACK */
-  resolve(value: T): Operation<void>;
+  resolve(value: TResponse): Operation<void>;
 
   /**
    * Send error response (serializes and wraps in SerializedResult internally) and wait for ACK.
@@ -52,6 +90,16 @@ export interface ChannelRequest<T> {
    * delivered. The requester receives `{ ok: false, error: SerializedError }`.
    */
   reject(error: Error): Operation<void>;
+
+  /**
+   * Send a progress update and wait for acknowledgement.
+   * This provides backpressure - the operation blocks until the requester acknowledges.
+   *
+   * If the requester cancels (port closes), this returns gracefully without throwing.
+   *
+   * @param data - The progress data to send
+   */
+  progress(data: TProgress): Operation<void>;
 }
 
 /**
@@ -88,10 +136,22 @@ export interface ChannelRequest<T> {
  * // If responder doesn't respond within 5 seconds, throws error
  * const result = yield* response;
  * ```
+ *
+ * @example With progress streaming
+ * ```ts
+ * const response = yield* useChannelResponse<string, number>();
+ * const subscription = yield* response.progress;
+ * let next = yield* subscription.next();
+ * while (!next.done) {
+ *   console.log("Progress:", next.value);
+ *   next = yield* subscription.next();
+ * }
+ * const result = next.value; // SerializedResult<string>
+ * ```
  */
-export function useChannelResponse<T>(
+export function useChannelResponse<TResponse, TProgress = never>(
   options?: ChannelResponseOptions,
-): Operation<ChannelResponse<T>> {
+): Operation<ChannelResponse<TResponse, TProgress>> {
   return resource(function* (provide) {
     const channel = new MessageChannel();
     channel.port1.start();
@@ -100,25 +160,39 @@ export function useChannelResponse<T>(
       yield* provide({
         port: channel.port2,
 
+        // Direct yield* response - ignores progress, waits for final response
         *[Symbol.iterator]() {
-          function* waitForResponse(): Operation<SerializedResult<T>> {
-            // Race between response message and port close (responder crashed/exited)
-            const event = yield* race([
-              once(channel.port1, "message"),
-              once(channel.port1, "close"),
-            ]);
+          function* waitForResponse(): Operation<SerializedResult<TResponse>> {
+            // Loop until we get a response (skip any progress messages)
+            while (true) {
+              // Race between message and port close (responder crashed/exited)
+              const event = yield* race([
+                once(channel.port1, "message"),
+                once(channel.port1, "close"),
+              ]);
 
-            // If port closed, responder never responded
-            if ((event as Event).type === "close") {
-              throw new Error("Channel closed before response received");
+              // If port closed, responder never responded
+              if ((event as Event).type === "close") {
+                throw new Error("Channel closed before response received");
+              }
+
+              const msg = (event as MessageEvent).data as ChannelMessage<
+                TResponse,
+                TProgress
+              >;
+
+              // If it's a progress message, ACK it and continue waiting
+              if (msg.type === "progress") {
+                channel.port1.postMessage({
+                  type: "progress_ack",
+                } satisfies ChannelAck);
+                continue;
+              }
+
+              // It's a response - send ACK and return
+              channel.port1.postMessage({ type: "ack" } satisfies ChannelAck);
+              return msg.result;
             }
-
-            const data = (event as MessageEvent).data as SerializedResult<T>;
-
-            // Send ACK
-            channel.port1.postMessage({ type: "ack" });
-
-            return data;
           }
 
           // If timeout specified, use timebox
@@ -135,6 +209,72 @@ export function useChannelResponse<T>(
           // No timeout - wait indefinitely (with close detection)
           return yield* waitForResponse();
         },
+
+        // Progress subscription - yields progress values, returns final response
+        get progress(): Operation<
+          Subscription<TProgress, SerializedResult<TResponse>>
+        > {
+          const port = channel.port1;
+          const timeout = options?.timeout;
+
+          return resource(function* (provide) {
+            // Create the subscription object
+            const subscription: Subscription<
+              TProgress,
+              SerializedResult<TResponse>
+            > = {
+              *next() {
+                function* waitForNext(): Operation<
+                  IteratorResult<TProgress, SerializedResult<TResponse>>
+                > {
+                  // Race between message and port close
+                  const event = yield* race([
+                    once(port, "message"),
+                    once(port, "close"),
+                  ]);
+
+                  // If port closed, throw error
+                  if ((event as Event).type === "close") {
+                    throw new Error("Channel closed before response received");
+                  }
+
+                  const msg = (event as MessageEvent).data as ChannelMessage<
+                    TResponse,
+                    TProgress
+                  >;
+
+                  if (msg.type === "progress") {
+                    // ACK the progress
+                    port.postMessage({
+                      type: "progress_ack",
+                    } satisfies ChannelAck);
+                    // Yield the progress value
+                    return { done: false, value: msg.data };
+                  }
+
+                  // It's a response - ACK and return done with value
+                  port.postMessage({ type: "ack" } satisfies ChannelAck);
+                  return { done: true, value: msg.result };
+                }
+
+                // If timeout specified, use timebox
+                if (timeout !== undefined) {
+                  const result = yield* timebox(timeout, waitForNext);
+                  if (result.timeout) {
+                    throw new Error(
+                      `Channel response timed out after ${timeout}ms`,
+                    );
+                  }
+                  return result.value;
+                }
+
+                return yield* waitForNext();
+              },
+            };
+
+            yield* provide(subscription);
+          });
+        },
       });
     } finally {
       channel.port1.close();
@@ -144,15 +284,16 @@ export function useChannelResponse<T>(
 
 /**
  * Wrap a received MessagePort to send a response.
- * Returns resolve/reject operations to complete the request.
+ * Returns resolve/reject/progress operations to complete the request.
  *
- * Both resolve and reject:
- * - Wrap the response in SerializedResult internally
- * - Send the wrapped response
+ * All methods:
+ * - Use the appropriate message format for progress streaming
  * - Race between ACK message and port close (requester cancellation detection)
- * - Clean up the port
+ * - Return gracefully if port is closed (requester cancelled)
  *
- * @example
+ * Port cleanup is handled by the resource's finally block.
+ *
+ * @example Basic usage
  * ```ts
  * const { resolve, reject } = yield* useChannelRequest<string>(msg.response);
  *
@@ -163,19 +304,32 @@ export function useChannelResponse<T>(
  *   yield* reject(error as Error);  // Serialized and wrapped in { ok: false, error } internally
  * }
  * ```
+ *
+ * @example With progress streaming
+ * ```ts
+ * const { resolve, progress } = yield* useChannelRequest<string, number>(msg.response);
+ *
+ * yield* progress(25);  // Send progress, wait for ACK
+ * yield* progress(50);
+ * yield* progress(75);
+ * yield* resolve("complete");
+ * ```
  */
-export function useChannelRequest<T>(
+export function useChannelRequest<TResponse, TProgress = never>(
   port: MessagePort,
-): Operation<ChannelRequest<T>> {
+): Operation<ChannelRequest<TResponse, TProgress>> {
   return resource(function* (provide) {
     port.start();
 
     try {
       yield* provide({
-        *resolve(value: T) {
-          // Wrap in SerializedResult internally
-          const result: SerializedResult<T> = { ok: true, value };
-          port.postMessage(result);
+        *resolve(value: TResponse) {
+          // Send as typed response message
+          const msg: ChannelMessage<TResponse, TProgress> = {
+            type: "response",
+            result: { ok: true, value },
+          };
+          port.postMessage(msg);
 
           // Race between ACK message and port close (requester cancelled)
           const event = yield* race([
@@ -189,20 +343,20 @@ export function useChannelRequest<T>(
           }
 
           // Validate ACK
-          const msg = (event as MessageEvent).data;
-          if (msg?.type !== "ack") {
-            throw new Error(`Expected ACK, got: ${msg?.type}`);
+          const ack = (event as MessageEvent).data as ChannelAck;
+          if (ack?.type !== "ack") {
+            throw new Error(`Expected ACK, got: ${ack?.type}`);
           }
           // Port cleanup handled by finally block
         },
 
         *reject(error: Error) {
-          // Serialize and wrap in SerializedResult internally
-          const result: SerializedResult<T> = {
-            ok: false,
-            error: serializeError(error),
+          // Send as typed response message with error
+          const msg: ChannelMessage<TResponse, TProgress> = {
+            type: "response",
+            result: { ok: false, error: serializeError(error) },
           };
-          port.postMessage(result);
+          port.postMessage(msg);
 
           // Race between ACK message and port close (requester cancelled)
           const event = yield* race([
@@ -216,11 +370,37 @@ export function useChannelRequest<T>(
           }
 
           // Validate ACK
-          const msg = (event as MessageEvent).data;
-          if (msg?.type !== "ack") {
-            throw new Error(`Expected ACK, got: ${msg?.type}`);
+          const ack = (event as MessageEvent).data as ChannelAck;
+          if (ack?.type !== "ack") {
+            throw new Error(`Expected ACK, got: ${ack?.type}`);
           }
           // Port cleanup handled by finally block
+        },
+
+        *progress(data: TProgress) {
+          // Send progress message
+          const msg: ChannelMessage<TResponse, TProgress> = {
+            type: "progress",
+            data,
+          };
+          port.postMessage(msg);
+
+          // Race between progress ACK and port close (requester cancelled)
+          const event = yield* race([
+            once(port, "message"),
+            once(port, "close"),
+          ]);
+
+          // If port closed, requester was cancelled - exit gracefully
+          if ((event as Event).type === "close") {
+            return;
+          }
+
+          // Validate progress ACK
+          const ack = (event as MessageEvent).data as ChannelAck;
+          if (ack?.type !== "progress_ack") {
+            throw new Error(`Expected progress_ack, got: ${ack?.type}`);
+          }
         },
       });
     } finally {

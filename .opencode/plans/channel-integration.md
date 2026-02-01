@@ -14,6 +14,20 @@ We created two channel primitives to simplify request-response communication ove
 
 The ACK mechanism guarantees the response was received before cleanup.
 
+### What the Primitives Handle Internally
+
+Both primitives encapsulate the full `MessagePort` lifecycle:
+
+| Concern | `useChannelResponse` | `useChannelRequest` |
+|---------|---------------------|---------------------|
+| `port.start()` | Calls `port1.start()` on creation (line 43) | Calls `port.start()` on creation (line 88) |
+| `port.close()` | Closes `port1` in finally block | Closes port in finally block |
+| Event listening | Uses `once(port, "message")` internally | Uses `once(port, "message")` for ACK |
+| ACK send | Sends ACK after receiving response | N/A (waits for ACK) |
+| ACK receive | N/A (sends ACK) | Validates ACK message |
+
+**This means callers no longer need to manually call `port.start()` or `port.close()`** - removing these calls in the integration is intentional, not a regression.
+
 ### Current State
 
 The existing implementation in `worker.ts` and `worker-main.ts` manually manages `MessageChannel` lifecycle:

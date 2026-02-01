@@ -4,11 +4,38 @@ import process from "node:process";
 import { readTextFile } from "@effectionx/fs";
 import { exec } from "@effectionx/process";
 import { lines } from "@effectionx/stream-helpers";
-import { type Operation, each, main, spawn } from "effection";
+import { type Operation, type Stream, each, main, spawn } from "effection";
 import G from "generatorics";
 import semver from "semver";
 
+// Parse CLI args for verbose mode
+const verbose =
+  process.argv.includes("-v") || process.argv.includes("--verbose");
+
 import { type TapTestResult, parseTapResults } from "./tap-parser.ts";
+
+/**
+ * Stream helper that logs each line as it passes through.
+ * Used in verbose mode to see raw TAP output.
+ */
+function logLines<TClose>(
+  stream: Stream<string, TClose>,
+): Stream<string, TClose> {
+  return {
+    *[Symbol.iterator]() {
+      const sub = yield* stream;
+      return {
+        *next() {
+          const result = yield* sub.next();
+          if (!result.done) {
+            console.log(result.value);
+          }
+          return result;
+        },
+      };
+    },
+  };
+}
 
 // Types for peer dependency version resolution
 type PeerDepVersions = {
@@ -224,7 +251,9 @@ function* runTestsWithTap(
   // Process stdout in real-time
   yield* spawn(function* () {
     const lineStream = lines()(proc.stdout);
-    const tapStream = parseTapResults()(lineStream);
+    // In verbose mode, log each line as it passes through
+    const loggedStream = verbose ? logLines(lineStream) : lineStream;
+    const tapStream = parseTapResults()(loggedStream);
 
     for (const result of yield* each(tapStream)) {
       // Skip suites, only count actual tests

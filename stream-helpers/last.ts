@@ -23,7 +23,9 @@ import type { Operation, Stream } from "effection";
  * const value = yield* last(empty); // returns undefined
  * ```
  */
-function _last<T, TClose>(stream: Stream<T, TClose>): Operation<T | undefined> {
+export function last<T, TClose>(
+  stream: Stream<T, TClose>,
+): Operation<T | undefined> {
   return {
     *[Symbol.iterator]() {
       const subscription = yield* stream;
@@ -68,7 +70,9 @@ function _last<T, TClose>(stream: Stream<T, TClose>): Operation<T | undefined> {
  * const value = yield* last.expect(empty); // throws Error
  * ```
  */
-function expectLast<T, TClose>(stream: Stream<T, TClose>): Operation<T> {
+last.expect = function expectLast<T, TClose>(
+  stream: Stream<T, TClose>,
+): Operation<T> {
   return {
     *[Symbol.iterator]() {
       const subscription = yield* stream;
@@ -89,6 +93,4 @@ function expectLast<T, TClose>(stream: Stream<T, TClose>): Operation<T> {
       return lastValue;
     },
   };
-}
-
-export const last = Object.assign(_last, { expect: expectLast });
+};

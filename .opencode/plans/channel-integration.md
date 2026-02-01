@@ -129,10 +129,11 @@ reject(error: Error): Operation<void> {
 }
 ```
 
-#### Add Test for Cancellation
+#### Add Tests for Cancellation and ACK Behavior
 
-Add a test to `worker/channel.test.ts`:
+Add the following tests to `worker/channel.test.ts`:
 
+**1. Responder handles requester cancellation gracefully:**
 ```typescript
 it("responder handles requester cancellation gracefully", function* () {
   const channel = new MessageChannel();
@@ -159,6 +160,89 @@ it("responder handles requester cancellation gracefully", function* () {
 
   // Responder should have completed (not hung)
   expect(responderCompleted).toBe(true);
+});
+```
+
+**2. ACK is sent and received on error path (full round-trip):**
+```typescript
+it("ACK is sent for error responses", function* () {
+  const { port, operation } = yield* useChannelResponse<Error>();
+
+  let ackWasReceived = false;
+
+  // Spawn responder that tracks ACK receipt
+  yield* spawn(function* () {
+    const { reject } = yield* useChannelRequest<string>(port);
+    yield* reject(new Error("test error"));
+    // If we get here, ACK was received (reject waits for ACK)
+    ackWasReceived = true;
+  });
+
+  yield* operation;
+
+  // Verify responder completed (meaning ACK was received)
+  yield* sleep(10);
+  expect(ackWasReceived).toBe(true);
+});
+```
+
+**3. Responder scope exits without calling resolve/reject:**
+```typescript
+it("port closes if responder exits without responding", function* () {
+  const channel = new MessageChannel();
+  channel.port1.start();
+
+  // Spawn responder that exits without responding
+  yield* spawn(function* () {
+    const _request = yield* useChannelRequest<string>(channel.port2);
+    // Exit without calling resolve or reject
+    // The finally block should close the port
+  });
+
+  // Give time for responder to run and exit
+  yield* sleep(10);
+
+  // port2 should be closed by useChannelRequest's finally block
+  // port1 should receive close event
+  let closeReceived = false;
+  channel.port1.addEventListener("close", () => {
+    closeReceived = true;
+  });
+
+  yield* sleep(10);
+  expect(closeReceived).toBe(true);
+});
+```
+
+**4. Responder throws during handler (before resolve/reject):**
+```typescript
+it("port closes if responder throws before responding", function* () {
+  const channel = new MessageChannel();
+  channel.port1.start();
+
+  let errorCaught = false;
+
+  // Spawn responder that throws
+  yield* spawn(function* () {
+    try {
+      const _request = yield* useChannelRequest<string>(channel.port2);
+      throw new Error("responder crashed");
+    } catch (e) {
+      errorCaught = true;
+      throw e; // re-throw to let finally run
+    }
+  });
+
+  yield* sleep(10);
+
+  // port2 should be closed by useChannelRequest's finally block
+  let closeReceived = false;
+  channel.port1.addEventListener("close", () => {
+    closeReceived = true;
+  });
+
+  yield* sleep(10);
+  expect(closeReceived).toBe(true);
 });
 ```
 

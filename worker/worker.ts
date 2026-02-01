@@ -1,19 +1,23 @@
 import {
-  createChannel,
   Err,
   Ok,
+  type Operation,
+  type Result,
+  createChannel,
   on,
   once,
-  type Operation,
   resource,
-  type Result,
   spawn,
   withResolvers,
 } from "effection";
 import Worker from "web-worker";
 
-import { useChannelResponse, useChannelRequest } from "./channel.ts";
-import { errorFromSerialized, type SerializedError } from "./types.ts";
+import { useChannelRequest, useChannelResponse } from "./channel.ts";
+import {
+  type ForEachContext,
+  type SerializedError,
+  errorFromSerialized,
+} from "./types.ts";
 // Note: Ok/Err still used for outcome handling; serializeError no longer needed here
 
 /**
@@ -33,11 +37,34 @@ export interface WorkerResource<TSend, TRecv, TReturn>
    * Handle requests initiated by the worker.
    * Only one forEach can be active at a time.
    *
+   * The handler receives a context object with a `progress` method for
+   * sending progress updates back to the worker.
+   *
    * @template WRequest - value worker sends to host
    * @template WResponse - value host sends back to worker
+   * @template WProgress - progress type sent back to worker (optional)
+   *
+   * @example Basic usage (no progress)
+   * ```ts
+   * yield* worker.forEach(function* (request) {
+   *   return computeResponse(request);
+   * });
+   * ```
+   *
+   * @example With progress streaming
+   * ```ts
+   * yield* worker.forEach(function* (request, ctx) {
+   *   yield* ctx.progress({ step: 1, message: "Starting..." });
+   *   yield* ctx.progress({ step: 2, message: "Processing..." });
+   *   return { result: "done" };
+   * });
+   * ```
    */
-  forEach<WRequest, WResponse>(
-    fn: (request: WRequest) => Operation<WResponse>,
+  forEach<WRequest, WResponse, WProgress = never>(
+    fn: (
+      request: WRequest,
+      ctx: ForEachContext<WProgress>,
+    ) => Operation<WResponse>,
   ): Operation<TReturn>;
 }
 
@@ -212,8 +239,11 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
           throw errorFromSerialized("Worker handler failed", result.error);
         },
 
-        *forEach<WRequest, WResponse>(
-          fn: (request: WRequest) => Operation<WResponse>,
+        *forEach<WRequest, WResponse, WProgress = never>(
+          fn: (
+            request: WRequest,
+            ctx: ForEachContext<WProgress>,
+          ) => Operation<WResponse>,
         ): Operation<TReturn> {
           // Prevent calling forEach more than once
           if (forEachCompleted) {
@@ -232,14 +262,20 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
             while (!next.done) {
               const request = next.value;
               yield* spawn(function* () {
-                const { resolve, reject } = yield* useChannelRequest<WResponse>(
-                  request.response,
-                );
+                const channelRequest = yield* useChannelRequest<
+                  WResponse,
+                  WProgress
+                >(request.response);
                 try {
-                  const result = yield* fn(request.value as WRequest);
-                  yield* resolve(result);
+                  // Create context with progress method
+                  const ctx: ForEachContext<WProgress> = {
+                    progress: (data: WProgress) =>
+                      channelRequest.progress(data),
+                  };
+                  const result = yield* fn(request.value as WRequest, ctx);
+                  yield* channelRequest.resolve(result);
                 } catch (error) {
-                  yield* reject(error as Error);
+                  yield* channelRequest.reject(error as Error);
                 }
               });
               next = yield* requestSubscription.next();

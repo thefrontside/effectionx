@@ -1,8 +1,8 @@
 import { describe, it } from "@effectionx/bdd";
-import { once, spawn, sleep, suspend, withResolvers, race } from "effection";
+import { once, race, sleep, spawn, suspend, withResolvers } from "effection";
 import { expect } from "expect";
 
-import { useChannelResponse, useChannelRequest } from "./channel.ts";
+import { useChannelRequest, useChannelResponse } from "./channel.ts";
 import type { SerializedResult } from "./types.ts";
 
 function* sleepThenTimeout(ms: number) {
@@ -21,14 +21,14 @@ describe("channel", () => {
     it("receives response data via operation", function* () {
       const response = yield* useChannelResponse<string>();
 
-      // Simulate responder sending a SerializedResult
+      // Simulate responder sending a ChannelMessage response
       yield* spawn(function* () {
         response.port.start();
-        const result: SerializedResult<string> = {
-          ok: true,
-          value: "hello from responder",
-        };
-        response.port.postMessage(result);
+        // New message format: { type: "response", result: SerializedResult }
+        response.port.postMessage({
+          type: "response",
+          result: { ok: true, value: "hello from responder" },
+        });
         // Responder would wait for ACK here in real usage
       });
 
@@ -61,12 +61,12 @@ describe("channel", () => {
       const channel = new MessageChannel();
       channel.port1.start();
 
-      let valueReceived: unknown = null;
+      let messageReceived: unknown = null;
 
       // Simulate requester on port1 using effection
       yield* spawn(function* () {
         const event = yield* once(channel.port1, "message");
-        valueReceived = (event as MessageEvent).data;
+        messageReceived = (event as MessageEvent).data;
         // Send ACK
         channel.port1.postMessage({ type: "ack" });
       });
@@ -75,20 +75,23 @@ describe("channel", () => {
       const { resolve } = yield* useChannelRequest<string>(channel.port2);
       yield* resolve("success value");
 
-      // Value is wrapped in SerializedResult
-      expect(valueReceived).toEqual({ ok: true, value: "success value" });
+      // Value is wrapped in ChannelMessage with SerializedResult
+      expect(messageReceived).toEqual({
+        type: "response",
+        result: { ok: true, value: "success value" },
+      });
     });
 
     it("reject sends error and waits for ACK", function* () {
       const channel = new MessageChannel();
       channel.port1.start();
 
-      let resultReceived: unknown = null;
+      let messageReceived: unknown = null;
 
       // Simulate requester on port1 using effection
       yield* spawn(function* () {
         const event = yield* once(channel.port1, "message");
-        resultReceived = (event as MessageEvent).data;
+        messageReceived = (event as MessageEvent).data;
         // Send ACK
         channel.port1.postMessage({ type: "ack" });
       });
@@ -98,12 +101,16 @@ describe("channel", () => {
       const error = new Error("test error");
       yield* reject(error);
 
-      // Error is serialized and wrapped in SerializedResult
-      const result = resultReceived as SerializedResult<string>;
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.error.name).toBe("Error");
-        expect(result.error.message).toBe("test error");
+      // Error is serialized and wrapped in ChannelMessage
+      const msg = messageReceived as {
+        type: string;
+        result: SerializedResult<string>;
+      };
+      expect(msg.type).toBe("response");
+      expect(msg.result.ok).toBe(false);
+      if (!msg.result.ok) {
+        expect(msg.result.error.name).toBe("Error");
+        expect(msg.result.error.message).toBe("test error");
       }
     });
 
@@ -505,6 +512,348 @@ describe("channel", () => {
       ]);
 
       expect(result).not.toBe("timeout");
+    });
+  });
+
+  describe("progress streaming", () => {
+    describe("useChannelResponse.progress", () => {
+      it("receives multiple progress updates then final response", function* () {
+        const response = yield* useChannelResponse<string, number>();
+
+        // Spawn responder that sends progress updates
+        yield* spawn(function* () {
+          const request = yield* useChannelRequest<string, number>(
+            response.port,
+          );
+
+          // Send progress updates
+          yield* request.progress(1);
+          yield* request.progress(2);
+          yield* request.progress(3);
+
+          // Send final response
+          yield* request.resolve("done");
+        });
+
+        // Use progress subscription
+        const subscription = yield* response.progress;
+
+        const progressValues: number[] = [];
+        let next = yield* subscription.next();
+        while (!next.done) {
+          progressValues.push(next.value);
+          next = yield* subscription.next();
+        }
+
+        expect(progressValues).toEqual([1, 2, 3]);
+        expect(next.value).toEqual({ ok: true, value: "done" });
+      });
+
+      it("yield* response ignores progress and returns final response", function* () {
+        const response = yield* useChannelResponse<string, number>();
+
+        // Spawn responder that sends progress then response
+        yield* spawn(function* () {
+          const request = yield* useChannelRequest<string, number>(
+            response.port,
+          );
+          yield* request.progress(1);
+          yield* request.progress(2);
+          yield* request.resolve("final");
+        });
+
+        // Directly yield response (ignores progress)
+        const result = yield* response;
+        expect(result).toEqual({ ok: true, value: "final" });
+      });
+
+      it("handles error response after progress", function* () {
+        const response = yield* useChannelResponse<string, number>();
+
+        yield* spawn(function* () {
+          const request = yield* useChannelRequest<string, number>(
+            response.port,
+          );
+          yield* request.progress(1);
+          yield* request.reject(new Error("failed after progress"));
+        });
+
+        const subscription = yield* response.progress;
+
+        const progressValues: number[] = [];
+        let next = yield* subscription.next();
+        while (!next.done) {
+          progressValues.push(next.value);
+          next = yield* subscription.next();
+        }
+
+        expect(progressValues).toEqual([1]);
+        expect(next.value.ok).toBe(false);
+        if (!next.value.ok) {
+          expect(next.value.error.message).toBe("failed after progress");
+        }
+      });
+
+      it("errors if port closes during progress", function* () {
+        const response = yield* useChannelResponse<string, number>();
+
+        // Spawn responder that sends one progress then closes
+        yield* spawn(function* () {
+          response.port.start();
+          response.port.postMessage({ type: "progress", data: 1 });
+          // Wait for progress_ack
+          yield* once(response.port, "message");
+          // Close without sending response
+          response.port.close();
+        });
+
+        const subscription = yield* response.progress;
+
+        // First progress should work
+        const first = yield* subscription.next();
+        expect(first.done).toBe(false);
+        expect(first.value).toBe(1);
+
+        // Next should error because port closed
+        let error: Error | undefined;
+        try {
+          yield* subscription.next();
+        } catch (e) {
+          error = e as Error;
+        }
+
+        expect(error).toBeDefined();
+        expect(error?.message).toContain("closed");
+      });
+    });
+
+    describe("useChannelRequest.progress", () => {
+      it("sends progress with backpressure (waits for ACK)", function* () {
+        const channel = new MessageChannel();
+        channel.port1.start();
+
+        const progressReceived: number[] = [];
+        const acksSent = { count: 0 };
+
+        // Simulate requester on port1
+        yield* spawn(function* () {
+          while (true) {
+            const event = yield* once(channel.port1, "message");
+            const msg = (event as MessageEvent).data;
+
+            if (msg.type === "progress") {
+              progressReceived.push(msg.data);
+              // Delay ACK slightly to test backpressure
+              yield* sleep(10);
+              acksSent.count++;
+              channel.port1.postMessage({ type: "progress_ack" });
+            } else if (msg.type === "response") {
+              channel.port1.postMessage({ type: "ack" });
+              break;
+            }
+          }
+        });
+
+        // Responder on port2
+        const request = yield* useChannelRequest<string, number>(channel.port2);
+
+        // These should block until ACK received
+        yield* request.progress(10);
+        yield* request.progress(20);
+        yield* request.resolve("done");
+
+        expect(progressReceived).toEqual([10, 20]);
+        expect(acksSent.count).toBe(2);
+      });
+
+      it("detects port close during progress", function* () {
+        const channel = new MessageChannel();
+        channel.port1.start();
+
+        // Simulate requester that closes after receiving progress
+        yield* spawn(function* () {
+          const event = yield* once(channel.port1, "message");
+          const msg = (event as MessageEvent).data;
+          expect(msg.type).toBe("progress");
+          // Close without sending ACK
+          channel.port1.close();
+        });
+
+        const request = yield* useChannelRequest<string, number>(channel.port2);
+
+        // progress() should detect close and exit gracefully
+        yield* request.progress(1);
+        // Should not throw, just return (requester cancelled)
+      });
+    });
+
+    describe("progress round-trip", () => {
+      it("preserves order of multiple progress updates", function* () {
+        const response = yield* useChannelResponse<string, string>();
+
+        const expectedProgress = ["a", "b", "c", "d", "e"];
+
+        yield* spawn(function* () {
+          const request = yield* useChannelRequest<string, string>(
+            response.port,
+          );
+          for (const p of expectedProgress) {
+            yield* request.progress(p);
+          }
+          yield* request.resolve("complete");
+        });
+
+        const subscription = yield* response.progress;
+        const received: string[] = [];
+
+        let next = yield* subscription.next();
+        while (!next.done) {
+          received.push(next.value);
+          next = yield* subscription.next();
+        }
+
+        expect(received).toEqual(expectedProgress);
+        expect(next.value).toEqual({ ok: true, value: "complete" });
+      });
+
+      it("handles complex progress data", function* () {
+        interface ProgressData {
+          step: number;
+          message: string;
+          details?: { items: string[] };
+        }
+
+        const response = yield* useChannelResponse<
+          { result: string },
+          ProgressData
+        >();
+
+        const progress1: ProgressData = { step: 1, message: "Starting" };
+        const progress2: ProgressData = {
+          step: 2,
+          message: "Processing",
+          details: { items: ["x", "y"] },
+        };
+
+        yield* spawn(function* () {
+          const request = yield* useChannelRequest<
+            { result: string },
+            ProgressData
+          >(response.port);
+          yield* request.progress(progress1);
+          yield* request.progress(progress2);
+          yield* request.resolve({ result: "success" });
+        });
+
+        const subscription = yield* response.progress;
+        const received: ProgressData[] = [];
+
+        let next = yield* subscription.next();
+        while (!next.done) {
+          received.push(next.value);
+          next = yield* subscription.next();
+        }
+
+        expect(received).toEqual([progress1, progress2]);
+        expect(next.value).toEqual({ ok: true, value: { result: "success" } });
+      });
+
+      it("handles zero progress updates", function* () {
+        const response = yield* useChannelResponse<string, number>();
+
+        yield* spawn(function* () {
+          const request = yield* useChannelRequest<string, number>(
+            response.port,
+          );
+          // No progress, just resolve
+          yield* request.resolve("immediate");
+        });
+
+        const subscription = yield* response.progress;
+        const next = yield* subscription.next();
+
+        // Should immediately return done with the response
+        expect(next.done).toBe(true);
+        expect(next.value).toEqual({ ok: true, value: "immediate" });
+      });
+
+      it("requester cancellation during progress stops responder", function* () {
+        const responderExited = withResolvers<void>();
+        const firstProgressReceived = withResolvers<void>();
+        const portReady = withResolvers<MessagePort>();
+
+        // Requester task we can cancel
+        const requesterTask = yield* spawn(function* () {
+          const response = yield* useChannelResponse<string, number>();
+          portReady.resolve(response.port);
+
+          const subscription = yield* response.progress;
+          // Get first progress
+          const first = yield* subscription.next();
+          expect(first.done).toBe(false);
+          firstProgressReceived.resolve();
+          // Then hang waiting for more
+          yield* subscription.next();
+        });
+
+        // Wait for port to be ready
+        const transferredPort = yield* portReady.operation;
+
+        // Responder
+        yield* spawn(function* () {
+          const request = yield* useChannelRequest<string, number>(
+            transferredPort,
+          );
+          yield* request.progress(1);
+          // This should detect close when requester is cancelled
+          yield* request.progress(2);
+          responderExited.resolve();
+        });
+
+        // Wait for first progress to be received
+        yield* firstProgressReceived.operation;
+
+        // Cancel requester
+        yield* requesterTask.halt();
+
+        // Responder should exit gracefully
+        const result = yield* race([
+          responderExited.operation,
+          sleepThenTimeout(100),
+        ]);
+
+        expect(result).not.toBe("timeout");
+      });
+    });
+
+    describe("progress with timeout", () => {
+      it("timeout applies to entire progress+response exchange", function* () {
+        const response = yield* useChannelResponse<string, number>({
+          timeout: 50,
+        });
+
+        // Responder that sends progress but never responds
+        yield* spawn(function* () {
+          response.port.start();
+          response.port.postMessage({ type: "progress", data: 1 });
+          // Never send response
+          yield* suspend();
+        });
+
+        let error: Error | undefined;
+        try {
+          const subscription = yield* response.progress;
+          // First progress works
+          yield* subscription.next();
+          // But waiting for more times out
+          yield* subscription.next();
+        } catch (e) {
+          error = e as Error;
+        }
+
+        expect(error).toBeDefined();
+        expect(error?.message).toContain("timed out");
+      });
     });
   });
 });

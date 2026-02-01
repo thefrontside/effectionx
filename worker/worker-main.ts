@@ -2,22 +2,27 @@ import assert from "node:assert";
 import { MessagePort, parentPort } from "node:worker_threads";
 import type { ValueSignal } from "@effectionx/signals";
 import {
-  createChannel,
-  createSignal,
-  each,
   Err,
   Ok,
   type Operation,
   type Task,
+  createChannel,
+  createSignal,
+  each,
   main,
   on,
   resource,
   spawn,
 } from "effection";
 
-import type { WorkerControl, WorkerMainOptions } from "./types.ts";
+import type { Subscription } from "effection";
+import { useChannelRequest, useChannelResponse } from "./channel.ts";
+import type {
+  SerializedResult,
+  WorkerControl,
+  WorkerMainOptions,
+} from "./types.ts";
 import { errorFromSerialized } from "./types.ts";
-import { useChannelResponse, useChannelRequest } from "./channel.ts";
 
 // Get the appropriate worker port for the current environment as a resource
 function useWorkerPort(): Operation<MessagePort> {
@@ -124,19 +129,8 @@ export async function workerMain<
             worker.start(
               yield* spawn(function* () {
                 try {
-                  // Create send function for worker-initiated requests
-                  function* send(requestValue: WRequest): Operation<WResponse> {
-                    const response = yield* useChannelResponse<WResponse>();
-                    port.postMessage(
-                      {
-                        type: "request",
-                        value: requestValue,
-                        response: response.port,
-                      },
-                      // biome-ignore lint/suspicious/noExplicitAny: cross-env MessagePort compatibility
-                      [response.port] as any,
-                    );
-                    const result = yield* response;
+                  // Helper to unwrap SerializedResult
+                  function unwrapResult<T>(result: SerializedResult<T>): T {
                     if (result.ok) {
                       return result.value;
                     }
@@ -145,6 +139,70 @@ export async function workerMain<
                       result.error,
                     );
                   }
+
+                  // Create send function for worker-initiated requests
+                  function send(requestValue: WRequest): Operation<WResponse> {
+                    return {
+                      *[Symbol.iterator]() {
+                        const response = yield* useChannelResponse<WResponse>();
+                        port.postMessage(
+                          {
+                            type: "request",
+                            value: requestValue,
+                            response: response.port,
+                          },
+                          // biome-ignore lint/suspicious/noExplicitAny: cross-env MessagePort compatibility
+                          [response.port] as any,
+                        );
+                        const result = yield* response;
+                        return unwrapResult(result);
+                      },
+                    };
+                  }
+
+                  // Add stream method for progress streaming
+                  send.stream = <WProgress>(
+                    requestValue: WRequest,
+                  ): Operation<Subscription<WProgress, WResponse>> => ({
+                    *[Symbol.iterator]() {
+                      const response = yield* useChannelResponse<
+                        WResponse,
+                        WProgress
+                      >();
+                      port.postMessage(
+                        {
+                          type: "request",
+                          value: requestValue,
+                          response: response.port,
+                        },
+                        // biome-ignore lint/suspicious/noExplicitAny: cross-env MessagePort compatibility
+                        [response.port] as any,
+                      );
+
+                      // Get the progress subscription
+                      const progressSubscription = yield* response.progress;
+
+                      // Wrap it to unwrap the SerializedResult at the end
+                      const wrappedSubscription: Subscription<
+                        WProgress,
+                        WResponse
+                      > = {
+                        *next() {
+                          const result = yield* progressSubscription.next();
+                          if (result.done) {
+                            // Unwrap the SerializedResult
+                            return {
+                              done: true as const,
+                              value: unwrapResult(result.value),
+                            };
+                          }
+                          return result;
+                        },
+                      };
+
+                      return wrappedSubscription;
+                    },
+                  });
 
                   let value = yield* body({
                     data: control.data,

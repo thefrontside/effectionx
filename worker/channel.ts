@@ -30,12 +30,26 @@ export interface ChannelResponse<T> {
  *
  * - `resolve(value)` wraps in `{ ok: true, value }` internally
  * - `reject(error)` serializes error and wraps in `{ ok: false, error }` internally
+ *
+ * **Note:** `reject()` is for **application-level errors** that the requester will
+ * receive as `{ ok: false, error }`. It is not a transport-level failure - the
+ * response is successfully delivered and acknowledged. Use this when the operation
+ * completed but with an error result (e.g., validation failed, resource not found).
+ *
+ * Port cleanup is handled by the resource's finally block. The close event on
+ * MessagePort is used to detect requester cancellation; behavior may vary slightly
+ * across runtimes (Node.js worker_threads, browser, Deno).
  */
 export interface ChannelRequest<T> {
   /** Send success response (wraps in SerializedResult internally) and wait for ACK */
   resolve(value: T): Operation<void>;
 
-  /** Send error response (serializes and wraps in SerializedResult internally) and wait for ACK */
+  /**
+   * Send error response (serializes and wraps in SerializedResult internally) and wait for ACK.
+   *
+   * This is for **application-level errors** - the response is still successfully
+   * delivered. The requester receives `{ ok: false, error: SerializedError }`.
+   */
   reject(error: Error): Operation<void>;
 }
 
@@ -179,8 +193,7 @@ export function useChannelRequest<T>(
           if (msg?.type !== "ack") {
             throw new Error(`Expected ACK, got: ${msg?.type}`);
           }
-
-          port.close();
+          // Port cleanup handled by finally block
         },
 
         *reject(error: Error) {
@@ -207,8 +220,7 @@ export function useChannelRequest<T>(
           if (msg?.type !== "ack") {
             throw new Error(`Expected ACK, got: ${msg?.type}`);
           }
-
-          port.close();
+          // Port cleanup handled by finally block
         },
       });
     } finally {

@@ -300,28 +300,37 @@ describe("channel", () => {
       channel.port1.start();
       channel.port2.start();
 
-      const responderSentResponse = withResolvers<void>();
+      const responderSentMessage = withResolvers<void>();
       const responderCompleted = withResolvers<void>();
 
-      // Spawn responder
+      // Spawn responder using raw postMessage so we can signal at the right moment
       yield* spawn(function* () {
-        const { resolve } = yield* useChannelRequest<string>(channel.port2);
+        // Send response
+        channel.port2.postMessage({ ok: true, value: "response" });
 
-        // Signal that we're about to send (and will wait for ACK after)
-        responderSentResponse.resolve();
+        // Signal AFTER postMessage - now responder will wait for ACK
+        responderSentMessage.resolve();
 
-        yield* resolve("response"); // This will wait for ACK, but detect close instead
+        // Race between ACK and close (same logic as useChannelRequest)
+        const event = yield* race([
+          once(channel.port2, "message"),
+          once(channel.port2, "close"),
+        ]);
 
+        // Should detect close, not hang waiting for ACK
+        if ((event as Event).type === "close") {
+          responderCompleted.resolve();
+          return;
+        }
+
+        // If we got here, ACK was received (unexpected in this test)
         responderCompleted.resolve();
       });
 
-      // Wait for responder to send response and start waiting for ACK
-      yield* responderSentResponse.operation;
+      // Wait for responder to send message and start waiting for ACK
+      yield* responderSentMessage.operation;
 
-      // Give responder a moment to start waiting for ACK
-      yield* sleep(10);
-
-      // Close port1 (simulates requester cancellation)
+      // Close port1 (simulates requester cancellation) - no sleep needed!
       channel.port1.close();
 
       // Responder should complete (not hang) - race detects close

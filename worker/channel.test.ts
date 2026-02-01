@@ -685,6 +685,64 @@ describe("channel", () => {
         yield* request.progress(1);
         // Should not throw, just return (requester cancelled)
       });
+
+      it("progress blocks until worker is ready for next value", function* () {
+        // This test documents the backpressure semantics:
+        // - progress() blocks until the worker calls subscription.next()
+        // - This provides TRUE backpressure - host can't outpace worker
+        // - The ACK is sent inside next(), so it waits for worker readiness
+
+        const response = yield* useChannelResponse<string, number>();
+        const progressDurations: number[] = [];
+        const processingTime = 50;
+
+        // Responder sends progress and measures how long each takes
+        yield* spawn(function* () {
+          const request = yield* useChannelRequest<string, number>(
+            response.port,
+          );
+
+          // First progress - should be fast (worker is waiting)
+          const start1 = Date.now();
+          yield* request.progress(1);
+          progressDurations.push(Date.now() - start1);
+
+          // Second progress - should wait ~50ms for worker processing
+          const start2 = Date.now();
+          yield* request.progress(2);
+          progressDurations.push(Date.now() - start2);
+
+          yield* request.resolve("done");
+        });
+
+        // Requester receives progress and processes slowly
+        const subscription = yield* response.progress;
+
+        // Get first progress (responder is waiting)
+        let next = yield* subscription.next();
+        expect(next.done).toBe(false);
+        expect(next.value).toBe(1);
+
+        // Simulate slow processing before requesting next
+        yield* sleep(processingTime);
+
+        // Get second progress
+        next = yield* subscription.next();
+        expect(next.done).toBe(false);
+        expect(next.value).toBe(2);
+
+        // Get final response
+        next = yield* subscription.next();
+        expect(next.done).toBe(true);
+        expect(next.value).toEqual({ ok: true, value: "done" });
+
+        // First progress was fast (worker was already waiting)
+        expect(progressDurations[0]).toBeLessThan(20);
+
+        // Second progress waited for worker to finish processing
+        // (host blocked until worker called next() again)
+        expect(progressDurations[1]).toBeGreaterThanOrEqual(processingTime - 10);
+      });
     });
 
     describe("progress round-trip", () => {

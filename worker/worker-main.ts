@@ -2,12 +2,13 @@ import assert from "node:assert";
 import { MessagePort, parentPort } from "node:worker_threads";
 import type { ValueSignal } from "@effectionx/signals";
 import {
+  createChannel,
+  createSignal,
+  each,
   Err,
   Ok,
   type Operation,
   type Task,
-  createSignal,
-  each,
   main,
   on,
   resource,
@@ -111,7 +112,7 @@ export async function workerMain<
 ): Promise<void> {
   await main(function* () {
     const port = yield* useWorkerPort();
-    let sent = createSignal<{ value: TSend; response: MessagePort }>();
+    let sent = createChannel<{ value: TSend; response: MessagePort }>();
     let worker = yield* createWorkerStatesSignal();
 
     yield* spawn(function* () {
@@ -184,7 +185,7 @@ export async function workerMain<
               response instanceof MessagePort,
               "Expect response to be an instance of MessagePort",
             );
-            sent.send({ value, response });
+            yield* sent.send({ value, response });
             break;
           }
           case "close": {

@@ -1,7 +1,5 @@
 import assert from "node:assert";
 import {
-  createSignal,
-  each,
   Err,
   Ok,
   on,
@@ -9,7 +7,9 @@ import {
   type Operation,
   resource,
   type Result,
+  type Scope,
   spawn,
+  useScope,
   withResolvers,
 } from "effection";
 import Worker from "web-worker";
@@ -104,35 +104,46 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
     let worker = new Worker(url, options);
     let subscription = yield* on(worker, "message");
 
-    // Signal for worker-initiated requests
-    let requestSignal = createSignal<{
-      value: unknown;
-      response: MessagePort;
-    }>();
+    // Queue for requests that arrive before forEach is called
+    const pendingRequests: Array<{ value: unknown; response: MessagePort }> =
+      [];
 
-    // R6: Flag to prevent concurrent forEach calls
+    // Handler function set while forEach is active (null otherwise)
+    let requestHandler:
+      | ((msg: { value: unknown; response: MessagePort }) => void)
+      | null = null;
+
+    // Flag to prevent concurrent forEach calls
     let forEachInProgress = false;
     // Track if worker has closed
     let closed = false;
+
+    // Capture scope to spawn handlers from onmessage callback
+    const scope: Scope = yield* useScope();
 
     let onmessage = (event: MessageEvent) => {
       const msg = event.data;
       if (msg.type === "close") {
         closed = true;
+        // Clear pending requests on close
+        pendingRequests.length = 0;
         let { result } = msg as { result: Result<TReturn> };
         if (result.ok) {
           outcome.resolve(result.value);
         } else {
-          // R2: wrap error with cause
+          // Wrap error with cause
           const serializedError = result.error as unknown as SerializedError;
           outcome.reject(errorFromSerialized("Worker failed", serializedError));
         }
       } else if (msg.type === "request") {
-        // Forward requests to the signal for forEach to consume
-        requestSignal.send({
-          value: msg.value,
-          response: msg.response,
-        });
+        const request = { value: msg.value, response: msg.response };
+        if (requestHandler) {
+          // Handler is active - dispatch immediately
+          requestHandler(request);
+        } else {
+          // Queue for later when forEach is called
+          pendingRequests.push(request);
+        }
       }
     };
 
@@ -186,12 +197,12 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
         *forEach<WRequest, WResponse>(
           fn: (request: WRequest) => Operation<WResponse>,
         ): Operation<TReturn> {
-          // R6: check closed FIRST, before setting flag
+          // Check closed FIRST, before setting flag
           if (closed) {
             return yield* outcome.operation;
           }
 
-          // R6: prevent concurrent forEach
+          // Prevent concurrent forEach
           if (forEachInProgress) {
             throw new Error("forEach is already in progress");
           }
@@ -207,34 +218,30 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
                 const result = yield* fn(msg.value as WRequest);
                 msg.response.postMessage(Ok(result));
               } catch (error) {
-                // R2: serialize error
                 msg.response.postMessage(
                   Err(serializeError(error as Error) as unknown as Error),
                 );
               } finally {
-                // R3: cleanup
                 msg.response.close();
               }
             }
 
-            // Spawn request processor in background
-            const processorTask = yield* spawn(function* () {
-              for (const request of yield* each(requestSignal)) {
-                yield* spawn(function* () {
-                  yield* handleRequest(request);
-                });
-                yield* each.next();
-              }
-            });
+            // Set handler - requests will be dispatched via scope.run()
+            requestHandler = (request) => {
+              scope.run(function* () {
+                yield* handleRequest(request);
+              });
+            };
 
-            // Wait for worker to close, then halt the processor
-            try {
-              return yield* outcome.operation;
-            } finally {
-              yield* processorTask.halt();
+            // Drain any requests that arrived before forEach was called
+            for (const request of pendingRequests.splice(0)) {
+              requestHandler(request);
             }
+
+            // Wait for worker to close
+            return yield* outcome.operation;
           } finally {
-            // R6: always reset flag, even on error
+            requestHandler = null;
             forEachInProgress = false;
           }
         },

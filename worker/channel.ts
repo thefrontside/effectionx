@@ -158,65 +158,57 @@ export function useChannelRequest<T>(
 
     try {
       yield* provide({
-        resolve(value: T): Operation<void> {
-          return {
-            *[Symbol.iterator]() {
-              // Wrap in SerializedResult internally
-              const result: SerializedResult<T> = { ok: true, value };
-              port.postMessage(result);
+        *resolve(value: T) {
+          // Wrap in SerializedResult internally
+          const result: SerializedResult<T> = { ok: true, value };
+          port.postMessage(result);
 
-              // Race between ACK message and port close (requester cancelled)
-              const event = yield* race([
-                once(port, "message"),
-                once(port, "close"),
-              ]);
+          // Race between ACK message and port close (requester cancelled)
+          const event = yield* race([
+            once(port, "message"),
+            once(port, "close"),
+          ]);
 
-              // If port closed, requester was cancelled - exit gracefully
-              if ((event as Event).type === "close") {
-                return;
-              }
+          // If port closed, requester was cancelled - exit gracefully
+          if ((event as Event).type === "close") {
+            return;
+          }
 
-              // Validate ACK
-              const msg = (event as MessageEvent).data;
-              if (msg?.type !== "ack") {
-                throw new Error(`Expected ACK, got: ${msg?.type}`);
-              }
+          // Validate ACK
+          const msg = (event as MessageEvent).data;
+          if (msg?.type !== "ack") {
+            throw new Error(`Expected ACK, got: ${msg?.type}`);
+          }
 
-              port.close();
-            },
-          };
+          port.close();
         },
 
-        reject(error: Error): Operation<void> {
-          return {
-            *[Symbol.iterator]() {
-              // Serialize and wrap in SerializedResult internally
-              const result: SerializedResult<T> = {
-                ok: false,
-                error: serializeError(error),
-              };
-              port.postMessage(result);
-
-              // Race between ACK message and port close (requester cancelled)
-              const event = yield* race([
-                once(port, "message"),
-                once(port, "close"),
-              ]);
-
-              // If port closed, requester was cancelled - exit gracefully
-              if ((event as Event).type === "close") {
-                return;
-              }
-
-              // Validate ACK
-              const msg = (event as MessageEvent).data;
-              if (msg?.type !== "ack") {
-                throw new Error(`Expected ACK, got: ${msg?.type}`);
-              }
-
-              port.close();
-            },
+        *reject(error: Error) {
+          // Serialize and wrap in SerializedResult internally
+          const result: SerializedResult<T> = {
+            ok: false,
+            error: serializeError(error),
           };
+          port.postMessage(result);
+
+          // Race between ACK message and port close (requester cancelled)
+          const event = yield* race([
+            once(port, "message"),
+            once(port, "close"),
+          ]);
+
+          // If port closed, requester was cancelled - exit gracefully
+          if ((event as Event).type === "close") {
+            return;
+          }
+
+          // Validate ACK
+          const msg = (event as MessageEvent).data;
+          if (msg?.type !== "ack") {
+            throw new Error(`Expected ACK, got: ${msg?.type}`);
+          }
+
+          port.close();
         },
       });
     } finally {

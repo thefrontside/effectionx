@@ -741,7 +741,9 @@ describe("channel", () => {
 
         // Second progress waited for worker to finish processing
         // (host blocked until worker called next() again)
-        expect(progressDurations[1]).toBeGreaterThanOrEqual(processingTime - 10);
+        expect(progressDurations[1]).toBeGreaterThanOrEqual(
+          processingTime - 10,
+        );
       });
     });
 

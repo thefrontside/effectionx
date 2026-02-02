@@ -15,9 +15,12 @@
     "node": ">= 22"
   },
   "sideEffects": false,
-  "files": ["dist", "ui/dist"],
+  "files": [
+    "dist",
+    "ui/dist"
+  ],
   "scripts": {
-    "start": "vite --host 0.0.0.0",
+    "start": "vite --host 0.0.0.0 crank",
     "build:bundle": "vite build"
   },
   "peerDependencies": {
@@ -25,6 +28,7 @@
   },
   "dependencies": {
     "@ark/util": "^0.56.0",
+    "@b9g/crank": "^0.7.5",
     "@effectionx/stream-helpers": "workspace:*",
     "@standard-schema/spec": "^1.0.0",
     "arktype": "^2.1.27",
@@ -37,7 +41,10 @@
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
+    "@nano-router/history": "^4.0.4",
+    "@nano-router/router": "^4.0.4",
     "@react-spectrum/s2": "^1.0.0",
+    "@shoelace-style/shoelace": "^2.20.1",
     "@types/d3": "^7.4.3",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
@@ -49,7 +56,8 @@
     "react-redux": "^9.2.0",
     "starfx": "https://pkg.pr.new/fxforge/starfx/starfx@3c2b1e29251d32c8232597295ee970fc7f0f054a",
     "unplugin-parcel-macros": "^0.1.1",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vite-plugin-static-copy": "^3.2.0"
   },
   "exports": {
     ".": {

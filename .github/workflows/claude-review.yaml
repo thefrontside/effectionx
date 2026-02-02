@@ -22,37 +22,13 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
-            REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
+            Review PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
 
-            You are a Policy Compliance Agent for the effectionx repository.
+            Follow the instructions in `.agents/policy-officer.md` to review this PR
+            for compliance with the policies in `.policies/index.md`.
 
-            ## Your Task
-
-            Review this PR for compliance with the policies defined in `.policies/index.md`.
-            Follow the agent instructions in `.agents/policy-officer.md` for:
-            - How to assess compliance
-            - The output format to use
-            - How to classify violations (Critical vs Advisory)
-
-            ## Review Focus
-
-            1. **Policy Compliance**: Check all policies listed in `.policies/index.md`
-            2. **Effection Patterns**: Verify proper use of structured concurrency
-            3. **Code Quality**: TypeScript best practices, proper typing
-            4. **Package Structure**: Correct exports, peer dependencies if new package
-
-            ## Instructions
-
-            1. First, read `.policies/index.md` to get the list of active policies
-            2. Read each policy document linked from the index
-            3. Read `.agents/policy-officer.md` for the expected output format
-            4. Use `gh pr diff ${{ github.event.pull_request.number }}` to see the changes
-            5. Apply each policy's checks to the changed files
-            6. Post your Policy Compliance Assessment as a PR comment using `gh pr comment`
-            7. Use inline comments for specific code issues that need attention
-
-            Post only GitHub comments - do not output review text as messages.
+            Use `gh pr diff` to see changes, `gh pr comment` for feedback,
+            and inline comments for specific code issues.
 
           claude_args: |
             --allowedTools "Read,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),mcp__github_inline_comment__create_inline_comment"

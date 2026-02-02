@@ -19,7 +19,7 @@ describe("is", () => {
     });
 
     yield* spawn(function* () {
-      yield* sleep(1);
+      yield* sleep(0);
       open.set(true);
     });
 

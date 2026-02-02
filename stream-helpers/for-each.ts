@@ -24,15 +24,19 @@ import type { Operation, Stream } from "effection";
  * yield* stream.send(2);
  * ```
  */
-export function* forEach<T, TClose>(
+export function forEach<T, TClose>(
   fn: (item: T) => Operation<void>,
   stream: Stream<T, TClose>,
 ): Operation<TClose> {
-  let subscription = yield* stream;
-  let next = yield* subscription.next();
-  while (!next.done) {
-    yield* fn(next.value);
-    next = yield* subscription.next();
-  }
-  return next.value;
+  return {
+    *[Symbol.iterator]() {
+      let subscription = yield* stream;
+      let next = yield* subscription.next();
+      while (!next.done) {
+        yield* fn(next.value);
+        next = yield* subscription.next();
+      }
+      return next.value;
+    },
+  };
 }

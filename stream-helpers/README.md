@@ -165,6 +165,72 @@ function* example() {
 }
 ```
 
+### Drain
+
+The `drain` helper exhausts a stream, discarding all yielded values, and returns
+the close value. This is useful when you only care about the final result of a
+stream, not the intermediate values.
+
+```typescript
+import { drain } from "@effectionx/stream-helpers";
+
+function* example() {
+  // Get the response from a request channel (ignoring any progress)
+  const channel = yield* transport.send(request);
+  const response = yield* drain(channel);
+  console.log(response); // The close value
+}
+```
+
+### First
+
+The `first` helper returns the first value yielded by a stream, or `undefined`
+if the stream closes without yielding any values. Use `first.expect()` to throw
+an error instead of returning `undefined`.
+
+```typescript
+import { first } from "@effectionx/stream-helpers";
+import { streamOf } from "@effectionx/stream-helpers";
+
+function* example() {
+  const stream = streamOf([1, 2, 3]);
+  const value = yield* first(stream);
+  console.log(value); // 1
+
+  const empty = streamOf([]);
+  const none = yield* first(empty);
+  console.log(none); // undefined
+
+  // Use first.expect() to throw if stream is empty
+  const required = yield* first.expect(stream); // throws if empty
+}
+```
+
+### Last
+
+The `last` helper returns the last value yielded by a stream, or `undefined`
+if the stream closes without yielding any values. It exhausts the entire stream
+to find the last value. Use `last.expect()` to throw an error instead of
+returning `undefined`.
+
+```typescript
+import { last } from "@effectionx/stream-helpers";
+import { streamOf } from "@effectionx/stream-helpers";
+
+function* example() {
+  const stream = streamOf([1, 2, 3]);
+  const value = yield* last(stream);
+  console.log(value); // 3
+
+  const empty = streamOf([]);
+  const none = yield* last(empty);
+  console.log(none); // undefined
+
+  // Use last.expect() to throw if stream is empty
+  const required = yield* last.expect(stream); // throws if empty
+}
+```
+
 ### ForEach
 
 The `forEach` helper invokes a function for each item passing through a stream.

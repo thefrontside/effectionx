@@ -66,18 +66,6 @@ When reviewing PRs:
 - Prefer `type` imports for type-only imports
 - Use explicit return types on public functions
 
-### Biome Rules
-
-The following rules are configured in `biome.json`:
-
-- 2-space indentation
-- Import organization enabled
-- `noParameterAssign`: off (reassigning parameters is acceptable)
-- `useConst`: off (let is acceptable even when const could be used)
-- `noForEach`: off (forEach is acceptable in this codebase)
-- `noThenProperty`: off (required for Operation/Promise interop)
-- `noShadowRestrictedNames`: off (shadowing is acceptable)
-
 ### Effection Patterns
 
 - Use structured concurrency (spawn, scope)

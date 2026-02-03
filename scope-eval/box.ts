@@ -27,6 +27,16 @@ export function* box<T>(content: () => Operation<T>): Operation<Result<T>> {
 	} catch (error) {
 		return Err(error as Error);
 	}
+export function box<T>(content: () => Operation<T>): Operation<Result<T>> {
+	return {
+		*[Symbol.iterator]() {
+			try {
+				return Ok(yield* content());
+			} catch (error) {
+				return Err(error as Error);
+			}
+		}
+	};
 }
 
 /**

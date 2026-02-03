@@ -36,4 +36,4 @@ jobs:
           for workspace in ${{ steps.changed.outputs.workspaces }}; do
             dirs="$dirs ./$workspace"
           done
-          npx pkg-pr-new publish $dirs
+          npx pkg-pr-new publish --pnpm $dirs

@@ -28,6 +28,9 @@ dist/
 !process/test/fixtures/hello-world.js
 !process/test/fixtures/hello-world-failed.js
 
+# turborepo cache
+.turbo
+
 # Environment files
 .env.local
 

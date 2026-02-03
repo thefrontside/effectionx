@@ -15,10 +15,7 @@
     "node": ">= 22"
   },
   "sideEffects": false,
-  "files": [
-    "dist",
-    "ui/dist"
-  ],
+  "files": ["dist", "ui/dist"],
   "scripts": {
     "start": "vite --host 0.0.0.0 crank",
     "build:bundle": "vite build"

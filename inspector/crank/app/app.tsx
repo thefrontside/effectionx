@@ -23,7 +23,7 @@ export async function* App(this: Context): AsyncGenerator<Element> {
         );
         break;
       case "live":
-        yield <Live/>;
+        yield <Live />;
         break;
       default:
         yield (

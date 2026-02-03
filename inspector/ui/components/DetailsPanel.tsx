@@ -1,6 +1,8 @@
 import type { Hierarchy } from "../data/types";
-import { Divider } from "@react-spectrum/s2";
-import "./DetailsPanel.css";
+
+import { Divider, Button, Heading, Content } from "@react-spectrum/s2";
+import { style } from "@react-spectrum/s2/style" with { type: "macro" };
+
 import { flattenNodeData } from "../utils/labels";
 import { getNodeLabel } from "../data/labels";
 import { findParent } from "../data/findParent";
@@ -14,9 +16,9 @@ export function DetailsPanel(props: {
 
   if (!node) {
     return (
-      <div className="detailsContainer">
-        <div className="detailsHeading">Attributes</div>
-        <div>Nothing selected</div>
+      <div className={resolveClass(style({ padding: 12 }))}>
+        <Heading level={4}>Attributes</Heading>
+        <Content>Nothing selected</Content>
       </div>
     );
   }
@@ -24,6 +26,13 @@ export function DetailsPanel(props: {
   const properties: Array<{ k: string; v: string }> = flattenNodeData(
     node.data,
   );
+
+  function resolveClass(
+    c: string | ((props?: Record<string, any>) => string) | undefined,
+  ) {
+    if (!c) return undefined;
+    return typeof c === "function" ? c() : c;
+  }
 
   function copyAllProperties() {
     if (!node) return;
@@ -37,49 +46,119 @@ export function DetailsPanel(props: {
   }
 
   return (
-    <div className="detailsContainer">
-      <div className="headerRow">
+    <div className={resolveClass(style({ padding: 12 }))}>
+      <div
+        className={resolveClass(
+          style({
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }),
+        )}
+      >
         <div>
-          <div className="detailsHeading">{getNodeLabel(node)}</div>
-          <div className="mutedText">{String(node.data?.type ?? "")}</div>
+          <div
+            className={resolveClass(
+              style({ fontWeight: "medium", marginBottom: 8 }),
+            )}
+          >
+            {getNodeLabel(node)}
+          </div>
+          <div
+            className={resolveClass(
+              style({
+                color: "var(--spectrum-global-color-gray-600)",
+              }),
+            )}
+          >
+            {String(node.data?.type ?? "")}
+          </div>
         </div>
-        <div className="statusText">● {String(node.data?.status ?? "")}</div>
+        <div
+          className={resolveClass(
+            style({ color: "var(--spectrum-global-color-gray-600)" }),
+          )}
+        >
+          ● {String(node.data?.status ?? "")}
+        </div>
       </div>
 
       <Divider size="S" />
 
-      <div className="propertiesSection">
-        <div className="propertiesHeader">
-          <div className="detailsHeading">Properties</div>
+      <div className={resolveClass(style({ marginTop: 12 }))}>
+        <div
+          className={resolveClass(
+            style({
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }),
+          )}
+        >
+          <Heading level={5}>Properties</Heading>
           <div>
-            <button
-              type="button"
-              className="copyAll"
-              onClick={copyAllProperties}
-            >
+            <Button variant="secondary" onPress={copyAllProperties}>
               Copy all
-            </button>
+            </Button>
           </div>
         </div>
 
-        <div className="kvList">
-          {properties.length === 0 ? (
-            <div className="mutedText">No properties</div>
-          ) : (
-            properties.map((p) => (
-              <div key={p.k} className="kvRow">
-                <div className="propertyKey">{p.k}</div>
-                <div className="propertyValue">{String(p.v)}</div>
+        <div className={resolveClass(style({ marginTop: 8 }))}>
+          <div
+            className={resolveClass(
+              style({
+                border: "1px solid var(--spectrum-global-color-gray-200)",
+                overflow: "hidden",
+              }),
+            )}
+          >
+            {properties.length === 0 ? (
+              <div
+                className={resolveClass(
+                  style({ color: "var(--spectrum-global-color-gray-600)" }),
+                )}
+              >
+                No properties
               </div>
-            ))
-          )}
+            ) : (
+              properties.map((p) => (
+                <div
+                  key={p.k}
+                  className={resolveClass(
+                    style({
+                      display: "grid",
+                      gridTemplateColumns: "220px 1fr",
+                      gap: 8,
+                      paddingBlock: 10,
+                      paddingInline: 12,
+                      borderBottom:
+                        "1px solid var(--spectrum-global-color-gray-100)",
+                    }),
+                  )}
+                >
+                  <div
+                    className={resolveClass(
+                      style({ color: "var(--spectrum-global-color-gray-600)" }),
+                    )}
+                  >
+                    {p.k}
+                  </div>
+                  <div
+                    className={resolveClass(style({ wordBreak: "break-word" }))}
+                  >
+                    {String(p.v)}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
       <Divider size="S" />
 
-      <div className="parentSection">
-        <div className="detailsHeading">Parent</div>
+      <div className={resolveClass(style({ marginTop: 12 }))}>
+        <Heading level={5}>Parent</Heading>
         {(() => {
           const providedHierarchy = hierarchy as Hierarchy | undefined;
           const realParent = findParent(providedHierarchy, node.id);
@@ -90,8 +169,8 @@ export function DetailsPanel(props: {
         })()}
       </div>
 
-      <div className="childrenList">
-        <div className="detailsHeading">Children</div>
+      <div className={resolveClass(style({ marginTop: 12 }))}>
+        <Heading level={5}>Children</Heading>
         {node.children?.map((c: Hierarchy) => (
           <EntityRow key={c.id} node={c} />
         ))}

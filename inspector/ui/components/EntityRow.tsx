@@ -1,6 +1,7 @@
 import type { Hierarchy } from "../data/types";
 import { getNodeLabel } from "../data/labels";
 import { useNavigate } from "react-router";
+import { childRowStyle, childTypeStyle } from "./entity-row-styles";
 
 export function EntityRow(props: {
   node: Hierarchy;
@@ -21,11 +22,11 @@ export function EntityRow(props: {
   return (
     <button
       type="button"
-      className="childRow clickable"
+      className={childRowStyle({ variant: "clickable" })}
       onClick={() => activate()}
     >
       <div>{getNodeLabel(node)}</div>
-      <div className="childType">{String(node.data?.type ?? "")}</div>
+      <div className={childTypeStyle}>{String(node.data?.type ?? "")}</div>
     </button>
   );
 }

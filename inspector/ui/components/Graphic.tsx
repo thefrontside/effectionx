@@ -1,10 +1,61 @@
-import { createRef, useEffect, useState } from "react";
+import { createRef, useLayoutEffect, useState } from "react";
 import type { Hierarchy } from "../data/types.ts";
 import { Tree, type RawNodeDatum } from "react-d3-tree";
 import { type Labels, LabelsContext } from "../../lib/labels.ts";
-import "./Graphic.css";
 import { ActionButton, ToastQueue } from "@react-spectrum/s2";
 import { exportSvgElementToPng, exportSvgElement } from "./exportGraphic";
+import { style } from "@react-spectrum/s2/style" with { type: "macro" };
+
+const _graphicStyleObj = {
+  selectors: {
+    "@media (prefers-color-scheme: dark)": {
+      "& .node__root > circle": { fill: "steelblue", stroke: "lightblue" },
+      "& .node__branch > circle": { fill: "slategray", stroke: "grey" },
+      "& .node__leaf > circle": {
+        fill: "green",
+        stroke: "darkgreen",
+        opacity: 0.8,
+      },
+      "& path.rd3t-link": { strokeWidth: 2, stroke: "white" },
+      "& text.rd3t-label__title": { fill: "ivory" },
+      "& text.rd3t-label__attributes": { fill: "lightblue" },
+    },
+  },
+} as const;
+
+const graphicStyles = style({
+  default: _graphicStyleObj,
+} as const);
+
+function resolveClass(
+  c: string | ((props?: Record<string, any>) => string) | undefined,
+  props?: Record<string, any>,
+) {
+  if (!c) return undefined;
+  return typeof c === "function" ? c(props) : c;
+}
+
+// Container style to ensure the graphic fills the available space in the pane
+const graphicContainer = style({
+  display: "flex",
+  flex: "1 1 0%",
+  minHeight: 0,
+  minWidth: 0,
+  width: "100%",
+  height: "100%",
+  position: "relative",
+} as const);
+
+const controlsStyle = style({
+  position: "absolute",
+  top: 8,
+  right: 8,
+  zIndex: 10,
+  selectors: {
+    "& .spectrum-ActionButton": { paddingBlock: 6, paddingInline: 10 },
+    "& .spectrum-ActionButton + .spectrum-ActionButton": { marginLeft: 8 },
+  },
+});
 
 // const themeBasedFill = (dark: string, light: string) =>
 //   window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -22,31 +73,55 @@ export function Graphic({ hierarchy }: { hierarchy?: Hierarchy }) {
   >();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: dimensions handled if not defined as a comparator
-  useEffect(() => {
+  useLayoutEffect(() => {
     const handleResize = () => {
       if (ref.current) {
-        const box = ref.current.getBoundingClientRect();
-        if (
-          !box.width ||
-          !box.height ||
-          (box.width === dimensions?.width && box.height === dimensions?.height)
-        ) {
-          return;
+        let box = ref.current.getBoundingClientRect();
+        // If the wrapper reports a very small width (due to internal layout
+        // constraints), walk ancestors to find a more representative size
+        // (e.g., the tab panel inner area) so the tree can render large.
+        if (box.width < 400) {
+          let el: HTMLElement | null = ref.current;
+          while (el && el.parentElement) {
+            const pRect = el.parentElement.getBoundingClientRect();
+            if (pRect.width > box.width) {
+              box = pRect;
+            }
+            el = el.parentElement;
+          }
         }
-        console.log({ w: box.width, h: box.height });
-        setDimensions({ width: box.width, height: box.height });
-        // Trigger re-render or update state if needed
+        setDimensions({
+          width: Math.max(0, box.width),
+          height: Math.max(0, box.height),
+        });
       }
     };
 
     // Initial size set
     handleResize();
 
-    window.addEventListener("resize", handleResize);
+    // Prefer ResizeObserver for element-level resize detection so the tree
+    // can react to flexbox layout changes (not just window resizes).
+    let ro: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => {
+        handleResize();
+      });
+      if (ref.current) ro.observe(ref.current);
+    } else {
+      window.addEventListener("resize", handleResize);
+    }
+
+    // Also re-measure on next paint to catch any race where layout finishes
+    // after initial mount.
+    const raf = requestAnimationFrame(() => handleResize());
+
     return () => {
-      window.removeEventListener("resize", handleResize);
+      if (ro && ref.current) ro.unobserve(ref.current);
+      if (!ro) window.removeEventListener("resize", handleResize);
+      cancelAnimationFrame(raf);
     };
-  }, [ref]);
+  }, []);
 
   async function exportToPng() {
     if (!ref.current) return;
@@ -104,8 +179,12 @@ export function Graphic({ hierarchy }: { hierarchy?: Hierarchy }) {
   }
 
   return hierarchy ? (
-    <div id="treeWrapper" ref={ref}>
-      <div className="graphicControls">
+    <div
+      id="treeWrapper"
+      ref={ref}
+      className={`${resolveClass(graphicContainer) ?? ""} ${resolveClass(graphicStyles) ?? ""}`}
+    >
+      <div className={resolveClass(controlsStyle)}>
         <ActionButton aria-label="Export PNG" onPress={exportToPng}>
           Export PNG
         </ActionButton>

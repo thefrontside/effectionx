@@ -14,6 +14,7 @@ import type { Hierarchy, NodeMap } from "../../data/types.ts";
 
 import pipeline from "./pipeline.json" with { type: "json" };
 import "../AppLayout.css";
+import { style } from "@react-spectrum/s2/style" with { type: "macro" };
 import Inspector from "../../components/Inspector.tsx";
 import { useNavigate } from "react-router";
 
@@ -115,8 +116,21 @@ function App() {
   if (!recording) return null;
 
   return (
-    <div className="appRoot">
-      <div className="bodyRoot">
+    <div
+      className={style({
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+      })}
+    >
+      <div
+        className={style({
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          minHeight: 0,
+        })}
+      >
         <TopControls
           playing={playing}
           setPlaying={setPlaying}

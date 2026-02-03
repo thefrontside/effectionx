@@ -13,6 +13,7 @@ import type { Hierarchy } from "../../data/types.ts";
 import TopControls from "../../components/TopControls.tsx";
 
 import "../AppLayout.css";
+import { style } from "@react-spectrum/s2/style" with { type: "macro" };
 import Inspector from "../../components/Inspector.tsx";
 import { RecordingUpload } from "../../components/RecordingUpload.tsx";
 
@@ -125,13 +126,26 @@ function App() {
   }, [playing, recording]);
 
   return (
-    <div className="appRoot">
+    <div
+      className={style({
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+      })}
+    >
       {!recording ? (
         <div className="fullWidthPane">
           <RecordingUpload setFile={setFile} />
         </div>
       ) : (
-        <div className="bodyRoot">
+        <div
+          className={style({
+            display: "flex",
+            flexDirection: "column",
+            flex: 1,
+            minHeight: 0,
+          })}
+        >
           <TopControls
             playing={playing}
             setPlaying={setPlaying}

@@ -6,6 +6,7 @@ import { pipe } from "remeda";
 import { protocol } from "../../../scope/protocol.ts";
 
 import "../AppLayout.css";
+import { style } from "@react-spectrum/s2/style" with { type: "macro" };
 import Inspector from "../../components/Inspector.tsx";
 import { updateNodeMap } from "../../data/update-node-map.ts";
 
@@ -34,8 +35,21 @@ function Live() {
   let hierarchy = next.value.value;
 
   return (
-    <div className="appRoot">
-      <div className="bodyRoot">
+    <div
+      className={style({
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+      })}
+    >
+      <div
+        className={style({
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          minHeight: 0,
+        })}
+      >
         <Inspector hierarchy={hierarchy} />
       </div>
     </div>

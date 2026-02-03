@@ -1,4 +1,5 @@
 import { ActionButton, ActionButtonGroup, Slider } from "@react-spectrum/s2";
+import { style } from "@react-spectrum/s2/style" with { type: "macro" };
 import {
   PauseIcon,
   RefreshIcon,
@@ -6,6 +7,11 @@ import {
   StepBackIcon,
   StepForwardIcon,
 } from "./icons";
+
+const toolbarIconStyle = style({
+  display: "inline-flex",
+  alignItems: "center",
+});
 
 interface Props {
   playing: boolean;
@@ -25,8 +31,21 @@ export default function TopControls({
   onRefresh,
 }: Props) {
   return (
-    <div className="controlsBar">
-      <div className="controlsLeft">
+    <div
+      className={style({
+        display: "flex",
+        gap: 16,
+        alignItems: "center",
+        paddingBlock: 8,
+        paddingInline: 12,
+        borderBottom: "1px solid var(--spectrum-global-color-gray-100)",
+        background:
+          "linear-gradient(180deg, rgba(0, 0, 0, 0.01), rgba(0, 0, 0, 0))",
+      })}
+    >
+      <div
+        className={style({ display: "flex", gap: 12, alignItems: "center" })}
+      >
         <div className="controlsGroup">
           <ActionButtonGroup aria-label="Playback controls" density="regular">
             <div className="stepAction back">
@@ -34,7 +53,7 @@ export default function TopControls({
                 aria-label="Step backward"
                 onPress={() => setOffset((n) => Math.max(0, n - 1))}
               >
-                <span className="toolbarIcon">
+                <span className={toolbarIconStyle}>
                   <StepBackIcon />
                 </span>
               </ActionButton>
@@ -45,7 +64,7 @@ export default function TopControls({
                 aria-label={playing ? "Pause" : "Play"}
                 onPress={() => setPlaying((p: boolean) => !p)}
               >
-                <span className="toolbarIcon">
+                <span className={toolbarIconStyle}>
                   {playing ? <PauseIcon /> : <PlayIcon />}
                 </span>
               </ActionButton>
@@ -56,7 +75,7 @@ export default function TopControls({
                 aria-label="Step forward"
                 onPress={() => setOffset((n) => Math.min(maxValue, n + 1))}
               >
-                <span className="toolbarIcon">
+                <span className={toolbarIconStyle}>
                   <StepForwardIcon />
                 </span>
               </ActionButton>
@@ -64,7 +83,7 @@ export default function TopControls({
 
             <div className="refreshAction">
               <ActionButton aria-label="Refresh" onPress={onRefresh}>
-                <span className="toolbarIcon">
+                <span className={toolbarIconStyle}>
                   <RefreshIcon />
                 </span>
               </ActionButton>
@@ -73,7 +92,14 @@ export default function TopControls({
         </div>
       </div>
 
-      <div className="controlsRight">
+      <div
+        className={style({
+          flex: 1,
+          display: "flex",
+          justifyContent: "start",
+          alignItems: "center",
+        })}
+      >
         <div className="sliderWrap">
           <Slider
             label="Event Tick"

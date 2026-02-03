@@ -4,6 +4,15 @@ import RightPane from "./RightPane";
 import { useParams } from "react-router";
 import type { Hierarchy } from "../data/types";
 import { findNode } from "../data/findNode";
+import { style } from "@react-spectrum/s2/style" with { type: "macro" };
+
+function resolveClass(
+  c: string | ((props?: Record<string, any>) => string) | undefined,
+  props?: Record<string, any>,
+) {
+  if (!c) return undefined;
+  return typeof c === "function" ? c(props) : c;
+}
 
 type InspectorProps = {
   hierarchy?: Hierarchy;
@@ -25,7 +34,11 @@ export default function Inspector({ hierarchy }: InspectorProps) {
   }, [hierarchy, params.nodeId]);
 
   return (
-    <div className="mainContent">
+    <div
+      className={resolveClass(
+        style({ display: "flex", flex: 1, minHeight: 0 }),
+      )}
+    >
       <LeftPane hierarchy={hierarchy} />
       <RightPane
         hierarchy={hierarchy}

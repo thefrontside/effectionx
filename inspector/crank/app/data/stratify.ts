@@ -1,7 +1,15 @@
 import { map } from "@effectionx/stream-helpers";
 import type { Hierarchy, NodeMap, Transform } from "./types.ts";
 
-export function stratify(): Transform<NodeMap, Hierarchy> {
+export type HierarchyMap = Record<string, Hierarchy>;
+
+export interface Stratification {
+  root: Hierarchy;
+  nodes: NodeMap;
+  hierarchies: HierarchyMap;
+}
+
+export function stratify(): Transform<NodeMap, Stratification> {
   return map(function* (nodes) {
     let stratii = new Map<string, Hierarchy>();
 
@@ -49,6 +57,8 @@ export function stratify(): Transform<NodeMap, Hierarchy> {
     if (!root) {
       throw new TypeError("Hierarchy did not contain a root node");
     }
-    return root;
+
+    let hierarchies = Object.fromEntries(stratii.entries());
+    return { root, nodes, hierarchies };
   });
 }

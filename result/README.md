@@ -35,13 +35,13 @@ if (result.ok) {
 Extract the value from a `Result<T>`, throwing if it's an error.
 
 ```typescript
-import { box, unbox } from "@effectionx/result";
+import { unbox, Ok, Err } from "@effectionx/result";
 
-const result = yield* box(function* () {
-  return "hello";
-});
+const success = Ok("hello");
+const value = unbox(success); // "hello"
 
-const value = unbox(result); // "hello"
+const failure = Err(new Error("oops"));
+unbox(failure); // throws Error("oops")
 ```
 
 ### Ok / Err / Result

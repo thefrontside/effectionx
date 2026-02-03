@@ -30,56 +30,58 @@ export async function* Live(this: Context): AsyncGenerator<Element> {
   let selectedNode = "Nothing Selected";
 
   let refresh = () => this.refresh();
-  
+
   scope.run(function* (): Operation<void> {
     for (hierarchy of yield* each(hiearchies)) {
       refresh();
       yield* each.next();
     }
   });
-  
+
   this.addEventListener("sl-selection-change", (e) => {
     let [item] = e.detail.selection;
     let id = item.dataset.id;
-    this.refresh(() => selectedNode = `Selected Node: ${id}`);
+    this.refresh(() => (selectedNode = `Selected Node: ${id}`));
   });
-  
+
   try {
     for ({} of this) {
       yield (
         <Layout>
           <sl-split-panel position="15">
-            <TreeView slot="start" hierarchy={hierarchy}/>
-	    <Details slot="end">{selectedNode}</Details>
-	  </sl-split-panel>
+            <TreeView slot="start" hierarchy={hierarchy} />
+            <Details slot="end">{selectedNode}</Details>
+          </sl-split-panel>
         </Layout>
       );
-
-    }  
+    }
   } finally {
     await destroy();
   }
 }
 
-function TreeView({hierarchy, slot}: { hierarchy: Hierarchy, slot?: string }) {  
+function TreeView({
+  hierarchy,
+  slot,
+}: { hierarchy: Hierarchy; slot?: string }) {
   return (
     <sl-tree slot={slot}>
-      <TreeNode hierarchy={hierarchy}/>
+      <TreeNode hierarchy={hierarchy} />
     </sl-tree>
   );
 }
 
-function TreeNode({hierarchy}: { hierarchy: Hierarchy }): Element {
+function TreeNode({ hierarchy }: { hierarchy: Hierarchy }): Element {
   return (
     <sl-tree-item key={hierarchy.id} selection="single" data-id={hierarchy.id}>
       {getNodeLabel(hierarchy)}
-      {hierarchy.children.map((h) => <TreeNode hierarchy={h}/>)}
+      {hierarchy.children.map((h) => (
+        <TreeNode hierarchy={h} />
+      ))}
     </sl-tree-item>
-  )
+  );
 }
 
-function Details({ slot, children }: { slot?: string, children: Children}) {
-  return (
-    <div slot={slot}>{children}</div>
-  );
+function Details({ slot, children }: { slot?: string; children: Children }) {
+  return <div slot={slot}>{children}</div>;
 }

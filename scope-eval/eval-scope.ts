@@ -1,12 +1,12 @@
 import {
-	type Operation,
-	type Result,
-	type Scope,
-	type Stream,
-	createChannel,
-	spawn,
-	useScope,
-	withResolvers,
+  type Operation,
+  type Result,
+  type Scope,
+  type Stream,
+  createChannel,
+  spawn,
+  useScope,
+  withResolvers,
 } from "effection";
 import { box } from "./box.ts";
 
@@ -19,27 +19,27 @@ import { box } from "./box.ts";
  * - Inspect the scope's state from outside
  */
 export interface EvalScope {
-	/**
-	 * The underlying Effection scope.
-	 * Use this to inspect context values set by evaluated operations.
-	 */
-	scope: Scope;
+  /**
+   * The underlying Effection scope.
+   * Use this to inspect context values set by evaluated operations.
+   */
+  scope: Scope;
 
-	/**
-	 * Evaluate an operation within this scope.
-	 *
-	 * The operation runs in the spawned scope, so any context values it sets
-	 * will be visible via `scope.get(context)`.
-	 *
-	 * @param op - A function returning the operation to evaluate
-	 * @returns The result of the operation (Ok or Err)
-	 */
-	eval<T>(op: () => Operation<T>): Operation<Result<T>>;
+  /**
+   * Evaluate an operation within this scope.
+   *
+   * The operation runs in the spawned scope, so any context values it sets
+   * will be visible via `scope.get(context)`.
+   *
+   * @param op - A function returning the operation to evaluate
+   * @returns The result of the operation (Ok or Err)
+   */
+  eval<T>(op: () => Operation<T>): Operation<Result<T>>;
 }
 
 interface CallEval {
-	operation: () => Operation<unknown>;
-	resolve: (result: Result<unknown>) => void;
+  operation: () => Operation<unknown>;
+  resolve: (result: Result<unknown>) => void;
 }
 
 /**
@@ -73,46 +73,46 @@ interface CallEval {
  * ```
  */
 export function* useEvalScope(): Operation<EvalScope> {
-	const scopeResolver = withResolvers<Scope>();
-	const readyResolver = withResolvers<void>();
-	const operations = createChannel<CallEval, never>();
+  const scopeResolver = withResolvers<Scope>();
+  const readyResolver = withResolvers<void>();
+  const operations = createChannel<CallEval, never>();
 
-	yield* spawn(function* () {
-		scopeResolver.resolve(yield* useScope());
-		
-		// Get subscription to the channel
-		const subscription = yield* (operations as Stream<CallEval, never>);
-		
-		// Signal that we're ready to receive
-		readyResolver.resolve();
-		
-		// Process operations as they come in
-		while (true) {
-			const next = yield* subscription.next();
-			if (next.done) {
-				break;
-			}
-			const call = next.value;
-			const result = yield* box(call.operation);
-			call.resolve(result);
-		}
-	});
+  yield* spawn(function* () {
+    scopeResolver.resolve(yield* useScope());
 
-	// Wait for the scope to be available
-	const scope = yield* scopeResolver.operation;
-	
-	// Wait for the spawned task to be ready to receive
-	yield* readyResolver.operation;
+    // Get subscription to the channel
+    const subscription = yield* operations as Stream<CallEval, never>;
 
-	return {
-		scope,
-		*eval<T>(operation: () => Operation<T>): Operation<Result<T>> {
-			const resolver = withResolvers<Result<T>>();
-			yield* operations.send({
-				resolve: resolver.resolve as (result: Result<unknown>) => void,
-				operation: operation as () => Operation<unknown>,
-			});
-			return yield* resolver.operation;
-		},
-	};
+    // Signal that we're ready to receive
+    readyResolver.resolve();
+
+    // Process operations as they come in
+    while (true) {
+      const next = yield* subscription.next();
+      if (next.done) {
+        break;
+      }
+      const call = next.value;
+      const result = yield* box(call.operation);
+      call.resolve(result);
+    }
+  });
+
+  // Wait for the scope to be available
+  const scope = yield* scopeResolver.operation;
+
+  // Wait for the spawned task to be ready to receive
+  yield* readyResolver.operation;
+
+  return {
+    scope,
+    *eval<T>(operation: () => Operation<T>): Operation<Result<T>> {
+      const resolver = withResolvers<Result<T>>();
+      yield* operations.send({
+        resolve: resolver.resolve as (result: Result<unknown>) => void,
+        operation: operation as () => Operation<unknown>,
+      });
+      return yield* resolver.operation;
+    },
+  };
 }

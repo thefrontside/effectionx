@@ -17,7 +17,7 @@ npm install @effectionx/result effection
 Execute an operation and capture its result (success or error) as a `Result<T>`.
 
 ```typescript
-import { box, unbox } from "@effectionx/result";
+import { box } from "@effectionx/result";
 
 const result = yield* box(function* () {
   return yield* someOperation();
@@ -44,6 +44,21 @@ const result = yield* box(function* () {
 const value = unbox(result); // "hello"
 ```
 
+### Ok / Err / Result
+
+Re-exported from `effection` for convenience:
+
+```typescript
+import { Ok, Err, type Result } from "@effectionx/result";
+
+function divide(a: number, b: number): Result<number> {
+  if (b === 0) {
+    return Err(new Error("Division by zero"));
+  }
+  return Ok(a / b);
+}
+```
+
 ## API
 
 ### `box<T>(content: () => Operation<T>): Operation<Result<T>>`
@@ -53,3 +68,15 @@ Wraps an operation and returns `Ok(value)` on success or `Err(error)` on failure
 ### `unbox<T>(result: Result<T>): T`
 
 Extracts the value from an `Ok` result or throws the error from an `Err` result.
+
+### `Ok<T>(value: T): Result<T>`
+
+Creates a successful result containing the value.
+
+### `Err<T>(error: Error): Result<T>`
+
+Creates a failed result containing the error.
+
+### `Result<T>`
+
+A discriminated union type: `{ ok: true; value: T } | { ok: false; error: Error }`

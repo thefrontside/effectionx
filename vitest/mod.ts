@@ -64,9 +64,13 @@ export function beforeAll(op: () => Operation<void>): void {
 }
 
 export function beforeEach(op: () => Operation<void>): void {
+  let added = false;
   vitest.beforeEach<{ task: { suite: { adapter: TestAdapter } } }>(
     (context) => {
-      context.task.suite.adapter.addSetup(op);
+      if (!added) {
+        context.task.suite.adapter.addSetup(op);
+        added = true;
+      }
     },
   );
 }
@@ -84,7 +88,10 @@ export function it(
           throw new Error("missing test adapter");
         }
         let adapter: TestAdapter = context.task.suite.adapter as TestAdapter;
-        return await adapter.runTest(op);
+        let result = await adapter.runTest(op);
+        if (!result.ok) {
+          throw result.error;
+        }
       },
       timeout,
     );
@@ -106,7 +113,10 @@ it.only = function only(
           throw new Error("missing test adapter");
         }
         let adapter: TestAdapter = context.task.suite.adapter as TestAdapter;
-        return await adapter.runTest(op);
+        let result = await adapter.runTest(op);
+        if (!result.ok) {
+          throw result.error;
+        }
       },
       timeout,
     );

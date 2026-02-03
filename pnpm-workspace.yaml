@@ -12,6 +12,7 @@ packages:
   - "node"
   - "process"
   - "raf"
+  - "result"
   - "scope-eval"
   - "signals"
   - "stream-helpers"

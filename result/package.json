@@ -1,5 +1,5 @@
 {
-  "name": "@effectionx/scope-eval",
+  "name": "@effectionx/result",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/mod.js",
@@ -10,11 +10,15 @@
       "default": "./dist/mod.js"
     }
   },
+  "files": ["dist", "mod.ts", "box.ts"],
+  "scripts": {
+    "test": "node --env-file=../.env --test \"*.test.ts\""
+  },
   "peerDependencies": {
     "effection": "^3 || ^4"
   },
-  "dependencies": {
-    "@effectionx/result": "workspace:*"
+  "devDependencies": {
+    "@effectionx/bdd": "workspace:*"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",
@@ -24,12 +28,5 @@
   },
   "bugs": {
     "url": "https://github.com/thefrontside/effectionx/issues"
-  },
-  "engines": {
-    "node": ">= 22"
-  },
-  "sideEffects": false,
-  "devDependencies": {
-    "@effectionx/bdd": "workspace:*"
   }
 }

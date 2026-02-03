@@ -33,13 +33,13 @@ describe("tracker", () => {
       }
     });
 
-    yield* sleep(1);
+    yield* sleep(0);
 
     yield* faucet.pour(function* (send) {
       yield* send(1);
-      yield* sleep(1);
+      yield* sleep(0);
       yield* send(2);
-      yield* sleep(1);
+      yield* sleep(0);
       yield* send(3);
     });
 
@@ -75,7 +75,7 @@ describe("tracker", () => {
       }
     });
 
-    yield* sleep(1);
+    yield* sleep(0);
 
     yield* faucet.pour(function* (send) {
       yield* send(1);

@@ -33,12 +33,12 @@ describe("valve", () => {
     yield* spawn(function* () {
       for (const value of yield* each(stream(faucet))) {
         values.push(value);
-        yield* sleep(1);
+        yield* sleep(0);
         yield* each.next();
       }
     });
 
-    yield* sleep(1);
+    yield* sleep(0);
 
     yield* faucet.pour([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 

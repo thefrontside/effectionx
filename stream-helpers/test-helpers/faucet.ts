@@ -1,5 +1,5 @@
-import { createChannel, type Operation, type Stream } from "effection";
 import { createBooleanSignal, is } from "@effectionx/signals";
+import { type Operation, type Stream, createChannel } from "effection";
 
 /**
  * Interface of the stream returned by `useFaucet`.
@@ -80,30 +80,34 @@ export interface FaucetOptions {
  * @param options.open - Whether the faucet is open.
  * @returns stream of items coming from the faucet
  */
-export function* useFaucet<T>(options: FaucetOptions): Operation<Faucet<T>> {
-  let signal = createChannel<T, never>();
-  let open = yield* createBooleanSignal(options.open);
-
+export function useFaucet<T>(options: FaucetOptions): Operation<Faucet<T>> {
   return {
-    [Symbol.iterator]: signal[Symbol.iterator],
-    *pour(items) {
-      if (Array.isArray(items)) {
-        for (let i of items) {
-          yield* is(open, (open) => open);
-          yield* signal.send(i);
-        }
-      } else {
-        yield* items(function* (item) {
-          yield* is(open, (open) => open);
-          yield* signal.send(item);
-        });
-      }
-    },
-    close() {
-      open.set(false);
-    },
-    open() {
-      open.set(true);
+    *[Symbol.iterator]() {
+      let signal = createChannel<T, never>();
+      let open = yield* createBooleanSignal(options.open);
+
+      return {
+        [Symbol.iterator]: signal[Symbol.iterator],
+        *pour(items) {
+          if (Array.isArray(items)) {
+            for (let i of items) {
+              yield* is(open, (open) => open);
+              yield* signal.send(i);
+            }
+          } else {
+            yield* items(function* (item) {
+              yield* is(open, (open) => open);
+              yield* signal.send(item);
+            });
+          }
+        },
+        close() {
+          open.set(false);
+        },
+        open() {
+          open.set(true);
+        },
+      };
     },
   };
 }

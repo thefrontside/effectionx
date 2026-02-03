@@ -1,6 +1,6 @@
 import { describe, it } from "@effectionx/bdd";
 import { Context, Effect, Exit, Fiber, Layer } from "effect";
-import { call, scoped, sleep, spawn, suspend } from "effection";
+import { call, scoped, sleep, spawn, suspend, withResolvers } from "effection";
 import { expect } from "expect";
 
 import {
@@ -157,7 +157,8 @@ describe("@effectionx/effect-ts", () => {
     describe("cancellation", () => {
       it("interrupts Effect when Effection task is halted", function* () {
         let finalizerRan = false;
-        let effectStarted = false;
+        const { resolve: effectReady, operation: waitForEffectReady } =
+          withResolvers<void>();
 
         // Run in a nested scope so we can control when it ends
         yield* scoped(function* () {
@@ -167,23 +168,23 @@ describe("@effectionx/effect-ts", () => {
           yield* spawn(function* () {
             yield* runtime.run(
               Effect.gen(function* () {
-                effectStarted = true;
                 yield* Effect.addFinalizer(() =>
                   Effect.sync(() => {
                     finalizerRan = true;
                   }),
                 );
+                // Signal after finalizer is registered
+                effectReady();
                 yield* Effect.sleep("10 seconds");
               }).pipe(Effect.scoped),
             );
           });
 
-          // Give the effect time to start before scope ends
-          yield* sleep(50);
+          // Wait for the effect to register finalizer before scope ends
+          yield* waitForEffectReady;
         });
 
         // After the scoped block completes, the finalizer should have run
-        expect(effectStarted).toEqual(true);
         expect(finalizerRan).toEqual(true);
       });
     });
@@ -417,6 +418,8 @@ describe("@effectionx/effect-ts", () => {
   describe("resource cleanup", () => {
     it("cleans up Effect resources when Effection scope halts", function* () {
       const cleanupOrder: string[] = [];
+      const { resolve: resourceAcquired, operation: waitForAcquire } =
+        withResolvers<void>();
 
       yield* scoped(function* () {
         const runtime = yield* makeEffectRuntime();
@@ -427,6 +430,7 @@ describe("@effectionx/effect-ts", () => {
               yield* Effect.acquireRelease(
                 Effect.sync(() => {
                   cleanupOrder.push("acquired");
+                  resourceAcquired();
                 }),
                 () =>
                   Effect.sync(() => {
@@ -439,8 +443,8 @@ describe("@effectionx/effect-ts", () => {
           );
         });
 
-        yield* sleep(50);
-        // Scope ends here, halting the spawned task
+        // Wait for the resource to be acquired before scope ends
+        yield* waitForAcquire;
       });
 
       // After scoped block completes, cleanup should have happened

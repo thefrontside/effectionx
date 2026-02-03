@@ -23,6 +23,9 @@ describe("raf", () => {
         yield* each.next();
       }
     });
+    // Policy exception: Testing real animation frame timing requires
+    // actual time to pass. This cannot use signal-based waiting because
+    // frames fire based on wall-clock time, not event-driven signals.
     yield* sleep(150);
     expect(count).toBeGreaterThanOrEqual(5);
   });

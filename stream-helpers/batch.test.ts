@@ -57,7 +57,7 @@ describe("batch", () => {
       }, stream),
     );
 
-    yield* sleep(1);
+    yield* sleep(0);
 
     yield* faucet.pour(function* (send) {
       for (let i = 1; i <= 10; i++) {
@@ -89,7 +89,7 @@ describe("batch", () => {
       }, stream),
     );
 
-    yield* sleep(1);
+    yield* sleep(0);
 
     yield* faucet.pour([1, 2, 3, 4, 5, 6]);
 

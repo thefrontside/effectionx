@@ -25,14 +25,20 @@ const hiearchies = pipe(
 export async function* Live(this: Context): AsyncGenerator<Element> {
   let [scope, destroy] = createScope();
 
-  let hierarchy: Hierarchy = { children: [], id: "initial", data: {} };
+  let root: Hierarchy = { children: [], id: "initial", data: {} };
 
-  let selectedNode = "Nothing Selected";
+  let stratum = {
+    root,
+    nodes: {},
+    hierarchies: { [root.id]: root },
+  };
+
+  let selectedTree = root;
 
   let refresh = () => this.refresh();
 
   scope.run(function* (): Operation<void> {
-    for (hierarchy of yield* each(hiearchies)) {
+    for (stratum of yield* each(hiearchies)) {
       refresh();
       yield* each.next();
     }
@@ -40,8 +46,8 @@ export async function* Live(this: Context): AsyncGenerator<Element> {
 
   this.addEventListener("sl-selection-change", (e) => {
     let [item] = e.detail.selection;
-    let id = item.dataset.id;
-    this.refresh(() => (selectedNode = `Selected Node: ${id}`));
+    let id = item.dataset.id!;
+    this.refresh(() => (selectedTree = stratum.hierarchies[id]!));
   });
 
   try {
@@ -49,8 +55,10 @@ export async function* Live(this: Context): AsyncGenerator<Element> {
       yield (
         <Layout>
           <sl-split-panel position="15">
-            <TreeView slot="start" hierarchy={hierarchy} />
-            <Details slot="end">{selectedNode}</Details>
+            <TreeView slot="start" hierarchy={stratum.root} />
+            <Details slot="end">
+              <pre>{JSON.stringify(selectedTree, null, 2)}</pre>
+            </Details>
           </sl-split-panel>
         </Layout>
       );

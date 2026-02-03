@@ -8,6 +8,7 @@ import { Recording } from "./recording.tsx";
 
 export async function* App(this: Context): AsyncGenerator<Element> {
   let route = router.route;
+  router.listen(() => this.refresh(() => (route = router.route)));
 
   for ({} of this) {
     switch (route) {

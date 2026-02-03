@@ -24,6 +24,7 @@
     { "path": "node" },
     { "path": "process" },
     { "path": "raf" },
+    { "path": "scope-eval" },
     { "path": "signals" },
     { "path": "stream-helpers" },
     { "path": "stream-yaml" },

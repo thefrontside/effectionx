@@ -30,36 +30,35 @@ Policy states (when defined in the index):
 
 ### 4. Output Format
 
-When assessing compliance, I produce:
+Keep feedback **concise and actionable**. Lead with violations that need attention - don't pad with compliant items or verbose explanations.
+
+#### When Violations Exist
 
 ```markdown
-## Policy Compliance Assessment
+## Policy Review
 
-### Summary
-| Metric | Count |
-|--------|-------|
-| Total items reviewed | X |
-| Compliant | X |
-| Violations | X |
+**1 violation found:**
 
-<details>
-<summary>Violations details</summary>
-
-### Critical Violations
-
-| Item | Policy | Issue | Fix |
-|------|--------|-------|-----|
-| (artifact/location) | (policy name) | (specific issue) | (copy-paste-ready fix) |
-
-### Advisory Notes
-- (Optional notes. If Experimental policies were evaluated, include that feedback here; it is advisory only.)
-
-</details>
+- **`path/to/file.ts`** - [Policy Name](.policies/policy.md): Brief issue description
+  ```typescript
+  // Copy-paste-ready fix
+  ```
 ```
 
-- **Item**: artifact, file, or location (e.g. file path, component name).
-- **Critical Violations**: one row per violation of a Strict or Recommended policy.
-- **Advisory Notes**: optional notes; all feedback from Experimental policies goes here (not in Critical Violations).
+#### When Everything is Compliant
+
+```markdown
+## Policy Review
+
+No violations found.
+```
+
+**Guidelines:**
+- Only list violations, not compliant items
+- One bullet per violation with file path, policy link, and fix
+- Keep explanations brief - the policy document has details
+- No summary tables or counts - just the actionable items
+- No "Advisory Notes" section unless there's something genuinely useful to add
 
 ## Constraints
 
@@ -80,12 +79,11 @@ When assessing compliance, I produce:
 
 ### When Assessing Compliance
 
-1. Determine the applicable policy index for the changed artifacts
-2. Read the policy list from that index (single source of truth)
-3. For each policy, open the linked policy document and apply its checks to the artifacts
-4. Classify each finding by policy state: Strict/Recommended -> Critical Violations; Experimental -> Advisory Notes only
-5. Document all violations with specific references (file, line, or location)
-6. Provide copy-paste-ready fix patterns where possible
+1. Read the policy list from `.policies/index.md` (single source of truth)
+2. For each policy, open the linked document and apply its checks to changed files
+3. Only report violations - skip compliant items
+4. For each violation: file path, policy link, brief issue, copy-paste fix
+5. Keep it short - if no violations, just say "No violations found."
 
 ### When Writing Policies
 

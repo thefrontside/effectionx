@@ -1,6 +1,6 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
-import { box, unbox } from "./mod.ts";
+import { Err, Ok, box, unbox } from "./mod.ts";
 
 describe("box", () => {
   it("returns Ok for successful operations", function* () {
@@ -28,17 +28,13 @@ describe("box", () => {
 
 describe("unbox", () => {
   it("extracts value from Ok result", function* () {
-    const result = yield* box(function* () {
-      return "hello";
-    });
+    const result = Ok("hello");
 
     expect(unbox(result)).toBe("hello");
   });
 
   it("throws error from Err result", function* () {
-    const result = yield* box(function* () {
-      throw new Error("should throw");
-    });
+    const result = Err(new Error("should throw"));
 
     expect(() => unbox(result)).toThrow("should throw");
   });

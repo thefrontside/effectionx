@@ -1,0 +1,21 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": ["**/*.ts", "package.json"],
+  "exclude": [
+    "ui",
+    "*.config.ts",
+    "**/*.test.ts",
+    "dist",
+    "example.ts",
+    "pipeline-test.ts"
+  ],
+  "references": [
+    {
+      "path": "../bdd"
+    }
+  ]
+}

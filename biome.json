@@ -9,7 +9,8 @@
       "recommended": true,
       "style": {
         "noParameterAssign": "off",
-        "useConst": "off"
+        "useConst": "off",
+        "noUselessElse": "off"
       },
       "correctness": {
         "useYield": "off"

@@ -61,6 +61,39 @@ sl-split-panel {
   width: auto;
   display: block;
 }
+
+/* Theme switcher */
+.theme-switcher {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+.theme-toggle::part(base) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0 6px;
+}
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* default: light theme */
+.icon-sun {
+  display: inline-block;
+}
+.icon-moon {
+  display: none;
+}
+/* when Shoelace dark theme is active */
+.sl-theme-dark .icon-sun {
+  display: none;
+}
+.sl-theme-dark .icon-moon {
+  display: inline-block;
+}
+
 .home-main {
   max-width: 1200px;
   margin: 0 auto;

@@ -1,0 +1,85 @@
+.detailsContainer {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tabControls {
+  display: flex;
+  gap: 8px;
+}
+
+.tabPanel {
+  border-top: 1px solid var(--sl-color-neutral-200, #e5e7eb);
+  padding-top: 12px;
+}
+.headerRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.parentSection {
+  margin-top: 12px;
+}
+.copyAll {
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid var(--sl-color-neutral-200, #e5e7eb);
+  border-radius: 6px;
+}
+.propertiesSection {
+  margin-top: 8px;
+}
+.propertiesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.kvList {
+  margin-top: 8px;
+}
+.kvRow {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.03);
+}
+.propertyKey {
+  font-weight: 600;
+  min-width: 140px;
+}
+.propertyValue {
+  flex: 1;
+  white-space: pre-wrap;
+}
+.parentSection .detailsHeading {
+  margin-bottom: 6px;
+}
+.childRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  border: 1px solid var(--sl-color-neutral-200, #e5e7eb);
+  border-radius: 6px;
+  margin: 6px 0;
+}
+.clickable {
+  cursor: pointer;
+}
+.mutedText {
+  color: var(--sl-color-neutral-600, #6b7280);
+}
+.detailsHeading {
+  font-weight: 700;
+}
+.statusText {
+  margin-left: 8px;
+}
+.childrenList {
+  margin-top: 8px;
+}
+.childType {
+  color: var(--sl-color-neutral-600, #6b7280);
+  font-size: 13px;
+}

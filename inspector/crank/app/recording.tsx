@@ -15,6 +15,9 @@ import type { Hierarchy } from "./data/types.ts";
 import { TreeView } from "./components/hierarchy-view.tsx";
 import { Details } from "./components/hierarchy-details.tsx";
 import { PlaybackControls } from "./components/playback-controls.tsx";
+import layoutStyles from "./layout.module.css";
+import cardStyles from "./components/card.module.css";
+import homeStyles from "./home.module.css";
 
 export async function* Recording(this: Context): AsyncGenerator<Element> {
   let [scope, destroy] = createScope();
@@ -106,22 +109,22 @@ export async function* Recording(this: Context): AsyncGenerator<Element> {
       yield (
         <Layout>
           {!recording ? (
-            <section class="grid">
-              <div class="card">
-                <div class="card-head">
+            <section class={layoutStyles.grid}>
+              <sl-card>
+                <div class={cardStyles.cardHead} slot="header">
                   <h3>No recording loaded</h3>
-                  <div class="card-text">
+                  <div class={cardStyles.cardText}>
                     Load a previously recorded session to inspect and play back
                     events.
                   </div>
                 </div>
 
-                <div class="footer">
-                  <div class="recording-upload">
+                <div class={layoutStyles.footer}>
+                  <div class={homeStyles.recordingUpload}>
                     <input
                       id="recording-file-input"
                       type="file"
-                      class="hidden-file-input"
+                      class={homeStyles.hiddenFileInput}
                       onchange={handleFileSelect}
                       accept=".json,.effection,application/json,text/json"
                       aria-label="Upload recording file"
@@ -139,10 +142,10 @@ export async function* Recording(this: Context): AsyncGenerator<Element> {
                     >
                       Browse files
                     </sl-button>
-                    <div class="meta">.json, .effection files</div>
+                    <div class={homeStyles.meta}>.json, .effection files</div>
                   </div>
                 </div>
-              </div>
+              </sl-card>
             </section>
           ) : (
             <Fragment>

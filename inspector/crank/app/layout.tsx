@@ -1,4 +1,5 @@
 import type { Children } from "@b9g/crank";
+import { Header } from "./components/header.tsx";
 
 export function Layout({ children }: { children: Children }): Element {
   // Initialize theme on client load using stored value or system preference
@@ -33,32 +34,7 @@ export function Layout({ children }: { children: Children }): Element {
 
   return (
     <>
-      <header class="site-header">
-        <div class="brand">
-          <div class="logo">
-            <sl-button
-              href="/"
-              aria-label="Home"
-              class="logo-button"
-              type="button"
-            >
-              <img src="/effection-logo.svg" alt="Effection logo" />
-            </sl-button>
-          </div>
-
-          <div class="theme-switcher">
-            <sl-button
-              class="theme-toggle"
-              aria-label="Toggle theme"
-              type="button"
-              onclick={() => toggleTheme()}
-            >
-              <sl-icon name="sun" class="icon-sun"></sl-icon>
-              <sl-icon name="moon" class="icon-moon"></sl-icon>
-            </sl-button>
-          </div>
-        </div>
-      </header>
+      <Header toggleTheme={toggleTheme} />
       <main>{children}</main>
     </>
   );

@@ -4,6 +4,8 @@ import { findParent } from "../data/findParent.ts";
 import { getNodeLabel } from "../data/labels.ts";
 import { Graphic } from "./graphic.tsx";
 
+import detailsStyles from "./hierarchy-details.module.css";
+
 function valueToString(v: unknown): string {
   if (v === null || v === undefined) return "";
   if (typeof v === "object") {
@@ -78,11 +80,11 @@ export function Details({
     return (
       <button
         type="button"
-        class="childRow clickable"
+        class={`${detailsStyles.childRow} ${detailsStyles.clickable}`}
         onclick={() => activate()}
       >
         <div>{getNodeLabel(n)}</div>
-        <div class="childType">{String(n.data?.type ?? "")}</div>
+        <div class={detailsStyles.childType}>{String(n.data?.type ?? "")}</div>
       </button>
     );
   }
@@ -91,7 +93,7 @@ export function Details({
   const parent = findParent(resolvedHierarchy, resolvedNode?.id);
 
   return (
-    <div class="detailsContainer" slot={slot}>
+    <div class={detailsStyles.detailsContainer} slot={slot}>
       <sl-tab-group value="graph">
         <sl-tab slot="nav" panel="graph">
           Graph
@@ -101,34 +103,34 @@ export function Details({
         </sl-tab>
 
         <sl-tab-panel name="graph">
-          <div class="tabPanel graphPanel">
+          <div class={detailsStyles.tabPanel}>
             <Graphic hierarchy={resolvedHierarchy} />
           </div>
         </sl-tab-panel>
 
         <sl-tab-panel name="attributes">
-          <div class="tabPanel attributesPanel">
-            <div class="headerRow">
+          <div class={detailsStyles.tabPanel}>
+            <div class={detailsStyles.headerRow}>
               <div>
-                <div class="detailsHeading">
+                <div class={detailsStyles.detailsHeading}>
                   {resolvedNode ? getNodeLabel(resolvedNode) : "Attributes"}
                 </div>
-                <div class="mutedText">
+                <div class={detailsStyles.mutedText}>
                   {resolvedNode ? String(resolvedNode.data?.type ?? "") : ""}
                 </div>
               </div>
-              <div class="statusText">
+              <div class={detailsStyles.statusText}>
                 ● {String(resolvedNode?.data?.status ?? "")}
               </div>
             </div>
 
-            <div class="propertiesSection">
-              <div class="propertiesHeader">
-                <div class="detailsHeading">Properties</div>
+            <div class={detailsStyles.propertiesSection}>
+              <div class={detailsStyles.propertiesHeader}>
+                <div class={detailsStyles.detailsHeading}>Properties</div>
                 <div>
                   <button
                     type="button"
-                    class="copyAll"
+                    class={detailsStyles.copyAll}
                     onclick={() => copyAllProperties()}
                   >
                     Copy all
@@ -136,31 +138,33 @@ export function Details({
                 </div>
               </div>
 
-              <div class="kvList">
+              <div class={detailsStyles.kvList}>
                 {properties.length === 0 ? (
-                  <div class="mutedText">No properties</div>
+                  <div class={detailsStyles.mutedText}>No properties</div>
                 ) : (
                   properties.map((p) => (
-                    <div key={p.k} class="kvRow">
-                      <div class="propertyKey">{p.k}</div>
-                      <div class="propertyValue">{String(p.v)}</div>
+                    <div key={p.k} class={detailsStyles.kvRow}>
+                      <div class={detailsStyles.propertyKey}>{p.k}</div>
+                      <div class={detailsStyles.propertyValue}>
+                        {String(p.v)}
+                      </div>
                     </div>
                   ))
                 )}
               </div>
             </div>
 
-            <div class="parentSection">
-              <div class="detailsHeading">Parent</div>
+            <div class={detailsStyles.parentSection}>
+              <div class={detailsStyles.detailsHeading}>Parent</div>
               {parent ? (
                 <EntityRow n={parent} />
               ) : (
-                <div class="mutedText">No parent</div>
+                <div class={detailsStyles.mutedText}>No parent</div>
               )}
             </div>
 
-            <div class="childrenList">
-              <div class="detailsHeading">Children</div>
+            <div class={detailsStyles.childrenList}>
+              <div class={detailsStyles.detailsHeading}>Children</div>
               {resolvedNode?.children?.map((c) => (
                 <EntityRow key={c.id} n={c} />
               ))}

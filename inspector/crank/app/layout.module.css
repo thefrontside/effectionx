@@ -1,0 +1,61 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.footer {
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+@media (max-width: 800px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Header styles moved from header.module.css */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.logo {
+  width: auto;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: #1f2937;
+  border-radius: 8px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+}
+.logoImg {
+  height: 24px;
+  width: auto;
+  display: block;
+}
+.themeSwitcher {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.iconSun {
+  display: inline-block;
+}
+.iconMoon {
+  display: none;
+}
+.themeDark .iconSun {
+  display: none;
+}
+.themeDark .iconMoon {
+  display: inline-block;
+}

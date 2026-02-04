@@ -13,7 +13,6 @@ import type { Hierarchy } from "./data/types.ts";
 import { TreeView } from "./components/hierarchy-view.tsx";
 import { Details } from "./components/hierarchy-details.tsx";
 
-
 const protocol = combine.protocols(scope, player);
 
 const client = createSSEClient(protocol);
@@ -64,11 +63,7 @@ export async function* Live(this: Context): AsyncGenerator<Element> {
         <Layout>
           <sl-split-panel position="15">
             <TreeView slot="start" hierarchy={stratum.root} />
-            <Details
-              slot="end"
-              node={selectedTree}
-              hierarchy={stratum.root}
-            />
+            <Details slot="end" node={selectedTree} hierarchy={stratum.root} />
           </sl-split-panel>
         </Layout>
       );

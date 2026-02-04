@@ -41,13 +41,16 @@ export function* Graphic(
             id="details-graph-svg"
             width="100%"
             height="300"
+            role="img"
+            aria-labelledby="details-graph-svg-title"
             ref={(el: SVGSVGElement | null) => {
               svgEl = el;
               if (svgEl) scheduleRender();
             }}
           >
-            <g class="links" />
-            <g class="nodes" />
+            <title id="details-graph-svg-title">Process graph</title>
+            <g data-links />
+            <g data-nodes />
           </svg>
         </sl-resize-observer>
       </div>
@@ -109,11 +112,11 @@ export function renderChart(ref: SVGSVGElement | null, data: Hierarchy) {
   const svg = d3.select(ref);
 
   // Ensure groups exist for stable selection (links / nodes)
-  if (svg.select("g.links").empty()) {
-    svg.append("g").attr("class", "links");
+  if (svg.select("g[data-links]").empty()) {
+    svg.append("g").attr("data-links", "");
   }
-  if (svg.select("g.nodes").empty()) {
-    svg.append("g").attr("class", "nodes");
+  if (svg.select("g[data-nodes]").empty()) {
+    svg.append("g").attr("data-nodes", "");
   }
 
   svg
@@ -123,7 +126,7 @@ export function renderChart(ref: SVGSVGElement | null, data: Hierarchy) {
     .attr("style", "max-width: 100%; height: auto; font: 10px sans-serif;");
 
   svg
-    .select("g.links")
+    .select("g[data-links]")
     .attr("fill", "none")
     .attr("stroke", "#555")
     .attr("stroke-opacity", 0.4)
@@ -150,7 +153,7 @@ export function renderChart(ref: SVGSVGElement | null, data: Hierarchy) {
     });
 
   const node = svg
-    .select("g.nodes")
+    .select("g[data-nodes]")
     .selectAll("g")
     .data(root.descendants())
     .join(

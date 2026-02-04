@@ -1,6 +1,7 @@
 import type { Context } from "@b9g/crank";
 import { createScope, sleep, type Operation } from "effection";
 import type { Recording } from "../data/recording.ts";
+import playbackStyles from "./playback-controls.module.css";
 
 export async function* PlaybackControls(
   this: Context,
@@ -21,7 +22,7 @@ export async function* PlaybackControls(
   let [scope, destroy] = createScope();
   let playTask: any = null;
   let playing = false;
-  let inputEl: HTMLInputElement | null = null;
+  let inputEl: HTMLElement | null = null;
 
   try {
     for ({} of this) {
@@ -30,7 +31,7 @@ export async function* PlaybackControls(
       }
 
       yield (
-        <div class="controls">
+        <div class={playbackStyles.controls}>
           <sl-button
             type="button"
             variant="default"
@@ -88,29 +89,29 @@ export async function* PlaybackControls(
             {playing ? "Pause" : "Play"}
           </sl-button>
 
-          <label>
-            Offset:{" "}
-            <input
-              ref={(el: HTMLInputElement | null) => (inputEl = el)}
-              type="range"
-              min={0}
-              max={recording ? (recording as Recording).length - 1 : 0}
-              value={offset}
-              onInput={(e: Event) => {
-                const v = Number((e.currentTarget as HTMLInputElement).value);
+          <div id="offset-label">Offset:</div>
+          <sl-range
+            ref={(el: HTMLElement | null) => {
+              inputEl = el;
+            }}
+            min={0}
+            max={recording ? (recording as Recording).length - 1 : 0}
+            value={offset}
+            aria-labelledby="offset-label"
+            onsl-input={(e: Event) => {
+              const ce = e as CustomEvent;
+              const v = Number(ce?.detail?.value ?? 0);
+              setTimeout(() => {
+                refresh(() => {
+                  setOffset(v);
+                  recording?.setOffset(v);
+                });
                 setTimeout(() => {
-                  refresh(() => {
-                    setOffset(v);
-                    recording?.setOffset(v);
-                  });
-                  setTimeout(() => {
-                    if (inputEl)
-                      (inputEl as HTMLInputElement).value = String(v);
-                  });
-                }, 0);
-              }}
-            />
-          </label>
+                  if (inputEl) (inputEl as any).value = String(v);
+                });
+              }, 0);
+            }}
+          />
         </div>
       );
     }

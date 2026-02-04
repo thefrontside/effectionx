@@ -24,7 +24,11 @@ export async function* Recording(this: Context): AsyncGenerator<Element> {
 
   let recording: null | Recording = null;
   let hierarchy: Hierarchy = { children: [], id: "initial", data: {} };
-  let stratum = { root: hierarchy, nodes: {}, hierarchies: { [hierarchy.id]: hierarchy } };
+  let stratum = {
+    root: hierarchy,
+    nodes: {},
+    hierarchies: { [hierarchy.id]: hierarchy },
+  };
   let selectedTree: Hierarchy = stratum.root;
 
   let offset = 0;

@@ -50,8 +50,12 @@ export function Details({
   hierarchy?: Hierarchy | Stratification;
 }) {
   // Normalize inputs: accept either a Hierarchy or a Stratification
-  const resolvedHierarchy = hierarchy && "root" in hierarchy ? hierarchy.root : hierarchy as Hierarchy | undefined;
-  const resolvedNode = node && "root" in node ? node.root : node as Hierarchy | undefined;
+  const resolvedHierarchy =
+    hierarchy && "root" in hierarchy
+      ? hierarchy.root
+      : (hierarchy as Hierarchy | undefined);
+  const resolvedNode =
+    node && "root" in node ? node.root : (node as Hierarchy | undefined);
 
   function copyAllProperties() {
     if (!resolvedNode) return;
@@ -113,7 +117,9 @@ export function Details({
                   {resolvedNode ? String(resolvedNode.data?.type ?? "") : ""}
                 </div>
               </div>
-              <div class="statusText">● {String(resolvedNode?.data?.status ?? "")}</div>
+              <div class="statusText">
+                ● {String(resolvedNode?.data?.status ?? "")}
+              </div>
             </div>
 
             <div class="propertiesSection">

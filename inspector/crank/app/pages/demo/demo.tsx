@@ -17,7 +17,11 @@ export async function* Demo(this: Context): AsyncGenerator<Element> {
   let [scope, destroy] = createScope();
 
   let hierarchy: Hierarchy = { children: [], id: "initial", data: {} };
-  let stratum = { root: hierarchy, nodes: {}, hierarchies: { [hierarchy.id]: hierarchy } };
+  let stratum = {
+    root: hierarchy,
+    nodes: {},
+    hierarchies: { [hierarchy.id]: hierarchy },
+  };
   let recording: Recording | null = null;
   let offset = 0;
   let tickIntervalMs = 250;
@@ -72,11 +76,7 @@ export async function* Demo(this: Context): AsyncGenerator<Element> {
 
           <sl-split-panel position="15">
             <TreeView slot="start" hierarchy={stratum.root} />
-            <Details
-              slot="end"
-              node={selectedTree}
-              hierarchy={stratum.root}
-            />
+            <Details slot="end" node={selectedTree} hierarchy={stratum.root} />
           </sl-split-panel>
         </Layout>
       );

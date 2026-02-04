@@ -4,6 +4,11 @@ const history = createBrowserHistory();
 
 import { Routes, Route, Router } from "@nano-router/router";
 
-const routes = new Routes(new Route("home", "/"), new Route("live", "/live"));
+const routes = new Routes(
+  new Route("home", "/"),
+  new Route("live", "/live"),
+  new Route("demo", "/demo"),
+  new Route("recording", "/recording"),
+);
 
 export const router = new Router({ routes, history });

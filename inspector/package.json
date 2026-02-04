@@ -30,6 +30,7 @@
     "@standard-schema/spec": "^1.0.0",
     "arktype": "^2.1.27",
     "canvg": "^4.0.3",
+    "d3": "^7.9.0",
     "react-d3-tree": "^3.6.6",
     "react-router": "^7.13.0",
     "remeda": "^2",

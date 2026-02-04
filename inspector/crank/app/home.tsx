@@ -1,4 +1,4 @@
-import { Context } from "@b9g/crank";
+import type { Context } from "@b9g/crank";
 import { Layout } from "./layout.tsx";
 
 export async function* Home(this: Context): AsyncGenerator<Element> {

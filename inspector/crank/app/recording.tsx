@@ -1,4 +1,4 @@
-import { Fragment, type Children, type Context } from "@b9g/crank";
+import { Fragment, type Context } from "@b9g/crank";
 import { Layout } from "./layout.tsx";
 
 import {
@@ -12,7 +12,9 @@ import { pipe } from "remeda";
 import { arrayLoader, useRecording, type Recording } from "./data/recording.ts";
 import { stratify } from "./data/stratify.ts";
 import type { Hierarchy } from "./data/types.ts";
-import { getNodeLabel } from "./data/labels.ts";
+import { TreeView } from "./components/hierarchy-view.tsx";
+import { Details } from "./components/hierarchy-details.tsx";
+import { PlaybackControls } from "./components/playback-controls.tsx";
 
 export async function* Recording(this: Context): AsyncGenerator<Element> {
   let [scope, destroy] = createScope();
@@ -22,13 +24,13 @@ export async function* Recording(this: Context): AsyncGenerator<Element> {
 
   let recording: null | Recording = null;
   let hierarchy: Hierarchy = { children: [], id: "initial", data: {} };
-  let selectedNode = "Nothing Selected";
+  let stratum = { root: hierarchy, nodes: {}, hierarchies: { [hierarchy.id]: hierarchy } };
+  let selectedTree: Hierarchy = stratum.root;
 
   let offset = 0;
-  let playing = false;
   let tickIntervalMs = 250;
 
-  let refresh = () => this.refresh();
+  let refresh = (fn?: () => void) => this.refresh(fn);
 
   // process incoming files
   scope.run(function* (): Operation<void> {
@@ -46,9 +48,8 @@ export async function* Recording(this: Context): AsyncGenerator<Element> {
         const hierarchies = pipe(recording.replayStream(), stratify());
 
         // run a task to step through the replay stream and update hierarchy
-        for (let item of yield* each(hierarchies)) {
-          hierarchy = item;
-          console.log("Updated hierarchy:", hierarchy);
+        for (stratum of yield* each(hierarchies)) {
+          hierarchy = stratum.root;
           refresh();
           yield* each.next();
         }
@@ -81,7 +82,19 @@ export async function* Recording(this: Context): AsyncGenerator<Element> {
   this.addEventListener("sl-selection-change", (e) => {
     let [item] = e.detail.selection;
     let id = item.dataset.id;
-    this.refresh(() => (selectedNode = `Selected Node: ${id}`));
+    this.refresh(() => {
+      if (id) selectedTree = stratum.hierarchies[id]!;
+    });
+  });
+
+  // Respond to entity-row activations from Details component
+  window.addEventListener("inspector-navigate", (e: Event) => {
+    const id = (e as CustomEvent).detail?.id as string | undefined;
+    if (id) {
+      this.refresh(() => {
+        selectedTree = stratum.hierarchies[id]!;
+      });
+    }
   });
 
   try {
@@ -129,38 +142,23 @@ export async function* Recording(this: Context): AsyncGenerator<Element> {
             </section>
           ) : (
             <Fragment>
-              <div class="controls">
-                <sl-button
-                  type="button"
-                  variant="default"
-                  onclick={() => {
-                    playing = !playing;
-                    this.refresh();
-                  }}
-                >
-                  {playing ? "Pause" : "Play"}
-                </sl-button>
-                <label>
-                  Offset:{" "}
-                  <input
-                    type="range"
-                    min="0"
-                    max={recording?.length - 1 || 0}
-                    value={offset}
-                    onInput={(e: Event) => {
-                      offset = Number(
-                        (e.currentTarget as HTMLInputElement).value,
-                      );
-                      recording?.setOffset(offset);
-                      this.refresh();
-                    }}
-                  />
-                </label>
-              </div>
+              <PlaybackControls
+                recording={recording}
+                offset={offset}
+                setOffset={(n: number) => {
+                  offset = n;
+                }}
+                refresh={refresh}
+                tickIntervalMs={tickIntervalMs}
+              />
 
               <sl-split-panel position="15">
-                <TreeView slot="start" hierarchy={hierarchy} />
-                <Details slot="end">{selectedNode}</Details>
+                <TreeView slot="start" hierarchy={stratum.root} />
+                <Details
+                  slot="end"
+                  node={selectedTree}
+                  hierarchy={stratum.root}
+                />
               </sl-split-panel>
             </Fragment>
           )}
@@ -170,33 +168,4 @@ export async function* Recording(this: Context): AsyncGenerator<Element> {
   } finally {
     await destroy();
   }
-}
-
-function TreeView({
-  hierarchy,
-  slot,
-}: {
-  hierarchy: Hierarchy;
-  slot?: string;
-}) {
-  return (
-    <sl-tree slot={slot}>
-      <TreeNode hierarchy={hierarchy} />
-    </sl-tree>
-  );
-}
-
-function TreeNode({ hierarchy }: { hierarchy: Hierarchy }): Element {
-  return (
-    <sl-tree-item key={hierarchy.id} selection="single" data-id={hierarchy.id}>
-      {getNodeLabel(hierarchy)}
-      {hierarchy.children.map((h) => (
-        <TreeNode hierarchy={h} />
-      ))}
-    </sl-tree-item>
-  );
-}
-
-function Details({ slot, children }: { slot?: string; children: Children }) {
-  return <div slot={slot}>{children}</div>;
 }

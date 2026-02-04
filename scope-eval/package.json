@@ -10,11 +10,9 @@
       "default": "./dist/mod.js"
     }
   },
+  "files": ["dist", "mod.ts", "box.ts", "eval-scope.ts"],
   "peerDependencies": {
     "effection": "^3 || ^4"
-  },
-  "dependencies": {
-    "@effectionx/result": "workspace:*"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",

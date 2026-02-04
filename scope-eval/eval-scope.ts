@@ -1,4 +1,3 @@
-import { box } from "@effectionx/result";
 import {
   type Operation,
   type Result,
@@ -9,6 +8,7 @@ import {
   useScope,
   withResolvers,
 } from "effection";
+import { box } from "./box.ts";
 
 /**
  * An isolated scope that can evaluate operations and expose their side effects.

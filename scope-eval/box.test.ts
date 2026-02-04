@@ -1,6 +1,7 @@
 import { describe, it } from "@effectionx/bdd";
+import { Err, Ok } from "effection";
 import { expect } from "expect";
-import { Err, Ok, box, unbox } from "./mod.ts";
+import { box, unbox } from "./mod.ts";
 
 describe("box", () => {
   it("returns Ok for successful operations", function* () {

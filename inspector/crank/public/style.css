@@ -197,3 +197,55 @@ sl-badge {
     grid-template-columns: 1fr;
   }
 }
+
+/* Details pane styles */
+.detailsContainer {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tabControls {
+  display: flex;
+  gap: 8px;
+}
+.tabBtn::part(base) {
+  padding: 6px 10px;
+}
+
+/* Shoelace tab styling for converted Details pane */
+sl-tab::part(base) {
+  padding: 6px 10px;
+}
+.tabPanel {
+  border-top: 1px solid var(--sl-color-neutral-200, #e5e7eb);
+  padding-top: 12px;
+}
+.propertiesSection .kvList {
+  margin-top: 8px;
+}
+.kvRow {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.03);
+}
+.propertyKey {
+  font-weight: 600;
+  min-width: 140px;
+}
+.propertyValue {
+  flex: 1;
+  white-space: pre-wrap;
+}
+.childRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  border: 1px solid var(--sl-color-neutral-200, #e5e7eb);
+  border-radius: 6px;
+  margin: 6px 0;
+}
+.clickable {
+  cursor: pointer;
+}

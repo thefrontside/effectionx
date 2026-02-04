@@ -1,4 +1,4 @@
-import { Context, type Children } from "@b9g/crank";
+import type { Context } from "@b9g/crank";
 import { pipe } from "remeda";
 import { Layout } from "./layout.tsx";
 
@@ -10,7 +10,9 @@ import { protocol as player } from "../../player/protocol.ts";
 import { combine } from "../../lib/combine.ts";
 import { createScope, each, type Operation } from "effection";
 import type { Hierarchy } from "./data/types.ts";
-import { getNodeLabel } from "./data/labels.ts";
+import { TreeView } from "./components/hierarchy-view.tsx";
+import { Details } from "./components/hierarchy-details.tsx";
+
 
 const protocol = combine.protocols(scope, player);
 
@@ -50,15 +52,23 @@ export async function* Live(this: Context): AsyncGenerator<Element> {
     this.refresh(() => (selectedTree = stratum.hierarchies[id]!));
   });
 
+  // TODO upstream stratum changes to Details view would match this
+  // <TreeView slot="start" hierarchy={stratum.root} />
+  // <Details slot="end">
+  //   <pre>{JSON.stringify(selectedTree, null, 2)}</pre>
+  // </Details>
+
   try {
     for ({} of this) {
       yield (
         <Layout>
           <sl-split-panel position="15">
             <TreeView slot="start" hierarchy={stratum.root} />
-            <Details slot="end">
-              <pre>{JSON.stringify(selectedTree, null, 2)}</pre>
-            </Details>
+            <Details
+              slot="end"
+              node={selectedTree}
+              hierarchy={stratum.root}
+            />
           </sl-split-panel>
         </Layout>
       );
@@ -66,30 +76,4 @@ export async function* Live(this: Context): AsyncGenerator<Element> {
   } finally {
     await destroy();
   }
-}
-
-function TreeView({
-  hierarchy,
-  slot,
-}: { hierarchy: Hierarchy; slot?: string }) {
-  return (
-    <sl-tree slot={slot}>
-      <TreeNode hierarchy={hierarchy} />
-    </sl-tree>
-  );
-}
-
-function TreeNode({ hierarchy }: { hierarchy: Hierarchy }): Element {
-  return (
-    <sl-tree-item key={hierarchy.id} selection="single" data-id={hierarchy.id}>
-      {getNodeLabel(hierarchy)}
-      {hierarchy.children.map((h) => (
-        <TreeNode hierarchy={h} />
-      ))}
-    </sl-tree-item>
-  );
-}
-
-function Details({ slot, children }: { slot?: string; children: Children }) {
-  return <div slot={slot}>{children}</div>;
 }

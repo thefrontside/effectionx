@@ -1,10 +1,4 @@
-import {
-  type Stream,
-  type Operation,
-  resource,
-  createSignal,
-  spawn,
-} from "effection";
+import { type Stream, type Operation, createSignal } from "effection";
 import type { NodeMap } from "./types.ts";
 import { createSubject } from "@effectionx/stream-helpers";
 import { pipe } from "remeda";
@@ -14,12 +8,6 @@ export interface Recording {
   replayStream(): Stream<NodeMap, never>;
   setOffset(offset: number): void;
 }
-
-// 0---1--------2----34------5--------X--------------------6------------------0
-
-// export interface Range {
-//   length: number;
-// }
 
 export interface Cassette {
   length: number;

@@ -9,13 +9,11 @@ export async function* PlaybackControls(
     recording,
     offset = 0,
     setOffset,
-    refresh,
     tickIntervalMs = 250,
   }: {
     recording?: Recording | null;
     offset?: number;
     setOffset: (n: number) => void;
-    refresh: (fn?: () => void) => void;
     tickIntervalMs?: number;
   },
 ) {
@@ -23,6 +21,7 @@ export async function* PlaybackControls(
   let playTask: any = null;
   let playing = false;
   let inputEl: HTMLElement | null = null;
+  let refresh = this.refresh.bind(this);
 
   try {
     for ({} of this) {

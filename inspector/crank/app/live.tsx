@@ -28,9 +28,9 @@ export async function* Live(this: Context): AsyncGenerator<Element> {
 
   let root: Hierarchy = {
     children: [],
-    id: "initial",
+    id: "0",
     data: {
-      "@effection/attributes": { name: "Root" },
+      "@effection/attributes": { name: "Global" },
     },
   };
 
@@ -68,8 +68,12 @@ export async function* Live(this: Context): AsyncGenerator<Element> {
       yield (
         <Layout>
           <sl-split-panel position="15">
-            <TreeView slot="start" hierarchy={stratum.root} />
-            <Details slot="end" node={selectedTree} hierarchy={stratum.root} />
+            <TreeView
+              slot="start"
+              hierarchy={stratum.root}
+              selection={selectedTree}
+            />
+            <Details slot="end" node={selectedTree} />
           </sl-split-panel>
         </Layout>
       );

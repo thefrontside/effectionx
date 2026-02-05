@@ -64,15 +64,9 @@ export function beforeAll(op: () => Operation<void>): void {
 }
 
 export function beforeEach(op: () => Operation<void>): void {
-  let added = false;
-  vitest.beforeEach<{ task: { suite: { adapter: TestAdapter } } }>(
-    (context) => {
-      if (!added) {
-        context.task.suite.adapter.addSetup(op);
-        added = true;
-      }
-    },
-  );
+  vitest.beforeAll((suite) => {
+    (suite as unknown as { adapter: TestAdapter }).adapter.addSetup(op);
+  });
 }
 
 export function it(

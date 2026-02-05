@@ -59,7 +59,7 @@ export function* Graphic(
 }
 
 function textValue(node: d3.HierarchyNode<Hierarchy>) {
-  const labelName = (node.data.data["@effectionx/inspector.labels"] as any)
+  const labelName = (node.data.data["@effection/attributes"] as any)
     ?.name;
   return `${node.data.id} [${labelName}]`;
 }

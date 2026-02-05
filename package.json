@@ -32,7 +32,7 @@
       "allowAny": []
     },
     "overrides": {
-      "effection": "https://pkg.pr.new/thefrontside/effection@5010883"
+      "effection": "4.1.0-alpha.2"
     }
   },
   "volta": {

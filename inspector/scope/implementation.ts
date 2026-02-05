@@ -10,8 +10,8 @@ import {
   type ScopeTree,
 } from "./protocol.ts";
 import { pipe } from "remeda";
-import { getLabels, LabelsContext } from "../lib/labels.ts";
 import { createSubject } from "@effectionx/stream-helpers";
+import { AttributesContext, getLabels } from "../lib/labels.ts";
 
 const Id = createContext<string>("@effectionx/inspector.id", "global");
 const Children = createContext<Set<Scope>>(
@@ -23,7 +23,7 @@ export const scope = createImplementation(protocol, function* (root) {
   let ids = 0;
   let { send, ...stream } = createSignal<ScopeEvent, never>();
 
-  root.set(LabelsContext, { name: "Global" });
+  root.set(AttributesContext, { name: "Global" });
 
   // give every node an id that does not have it.
   visit(
@@ -34,7 +34,7 @@ export const scope = createImplementation(protocol, function* (root) {
     null,
   );
 
-  root.decorate(api.Scope, {
+  root.around(api.Scope, {
     create([parent], next) {
       let parentId = parent.expect(Id);
       let [scope, destroy] = next(parent);
@@ -69,16 +69,16 @@ export const scope = createImplementation(protocol, function* (root) {
       }
     },
 
-    set([contexts, context, value], next) {
-      if (context.name === LabelsContext.name) {
+    set([scope, context, value], next) {
+      if (context.name === AttributesContext.name) {
         send({
           type: "set",
-          id: String(contexts[Id.name]),
+          id: scope.expect(Id),
           contextName: context.name,
           contextValue: toJson(value),
         });
       }
-      return next(contexts, context, value);
+      return next(scope, context, value);
     },
   });
 
@@ -101,7 +101,7 @@ function readTree(root: Scope): ScopeTree {
       nodes.push({
         id: scope.expect(Id),
         parentId,
-        data: { [LabelsContext.name]: getLabels(scope) },
+        data: { [AttributesContext.name]: getLabels(scope) },
       });
     },
     [] as ScopeNode[],

@@ -5,6 +5,7 @@ import {
   stream,
   until,
   useAbortSignal,
+  useAttributes,
 } from "effection";
 import {
   toJson,
@@ -16,7 +17,6 @@ import {
 } from "../mod.ts";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { type SSEMessage, SseStreamTransform } from "sse-stream-transform";
-import { useLabels } from "../lib/labels.ts";
 import { validateUnsafe } from "../lib/validate.ts";
 
 export interface SSEClientOptions {
@@ -53,7 +53,7 @@ export function createSSEClient<M extends Methods>(
       );
 
       return resource(function* (provide) {
-        yield* useLabels({ name: `inspector.${methodName}()` });
+        yield* useAttributes({ name: `inspector.${methodName}()` });
         let signal = yield* useAbortSignal();
 
         let pathname = `/${methodName}`;

@@ -21,7 +21,7 @@
     "build:bundle": "vite build"
   },
   "peerDependencies": {
-    "effection": "^4.x.x"
+    "effection": "^4.1.0-alpha.2"
   },
   "dependencies": {
     "@ark/util": "^0.56.0",
@@ -48,7 +48,7 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^5.1.2",
     "d3": "^7.9.0",
-    "effection": "https://pkg.pr.new/thefrontside/effection@6a01504",
+    "effection": "4.1.0-alpha.2",
     "lightningcss": "^1.31.1",
     "modern-normalize": "^3.0.1",
     "react": "^19.1.0",

@@ -37,6 +37,5 @@ global.around(
         }
       });
     },
-  },
-  { capture: true },
+  }
 );

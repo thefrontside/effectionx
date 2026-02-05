@@ -32,7 +32,7 @@
       "allowAny": []
     },
     "overrides": {
-      "effection": "4.1.0-alpha.2"
+      "effection": "4.1.0-alpha.3"
     }
   },
   "volta": {

@@ -1,6 +1,5 @@
-import { type Operation, type Scope, suspend, withResolvers } from "effection";
+import { type Operation, type Scope, suspend, useAttributes, withResolvers } from "effection";
 import type { Methods, Inspector, Handle } from "./types.ts";
-import { useLabels } from "./labels.ts";
 
 export function* attach<M extends Methods>(
   scope: Scope,
@@ -10,7 +9,7 @@ export function* attach<M extends Methods>(
   let attached = withResolvers<void>();
 
   scope.run(function* () {
-    yield* useLabels({ name: "Inspector" });
+    yield* useAttributes({ name: "Inspector" });
     try {
       let handle = yield* inspector.attach(scope);
       yield* init(handle);

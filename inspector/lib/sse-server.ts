@@ -8,6 +8,7 @@ import {
   scoped,
   spawn,
   type Stream,
+  useAttributes,
   useScope,
   withResolvers,
 } from "effection";
@@ -20,7 +21,6 @@ import type { AddressInfo } from "node:net";
 import type EventEmitter from "node:events";
 import type { Readable } from "node:stream";
 import { validate } from "./validate.ts";
-import { useLabels } from "./labels.ts";
 
 export interface SSEServerOptions {
   port: number;
@@ -40,7 +40,7 @@ export function useSSEServer<M extends Methods>(
   );
 
   return resource(function* (provide) {
-    yield* useLabels({ name: "SSEServer", port: options.port });
+    yield* useAttributes({ name: "SSEServer", port: options.port });
     let scope = yield* useScope();
     const server = createServer(async (req, res) => {
       if (!req.url) {
@@ -56,7 +56,7 @@ export function useSSEServer<M extends Methods>(
       );
 
       await scope.run(function* () {
-        yield* useLabels({
+        yield* useAttributes({
           name: "RequestHandler",
           url: req.url ?? "UKNOWN",
           method: req.method ?? "UKNOWN",
@@ -153,7 +153,7 @@ export function useSSEServer<M extends Methods>(
 
         try {
           yield* scoped(function* () {
-            yield* useLabels({ name: "Transport" });
+            yield* useAttributes({ name: "Transport" });
             let args =
               req.method?.toUpperCase() === "POST"
                 ? JSON.parse(yield* read(req))
@@ -183,7 +183,7 @@ export function useSSEServer<M extends Methods>(
               withResolvers<void>();
 
             yield* spawn(function* () {
-              yield* useLabels({ name: "EventPump" });
+              yield* useAttributes({ name: "EventPump" });
               let next = yield* subscription.next();
 
               while (!next.done) {

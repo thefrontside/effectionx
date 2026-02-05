@@ -1,6 +1,6 @@
 import type { Hierarchy } from "./types";
 
-export const LABEL_ATTRIBUTE = "@effectionx/inspector.labels";
+export const LABEL_ATTRIBUTE = "@effection/attributes";
 
 export function getNodeLabel(node: Hierarchy): string {
   const inspectorLabels = (

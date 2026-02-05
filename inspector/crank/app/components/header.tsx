@@ -1,16 +1,25 @@
-import type { Children } from "@b9g/crank";
 import layoutStyles from "../layout.module.css";
 
 export function Header({ toggleTheme }: { toggleTheme: () => void }): Element {
   return (
-    <header class={layoutStyles.brand}>
+    <header class={layoutStyles.topBar}>
       <div class={layoutStyles.brand}>
         <div class={layoutStyles.logo}>
-          <sl-button href="/" aria-label="Home" type="button">
+          <sl-button
+            href="/"
+            aria-label="Home"
+            type="button"
+            class={layoutStyles.logoButton}
+          >
             <img
               src="/effection-logo.svg"
-              class={layoutStyles.logoImg}
+              class={`${layoutStyles.logoImg} ${layoutStyles.lightLogo}`}
               alt="Effection logo"
+            />
+            <img
+              src="/effection-logo-dark.svg"
+              class={`${layoutStyles.logoImg} ${layoutStyles.darkLogo}`}
+              alt="Effection logo dark"
             />
           </sl-button>
         </div>

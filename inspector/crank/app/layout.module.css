@@ -18,33 +18,90 @@
   }
 }
 
-/* Header styles moved from header.module.css */
+/* Header / Top bar styles */
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: 52px; /* slightly shorter nav */
+  display: flex;
+  align-items: center;
+  background: var(--topbar-bg, rgba(255, 255, 255, 0.02));
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 4px 6px;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 24px;
+  width: 100%;
 }
+
 .logo {
-  width: auto;
-  height: 36px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 6px;
-  background: #1f2937;
+  height: 42px; /* slightly smaller to fit the shorter nav */
+  padding: 0 6px;
+  margin-left: -6px; /* nudge more to the left edge */
   border-radius: 8px;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+  background: transparent;
 }
+
+.logoButton {
+  padding: 0;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+}
+
+/* Logo image uses variables so we can tweak size; make it 2x and remove backgrounds */
+:root {
+  /* doubled size for logo */
+  --logo-img-height: 36px; /* 1.5x */
+  --logo-img-padding: 0;
+  --logo-img-bg: transparent;
+  --logo-img-border: none;
+  --logo-img-shadow: none;
+}
+
 .logoImg {
-  height: 24px;
+  height: var(--logo-img-height);
   width: auto;
   display: block;
+  /* keep the SVG unobstructed: no background, no padding, no border */
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
 }
+
 .themeSwitcher {
   margin-left: auto;
   display: flex;
   align-items: center;
+  height: 100%;
+  align-self: center;
+}
+
+/* Ensure the theme toggle button itself is centered within the .themeSwitcher */
+.themeSwitcher sl-button {
+  align-self: center;
+}
+
+.themeSwitcher sl-button::part(base) {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .iconSun {
@@ -53,9 +110,83 @@
 .iconMoon {
   display: none;
 }
+
+/* Theme-aware tweaks */
+.themeLight {
+  --logo-bg: #1f2937;
+  --topbar-bg: #ffffff;
+}
+
+.themeDark {
+  --logo-bg: rgba(255, 255, 255, 0.06);
+  --topbar-bg: #0b1220;
+}
+
 .themeDark .iconSun {
   display: none;
 }
 .themeDark .iconMoon {
   display: inline-block;
+}
+.themeLight .iconSun {
+  display: inline-block;
+}
+.themeLight .iconMoon {
+  display: none;
+}
+
+/* Swap which logo is visible depending on the theme (document-level class).
+   Default (light mode) shows the dark-logo asset, and dark mode shows the
+   white-logo asset so the text is always readable. */
+.lightLogo {
+  display: none;
+}
+.darkLogo {
+  display: block;
+}
+
+/* When the document has the dark theme class, invert visible logos */
+:global(.sl-theme-dark) .lightLogo {
+  display: block;
+}
+:global(.sl-theme-dark) .darkLogo {
+  display: none;
+}
+
+/* Ensure the sl-button wrapper doesn't add its own light background or
+   border that could make the logo or toggle text unreadable. Remove borders
+   for both the logo button and the theme-toggle button. */
+.logoButton::part(base),
+.themeSwitcher sl-button::part(base) {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  border: none;
+  outline: none;
+}
+
+.logoButton::part(base):hover,
+.themeSwitcher sl-button::part(base):hover {
+  background: transparent;
+  border: none;
+}
+
+.logoButton::part(base):focus,
+.themeSwitcher sl-button::part(base):focus {
+  outline: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* removed theme-specific white backgrounds for the logo so it stays transparent */
+html:not(.sl-theme-dark) {
+  --logo-img-bg: transparent;
+  --logo-img-border: none;
+  --logo-img-shadow: none;
+}
+
+.sl-theme-dark {
+  --logo-img-bg: transparent;
+  --logo-img-border: none;
+  --logo-img-shadow: none;
 }

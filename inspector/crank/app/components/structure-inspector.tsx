@@ -24,7 +24,7 @@ export function* StructureInspector(
     selection = selection ?? structure.root;
 
     yield (
-      <sl-split-panel position="80">
+      <sl-split-panel position="70">
         <TreeView slot="start" root={structure.root} selection={selection} />
         <Details slot="end" node={selection} />
       </sl-split-panel>

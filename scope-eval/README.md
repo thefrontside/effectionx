@@ -1,14 +1,16 @@
 # @effectionx/scope-eval
 
-Evaluate Effection operations in an isolated scope and inspect their side effects.
+Evaluate Effection operations in a scope while retaining resources.
 
 ---
+
+While `Scope.run` and `Scope.spawn` can evaluate operations in isolated scopes, resources are torn down once operations return. `useEvalScope` allows you to invoke operations in an existing scope, receive the result of evaluations, while retaining resources for the lifecycle of that scope.
 
 ## Usage
 
 ### useEvalScope
 
-Create an isolated scope that can evaluate operations and expose their side effects (like context values):
+Create a scope that evaluates operations and retains their resources:
 
 ```typescript
 import { main, createContext } from "effection";
@@ -94,6 +96,6 @@ Extract the value from a `Result<T>`, throwing if it's an error.
 
 ## Use Cases
 
-- **Testing**: Evaluate operations in isolation and verify context/state changes
+- **Testing**: Evaluate operations and inspect context/state without teardown
+- **Resource retention**: Keep resources alive across multiple evaluations
 - **Error boundaries**: Safely execute operations that might fail
-- **Scope inspection**: Access context values set by child operations

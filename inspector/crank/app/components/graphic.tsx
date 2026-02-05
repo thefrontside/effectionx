@@ -1,11 +1,10 @@
 import * as d3 from "d3";
 import type { Context } from "@b9g/crank";
 import type { Hierarchy } from "../data/types.ts";
-import type { Stratification } from "../data/stratify.ts";
 
 export function* Graphic(
   this: Context,
-  { hierarchy }: { hierarchy?: Hierarchy | Stratification },
+  { hierarchy }: { hierarchy?: Hierarchy },
 ) {
   let svgEl: SVGSVGElement | null = null;
 
@@ -13,13 +12,13 @@ export function* Graphic(
     if (!hierarchy) return;
     const svg = svgEl;
     if (!svg) return;
-    const rect = svg.getBoundingClientRect();
+    // const rect = svg.getBoundingClientRect();
     // Avoid rendering while panel is hidden / zero-sized
-    if (rect.width === 0 || rect.height === 0) return;
+    // TODO the rect sizing doesn't come
+    // if (rect.width === 0 || rect.height === 0) return;
 
     try {
-      const root = "root" in hierarchy ? hierarchy.root : hierarchy;
-      renderChart(svg, root as Hierarchy);
+      renderChart(svg, hierarchy);
     } catch (err) {
       console.error("renderChart error (Graphic):", err);
     }
@@ -28,32 +27,28 @@ export function* Graphic(
   // listen to sl-resize events bubbled from <sl-resize-observer>
   this.addEventListener("sl-resize", () => this.refresh());
 
-  for ({} of this) {
-    // If the SVG is already mounted (due to copy/ref), render immediately
-    if (svgEl) scheduleRender();
+  this.after(() => scheduleRender());
 
+  for ({} of this) {
     yield (
-      <div id="treeWrapper">
-        <sl-resize-observer>
-          <svg
-            // Prevent Crank from re-rendering the SVG subtree so D3 can manage DOM updates
-            copy={true}
-            id="details-graph-svg"
-            width="100%"
-            height="300"
-            role="img"
-            aria-labelledby="details-graph-svg-title"
-            ref={(el: SVGSVGElement | null) => {
-              svgEl = el;
-              if (svgEl) scheduleRender();
-            }}
-          >
-            <title id="details-graph-svg-title">Process graph</title>
-            <g data-links />
-            <g data-nodes />
-          </svg>
-        </sl-resize-observer>
-      </div>
+      <sl-resize-observer>
+        <svg
+          // Prevent Crank from re-rendering the SVG subtree so D3 can manage DOM updates
+          copy={true}
+          id="details-graph-svg"
+          width="100%"
+          height="100%"
+          role="img"
+          aria-labelledby="details-graph-svg-title"
+          ref={(el: SVGSVGElement | null) => {
+            svgEl = el;
+          }}
+        >
+          <title id="details-graph-svg-title">Process graph</title>
+          <g data-links />
+          <g data-nodes />
+        </svg>
+      </sl-resize-observer>
     );
   }
 }

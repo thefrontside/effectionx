@@ -3,7 +3,7 @@ import { router } from "./router.ts";
 import { Layout } from "./layout.tsx";
 import { Home } from "./home.tsx";
 import { Live } from "./live.tsx";
-import { Demo } from "./pages/demo/demo.tsx";
+import { Demo } from "./demo.tsx";
 import { Recording } from "./recording.tsx";
 
 export async function* App(this: Context): AsyncGenerator<Element> {

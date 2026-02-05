@@ -1,5 +1,6 @@
 import type { Context } from "@b9g/crank";
 import { Layout } from "./layout.tsx";
+import { router } from "./router.ts";
 import layoutStyles from "./layout.module.css";
 import cardStyles from "./components/card.module.css";
 import homeStyles from "./home.module.css";
@@ -210,12 +211,10 @@ export async function* Home(this: Context): AsyncGenerator<Element> {
     const file = input.files?.[0];
     if (file) {
       // notify any listeners in the app and navigate
-      window.dispatchEvent(
+      this.dispatchEvent(
         new CustomEvent("inspector-recording-upload", { detail: { file } }),
       );
-      // include the file in history.state as a fallback (structured-cloneable)
-      history.pushState({ fileName: file.name, file }, "", "/recording");
-      this.refresh();
+      router.navigate({ route: "recording", params: { fileName: file.name } });
     }
   };
 

@@ -1,29 +1,37 @@
 import type { Hierarchy } from "../data/types.ts";
-import type { Stratification } from "../data/stratify.ts";
 import { getNodeLabel } from "../data/labels.ts";
 
 export function TreeView({
   hierarchy,
+  selection,
   slot,
 }: {
-  hierarchy: Hierarchy | Stratification;
+  hierarchy: Hierarchy;
+  selection: Hierarchy;
   slot?: string;
 }) {
-  const root = hierarchy && "root" in hierarchy ? hierarchy.root : hierarchy;
-
   return (
     <sl-tree slot={slot}>
-      <TreeNode hierarchy={root} />
+      <TreeNode hierarchy={hierarchy} selection={selection} />
     </sl-tree>
   );
 }
 
-export function TreeNode({ hierarchy }: { hierarchy: Hierarchy }): Element {
+export function TreeNode({
+  hierarchy,
+  selection,
+}: { hierarchy: Hierarchy; selection: Hierarchy }): Element {
+  let selected = hierarchy.id === selection.id;
   return (
-    <sl-tree-item key={hierarchy.id} selection="single" data-id={hierarchy.id}>
+    <sl-tree-item
+      key={hierarchy.id}
+      selection="single"
+      data-id={hierarchy.id}
+      selected={selected}
+    >
       {getNodeLabel(hierarchy)}
       {hierarchy.children.map((h) => (
-        <TreeNode hierarchy={h} />
+        <TreeNode hierarchy={h} selection={selection} />
       ))}
     </sl-tree-item>
   );

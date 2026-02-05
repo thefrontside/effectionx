@@ -11,23 +11,25 @@ Evaluate Effection operations in an isolated scope and inspect their side effect
 Create an isolated scope that can evaluate operations and expose their side effects (like context values):
 
 ```typescript
-import { createContext } from "effection";
+import { main, createContext } from "effection";
 import { useEvalScope } from "@effectionx/scope-eval";
 
-const context = createContext<string>("my-context");
+await main(function*() {
+  const context = createContext<string>("my-context");
 
-const evalScope = yield* useEvalScope();
+  const evalScope = yield* useEvalScope();
 
-// Context not set yet
-evalScope.scope.get(context); // => undefined
+  // Context not set yet
+  evalScope.scope.get(context); // => undefined
 
-// Evaluate an operation that sets context
-yield* evalScope.eval(function*() {
-  yield* context.set("Hello World!");
+  // Evaluate an operation that sets context
+  yield* evalScope.eval(function*() {
+    yield* context.set("Hello World!");
+  });
+
+  // Now the context is visible via the scope
+  evalScope.scope.get(context); // => "Hello World!"
 });
-
-// Now the context is visible via the scope
-evalScope.scope.get(context); // => "Hello World!"
 ```
 
 ### Error Handling
@@ -35,15 +37,22 @@ evalScope.scope.get(context); // => "Hello World!"
 Operations are executed safely and return a `Result<T>`:
 
 ```typescript
-const result = yield* evalScope.eval(function*() {
-  throw new Error("something went wrong");
-});
+import { main } from "effection";
+import { useEvalScope } from "@effectionx/scope-eval";
 
-if (result.ok) {
-  console.log("Success:", result.value);
-} else {
-  console.log("Error:", result.error.message);
-}
+await main(function*() {
+  const evalScope = yield* useEvalScope();
+
+  const result = yield* evalScope.eval(function*() {
+    throw new Error("something went wrong");
+  });
+
+  if (result.ok) {
+    console.log("Success:", result.value);
+  } else {
+    console.log("Error:", result.error.message);
+  }
+});
 ```
 
 ### box / unbox
@@ -51,15 +60,18 @@ if (result.ok) {
 Utilities for capturing operation results as values:
 
 ```typescript
+import { main } from "effection";
 import { box, unbox } from "@effectionx/scope-eval";
 
-// Capture success or error as a Result
-const result = yield* box(function*() {
-  return yield* someOperation();
-});
+await main(function*() {
+  // Capture success or error as a Result
+  const result = yield* box(function*() {
+    return 42;
+  });
 
-// Extract value (throws if error)
-const value = unbox(result);
+  // Extract value (throws if error)
+  const value = unbox(result); // => 42
+});
 ```
 
 ## API

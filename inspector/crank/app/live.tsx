@@ -26,7 +26,13 @@ const hiearchies = pipe(
 export async function* Live(this: Context): AsyncGenerator<Element> {
   let [scope, destroy] = createScope();
 
-  let root: Hierarchy = { children: [], id: "initial", data: {} };
+  let root: Hierarchy = {
+    children: [],
+    id: "initial",
+    data: {
+      "@effection/attributes": { name: "Root" },
+    },
+  };
 
   let stratum = {
     root,

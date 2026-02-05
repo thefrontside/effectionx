@@ -5,7 +5,6 @@ export type HierarchyMap = Record<string, Hierarchy>;
 
 export interface Stratification {
   root: Hierarchy;
-  nodes: NodeMap;
   hierarchies: HierarchyMap;
 }
 
@@ -59,6 +58,6 @@ export function stratify(): Transform<NodeMap, Stratification> {
     }
 
     let hierarchies = Object.fromEntries(stratii.entries());
-    return { root, nodes, hierarchies };
+    return { root, hierarchies };
   });
 }

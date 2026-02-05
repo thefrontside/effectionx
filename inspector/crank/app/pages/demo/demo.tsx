@@ -5,60 +5,39 @@ import { createScope, each, type Operation } from "effection";
 import { pipe } from "remeda";
 import { arrayLoader, useRecording } from "../../data/recording.ts";
 import type { Recording } from "../../data/recording.ts";
-import { stratify } from "../../data/stratify.ts";
-import type { Hierarchy, NodeMap } from "../../data/types.ts";
-import { TreeView } from "../../components/hierarchy-view.tsx";
-import { Details } from "../../components/hierarchy-details.tsx";
+import { stratify, type Stratification } from "../../data/stratify.ts";
+import type { NodeMap } from "../../data/types.ts";
 import { PlaybackControls } from "../../components/playback-controls.tsx";
 
 import json from "./pipeline.json" with { type: "json" };
+import { StructureInspector } from "../../components/structure-inspector.tsx";
 
 export async function* Demo(this: Context): AsyncGenerator<Element> {
   let [scope, destroy] = createScope();
 
-  let hierarchy: Hierarchy = { children: [], id: "initial", data: {} };
-  let stratum = {
-    root: hierarchy,
-    nodes: {},
-    hierarchies: { [hierarchy.id]: hierarchy },
-  };
-  let recording: Recording | null = null;
-  let offset = 0;
-  let tickIntervalMs = 250;
+  let props: { structure?: Stratification } = {};
 
-  let selectedTree: Hierarchy = stratum.root;
+  let $recording = Promise.withResolvers<Recording>();
 
-  let refresh = (fn?: () => void) => this.refresh(fn);
+  let refresh = this.refresh.bind(this);
 
   scope.run(function* (): Operation<void> {
-    recording = yield* useRecording(arrayLoader(json as unknown as NodeMap[]));
+    let recording = yield* useRecording(
+      arrayLoader(json as unknown as NodeMap[]),
+    );
+
+    $recording.resolve(recording);
 
     const hierarchies = pipe(recording.replayStream(), stratify());
 
-    for (stratum of yield* each(hierarchies)) {
-      hierarchy = stratum.root;
-      refresh();
+    for (let structure of yield* each(hierarchies)) {
+      refresh(() => (props.structure = structure));
       yield* each.next();
     }
   });
 
-  this.addEventListener("sl-selection-change", (e) => {
-    let [item] = e.detail.selection;
-    let id = item.dataset.id;
-    this.refresh(() => {
-      if (id) selectedTree = stratum.hierarchies[id]!;
-    });
-  });
-
-  // Respond to entity-row activations from Details component
-  window.addEventListener("inspector-navigate", (e: Event) => {
-    const id = (e as CustomEvent).detail?.id as string | undefined;
-    if (id) {
-      this.refresh(() => {
-        selectedTree = stratum.hierarchies[id]!;
-      });
-    }
-  });
+  let offset = 0;
+  let recording = await $recording.promise;
 
   try {
     for ({} of this) {
@@ -71,13 +50,8 @@ export async function* Demo(this: Context): AsyncGenerator<Element> {
               offset = n;
             }}
             refresh={refresh}
-            tickIntervalMs={tickIntervalMs}
           />
-
-          <sl-split-panel position="15">
-            <TreeView slot="start" hierarchy={stratum.root} />
-            <Details slot="end" node={selectedTree} hierarchy={stratum.root} />
-          </sl-split-panel>
+          <StructureInspector structure={props.structure} />
         </Layout>
       );
     }

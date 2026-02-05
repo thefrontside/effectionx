@@ -2,13 +2,7 @@
 
 Evaluate Effection operations in an isolated scope and inspect their side effects.
 
-## Installation
-
-```bash
-npm install @effectionx/scope-eval
-# or
-pnpm add @effectionx/scope-eval
-```
+---
 
 ## Usage
 

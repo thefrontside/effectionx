@@ -10,29 +10,33 @@ import packageJSON from "./package.json" with { type: "json" };
 
 const inspector = combine.inspectors(scope, player);
 
-global.around(api.Main, {
-  main([body], next) {
-    return next(function* (args) {
-      yield* useAttributes({ name: "Main", args: args.join(" ") });
+global.around(
+  api.Main,
+  {
+    main([body], next) {
+      return next(function* (args) {
+        yield* useAttributes({ name: "Main", args: args.join(" ") });
 
-      yield* attach(global, inspector, function* (handle) {
-        let address = yield* useSSEServer(handle, { port: 41000 });
+        yield* attach(global, inspector, function* (handle) {
+          let address = yield* useSSEServer(handle, { port: 41000 });
 
-        let { version } = packageJSON;
-        console.log(
-          `effection inspector@${version} running at http://localhost:${address.port}/live`,
-        );
+          let { version } = packageJSON;
+          console.log(
+            `effection inspector@${version} running at http://localhost:${address.port}/live`,
+          );
+        });
+
+        if (args.includes("--suspend")) {
+          yield* pause();
+        }
+
+        yield* body(args);
+
+        if (args.includes("--suspend")) {
+          yield* pause();
+        }
       });
-
-      if (args.includes("--suspend")) {
-        yield* pause();
-      }
-
-      yield* body(args);
-
-      if (args.includes("--suspend")) {
-        yield* pause();
-      }
-    });
+    },
   },
-}, { capture: true });
+  { capture: true },
+);

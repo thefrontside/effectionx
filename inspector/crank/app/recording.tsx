@@ -10,7 +10,7 @@ import {
 } from "effection";
 import { pipe } from "remeda";
 import { arrayLoader, useRecording, type Recording } from "./data/recording.ts";
-import { stratify } from "./data/stratify.ts";
+import { stratify, type Stratification } from "./data/stratify.ts";
 import type { Hierarchy } from "./data/types.ts";
 import { TreeView } from "./components/hierarchy-view.tsx";
 import { Details } from "./components/hierarchy-details.tsx";
@@ -25,19 +25,29 @@ export async function* Recording(this: Context): AsyncGenerator<Element> {
   // signal for incoming files
   const files = createSignal<File, never>();
 
-  let recording: null | Recording = null;
-  let hierarchy: Hierarchy = { children: [], id: "initial", data: {} };
-  let stratum = {
-    root: hierarchy,
-    nodes: {},
-    hierarchies: { [hierarchy.id]: hierarchy },
-  };
-  let selectedTree: Hierarchy = stratum.root;
+  let props: { structure?: Stratification } = {};
+
+  let $recording = Promise.withResolvers<Recording>();
+
+  let refresh = this.refresh.bind(this);
+
+  scope.run(function* (): Operation<void> {
+    let recording = yield* useRecording(
+      arrayLoader(json as unknown as NodeMap[]),
+    );
+
+    $recording.resolve(recording);
+
+    const hierarchies = pipe(recording.replayStream(), stratify());
+
+    for (let structure of yield* each(hierarchies)) {
+      refresh(() => (props.structure = structure));
+      yield* each.next();
+    }
+  });
 
   let offset = 0;
-  let tickIntervalMs = 250;
-
-  let refresh = (fn?: () => void) => this.refresh(fn);
+  let recording = await $recording.promise;
 
   // process incoming files
   scope.run(function* (): Operation<void> {
@@ -47,9 +57,6 @@ export async function* Recording(this: Context): AsyncGenerator<Element> {
         const json = JSON.parse(text);
 
         recording = yield* useRecording(arrayLoader(json));
-
-        // initialize offset
-        offset = 0;
 
         // stream hierarchies and refresh view on each tick
         const hierarchies = pipe(recording.replayStream(), stratify());

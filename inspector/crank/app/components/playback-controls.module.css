@@ -1,3 +1,12 @@
+.wrapper {
+  /* Reduced top padding to sit closer to the nav and added right padding to
+     provide a comfortable gap before the page edge. We use a negative top
+     margin to remove the extra space so the gap above the controls matches
+     the space below (divider spacing is 8px). */
+  padding: 4px 20px 12px 12px;
+  margin-top: -1px;
+}
+
 .controls {
   display: flex;
   gap: 12px;
@@ -7,4 +16,58 @@
   display: inline-flex;
   gap: 8px;
   align-items: center;
+}
+
+/* Make the range take the remaining available space */
+.controls sl-range {
+  flex: 1 1 auto;
+  min-width: 0; /* allow shrinking in tight spaces */
+  width: 100%;
+  /* custom track colors (can be overridden by theme) */
+  --track-color-active: var(--accent-color, #0ea5ff);
+  --track-color-inactive: rgba(255, 255, 255, 0.06);
+  --track-height: 6px;
+}
+
+/* Ensure buttons and labels don't shrink and keep their intrinsic size */
+.controls sl-button,
+.controls #offset-label {
+  flex: 0 0 auto;
+}
+
+/* Display the current and max value to the right of the track */
+.valueDisplay {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  color: var(--sl-color-neutral-500, rgba(255, 255, 255, 0.7));
+  font-size: 13px;
+  align-self: center;
+}
+
+/* Dark theme tweaks */
+:global(.sl-theme-dark) .controls sl-range {
+  --track-color-inactive: rgba(255, 255, 255, 0.06);
+}
+:global(:not(.sl-theme-dark)) .controls sl-range {
+  --track-color-inactive: rgba(0, 0, 0, 0.08);
+  --track-color-active: var(--sl-color-primary-500, #0ea5ff);
+}
+.divider {
+  /* Use Shoelace custom properties so the divider can control spacing/color/width */
+  --color: rgba(255, 255, 255, 0.04);
+  --width: 1px;
+  --spacing: 0px; /* reduce spacing so the split panel reaches the divider */
+
+  /* Fallback styling for older browsers or if the custom properties aren't picked up */
+  margin-top: 8px;
+  border-color: var(--color);
+  border-top-width: var(--width);
+}
+
+/* Dark and light theme adjustments */
+:global(.sl-theme-dark) .divider {
+  --color: rgba(255, 255, 255, 0.06);
+}
+:global(:not(.sl-theme-dark)) .divider {
+  --color: rgba(0, 0, 0, 0.06);
 }

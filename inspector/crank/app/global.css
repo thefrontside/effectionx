@@ -12,8 +12,8 @@ body {
 
 main {
   flex-grow: 1;
-  /* Ensure sticky top bar doesn't overlap content (matches .topBar height) */
-  padding-top: 52px;
+  /* Ensure sticky top bar doesn't overlap content */
+  padding-top: 16px;
 }
 
 sl-split-panel {

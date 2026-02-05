@@ -11,9 +11,12 @@ This document defines the recommended policy for implementing stateless stream o
 | Scenario | Required Approach |
 |----------|-------------------|
 | Functions returning `Operation<T>` that operate on streams | Return object with `*[Symbol.iterator]()` method |
+| Resource/hook functions (prefixed with `use`) | Regular `function*` generator is acceptable |
 | Simple utility functions | Regular `function*` generator is acceptable |
 
 **Key distinction:** Calling `drain(stream)` should return an object, not start execution. Execution only begins when you `yield*` the result.
+
+**Exception:** Resource functions like `useScope()`, `useAbortSignal()`, `useEvalScope()` are designed to set up state within a scope and are not meant to be stored and reused. These follow Effection's `use*` convention and may use `function*` directly.
 
 ## Examples
 

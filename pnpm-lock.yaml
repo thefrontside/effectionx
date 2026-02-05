@@ -199,6 +199,16 @@ importers:
         specifier: ^1
         version: 1.2.0
 
+  scope-eval:
+    dependencies:
+      effection:
+        specifier: ^3 || ^4
+        version: 4.0.0
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+
   signals:
     dependencies:
       effection:

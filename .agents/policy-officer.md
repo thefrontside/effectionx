@@ -53,12 +53,15 @@ Keep feedback **concise and actionable**. Lead with violations that need attenti
 No violations found.
 ```
 
+That's it. Do not list compliant items. Do not summarize what was checked. Just "No violations found."
+
 **Guidelines:**
 - Only list violations, not compliant items
 - One bullet per violation with file path, policy link, and fix
 - Keep explanations brief - the policy document has details
 - No summary tables or counts - just the actionable items
-- No "Advisory Notes" section unless there's something genuinely useful to add
+- No "Summary" sections listing what passed
+- No explanations of why things are compliant
 
 ## Constraints
 

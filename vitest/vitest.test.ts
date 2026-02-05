@@ -4,9 +4,12 @@ import { expect } from "expect";
 
 describe("@effectionx/vitest", () => {
   it("runs vitest tests with effection operations", function* () {
-    let result = yield* exec("pnpm vitest run --reporter=verbose", {
-      cwd: import.meta.dirname,
-    }).join();
+    let result = yield* exec(
+      "pnpm vitest run test/fixtures/sample.vitest.ts --reporter=verbose",
+      {
+        cwd: import.meta.dirname,
+      },
+    ).join();
 
     // Verify exit code
     expect(result.code).toEqual(0);
@@ -23,5 +26,24 @@ describe("@effectionx/vitest", () => {
 
     // Verify pass count
     expect(result.stdout).toMatch(/6 passed/);
+  });
+
+  it("reports failing tests correctly", function* () {
+    let result = yield* exec(
+      "pnpm vitest run test/fixtures/failing.vitest.ts --reporter=verbose",
+      {
+        cwd: import.meta.dirname,
+      },
+    ).join();
+
+    // Verify exit code is non-zero (tests failed)
+    expect(result.code).not.toEqual(0);
+
+    // Verify failing test names appear in output
+    expect(result.stdout).toContain("should fail on assertion error");
+    expect(result.stdout).toContain("should fail on thrown error");
+
+    // Verify fail count
+    expect(result.stdout).toMatch(/2 failed/);
   });
 });

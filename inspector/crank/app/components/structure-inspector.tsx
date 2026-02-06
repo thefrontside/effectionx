@@ -3,6 +3,7 @@ import { getNodeLabel } from "../data/labels.ts";
 import { Details } from "./hierarchy-details.tsx";
 import type { Stratification } from "../data/stratify.ts";
 import type { Context } from "@b9g/crank";
+import { Graphic } from "./graphic.tsx";
 
 export interface StructureInspectorProps {
   structure?: Stratification;
@@ -42,16 +43,32 @@ export function TreeView({
   slot?: string;
 }) {
   return (
-    <sl-tree slot={slot}>
-      <TreeNode hierarchy={root} selection={selection} />
-    </sl-tree>
+    <sl-tab-group slot={slot}>
+      <sl-tab slot="nav" panel="tree">
+        Tree
+      </sl-tab>
+      <sl-tab slot="nav" panel="graphic">
+        Graphic
+      </sl-tab>
+      <sl-tab-panel name="tree">
+        <sl-tree>
+          <TreeNode hierarchy={root} selection={selection} />
+        </sl-tree>
+      </sl-tab-panel>
+      <sl-tab-panel name="graphic">
+        <Graphic hierarchy={root} selection={selection} />
+      </sl-tab-panel>
+    </sl-tab-group>
   );
 }
 
 export function TreeNode({
   hierarchy,
   selection,
-}: { hierarchy: Hierarchy; selection: Hierarchy }): Element {
+}: {
+  hierarchy: Hierarchy;
+  selection: Hierarchy;
+}): Element {
   let selected = hierarchy.id === selection.id;
   return (
     <sl-tree-item

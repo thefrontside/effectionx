@@ -9,7 +9,7 @@ import { protocol as player } from "../../player/protocol.ts";
 import { combine } from "../../lib/combine.ts";
 import { createScope, each, type Operation } from "effection";
 import { StructureInspector } from "./components/structure-inspector.tsx";
-import { createConnection } from "./data/connection.ts";
+import { createConnection, type ConnectionState } from "./data/connection.ts";
 
 const protocol = combine.protocols(scope, player);
 
@@ -32,6 +32,7 @@ export async function* Live(this: Context): AsyncGenerator<Element> {
 
   scope.run(function* (): Operation<void> {
     for (let state of yield* each(connection)) {
+      console.log(state.type);
       refresh(() => (props.state = state));
       yield* each.next();
     }
@@ -40,22 +41,66 @@ export async function* Live(this: Context): AsyncGenerator<Element> {
   try {
     for ({} of this) {
       let { state } = props;
+      let status = <Status state={state} />;
       switch (state.type) {
         case "pending":
-          yield <h1>Pending</h1>;
+          yield status;
           break;
         case "failed":
-          yield <h1>Failed: ${state.error}</h1>;
+          yield (
+            <h1>
+              ${status} Failed: ${state.error}
+            </h1>
+          );
           break;
         case "closed":
-          yield <StructureInspector structure={state.latest} />;
-          break;
         case "live":
-          yield <StructureInspector structure={state.latest} />;
+          yield (
+            <>
+              <Status state={state} />
+              <StructureInspector structure={state.latest} />
+            </>
+          );
           break;
       }
     }
   } finally {
     await destroy();
+  }
+}
+
+function Status({ state }: { state: ConnectionState<unknown, unknown> }) {
+  if (state.type === "live") {
+    return (
+      <sl-badge variant="success" pill pulse>
+        &nbsp;&nbsp;
+      </sl-badge>
+    );
+  } else if (state.type === "closed") {
+    if (state.result.ok) {
+      return (
+        <sl-badge variant="primary" pill pulse={false}>
+          &nbsp;&nbsp;
+        </sl-badge>
+      );
+    } else {
+      return (
+        <sl-badge variant="danger" pill pulse={false}>
+          &nbsp;&nbsp;
+        </sl-badge>
+      );
+    }
+  } else if (state.type === "failed") {
+    return (
+      <sl-badge variant="warning" pill pulse={false}>
+        &nbsp;&nbsp;
+      </sl-badge>
+    );
+  } else {
+    return (
+      <sl-badge variant="neutral" pill pulse={false}>
+        &nbsp;&nbsp;
+      </sl-badge>
+    );
   }
 }

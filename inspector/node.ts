@@ -15,23 +15,27 @@ global.around(api.Main, {
     return next(function* (args) {
       yield* useAttributes({ name: "Main", args: args.join(" ") });
 
-      yield* attach(global, inspector, function* (handle) {
+      let detach = yield* attach(global, inspector, function* (handle) {
         let address = yield* useSSEServer(handle, { port: 41000 });
 
         let { version } = packageJSON;
         console.log(
-          `effection inspector@${version} running at http://localhost:${address.port}/live`,
+          `effection inspector@${version} running at ${address}/live`,
         );
       });
 
-      if (args.includes("--suspend")) {
-        yield* pause();
-      }
+      try {
+        if (args.includes("--suspend")) {
+          yield* pause();
+        }
 
-      yield* body(args);
+        yield* body(args);
 
-      if (args.includes("--suspend")) {
-        yield* pause();
+        if (args.includes("--suspend")) {
+          yield* pause();
+        }
+      } finally {
+        yield* detach();
       }
     });
   },

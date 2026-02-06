@@ -1,7 +1,5 @@
 import {
-  createChannel,
   resource,
-  spawn,
   stream,
   until,
   useAbortSignal,
@@ -15,9 +13,8 @@ import {
   type Methods,
   type Protocol,
 } from "../mod.ts";
-import type { StandardSchemaV1 } from "@standard-schema/spec";
-import { type SSEMessage, SseStreamTransform } from "sse-stream-transform";
 import { validateUnsafe } from "../lib/validate.ts";
+import { parseServerSentEvents } from "parse-sse";
 
 export interface SSEClientOptions {
   url?: string;
@@ -70,52 +67,48 @@ export function createSSEClient<M extends Methods>(
             body: JSON.stringify(toJson(args)),
           }),
         );
-        if (!response.body) {
-          throw new TypeError(`${methodName}(): response contained no body`);
+
+        if (!response.ok) {
+          throw new Error(`${response.status} ${response.statusText}`);
         }
 
-        type TProgress = StandardSchemaV1.InferInput<M[N]["progress"]>;
-        type TReturn = StandardSchemaV1.InferInput<M[N]["returns"]>;
+        let events = stream(parseServerSentEvents(response));
 
-        let channel = createChannel<TProgress, TReturn>();
+        let subscription = yield* events;
 
-        // TODO: why is the vite app not recognizing ReadableStream as AsyncIterable??
-        let events = stream(
-          response.body.pipeThrough(
-            new SseStreamTransform(),
-          ) as unknown as AsyncIterable<SSEMessage>,
-        );
-
-        yield* spawn(function* () {
-          let subscription = yield* events;
-          let next = yield* subscription.next();
-          while (!next.done) {
-            // validate the progress event from the server
-            let { event, data } = next.value;
-            let parsed = JSON.parse(data);
-            if (event === "progress") {
-              validateUnsafe(
-                protocol.methods[name].progress,
-                parsed,
-                `progress ${methodName}()`,
-              );
-              yield* channel.send(parsed);
-              next = yield* subscription.next();
-            } else if (event === "return") {
-              next = { done: true, value: parsed };
+        yield* provide({
+          *next() {
+            let next = yield* subscription.next();
+            if (next.done) {
+              throw new Error(`connection closed`);
             }
-          }
 
-          // validate the return value
-          validateUnsafe(
-            protocol.methods[name].returns,
-            next.value,
-            `return value ${methodName}`,
-          );
-          yield* channel.close(next.value);
+            let { type, data } = next.value;
+            let parsed = JSON.parse(data);
+            if (type === "yield") {
+              return {
+                done: false,
+                value: validateUnsafe(
+                  protocol.methods[name].progress,
+                  parsed,
+                  `progress ${methodName}()`,
+                ),
+              };
+            } else if (type === "return") {
+              return {
+                done: true,
+                value: validateUnsafe(
+                  protocol.methods[methodName].returns,
+                  parsed,
+                ),
+              };
+            } else if (type === "throw") {
+              throw parsed;
+            } else {
+              throw new TypeError(`unrecognized event type: '${type}'`);
+            }
+          },
         });
-
-        yield* provide(yield* channel);
       });
     },
     methods: Object.fromEntries(

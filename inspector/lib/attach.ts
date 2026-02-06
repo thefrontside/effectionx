@@ -11,10 +11,10 @@ export function* attach<M extends Methods>(
   scope: Scope,
   inspector: Inspector<M>,
   init: (handle: Handle<M>) => Operation<void>,
-): Operation<void> {
+): Operation<() => Operation<void>> {
   let attached = withResolvers<void>();
 
-  scope.run(function* () {
+  let task = scope.run(function* () {
     yield* useAttributes({ name: "Inspector" });
     try {
       let handle = yield* inspector.attach(scope);
@@ -26,5 +26,7 @@ export function* attach<M extends Methods>(
     }
   });
 
-  return yield* attached.operation;
+  yield* attached.operation;
+
+  return task.halt;
 }

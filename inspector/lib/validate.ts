@@ -24,7 +24,7 @@ export function validate<T>(
   if (validation.issues) {
     let issues = validation.issues.join("\n");
     let message = description ? `${description} ${issues}` : issues;
-    return Err(new TypeError(message));
+    return Err(new TypeError(message, { cause: value }));
   }
   return Ok(validation.value);
 }

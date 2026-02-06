@@ -17,6 +17,7 @@ thread.
 - Gracefully shutdowns the worker from the main thread
 - Propagates errors from the worker to the main thread
 - Type-safe message handling with TypeScript
+- Supports worker-initiated requests handled by the host
 
 ## Usage: Get worker's return value
 
@@ -83,6 +84,135 @@ try {
   console.error(e); // error will be available here
 }
 ```
+
+## Usage: Worker-initiated requests
+
+Workers can initiate requests to the host using the `send` function provided to
+`workerMain`. The host handles these requests with `worker.forEach`, returning a
+response for each request.
+
+### Worker Thread
+
+```ts
+import { workerMain } from "@effectionx/worker";
+
+await workerMain<never, never, string, void, string, string>(
+  function* ({ send }) {
+    const response = yield* send("hello");
+    return `received: ${response}`;
+  },
+);
+```
+
+### Main Thread
+
+```ts
+import { run } from "effection";
+import { useWorker } from "@effectionx/worker";
+
+await run(function* () {
+  const worker = yield* useWorker<never, never, string, void>(
+    "./worker.ts",
+    { type: "module" },
+  );
+
+  const result = yield* worker.forEach<string, string>(function* (request) {
+    return `echo: ${request}`;
+  });
+
+  console.log(result); // Output: received: echo: hello
+});
+```
+
+### Notes
+
+- Only one `forEach` can be active at a time; concurrent calls throw.
+- Requests are queued until `forEach` is called.
+- Errors are serialized and rethrown on the caller side.
+
+## Usage: Progress streaming
+
+The host can send progress updates back to the worker during request processing.
+This enables real-time feedback for long-running operations.
+
+### Worker Thread
+
+Use `send.stream<TProgress>()` to receive a subscription that yields progress
+values before the final response:
+
+```ts
+import { workerMain } from "@effectionx/worker";
+
+interface Progress {
+  percent: number;
+  message: string;
+}
+
+await workerMain<never, never, string, void, string, string>(
+  function* ({ send }) {
+    // Request with progress streaming
+    const subscription = yield* send.stream<Progress>("process-data");
+
+    let next = yield* subscription.next();
+    while (!next.done) {
+      const progress = next.value;
+      console.log(`${progress.percent}%: ${progress.message}`);
+      next = yield* subscription.next();
+    }
+
+    // Final response
+    return `completed: ${next.value}`;
+  },
+);
+```
+
+### Main Thread
+
+The `forEach` handler receives a context object with a `progress()` method:
+
+```ts
+import { run } from "effection";
+import { useWorker } from "@effectionx/worker";
+
+interface Progress {
+  percent: number;
+  message: string;
+}
+
+await run(function* () {
+  const worker = yield* useWorker<never, never, string, void>(
+    "./worker.ts",
+    { type: "module" },
+  );
+
+  const result = yield* worker.forEach<string, string, Progress>(
+    function* (request, ctx) {
+      yield* ctx.progress({ percent: 25, message: "Loading..." });
+      yield* ctx.progress({ percent: 50, message: "Processing..." });
+      yield* ctx.progress({ percent: 75, message: "Finalizing..." });
+      return "done";
+    },
+  );
+
+  console.log(result); // Output: completed: done
+});
+```
+
+### Backpressure
+
+The `progress()` method implements true backpressure:
+
+- **`ctx.progress()` blocks** until the worker calls `subscription.next()`
+- The host cannot send progress faster than the worker can receive it
+- If the worker does async work between `next()` calls, the host remains blocked
+
+This ensures the worker is never overwhelmed with progress updates.
+
+### Notes
+
+- `send(request)` still works for simple request/response (ignores any progress)
+- Progress type is the third type parameter on `forEach<TRequest, TResponse, TProgress>`
+- The subscription's final `next()` returns `{ done: true, value: TResponse }`
 
 ## Usage: Sending messages to the worker
 

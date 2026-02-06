@@ -8,7 +8,6 @@ export function* Demo(this: Context): Generator<Element> {
   const nodeMap = json as unknown as NodeMap[];
 
   for ({} of this) {
-    console.log("Demo rendering with nodeMap:", nodeMap);
     yield (
       <Layout>
         <RenderRecording nodeMap={nodeMap} />

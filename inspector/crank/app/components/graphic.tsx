@@ -2,54 +2,86 @@ import * as d3 from "d3";
 import type { Context } from "@b9g/crank";
 import type { Hierarchy } from "../data/types.ts";
 
-export function* Graphic(
+// using an async function generator so we can call `scheduleRender` after yielding
+// the SVG element to ensure it's in the DOM and has dimensions before
+// we attempt to render the chart. Other methods lead to infinite render loops.
+export async function* Graphic(
   this: Context,
-  { hierarchy }: { hierarchy?: Hierarchy },
+  { hierarchy, selection }: { hierarchy: Hierarchy; selection: Hierarchy },
 ) {
   let svgEl: SVGSVGElement | null = null;
 
   function scheduleRender() {
+    console.log("Scheduling render for Graphic component", hierarchy);
     if (!hierarchy) return;
     const svg = svgEl;
     if (!svg) return;
-    // const rect = svg.getBoundingClientRect();
-    // Avoid rendering while panel is hidden / zero-sized
-    // TODO the rect sizing doesn't come
-    // if (rect.width === 0 || rect.height === 0) return;
+    const root = svg.closest && (svg.closest("html") as Element | null);
+    if (!root) return;
+    const graphicWrapper =
+      svg.closest && (svg.closest("#graphic-wrapper") as Element | null);
+    if (!graphicWrapper) return;
+
+    const svgRect = svg.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
+    const wrapperRect = graphicWrapper.getBoundingClientRect();
+    console.log({
+      svgRect,
+      rootRect,
+      wrapperRect,
+    });
+    const box = {
+      width: wrapperRect.width,
+      // height is tootal
+      height: rootRect.height - svgRect.top,
+    };
+
+    // console.log("Container box for Graphic render:", box);
+    if (!box.width || !box.height) {
+      console.warn("Graphic render skipped due to zero width or height:", box);
+      return;
+    }
 
     try {
-      renderChart(svg, hierarchy);
+      // there is padding in the tab-panel so if we set it too large, it shifts outside
+      // and triggers a resize loop. We can leave a small gap to avoid this.
+      renderChart(svg, box, hierarchy);
     } catch (err) {
       console.error("renderChart error (Graphic):", err);
     }
   }
 
   // listen to sl-resize events bubbled from <sl-resize-observer>
-  this.addEventListener("sl-resize", () => this.refresh());
+  this.addEventListener("sl-resize", (event) => {
+    console.log("Resize event:", event);
+    this.refresh();
+  });
 
-  this.after(() => scheduleRender());
-
-  for ({} of this) {
+  for await ({ hierarchy } of this) {
     yield (
-      <sl-resize-observer>
-        <svg
-          // Prevent Crank from re-rendering the SVG subtree so D3 can manage DOM updates
-          copy={true}
-          id="details-graph-svg"
-          width="100%"
-          height="100%"
-          role="img"
-          aria-labelledby="details-graph-svg-title"
-          ref={(el: SVGSVGElement | null) => {
-            svgEl = el;
-          }}
-        >
-          <title id="details-graph-svg-title">Process graph</title>
-          <g data-links />
-          <g data-nodes />
-        </svg>
-      </sl-resize-observer>
+      <div
+        // Prevent Crank from re-rendering the SVG subtree so D3 can manage DOM updates
+        copy={true}
+        id="graphic-wrapper"
+      >
+        <sl-resize-observer>
+          <svg
+            id="details-graph-svg"
+            role="img"
+            aria-labelledby="details-graph-svg-title"
+            ref={(el: SVGSVGElement | null) => {
+              svgEl = el;
+            }}
+          >
+            <title id="details-graph-svg-title">Process graph</title>
+            <g data-links />
+            <g data-nodes />
+          </svg>
+        </sl-resize-observer>
+      </div>
     );
+    // schedule a render after yielding the SVG element to ensure it's in the DOM and has dimensions
+    scheduleRender();
   }
 }
 
@@ -70,18 +102,19 @@ function themeBasedFill(dark: string, light: string) {
   return light;
 }
 
-export function renderChart(ref: SVGSVGElement | null, data: Hierarchy) {
-  if (!ref) return;
-  const box = ref.getBoundingClientRect();
-  const width = box.width;
-
+export function renderChart(
+  ref: SVGSVGElement,
+  container: { width: number; height: number },
+  data: Hierarchy,
+) {
   const root = d3.hierarchy(data);
-  // Compute the tree height; this approach will allow the height of the
-  // SVG to scale according to the breadth (width) of the tree layout.
-  const dx = 20;
-  const dy = width / (root.height + 1);
+  // Scale the vertical spacing based on the panel height so the tree fills
+  // the available vertical space rather than always using a tiny fixed value.
+  const descendantCount = root.descendants().length;
+  const dx = Math.max(20, (container.height || 0) / (descendantCount + 1));
+  const dy = container.width / (root.height + 1);
 
-  // Create a tree layout.
+  // Create a tree layout with computed spacing.
   const tree = d3.tree().nodeSize([dx, dy]);
 
   // Sort the tree and apply the layout.
@@ -114,10 +147,16 @@ export function renderChart(ref: SVGSVGElement | null, data: Hierarchy) {
   }
 
   svg
-    .attr("width", width)
-    .attr("height", height)
-    .attr("viewBox", [-dy / 3, x0 - dx, width, height])
-    .attr("style", "max-width: 100%; height: auto; font: 10px sans-serif;");
+    .attr("width", container.width)
+    // Use the panel's available height if possible so the SVG fills the tab
+    // panel; keep the viewBox at the chart's computed height so the content
+    // scales to fit the panel by default.
+    .attr("height", container.height)
+    .attr("viewBox", [-dy / 3, x0 - dx, container.width, height])
+    // Align the SVG content to the top-left so the graph is visible without
+    // being vertically centered and pushed out of view by aspect-ratio
+    // letterboxing.
+    .attr("preserveAspectRatio", "xMinYMin meet");
 
   svg
     .select("g[data-links]")
@@ -162,7 +201,7 @@ export function renderChart(ref: SVGSVGElement | null, data: Hierarchy) {
 
   node
     .selectAll("circle")
-    .data((d: any) => d as any)
+    .data((d) => [d])
     .join(
       (enter) => enter.append("circle"),
       (update) => update,
@@ -179,11 +218,11 @@ export function renderChart(ref: SVGSVGElement | null, data: Hierarchy) {
     .duration(500)
     .ease(d3.easeLinear)
     .attr("fill", (d: any) => (d.children ? "#555" : "#999"))
-    .attr("r", 2.5);
+    .attr("r", Math.max(2.5, Math.min(8, dx * 0.5)));
 
   node
     .selectAll("text")
-    .data((d: any) => d as any)
+    .data((d) => [d])
     .join(
       (enter) => enter.append("text"),
       (update) => update,
@@ -197,6 +236,7 @@ export function renderChart(ref: SVGSVGElement | null, data: Hierarchy) {
     .attr("x", (d: any) => (d.children ? -6 : 6))
     .attr("text-anchor", (d: any) => (d.children ? "end" : "start"))
     .text((d: any) => textValue(d))
+    .style("font-size", `${Math.max(10, Math.min(dx * 0.6, 25))}px`)
     .attr("opacity", 1)
     .attr("fill", themeBasedFill("white", "black"))
     .attr("paint-order", "fill");

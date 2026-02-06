@@ -39,15 +39,7 @@ function flattenNodeData(
   });
 }
 
-export function Details({
-  slot,
-  node,
-}: {
-  slot?: string;
-  node: Hierarchy;
-}) {
-  // Normalize inputs: accept either a Hierarchy or a Stratification
-
+export function Details({ slot, node }: { slot?: string; node: Hierarchy }) {
   function copyAllProperties() {
     if (!node) return;
     const txt = JSON.stringify(node.data ?? {}, null, 2);

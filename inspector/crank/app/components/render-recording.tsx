@@ -4,6 +4,7 @@ import { createScope, each, type Operation } from "effection";
 import { pipe } from "remeda";
 import { arrayLoader, useRecording } from "../data/recording.ts";
 import type { Recording } from "../data/recording.ts";
+import { raf, sample } from "../data/sample.ts";
 import { stratify } from "../data/stratify.ts";
 import type { NodeMap } from "../data/types.ts";
 import { PlaybackControls } from "../components/playback-controls.tsx";
@@ -25,10 +26,14 @@ export async function* RenderRecording(
 
     $recording.resolve(recording);
 
-    const hierarchies = pipe(recording.replayStream(), stratify());
+    const hierarchies = pipe(
+      recording.replayStream(),
+      sample(raf()),
+      stratify(),
+    );
 
     for (let structure of yield* each(hierarchies)) {
-      ctx.refresh(() => (ctx.props.structure = structure));
+      ctx.refresh(() => (props.structure = structure));
       yield* each.next();
     }
   });

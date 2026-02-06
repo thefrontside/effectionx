@@ -16,7 +16,11 @@ export async function* App(this: Context): AsyncGenerator<Element> {
         yield <Home />;
         break;
       case "live":
-        yield <Live />;
+        yield (
+          <Layout>
+            <Live />
+          </Layout>
+        );
         break;
       case "demo":
         yield <Demo />;

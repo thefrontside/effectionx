@@ -10,6 +10,7 @@ import { protocol as player } from "../../player/protocol.ts";
 import { combine } from "../../lib/combine.ts";
 import { createScope, each, type Operation } from "effection";
 import { StructureInspector } from "./components/structure-inspector.tsx";
+import { raf, sample } from "./data/sample.ts";
 
 const protocol = combine.protocols(scope, player);
 
@@ -18,6 +19,7 @@ const client = createSSEClient(protocol);
 const hierarchies = pipe(
   client.methods.watchScopes(),
   updateNodeMap({}),
+  sample(raf()),
   stratify(),
 );
 

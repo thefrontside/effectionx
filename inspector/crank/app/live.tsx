@@ -10,6 +10,7 @@ import { combine } from "../../lib/combine.ts";
 import { createScope, each, type Operation } from "effection";
 import { StructureInspector } from "./components/structure-inspector.tsx";
 import { createConnection, type ConnectionState } from "./data/connection.ts";
+import { Toolbar } from "./toolbar.tsx";
 
 const protocol = combine.protocols(scope, player);
 
@@ -48,16 +49,21 @@ export async function* Live(this: Context): AsyncGenerator<Element> {
           break;
         case "failed":
           yield (
-            <h1>
-              ${status} Failed: ${state.error}
-            </h1>
+            <>
+              <Toolbar>
+                <Status state={state} />
+              </Toolbar>
+              {state.error}
+            </>
           );
           break;
         case "closed":
         case "live":
           yield (
             <>
-              <Status state={state} />
+              <Toolbar>
+                <Status state={state} />
+              </Toolbar>
               <StructureInspector structure={state.latest} />
             </>
           );
@@ -72,35 +78,66 @@ export async function* Live(this: Context): AsyncGenerator<Element> {
 function Status({ state }: { state: ConnectionState<unknown, unknown> }) {
   if (state.type === "live") {
     return (
-      <sl-badge variant="success" pill pulse>
-        &nbsp;&nbsp;
-      </sl-badge>
+      <>
+        <sl-badge variant="neutral">connection</sl-badge>
+        <sl-badge variant="success" pulse>
+          live
+        </sl-badge>
+      </>
     );
   } else if (state.type === "closed") {
     if (state.result.ok) {
       return (
-        <sl-badge variant="primary" pill pulse={false}>
-          &nbsp;&nbsp;
-        </sl-badge>
+        <>
+          <sl-badge variant="neutral">connection</sl-badge>
+          <sl-badge variant="primary" pulse={false}>
+            done
+          </sl-badge>
+        </>
       );
     } else {
+      let error = state.result.error;
+      if (error.message === "connection closed") {
+        return (
+          <>
+            <sl-badge variant="neutral">connection</sl-badge>
+            <sl-badge variant="primary" pulse={false}>
+              done
+            </sl-badge>
+          </>
+        );
+      }
       return (
-        <sl-badge variant="danger" pill pulse={false}>
-          &nbsp;&nbsp;
-        </sl-badge>
+        <>
+          <sl-badge variant="neutral">connection</sl-badge>
+          <sl-tooltip
+            content={`${error.name}: ${error.message}`}
+            placement="bottom-start"
+          >
+            <sl-badge variant="danger" pulse={false}>
+              error
+            </sl-badge>
+          </sl-tooltip>
+        </>
       );
     }
   } else if (state.type === "failed") {
     return (
-      <sl-badge variant="warning" pill pulse={false}>
-        &nbsp;&nbsp;
-      </sl-badge>
+      <>
+        <sl-badge variant="neutral">connection</sl-badge>
+        <sl-badge variant="warning" pulse={false}>
+          failed
+        </sl-badge>
+      </>
     );
   } else {
     return (
-      <sl-badge variant="neutral" pill pulse={false}>
-        &nbsp;&nbsp;
-      </sl-badge>
+      <>
+        <sl-badge variant="neutral">connection</sl-badge>
+        <sl-badge variant="neutral" pulse>
+          connecting
+        </sl-badge>
+      </>
     );
   }
 }

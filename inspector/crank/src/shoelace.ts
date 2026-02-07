@@ -8,6 +8,7 @@ import "@shoelace-style/shoelace/dist/components/tree-item/tree-item.js";
 import "@shoelace-style/shoelace/dist/components/split-panel/split-panel.js";
 import "@shoelace-style/shoelace/dist/components/card/card.js";
 import "@shoelace-style/shoelace/dist/components/badge/badge.js";
+import "@shoelace-style/shoelace/dist/components/tooltip/tooltip.js";
 
 // Tell Shoelace where to find its assets
 setBasePath("shoelace/");

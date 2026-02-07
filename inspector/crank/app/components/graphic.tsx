@@ -10,9 +10,24 @@ export async function* Graphic(
   { hierarchy, selection }: { hierarchy: Hierarchy; selection: Hierarchy },
 ) {
   let svgEl: SVGSVGElement | null = null;
+  // orientation state (vertical by default as requested)
+  let orientation: "vertical" | "horizontal" = "vertical";
+  // track the currently selected id so scheduleRender can pass it into renderChart
+  let currentSelectionId: string | undefined = selection?.id;
+
+  function resetZoom() {
+    if (!svgEl) return;
+    const svg = d3.select(svgEl);
+    const zoomNode = svg.node();
+    if (zoomNode && zoomNode.__zoomBehavior) {
+      svg
+        .transition()
+        .duration(350)
+        .call(zoomNode.__zoomBehavior.transform, d3.zoomIdentity);
+    }
+  }
 
   function scheduleRender() {
-    console.log("Scheduling render for Graphic component", hierarchy);
     if (!hierarchy) return;
     const svg = svgEl;
     if (!svg) return;
@@ -32,9 +47,12 @@ export async function* Graphic(
     });
     const box = {
       width: wrapperRect.width,
-      // height is tootal
-      height: rootRect.height - svgRect.top,
+      // height is total available from svg top to window bottom
+      height: Math.max(0, rootRect.height - svgRect.top),
     };
+
+    // ensure the latest selection id is passed to the chart renderer
+    currentSelectionId = selection?.id;
 
     // console.log("Container box for Graphic render:", box);
     if (!box.width || !box.height) {
@@ -45,7 +63,7 @@ export async function* Graphic(
     try {
       // there is padding in the tab-panel so if we set it too large, it shifts outside
       // and triggers a resize loop. We can leave a small gap to avoid this.
-      renderChart(svg, box, hierarchy);
+      renderChart(svg, box, hierarchy, orientation, currentSelectionId);
     } catch (err) {
       console.error("renderChart error (Graphic):", err);
     }
@@ -57,27 +75,69 @@ export async function* Graphic(
     this.refresh();
   });
 
-  for await ({ hierarchy } of this) {
+  for await ({ hierarchy, selection } of this) {
+    // keep a live copy of the selected id (loop-scoped selection gets updated)
+    currentSelectionId = selection?.id;
+
     yield (
-      <div
-        // Prevent Crank from re-rendering the SVG subtree so D3 can manage DOM updates
-        copy={true}
-        id="graphic-wrapper"
-      >
-        <sl-resize-observer>
-          <svg
-            id="details-graph-svg"
-            role="img"
-            aria-labelledby="details-graph-svg-title"
-            ref={(el: SVGSVGElement | null) => {
-              svgEl = el;
+      <div id="graphic-wrapper">
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            alignItems: "center",
+            marginBottom: "6px",
+            padding: "20px",
+          }}
+        >
+          <sl-button
+            size="small"
+            aria-pressed={orientation === "vertical"}
+            variant={orientation === "vertical" ? "primary" : "default"}
+            onClick={() => {
+              if (orientation !== "vertical") {
+                orientation = "vertical";
+                resetZoom();
+                this.refresh();
+              }
+              scheduleRender();
             }}
           >
-            <title id="details-graph-svg-title">Process graph</title>
-            <g data-links />
-            <g data-nodes />
-          </svg>
-        </sl-resize-observer>
+            Vertical
+          </sl-button>
+          <sl-button
+            size="small"
+            aria-pressed={orientation === "horizontal"}
+            variant={orientation === "horizontal" ? "primary" : "default"}
+            onClick={() => {
+              if (orientation !== "horizontal") {
+                orientation = "horizontal";
+                resetZoom();
+                this.refresh();
+              }
+              scheduleRender();
+            }}
+          >
+            Horizontal
+          </sl-button>
+        </div>
+
+        <div copy={true}>
+          <sl-resize-observer>
+            <svg
+              id="details-graph-svg"
+              role="img"
+              aria-labelledby="details-graph-svg-title"
+              ref={(el: SVGSVGElement | null) => {
+                svgEl = el;
+              }}
+            >
+              <title id="details-graph-svg-title">Process graph</title>
+              <g data-links />
+              <g data-nodes />
+            </svg>
+          </sl-resize-observer>
+        </div>
       </div>
     );
     // schedule a render after yielding the SVG element to ensure it's in the DOM and has dimensions
@@ -106,6 +166,8 @@ export function renderChart(
   ref: SVGSVGElement,
   container: { width: number; height: number },
   data: Hierarchy,
+  orientation: "vertical" | "horizontal" = "vertical",
+  selectedId?: string,
 ) {
   const root = d3.hierarchy(data);
   // Scale the vertical spacing based on the panel height so the tree fills
@@ -121,9 +183,7 @@ export function renderChart(
   root.sort((a, b) => d3.ascending(a.data.id, b.data.id));
   tree(root as unknown as d3.HierarchyNode<unknown>);
 
-  // Compute the extent of the tree. Note that x and y are swapped here
-  // because in the tree layout, x is the breadth, but when displayed, the
-  // tree extends right rather than down.
+  // Compute the extent of the tree (extent is along the "x" value used by the layout)
   let x0 = Number.POSITIVE_INFINITY;
   let x1 = -x0;
   root.each((d) => {
@@ -133,37 +193,92 @@ export function renderChart(
     }
   });
 
-  // Compute the adjusted height of the tree.
-  const height = x1 - x0 + dx * 2;
+  // Compute the adjusted span along the x axis used by the layout.
+  const spanX = x1 - x0 + dx * 2;
 
   const svg = d3.select(ref);
 
-  // Ensure groups exist for stable selection (links / nodes)
-  if (svg.select("g[data-links]").empty()) {
-    svg.append("g").attr("data-links", "");
+  // Ensure a viewport group exists: we apply zoom/pan transforms to this group.
+  if (svg.select("g[data-viewport]").empty()) {
+    svg.append("g").attr("data-viewport", "");
   }
-  if (svg.select("g[data-nodes]").empty()) {
-    svg.append("g").attr("data-nodes", "");
+  const viewport = svg.select("g[data-viewport]");
+
+  // Ensure groups exist within the viewport for stable selection (links / nodes)
+  if (viewport.select("g[data-links]").empty()) {
+    viewport.append("g").attr("data-links", "");
+  }
+  if (viewport.select("g[data-nodes]").empty()) {
+    viewport.append("g").attr("data-nodes", "");
   }
 
-  svg
-    .attr("width", container.width)
-    // Use the panel's available height if possible so the SVG fills the tab
-    // panel; keep the viewBox at the chart's computed height so the content
-    // scales to fit the panel by default.
-    .attr("height", container.height)
-    .attr("viewBox", [-dy / 3, x0 - dx, container.width, height])
-    // Align the SVG content to the top-left so the graph is visible without
-    // being vertically centered and pushed out of view by aspect-ratio
-    // letterboxing.
-    .attr("preserveAspectRatio", "xMinYMin meet");
+  // Preserve any user-applied transform (zoom/pan) across re-renders.
+  const currentTransform = viewport.attr("transform");
 
-  svg
+  // Compute viewBox depending on orientation. For vertical we place the x span
+  // horizontally (viewBox x origin = x0 - dx) and let the vertical dimension be the
+  // container height. For horizontal we place the x span vertically as before.
+  if (orientation === "vertical") {
+    svg
+      .attr("width", container.width)
+      .attr("height", container.height)
+      .attr("viewBox", [x0 - dx, -dy / 3, spanX, container.height])
+      .attr("preserveAspectRatio", "xMinYMin meet");
+  } else {
+    // horizontal (existing behavior)
+    svg
+      .attr("width", container.width)
+      .attr("height", container.height)
+      .attr("viewBox", [-dy / 3, x0 - dx, container.width, spanX])
+      .attr("preserveAspectRatio", "xMinYMin meet");
+  }
+
+  // Install zoom behavior once.
+  const nodeZoom = svg.node();
+  if (nodeZoom && !("__zoomInitialized" in nodeZoom)) {
+    const zoomBehavior = d3
+      .zoom()
+      .scaleExtent([0.2, 6])
+      .on("zoom", (event) => {
+        viewport.attr("transform", event.transform);
+      });
+
+    // Apply the zoom behavior to the svg. Casts added for TS safety.
+    svg.call(
+      zoomBehavior as unknown as d3.ZoomBehavior<SVGSVGElement, unknown>,
+    );
+
+    // dblclick to reset zoom
+    svg.on("dblclick.zoom", () => {
+      svg
+        .transition()
+        .duration(350)
+        .call((sel) =>
+          sel.call(zoomBehavior.transform as any, d3.zoomIdentity),
+        );
+    });
+
+    // @ts-expect-error Mark the node as having the zoom behavior initialized
+    // so we don't re-apply it on every render.
+    nodeZoom.__zoomInitialized = true;
+    // store the behavior so callers can reset programmatically
+    // @ts-expect-error
+    nodeZoom.__zoomBehavior = zoomBehavior;
+  }
+
+  // Restore preserved transform (if any)
+  if (currentTransform) {
+    viewport.attr("transform", currentTransform);
+  }
+
+  const linksGroup = viewport
     .select("g[data-links]")
     .attr("fill", "none")
     .attr("stroke", "#555")
     .attr("stroke-opacity", 0.4)
-    .attr("stroke-width", 1.5)
+    .attr("stroke-width", 1.5);
+
+  linksGroup
     .selectAll("path")
     .data(root.links())
     .join(
@@ -182,10 +297,15 @@ export function renderChart(
       ) {
         return "";
       }
+      if (orientation === "vertical") {
+        // for vertical layout: coordinates are (x,y) -> translate(x,y)
+        return `M${s.x},${s.y}C${s.x},${(s.y + t.y) / 2} ${t.x},${(s.y + t.y) / 2} ${t.x},${t.y}`;
+      }
+      // horizontal layout: existing behavior (translate(y,x))
       return `M${s.y},${s.x}C${(s.y + t.y) / 2},${s.x} ${(s.y + t.y) / 2},${t.x} ${t.y},${t.x}`;
     });
 
-  const node = svg
+  const node = viewport
     .select("g[data-nodes]")
     .selectAll("g")
     .data(root.descendants())
@@ -197,46 +317,67 @@ export function renderChart(
     .attr("id", (d) => `g-${d.data.id}`)
     .attr("stroke-linejoin", "round")
     .attr("stroke-width", 3)
-    .attr("transform", (d) => `translate(${d.y},${d.x})`);
+    .attr("transform", (d) => {
+      if (orientation === "vertical") return `translate(${d.x},${d.y})`;
+      return `translate(${d.y},${d.x})`;
+    })
+    .style("cursor", "pointer")
+    .on("click", function (event: any, d: any) {
+      event.stopPropagation();
+      const id = d && d.data && d.data.id;
+      if (id) {
+        (ref as Element).dispatchEvent(
+          new CustomEvent("sl-selection-change", {
+            detail: { selection: [{ dataset: { id } }] },
+            bubbles: true,
+            composed: true,
+          }),
+        );
+      }
+    })
+    .attr("data-selected", (d) => (selectedId === d.data.id ? "true" : null));
 
   node
     .selectAll("circle")
     .data((d) => [d])
     .join(
-      (enter) => enter.append("circle"),
+      (enter) => enter.append("circle").attr("r", 0),
       (update) => update,
-      (exit) =>
-        exit
-          .remove()
-          .attr("fill", "red")
-          .transition()
-          .duration(500)
-          .attr("r", 0),
+      (exit) => exit.remove().attr("fill", "red"),
     )
-    .attr("r", 0)
+    .attr("fill", (d: any) =>
+      selectedId === d.data.id ? "#ff9800" : d.children ? "#555" : "#999",
+    )
     .transition()
     .duration(500)
     .ease(d3.easeLinear)
-    .attr("fill", (d: any) => (d.children ? "#555" : "#999"))
+    .attr("stroke", (d: any) => (selectedId === d.data.id ? "#000" : "none"))
+    .attr("stroke-width", (d: any) => (selectedId === d.data.id ? 1.5 : 0))
     .attr("r", Math.max(2.5, Math.min(8, dx * 0.5)));
 
   node
     .selectAll("text")
     .data((d) => [d])
     .join(
-      (enter) => enter.append("text"),
+      (enter) => enter.append("text").attr("opacity", 0),
       (update) => update,
-      (exit) => exit.remove(),
+      (exit) => exit.remove().attr("opacity", 0),
     )
-    .attr("opacity", 0)
+
     .transition()
     .duration(500)
     .ease(d3.easeLinear)
     .attr("dy", "0.31em")
-    .attr("x", (d: any) => (d.children ? -6 : 6))
-    .attr("text-anchor", (d: any) => (d.children ? "end" : "start"))
+    .attr("x", (d: any) => {
+      if (orientation === "vertical") return 8;
+      return d.children ? -8 : 8;
+    })
+    .attr("text-anchor", (d: any) => {
+      if (orientation === "vertical") return "start";
+      return d.children ? "end" : "start";
+    })
     .text((d: any) => textValue(d))
-    .style("font-size", `${Math.max(10, Math.min(dx * 0.6, 25))}px`)
+    .style("font-size", `${Math.max(5, Math.min(dx * 0.6, 10))}px`)
     .attr("opacity", 1)
     .attr("fill", themeBasedFill("white", "black"))
     .attr("paint-order", "fill");

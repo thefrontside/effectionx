@@ -40,11 +40,7 @@ export async function* Graphic(
     const svgRect = svg.getBoundingClientRect();
     const rootRect = root.getBoundingClientRect();
     const wrapperRect = graphicWrapper.getBoundingClientRect();
-    console.log({
-      svgRect,
-      rootRect,
-      wrapperRect,
-    });
+
     const box = {
       width: wrapperRect.width,
       // height is total available from svg top to window bottom
@@ -56,7 +52,7 @@ export async function* Graphic(
 
     // console.log("Container box for Graphic render:", box);
     if (!box.width || !box.height) {
-      console.warn("Graphic render skipped due to zero width or height:", box);
+      // console.warn("Graphic render skipped due to zero width or height:", box);
       return;
     }
 
@@ -70,8 +66,7 @@ export async function* Graphic(
   }
 
   // listen to sl-resize events bubbled from <sl-resize-observer>
-  this.addEventListener("sl-resize", (event) => {
-    console.log("Resize event:", event);
+  this.addEventListener("sl-resize", () => {
     this.refresh();
   });
 

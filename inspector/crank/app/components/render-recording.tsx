@@ -38,20 +38,13 @@ export async function* RenderRecording(
     }
   });
 
-  let offset = 0;
   let recording = await $recording.promise;
 
   try {
     for ({} of ctx) {
       yield (
         <Fragment>
-          <PlaybackControls
-            recording={recording}
-            offset={offset}
-            setOffset={(n: number) => {
-              offset = n;
-            }}
-          />
+          <PlaybackControls recording={recording} />
           <StructureInspector structure={props.structure} />
         </Fragment>
       );

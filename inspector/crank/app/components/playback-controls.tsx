@@ -44,6 +44,10 @@ export async function* PlaybackControls(
   });
 
   ctx.addEventListener("sl-input", (event) => {
+    if (playing) {
+      playing = false;
+    }
+
     const v = Number(
       event?.target && "value" in event?.target ? event.target.value : 0,
     );

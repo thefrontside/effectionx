@@ -7,7 +7,7 @@
   },
   "include": ["**/*.ts", "package.json"],
   "exclude": [
-    "ui",
+    "crank",
     "*.config.ts",
     "**/*.test.ts",
     "dist",

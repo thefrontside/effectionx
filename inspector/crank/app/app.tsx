@@ -1,5 +1,5 @@
 import type { Context } from "@b9g/crank";
-import { router } from "./router.ts";
+import { router } from "../src/router.ts";
 import { Layout } from "./layout.tsx";
 import { Home } from "./home.tsx";
 import { Live } from "./live.tsx";

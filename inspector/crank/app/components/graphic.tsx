@@ -2,6 +2,10 @@ import * as d3 from "d3";
 import type { Context } from "@b9g/crank";
 import type { Hierarchy } from "../data/types.ts";
 
+type GraphicViewOptions = {
+  orientation: "vertical" | "horizontal";
+};
+
 // using an async function generator so we can call `scheduleRender` after yielding
 // the SVG element to ensure it's in the DOM and has dimensions before
 // we attempt to render the chart. Other methods lead to infinite render loops.
@@ -11,7 +15,7 @@ export async function* Graphic(
 ) {
   let svgEl: SVGSVGElement | null = null;
   // orientation state (vertical by default as requested)
-  let orientation: "vertical" | "horizontal" = "vertical";
+  let orientation = "vertical" as GraphicViewOptions["orientation"];
   // track the currently selected id so scheduleRender can pass it into renderChart
   let currentSelectionId: string | undefined = selection?.id;
 
@@ -19,11 +23,11 @@ export async function* Graphic(
     if (!svgEl) return;
     const svg = d3.select(svgEl);
     const zoomNode = svg.node();
-    if (zoomNode && zoomNode.__zoomBehavior) {
+    if (zoomNode && "__zoomBehavior" in zoomNode) {
       svg
         .transition()
         .duration(350)
-        .call(zoomNode.__zoomBehavior.transform, d3.zoomIdentity);
+        .call((zoomNode as any).__zoomBehavior.transform, d3.zoomIdentity);
     }
   }
 
@@ -87,7 +91,6 @@ export async function* Graphic(
         >
           <sl-button
             size="small"
-            aria-pressed={orientation === "vertical"}
             variant={orientation === "vertical" ? "primary" : "default"}
             onClick={() => {
               if (orientation !== "vertical") {
@@ -102,7 +105,6 @@ export async function* Graphic(
           </sl-button>
           <sl-button
             size="small"
-            aria-pressed={orientation === "horizontal"}
             variant={orientation === "horizontal" ? "primary" : "default"}
             onClick={() => {
               if (orientation !== "horizontal") {

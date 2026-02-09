@@ -1,5 +1,6 @@
 import { type Context } from "@b9g/crank";
 import { Layout } from "./layout.tsx";
+import { router } from "../src/router.ts";
 
 import {
   createScope,
@@ -13,11 +14,18 @@ import type { NodeMap } from "./data/types.ts";
 import { RenderRecording } from "./components/render-recording.tsx";
 
 export async function* Recording(this: Context): AsyncGenerator<Element> {
+  const { state } = router.location;
+
   let [scope, destroy] = createScope();
 
   // signal for incoming files
   const files = createSignal<File, never>();
   let nodeMap: NodeMap[] = [];
+  // runs on first render if we navigated here with a file in the router state
+  if (state?.file) {
+    console.log("Received file from router state:", state.file);
+    nodeMap = JSON.parse(await state.file.text()) as NodeMap[];
+  }
 
   let refresh = this.refresh.bind(this);
 
@@ -34,17 +42,6 @@ export async function* Recording(this: Context): AsyncGenerator<Element> {
       }
     }
   });
-
-  // listen for upload events dispatched by Home
-  const onUpload = (e: Event) => {
-    const file = (e as CustomEvent).detail?.file as File | undefined;
-    if (file) files.send(file);
-  };
-
-  this.addEventListener(
-    "inspector-recording-upload",
-    onUpload as EventListener,
-  );
 
   // file input handler to support manual upload from the Recording page
   // TODO add a file input element to the Recording page UI

@@ -18,6 +18,7 @@
     { "path": "context-api" },
     { "path": "converge" },
     { "path": "effect-ts" },
+    { "path": "fetch" },
     { "path": "fs" },
     { "path": "fx" },
     { "path": "jsonl-store" },

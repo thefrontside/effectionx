@@ -118,6 +118,16 @@ importers:
         specifier: ^3
         version: 3.19.14
 
+  fetch:
+    dependencies:
+      effection:
+        specifier: ^3 || ^4
+        version: 4.0.0
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+
   fs:
     dependencies:
       effection:

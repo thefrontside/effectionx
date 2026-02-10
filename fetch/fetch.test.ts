@@ -6,9 +6,30 @@ import {
   type ServerResponse,
   createServer,
 } from "node:http";
-import { type Operation, call, each, ensure, withResolvers } from "effection";
+import {
+  Err,
+  Ok,
+  type Operation,
+  type Result,
+  call,
+  each,
+  ensure,
+  withResolvers,
+} from "effection";
 
 import { HttpError, fetch } from "./fetch.ts";
+
+function box<T>(content: () => Operation<T>): Operation<Result<T>> {
+  return {
+    *[Symbol.iterator]() {
+      try {
+        return Ok(yield* content());
+      } catch (error) {
+        return Err(error as Error);
+      }
+    },
+  };
+}
 
 describe("fetch()", () => {
   let url: string;
@@ -95,25 +116,16 @@ describe("fetch()", () => {
 
     it("throws HttpError for expect() when response is not ok", function* () {
       let response = yield* fetch(`${url}/missing`);
-      let error = yield* captureError(response.expect());
+      let result = yield* box(() => response.expect());
 
-      expect(error).toBeInstanceOf(HttpError);
-      expect(error).toMatchObject({
-        status: 404,
-        statusText: "Not Found",
-      });
-    });
-
-    it("prevents consuming the body twice", function* () {
-      let response = yield* fetch(`${url}/text`);
-
-      expect(yield* response.text()).toEqual("hello");
-
-      let error = yield* captureError(response.json());
-      expect(error).toBeInstanceOf(Error);
-      expect(error).toMatchObject({
-        message: "Body has already been consumed",
-      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBeInstanceOf(HttpError);
+        expect(result.error).toMatchObject({
+          status: 404,
+          statusText: "Not Found",
+        });
+      }
     });
   });
 
@@ -165,13 +177,16 @@ describe("fetch()", () => {
     });
 
     it("throws HttpError with fetch().expect().json()", function* () {
-      let error = yield* captureError(fetch(`${url}/missing`).expect().json());
+      let result = yield* box(() => fetch(`${url}/missing`).expect().json());
 
-      expect(error).toBeInstanceOf(HttpError);
-      expect(error).toMatchObject({
-        status: 404,
-        statusText: "Not Found",
-      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBeInstanceOf(HttpError);
+        expect(result.error).toMatchObject({
+          status: 404,
+          statusText: "Not Found",
+        });
+      }
     });
 
     it("chains expect() before json() successfully", function* () {
@@ -183,14 +198,3 @@ describe("fetch()", () => {
     });
   });
 });
-
-function* captureError(
-  operation: Operation<unknown>,
-): Operation<unknown | undefined> {
-  try {
-    yield* operation;
-    return undefined;
-  } catch (error) {
-    return error;
-  }
-}

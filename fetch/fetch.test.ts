@@ -35,10 +35,6 @@ describe("fetch()", () => {
         return;
       }
 
-      if (req.url === "/slow") {
-        return;
-      }
-
       res.writeHead(404, { "Content-Type": "text/plain" });
       res.end("not found");
     });
@@ -185,17 +181,6 @@ describe("fetch()", () => {
 
       expect(data).toEqual({ id: 1, title: "do things" });
     });
-  });
-
-  it("aborts when init.signal is aborted", function* () {
-    let controller = new AbortController();
-    controller.abort();
-
-    let error = yield* captureError(
-      fetch(`${url}/slow`, { signal: controller.signal }),
-    );
-    expect(error).toBeInstanceOf(Error);
-    expect(error).toMatchObject({ name: "AbortError" });
   });
 });
 

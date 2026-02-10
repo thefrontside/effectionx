@@ -128,8 +128,12 @@ function* getUser(id: string) {
 
 Returns a `FetchOperation` that supports both fluent chaining and traditional usage.
 
-- Automatically wires cancellation to the current Effection scope via `useAbortSignal()`.
-- Merges `init.signal` with the scope signal using `AbortSignal.any()`.
+- `input` - URL string, `URL` object, or `Request` object
+- `init` - Optional `FetchInit` options (same as `RequestInit` but without `signal`)
+
+Cancellation is handled automatically via Effection's structured concurrency. When the
+scope exits, the request is aborted. The `signal` option is intentionally omitted since
+Effection manages cancellation for you.
 
 ### `FetchOperation`
 

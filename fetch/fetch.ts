@@ -53,6 +53,12 @@ export interface FetchResponse {
   expect(): Operation<this>;
 }
 
+/**
+ * Request options for fetch, excluding `signal` since cancellation
+ * is handled automatically via Effection's structured concurrency.
+ */
+export type FetchInit = Omit<RequestInit, "signal"> & { signal?: never };
+
 export class HttpError extends Error {
   readonly name = "HttpError";
   readonly status: number;
@@ -77,22 +83,18 @@ export class HttpError extends Error {
 
 export function fetch(
   input: RequestInfo | URL,
-  init?: RequestInit,
+  init?: FetchInit,
 ): FetchOperation {
   return createFetchOperation(input, init, false);
 }
 
 function createFetchOperation(
   input: RequestInfo | URL,
-  init: RequestInit | undefined,
+  init: FetchInit | undefined,
   shouldExpect: boolean,
 ): FetchOperation {
   function* doFetch(): Operation<FetchResponse> {
-    let scopeSignal = yield* useAbortSignal();
-
-    let signal = init?.signal
-      ? AbortSignal.any([init.signal, scopeSignal])
-      : scopeSignal;
+    let signal = yield* useAbortSignal();
 
     let response = yield* until(globalThis.fetch(input, { ...init, signal }));
     let fetchResponse = createFetchResponse(response);

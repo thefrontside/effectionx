@@ -39,6 +39,27 @@ function* example() {
 }
 ```
 
+### Concurrent requests
+
+```ts
+import { all } from "effection";
+import { fetch } from "@effectionx/fetch";
+
+function* fetchMultiple() {
+  let [users, posts, comments] = yield* all([
+    fetch("https://api.example.com/users"),
+    fetch("https://api.example.com/posts"),
+    fetch("https://api.example.com/comments"),
+  ]);
+
+  return {
+    users: yield* users.json(),
+    posts: yield* posts.json(),
+    comments: yield* comments.json(),
+  };
+}
+```
+
 ### Validate JSON while parsing
 
 ```ts

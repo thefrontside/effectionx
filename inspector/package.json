@@ -14,7 +14,7 @@
   "engines": {
     "node": ">= 22"
   },
-  "sideEffects": false,
+  "sideEffects": true,
   "files": ["dist", "crank/dist"],
   "scripts": {
     "start": "vite --host 0.0.0.0 crank",

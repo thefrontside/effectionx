@@ -4,7 +4,7 @@ import { join, dirname } from "node:path";
 
 const shoelaceIcons = join(
   dirname(import.meta.resolve("@shoelace-style/shoelace")),
-  "assets",
+  "assets/icons/*.svg",
 ).replace(/^file:/, "");
 
 export default defineConfig({
@@ -13,7 +13,7 @@ export default defineConfig({
       targets: [
         {
           src: shoelaceIcons,
-          dest: "shoelace/assets",
+          dest: "shoelace/assets/icons",
         },
       ],
     }),

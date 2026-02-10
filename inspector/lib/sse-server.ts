@@ -12,11 +12,66 @@ import {
 import type { Handle, Methods } from "./types.ts";
 import { validateUnsafe } from "./validate.ts";
 
-import { createEventStream, H3, serve } from "h3";
+import {
+  createEventStream,
+  defineEventHandler,
+  H3,
+  serve,
+  serveStatic,
+} from "h3";
+import { readFile, stat } from "fs/promises";
+import { join } from "path";
 
 export interface SSEServerOptions {
   port: number;
 }
+
+const handleStaticRoutes = () => {
+  const app = new H3();
+
+  const ROOT_DIR = join(import.meta.dirname, "..");
+  const PUBLIC_DIR = join(
+    ...(ROOT_DIR === "dist"
+      ? [ROOT_DIR, "..", "crank", "dist"]
+      : [ROOT_DIR, "crank", "dist"]),
+  );
+
+  // handle static assets from the crank dist directory (js, css, etc.)
+  app.use(
+    defineEventHandler(async (event) => {
+      return await serveStatic(event, {
+        getContents: (id) => readFile(join(PUBLIC_DIR, id)),
+        getMeta: async (id) => {
+          const stats = await stat(join(PUBLIC_DIR, id)).catch(() => null);
+          if (!stats || !stats.isFile()) return;
+          return { size: stats.size, mtime: stats.mtime };
+        },
+        // assumed missed routes are likely SPA routes and handled below
+        fallthrough: true,
+      });
+    }),
+  );
+
+  // catch-all route to serve the index.html for any non-asset requests
+  // e.g. /live, /demo, etc. so client-side routing works
+  app.use(
+    "/*",
+    defineEventHandler(async (event) => {
+      return await serveStatic(event, {
+        getContents: () => readFile(join(PUBLIC_DIR, "index.html")),
+        getMeta: async () => {
+          const stats = await stat(join(PUBLIC_DIR, "index.html")).catch(
+            () => null,
+          );
+          if (!stats || !stats.isFile()) return;
+          return { size: stats.size, mtime: stats.mtime };
+        },
+      });
+    }),
+  );
+
+  return app;
+};
 
 export function useSSEServer<M extends Methods>(
   handle: Handle<M>,
@@ -94,7 +149,8 @@ export function useSSEServer<M extends Methods>(
       });
     }
 
-    let server = serve(app, {
+    const staticAssets = handleStaticRoutes();
+    let server = serve(app.mount("/", staticAssets), {
       port,
       silent: true,
     });

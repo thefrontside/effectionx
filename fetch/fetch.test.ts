@@ -56,75 +56,135 @@ describe("fetch()", () => {
     );
   });
 
-  it("reads JSON responses", function* () {
-    let response = yield* fetch(`${url}/json`);
-    let data = yield* response.json<{ id: number; title: string }>();
+  describe("traditional API", () => {
+    it("reads JSON responses", function* () {
+      let response = yield* fetch(`${url}/json`);
+      let data = yield* response.json<{ id: number; title: string }>();
 
-    expect(data).toEqual({ id: 1, title: "do things" });
-  });
+      expect(data).toEqual({ id: 1, title: "do things" });
+    });
 
-  it("supports parser-based json()", function* () {
-    let response = yield* fetch(`${url}/json`);
-    let data = yield* response.json((value) => {
-      if (
-        typeof value !== "object" ||
-        value === null ||
-        !("id" in value) ||
-        !("title" in value)
-      ) {
-        throw new Error("invalid payload");
+    it("supports parser-based json()", function* () {
+      let response = yield* fetch(`${url}/json`);
+      let data = yield* response.json((value) => {
+        if (
+          typeof value !== "object" ||
+          value === null ||
+          !("id" in value) ||
+          !("title" in value)
+        ) {
+          throw new Error("invalid payload");
+        }
+
+        return { id: value.id as number, title: value.title as string };
+      });
+
+      expect(data).toEqual({ id: 1, title: "do things" });
+    });
+
+    it("streams response bodies", function* () {
+      let response = yield* fetch(`${url}/stream`);
+      let body = response.body();
+      let decoder = new TextDecoder();
+      let chunks: string[] = [];
+
+      for (let chunk of yield* each(body)) {
+        chunks.push(decoder.decode(chunk, { stream: true }));
+        yield* each.next();
       }
 
-      return { id: value.id as number, title: value.title as string };
+      chunks.push(decoder.decode());
+      expect(chunks.join("")).toEqual("chunk-1chunk-2chunk-3");
     });
 
-    expect(data).toEqual({ id: 1, title: "do things" });
-  });
+    it("throws HttpError for expect() when response is not ok", function* () {
+      let response = yield* fetch(`${url}/missing`);
+      let error = yield* captureError(response.expect());
 
-  it("streams response bodies", function* () {
-    let response = yield* fetch(`${url}/stream`);
-    let body = response.body();
-    let decoder = new TextDecoder();
-    let chunks: string[] = [];
+      expect(error).toBeInstanceOf(HttpError);
+      expect(error).toMatchObject({
+        status: 404,
+        statusText: "Not Found",
+      });
+    });
 
-    for (let chunk of yield* each(body)) {
-      chunks.push(decoder.decode(chunk, { stream: true }));
-      yield* each.next();
-    }
+    it("prevents consuming the body twice", function* () {
+      let response = yield* fetch(`${url}/text`);
 
-    chunks.push(decoder.decode());
-    expect(chunks.join("")).toEqual("chunk-1chunk-2chunk-3");
-  });
+      expect(yield* response.text()).toEqual("hello");
 
-  it("throws HttpError for ensureOk() when response is not ok", function* () {
-    let response = yield* fetch(`${url}/missing`);
-    let error = yield* captureError(response.ensureOk());
-
-    expect(error).toBeInstanceOf(HttpError);
-    expect(error).toMatchObject({
-      status: 404,
-      statusText: "Not Found",
+      let error = yield* captureError(response.json());
+      expect(error).toBeInstanceOf(Error);
+      expect(error).toMatchObject({
+        message: "Body has already been consumed",
+      });
     });
   });
 
-  it("prevents consuming the body twice", function* () {
-    let response = yield* fetch(`${url}/text`);
+  describe("fluent API", () => {
+    it("reads JSON with fetch().json()", function* () {
+      let data = yield* fetch(`${url}/json`).json<{
+        id: number;
+        title: string;
+      }>();
 
-    expect(yield* response.text()).toEqual("hello");
-
-    let error = yield* captureError(response.json());
-    expect(error).toBeInstanceOf(Error);
-    expect(error).toMatchObject({
-      message: "Body has already been consumed",
+      expect(data).toEqual({ id: 1, title: "do things" });
     });
-  });
 
-  it("clones responses before body consumption", function* () {
-    let response = yield* fetch(`${url}/text`);
-    let clone = response.clone();
+    it("reads text with fetch().text()", function* () {
+      let text = yield* fetch(`${url}/text`).text();
 
-    expect(yield* response.text()).toEqual("hello");
-    expect(yield* clone.text()).toEqual("hello");
+      expect(text).toEqual("hello");
+    });
+
+    it("supports parser with fetch().json(parse)", function* () {
+      let data = yield* fetch(`${url}/json`).json((value) => {
+        if (
+          typeof value !== "object" ||
+          value === null ||
+          !("id" in value) ||
+          !("title" in value)
+        ) {
+          throw new Error("invalid payload");
+        }
+
+        return { id: value.id as number, title: value.title as string };
+      });
+
+      expect(data).toEqual({ id: 1, title: "do things" });
+    });
+
+    it("streams response bodies with fetch().body()", function* () {
+      let body = fetch(`${url}/stream`).body();
+      let decoder = new TextDecoder();
+      let chunks: string[] = [];
+
+      for (let chunk of yield* each(body)) {
+        chunks.push(decoder.decode(chunk, { stream: true }));
+        yield* each.next();
+      }
+
+      chunks.push(decoder.decode());
+      expect(chunks.join("")).toEqual("chunk-1chunk-2chunk-3");
+    });
+
+    it("throws HttpError with fetch().expect().json()", function* () {
+      let error = yield* captureError(fetch(`${url}/missing`).expect().json());
+
+      expect(error).toBeInstanceOf(HttpError);
+      expect(error).toMatchObject({
+        status: 404,
+        statusText: "Not Found",
+      });
+    });
+
+    it("chains expect() before json() successfully", function* () {
+      let data = yield* fetch(`${url}/json`)
+        .expect()
+        .json<{ id: number; title: string }>();
+
+      expect(data).toEqual({ id: 1, title: "do things" });
+    });
   });
 
   it("aborts when init.signal is aborted", function* () {

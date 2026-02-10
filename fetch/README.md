@@ -17,10 +17,33 @@ import { main } from "effection";
 import { fetch } from "@effectionx/fetch";
 
 await main(function* () {
-  let response = yield* fetch("https://api.example.com/users");
-  let users = yield* response.json();
+  let users = yield* fetch("https://api.example.com/users").json();
   console.log(users);
 });
+```
+
+### Fluent API
+
+Chain methods directly on `fetch()` for concise one-liners:
+
+```ts
+// JSON
+let data = yield* fetch("https://api.example.com/users").json();
+
+// Text
+let html = yield* fetch("https://example.com").text();
+
+// With validation - throws HttpError on non-2xx
+let data = yield* fetch("https://api.example.com/users").expect().json();
+```
+
+### Traditional API
+
+You can also get the response first, then consume the body:
+
+```ts
+let response = yield* fetch("https://api.example.com/users");
+let data = yield* response.json();
 ```
 
 ### Streaming response bodies
@@ -30,9 +53,7 @@ import { each } from "effection";
 import { fetch } from "@effectionx/fetch";
 
 function* example() {
-  let response = yield* fetch("https://example.com/large-file.bin");
-
-  for (let chunk of yield* each(response.body())) {
+  for (let chunk of yield* each(fetch("https://example.com/large-file.bin").body())) {
     console.log(chunk.length);
     yield* each.next();
   }
@@ -47,16 +68,12 @@ import { fetch } from "@effectionx/fetch";
 
 function* fetchMultiple() {
   let [users, posts, comments] = yield* all([
-    fetch("https://api.example.com/users"),
-    fetch("https://api.example.com/posts"),
-    fetch("https://api.example.com/comments"),
+    fetch("https://api.example.com/users").json(),
+    fetch("https://api.example.com/posts").json(),
+    fetch("https://api.example.com/comments").json(),
   ]);
 
-  return {
-    users: yield* users.json(),
-    posts: yield* posts.json(),
-    comments: yield* comments.json(),
-  };
+  return { users, posts, comments };
 }
 ```
 
@@ -84,8 +101,7 @@ function parseUser(value: unknown): User {
 }
 
 function* getUser() {
-  let response = yield* fetch("https://api.example.com/user");
-  return yield* response.json(parseUser);
+  return yield* fetch("https://api.example.com/user").json(parseUser);
 }
 ```
 
@@ -96,9 +112,7 @@ import { HttpError, fetch } from "@effectionx/fetch";
 
 function* getUser(id: string) {
   try {
-    let response = yield* fetch(`https://api.example.com/users/${id}`);
-    yield* response.ensureOk();
-    return yield* response.json();
+    return yield* fetch(`https://api.example.com/users/${id}`).expect().json();
   } catch (error) {
     if (error instanceof HttpError) {
       console.error(error.status, error.statusText);
@@ -112,10 +126,28 @@ function* getUser(id: string) {
 
 ### `fetch(input, init?)`
 
-Performs an HTTP request and returns an `Operation<FetchResponse>`.
+Returns a `FetchOperation` that supports both fluent chaining and traditional usage.
 
 - Automatically wires cancellation to the current Effection scope via `useAbortSignal()`.
 - Merges `init.signal` with the scope signal using `AbortSignal.any()`.
+
+### `FetchOperation`
+
+Chainable fetch operation returned by `fetch()`.
+
+- `json<T>()`, `json<T>(parse)` - parse response as JSON
+- `text()` - get response as text
+- `arrayBuffer()` - get response as ArrayBuffer
+- `blob()` - get response as Blob
+- `formData()` - get response as FormData
+- `body()` - stream response body as `Stream<Uint8Array, void>`
+- `expect()` - returns a new `FetchOperation` that throws `HttpError` on non-2xx
+
+Can also be yielded directly to get a `FetchResponse`:
+
+```ts
+let response = yield* fetch("https://api.example.com/users");
+```
 
 ### `FetchResponse`
 
@@ -127,6 +159,5 @@ Effection wrapper around native `Response` with operation-based body readers.
 - `blob()`
 - `formData()`
 - `body(): Stream<Uint8Array, void>`
-- `ensureOk()` throws `HttpError` for non-2xx responses
-- `clone()` returns another `FetchResponse` wrapper
-- `raw` gives access to the underlying native `Response`
+- `expect()` - throws `HttpError` for non-2xx responses
+- `raw` - access the underlying native `Response`

@@ -6,6 +6,33 @@ import {
   useAbortSignal,
 } from "effection";
 
+/**
+ * Chainable fetch operation that supports fluent API.
+ *
+ * @example
+ * ```ts
+ * // Fluent API - single yield*
+ * let data = yield* fetch("/api/users").json();
+ *
+ * // With validation
+ * let data = yield* fetch("/api/users").expect().json();
+ *
+ * // Traditional API - still works
+ * let response = yield* fetch("/api/users");
+ * let data = yield* response.json();
+ * ```
+ */
+export interface FetchOperation extends Operation<FetchResponse> {
+  json<T = unknown>(): Operation<T>;
+  json<T>(parse: (value: unknown) => T): Operation<T>;
+  text(): Operation<string>;
+  arrayBuffer(): Operation<ArrayBuffer>;
+  blob(): Operation<Blob>;
+  formData(): Operation<FormData>;
+  body(): Stream<Uint8Array, void>;
+  expect(): FetchOperation;
+}
+
 export interface FetchResponse {
   readonly raw: Response;
   readonly bodyUsed: boolean;
@@ -23,8 +50,7 @@ export interface FetchResponse {
   blob(): Operation<Blob>;
   formData(): Operation<FormData>;
   body(): Stream<Uint8Array, void>;
-  ensureOk(): Operation<this>;
-  clone(): FetchResponse;
+  expect(): Operation<this>;
 }
 
 export class HttpError extends Error {
@@ -49,18 +75,84 @@ export class HttpError extends Error {
   }
 }
 
-export function* fetch(
+export function fetch(
   input: RequestInfo | URL,
   init?: RequestInit,
-): Operation<FetchResponse> {
-  let scopeSignal = yield* useAbortSignal();
+): FetchOperation {
+  return createFetchOperation(input, init, false);
+}
 
-  let signal = init?.signal
-    ? AbortSignal.any([init.signal, scopeSignal])
-    : scopeSignal;
+function createFetchOperation(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  shouldExpect: boolean,
+): FetchOperation {
+  function* doFetch(): Operation<FetchResponse> {
+    let scopeSignal = yield* useAbortSignal();
 
-  let response = yield* until(globalThis.fetch(input, { ...init, signal }));
-  return createFetchResponse(response);
+    let signal = init?.signal
+      ? AbortSignal.any([init.signal, scopeSignal])
+      : scopeSignal;
+
+    let response = yield* until(globalThis.fetch(input, { ...init, signal }));
+    let fetchResponse = createFetchResponse(response);
+
+    if (shouldExpect && !response.ok) {
+      throw new HttpError(
+        response.status,
+        response.statusText,
+        response.url,
+        fetchResponse,
+      );
+    }
+
+    return fetchResponse;
+  }
+
+  return {
+    *[Symbol.iterator]() {
+      return yield* doFetch();
+    },
+
+    *json<T = unknown>(parse?: (value: unknown) => T): Operation<T> {
+      let response = yield* doFetch();
+      return yield* response.json(parse as (value: unknown) => T);
+    },
+
+    *text(): Operation<string> {
+      let response = yield* doFetch();
+      return yield* response.text();
+    },
+
+    *arrayBuffer(): Operation<ArrayBuffer> {
+      let response = yield* doFetch();
+      return yield* response.arrayBuffer();
+    },
+
+    *blob(): Operation<Blob> {
+      let response = yield* doFetch();
+      return yield* response.blob();
+    },
+
+    *formData(): Operation<FormData> {
+      let response = yield* doFetch();
+      return yield* response.formData();
+    },
+
+    body(): Stream<Uint8Array, void> {
+      // For body(), we need to return a Stream that performs fetch when iterated
+      return {
+        *[Symbol.iterator]() {
+          let response = yield* doFetch();
+          return yield* response.body();
+        },
+      };
+    },
+
+    expect(): FetchOperation {
+      return createFetchOperation(input, init, true);
+    },
+  };
 }
 
 function createFetchResponse(response: Response): FetchResponse {
@@ -132,7 +224,7 @@ function createFetchResponse(response: Response): FetchResponse {
         response.body as unknown as AsyncIterable<Uint8Array, void>,
       );
     },
-    *ensureOk(): Operation<FetchResponse> {
+    *expect(): Operation<FetchResponse> {
       if (!response.ok) {
         throw new HttpError(
           response.status,
@@ -142,12 +234,6 @@ function createFetchResponse(response: Response): FetchResponse {
         );
       }
       return self;
-    },
-    clone(): FetchResponse {
-      if (consumed || response.bodyUsed) {
-        throw new Error("Cannot clone after body has been consumed");
-      }
-      return createFetchResponse(response.clone());
     },
   };
 

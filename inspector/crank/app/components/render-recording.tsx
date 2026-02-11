@@ -45,7 +45,13 @@ export async function* RenderRecording(
       yield (
         <Fragment>
           <PlaybackControls recording={recording} />
-          <StructureInspector structure={props.structure} />
+          <StructureInspector
+            structure={props.structure}
+            filters={{
+              showInspectorRuntime: false,
+              showAnonymousScopes: false,
+            }}
+          />
         </Fragment>
       );
     }

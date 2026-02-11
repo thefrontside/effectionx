@@ -36,7 +36,6 @@ export function sample<T>(interval: Operation<unknown>): Transform<T, T> {
 
               // we needf to await the interval AND have a next
               yield* all([interval, hasNext.operation]);
-              console.log("next", next!);
               return next!;
             });
           },

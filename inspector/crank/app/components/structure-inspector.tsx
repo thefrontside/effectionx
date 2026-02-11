@@ -4,16 +4,34 @@ import { Details } from "./hierarchy-details.tsx";
 import type { Stratification } from "../data/stratify.ts";
 import type { Context } from "@b9g/crank";
 import { Graphic } from "./graphic.tsx";
+import { createCrankScope } from "../lib/crank-scope.ts";
+import { settings } from "../data/settings.ts";
+import { each } from "effection";
+
+export interface StructureInspectorFilters {
+  showInspectorRuntime: boolean;
+  showAnonymousScopes: boolean;
+}
 
 export interface StructureInspectorProps {
   structure?: Stratification;
 }
 
-export function* StructureInspector(
+export async function* StructureInspector(
   this: Context<StructureInspectorProps>,
   { structure = initialStructure() }: StructureInspectorProps,
-): Generator<Element> {
+): AsyncGenerator<Element> {
+  await using scope = createCrankScope();
+
   let selection: Hierarchy | undefined = undefined;
+  let cxt = this;
+
+  scope.run(function* () {
+    for ({} of yield* each(settings)) {
+      cxt.refresh();
+      yield* each.next();
+    }
+  });
 
   this.addEventListener("sl-selection-change", (e) => {
     let [item] = e.detail.selection;
@@ -22,11 +40,13 @@ export function* StructureInspector(
   });
 
   for ({ structure = initialStructure() } of this) {
-    selection = selection ?? structure.root;
+    let filters = settings.value;
+    let root = applyFilters(filters, structure.root);
+    selection = selection ?? root;
 
     yield (
       <sl-split-panel position="70">
-        <TreeView slot="start" root={structure.root} selection={selection} />
+        <TreeView slot="start" root={root} selection={selection} />
         <Details slot="end" node={selection} />
       </sl-split-panel>
     );
@@ -97,5 +117,31 @@ export function initialStructure(): Stratification {
   return {
     root,
     hierarchies: { [root.id]: root },
+  };
+}
+
+function applyFilters(
+  filters: Partial<StructureInspectorFilters>,
+  root: Hierarchy,
+): Hierarchy {
+  let children = root.children.flatMap((child) => {
+    let attributes = (child.data["@effection/attributes"] ?? {}) as Record<
+      string,
+      unknown
+    >;
+    if (attributes.name === "Inspector" && !filters.showInspectorRuntime) {
+      return [];
+    } else if (
+      attributes.name === "anonymous" &&
+      !filters.showAnonymousScopes
+    ) {
+      return child.children;
+    } else {
+      return [applyFilters(filters, child)];
+    }
+  });
+  return {
+    ...root,
+    children,
   };
 }

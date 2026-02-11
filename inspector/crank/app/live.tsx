@@ -11,6 +11,7 @@ import { createScope, each, type Operation } from "effection";
 import { StructureInspector } from "./components/structure-inspector.tsx";
 import { createConnection, type ConnectionState } from "./data/connection.ts";
 import { Toolbar } from "./toolbar.tsx";
+import { settings } from "./data/settings.ts";
 
 const protocol = combine.protocols(scope, player);
 
@@ -33,7 +34,6 @@ export async function* Live(this: Context): AsyncGenerator<Element> {
 
   scope.run(function* (): Operation<void> {
     for (let state of yield* each(connection)) {
-      console.log(state.type);
       refresh(() => (props.state = state));
       yield* each.next();
     }

@@ -1,4 +1,4 @@
-import { type Context } from "@b9g/crank";
+import type { Context } from "@b9g/crank";
 import { Layout } from "./layout.tsx";
 import { router } from "../src/router.ts";
 
@@ -9,7 +9,6 @@ import {
   until,
   type Operation,
 } from "effection";
-import { type Recording } from "./data/recording.ts";
 import type { NodeMap } from "./data/types.ts";
 import { RenderRecording } from "./components/render-recording.tsx";
 

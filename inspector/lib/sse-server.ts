@@ -19,8 +19,8 @@ import {
   serve,
   serveStatic,
 } from "h3";
-import { readFile, stat } from "fs/promises";
-import { join } from "path";
+import { readFile, stat } from "node:fs/promises";
+import { join } from "node:path";
 
 export interface SSEServerOptions {
   port: number;
@@ -130,7 +130,7 @@ export function useSSEServer<M extends Methods>(
             yield* once(req.signal, "abort");
           } catch (cause) {
             let error =
-              cause instanceof Error ? cause : new Error(`unknown`, { cause });
+              cause instanceof Error ? cause : new Error("unknown", { cause });
             let { name, message } = error;
             yield* until(
               stream.push({

@@ -99,7 +99,7 @@ export function TreeNode({
     >
       {getNodeLabel(hierarchy)}
       {hierarchy.children.map((h) => (
-        <TreeNode hierarchy={h} selection={selection} />
+        <TreeNode key={h.id} hierarchy={h} selection={selection} />
       ))}
     </sl-tree-item>
   );

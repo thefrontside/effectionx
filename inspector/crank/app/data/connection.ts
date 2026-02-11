@@ -79,7 +79,7 @@ export function createConnection<T, TClose>(
               queue.add({
                 type: "failed",
                 error: new Error(
-                  `connection closed before returning anything`,
+                  "connection closed before returning anything",
                   { cause: next.value },
                 ),
               });

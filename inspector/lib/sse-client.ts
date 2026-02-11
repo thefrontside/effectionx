@@ -80,7 +80,7 @@ export function createSSEClient<M extends Methods>(
           *next() {
             let next = yield* subscription.next();
             if (next.done) {
-              throw new Error(`connection closed`);
+              throw new Error("connection closed");
             }
 
             let { type, data } = next.value;

@@ -26,53 +26,6 @@ export interface SSEServerOptions {
   port: number;
 }
 
-const handleStaticRoutes = () => {
-  const app = new H3();
-
-  const ROOT_DIR = join(import.meta.dirname, "..");
-  const PUBLIC_DIR = join(
-    ...(ROOT_DIR === "dist"
-      ? [ROOT_DIR, "..", "crank", "dist"]
-      : [ROOT_DIR, "crank", "dist"]),
-  );
-
-  // handle static assets from the crank dist directory (js, css, etc.)
-  app.use(
-    defineEventHandler(async (event) => {
-      return await serveStatic(event, {
-        getContents: (id) => readFile(join(PUBLIC_DIR, id)),
-        getMeta: async (id) => {
-          const stats = await stat(join(PUBLIC_DIR, id)).catch(() => null);
-          if (!stats || !stats.isFile()) return;
-          return { size: stats.size, mtime: stats.mtime };
-        },
-        // assumed missed routes are likely SPA routes and handled below
-        fallthrough: true,
-      });
-    }),
-  );
-
-  // catch-all route to serve the index.html for any non-asset requests
-  // e.g. /live, /demo, etc. so client-side routing works
-  app.use(
-    "/*",
-    defineEventHandler(async (event) => {
-      return await serveStatic(event, {
-        getContents: () => readFile(join(PUBLIC_DIR, "index.html")),
-        getMeta: async () => {
-          const stats = await stat(join(PUBLIC_DIR, "index.html")).catch(
-            () => null,
-          );
-          if (!stats || !stats.isFile()) return;
-          return { size: stats.size, mtime: stats.mtime };
-        },
-      });
-    }),
-  );
-
-  return app;
-};
-
 export function useSSEServer<M extends Methods>(
   handle: Handle<M>,
   options: SSEServerOptions,
@@ -149,8 +102,36 @@ export function useSSEServer<M extends Methods>(
       });
     }
 
-    const staticAssets = handleStaticRoutes();
-    let server = serve(app.mount("/", staticAssets), {
+    const ROOT_DIR = join(import.meta.dirname, "..");
+    const PUBLIC_DIR = join(
+      ...(ROOT_DIR === "dist"
+        ? [ROOT_DIR, "..", "crank", "dist"]
+        : [ROOT_DIR, "crank", "dist"]),
+    );
+
+    const frontendRoutes = ["/live", "/recording", "/demo"];
+    // handle static assets from the crank dist directory (js, css, etc.)
+    app.use(
+      defineEventHandler(async (event) => {
+        return await serveStatic(event, {
+          getContents: (id) => {
+            const filename = frontendRoutes.includes(id) ? "index.html" : id;
+            return readFile(join(PUBLIC_DIR, filename));
+          },
+          getMeta: async (id) => {
+            const filename = frontendRoutes.includes(id) ? "index.html" : id;
+            const stats = await stat(join(PUBLIC_DIR, filename)).catch(
+              () => null,
+            );
+            if (!stats || !stats.isFile()) return;
+            return { size: stats.size, mtime: stats.mtime };
+          },
+          fallthrough: true,
+        });
+      }),
+    );
+
+    let server = serve(app, {
       port,
       silent: true,
     });

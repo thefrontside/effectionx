@@ -50,12 +50,12 @@
   },
   "exports": {
     ".": {
+      "development": "./loader.ts",
+      "default": "./dist/loader.js"
+    },
+    "./lib": {
       "development": "./mod.ts",
       "default": "./dist/mod.js"
-    },
-    "./node": {
-      "development": "./node.ts",
-      "default": "./dist/node.js"
     },
     "./package.json": "./package.json"
   }

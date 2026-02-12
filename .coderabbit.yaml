@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+early_access: true
+
+reviews:
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  collapse_walkthrough: true
+
+  path_instructions:
+    - path: "**/*.ts"
+      instructions: |
+        Review for compliance with policies in `.policies/index.md`:
+        - `.policies/stateless-streams.md` - Stream operations returning `Operation<T>` must use `*[Symbol.iterator]` pattern
+        - `.policies/no-sleep-test-sync.md` - Tests must not use `sleep()` for waiting; use deterministic helpers
+        - `.policies/version-bump.md` - PRs changing package source files must bump the version
+
+    - path: "**/package.json"
+      instructions: |
+        Review for compliance with `.policies/version-bump.md`:
+        - If source files in this package changed, version must be bumped
+        - Major for breaking changes, minor for features, patch for fixes
+
+  tools:
+    biome:
+      enabled: true
+
+chat:
+  auto_reply: true

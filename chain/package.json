@@ -1,6 +1,7 @@
 {
   "name": "@effectionx/chain",
-  "version": "0.2.0",
+  "description": "Promise-like chaining with then/catch/finally for Effection operations",
+  "version": "0.2.1",
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",

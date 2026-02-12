@@ -1,0 +1,11 @@
+.startButton {
+  font-size: x-large;
+  color: red;
+  display: inline-flex;
+  padding: 0px;
+  transform: translateY(8px);
+}
+
+.startButton::part(base) {
+  padding: 0px;
+}

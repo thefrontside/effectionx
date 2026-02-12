@@ -11,7 +11,7 @@ import { createScope, each, type Operation } from "effection";
 import { StructureInspector } from "./components/structure-inspector.tsx";
 import { createConnection, type ConnectionState } from "./data/connection.ts";
 import { Toolbar } from "./toolbar.tsx";
-import { settings } from "./data/settings.ts";
+import styles from "./live.module.css";
 
 const protocol = combine.protocols(scope, player);
 
@@ -83,6 +83,26 @@ function Status({ state }: { state: ConnectionState<unknown, unknown> }) {
         <sl-badge variant="success" pulse>
           live
         </sl-badge>
+        <sl-icon-button
+          name="play-btn"
+          label="Start"
+          class={styles.startButton}
+          onclick={() => {
+            fetch("/play", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: "[]",
+            })
+              .then((r) => {
+                if (!r.ok) {
+                  console.error("play request failed", r.status, r.statusText);
+                } else {
+                  console.log("play request succeeded", r);
+                }
+              })
+              .catch((err) => console.error("play request failed", err));
+          }}
+        ></sl-icon-button>
       </>
     );
   } else if (state.type === "closed") {

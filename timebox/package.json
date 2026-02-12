@@ -1,6 +1,7 @@
 {
   "name": "@effectionx/timebox",
-  "version": "0.4.0",
+  "description": "Constrain operations to complete within a time limit",
+  "version": "0.4.1",
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",

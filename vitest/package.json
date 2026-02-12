@@ -1,6 +1,7 @@
 {
   "name": "@effectionx/vitest",
-  "version": "0.2.0",
+  "description": "Vitest adapter for writing tests as Effection generator functions",
+  "version": "0.2.1",
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",

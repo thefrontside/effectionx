@@ -17,6 +17,7 @@ This is the **single source of truth** for all policies in this repository.
 | [No-Sleep Test Synchronization](./no-sleep-test-sync.md) | Recommended | Use deterministic helpers instead of sleep() for test synchronization |
 | [Stateless Stream Operations](./stateless-streams.md) | Recommended | Use `*[Symbol.iterator]` pattern for reusable stream operations |
 | [Version Bump](./version-bump.md) | Recommended | PRs changing package code must include a semantic version bump |
+| [Package.json Metadata](./package-json-metadata.md) | Strict | Every published package must include a description field |
 
 <!-- Example entries:
 | [Naming Conventions](./naming-conventions.md) | Strict | File and function naming patterns |

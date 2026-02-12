@@ -6,7 +6,6 @@ import type { Context } from "@b9g/crank";
 import { Graphic } from "./graphic.tsx";
 import { createCrankScope } from "../lib/crank-scope.ts";
 import { settings } from "../data/settings.ts";
-import { each } from "effection";
 
 export interface StructureInspectorFilters {
   showInspectorRuntime: boolean;
@@ -17,21 +16,15 @@ export interface StructureInspectorProps {
   structure?: Stratification;
 }
 
-export async function* StructureInspector(
+export function* StructureInspector(
   this: Context<StructureInspectorProps>,
   { structure = initialStructure() }: StructureInspectorProps,
-): AsyncGenerator<Element> {
-  await using scope = createCrankScope();
+): Generator<Element> {
+  let scope = createCrankScope(this);
 
   let selection: Hierarchy | undefined = undefined;
-  let cxt = this;
 
-  scope.run(function* () {
-    for ({} of yield* each(settings)) {
-      cxt.refresh();
-      yield* each.next();
-    }
-  });
+  let filters = scope.bind(settings, settings.value);
 
   this.addEventListener("sl-selection-change", (e) => {
     let [item] = e.detail.selection;
@@ -40,8 +33,7 @@ export async function* StructureInspector(
   });
 
   for ({ structure = initialStructure() } of this) {
-    let filters = settings.value;
-    let root = applyFilters(filters, structure.root);
+    let root = applyFilters(filters.value, structure.root);
     selection = selection ?? root;
 
     yield (

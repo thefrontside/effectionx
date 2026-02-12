@@ -7,11 +7,11 @@ import { createSSEClient } from "../../lib/sse-client.ts";
 import { protocol as scope } from "../../scope/protocol.ts";
 import { protocol as player } from "../../player/protocol.ts";
 import { combine } from "../../lib/combine.ts";
-import { createScope, each, type Operation } from "effection";
 import { StructureInspector } from "./components/structure-inspector.tsx";
 import { createConnection, type ConnectionState } from "./data/connection.ts";
 import { Toolbar } from "./toolbar.tsx";
 import styles from "./live.module.css";
+import { createCrankScope } from "./lib/crank-scope.ts";
 
 const protocol = combine.protocols(scope, player);
 
@@ -24,55 +24,87 @@ const hierarchies = pipe(
 );
 
 export async function* Live(this: Context): AsyncGenerator<Element> {
-  let [scope, destroy] = createScope();
+  console.log({ this: this });
+  let scope = createCrankScope(this);
 
-  let connection = createConnection(hierarchies);
-
-  let props = { state: connection.initial };
-
-  let refresh = this.refresh.bind(this);
-
-  scope.run(function* (): Operation<void> {
-    for (let state of yield* each(connection)) {
-      refresh(() => (props.state = state));
-      yield* each.next();
-    }
+  let connection = scope.bind(createConnection(hierarchies), {
+    type: "pending",
   });
 
-  try {
-    for ({} of this) {
-      let { state } = props;
-      let status = <Status state={state} />;
-      switch (state.type) {
-        case "pending":
-          yield status;
-          break;
-        case "failed":
-          yield (
-            <>
-              <Toolbar>
-                <Status state={state} />
-              </Toolbar>
-              {state.error}
-            </>
-          );
-          break;
-        case "closed":
-        case "live":
-          yield (
-            <>
-              <Toolbar>
-                <Status state={state} />
-              </Toolbar>
-              <StructureInspector structure={state.latest} />
-            </>
-          );
-          break;
-      }
+  let player = scope.bind(client.methods.watchPlayerState(), "paused");
+
+  for ({} of this) {
+    let state = connection.value;
+    let status = <Status state={state} />;
+    switch (state.type) {
+      case "pending":
+        yield status;
+        break;
+      case "failed":
+        yield (
+          <>
+            <Toolbar>
+              <Status state={state} />
+            </Toolbar>
+            {state.error}
+          </>
+        );
+        break;
+      case "closed":
+        yield (
+          <>
+            <Toolbar>
+              <Status state={state} />
+            </Toolbar>
+            <StructureInspector structure={state.latest} />
+          </>
+        );
+        break;
+      case "live":
+        yield (
+          <>
+            <Toolbar>
+              <Status state={state} />
+              <PauseControls status={player.value} />
+            </Toolbar>
+            <StructureInspector structure={state.latest} />
+          </>
+        );
+        break;
     }
-  } finally {
-    await destroy();
   }
+}
+
+type PlayerStatus = "playing" | "paused";
+
+function PauseControls({
+  status,
+  unpause = () => {},
+}: { status: PlayerStatus; unpause?: () => void }): Element {
+  unpause();
+  return (
+    <sl-icon-button
+      name="play-btn"
+      label="Play"
+      class={styles.startButton}
+      onclick={() =>
+        fetch("/play", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "[]",
+        })
+          .then((r) => {
+            if (!r.ok) {
+              console.error("play request failed", r.status, r.statusText);
+            } else {
+              console.log("play request succeeded", r);
+            }
+          })
+          .catch((err) => console.error("play request failed", err))
+      }
+      disabled={status === "playing"}
+    ></sl-icon-button>
+  );
 }
 
 function Status({ state }: { state: ConnectionState<unknown, unknown> }) {
@@ -83,26 +115,6 @@ function Status({ state }: { state: ConnectionState<unknown, unknown> }) {
         <sl-badge variant="success" pulse>
           live
         </sl-badge>
-        <sl-icon-button
-          name="play-btn"
-          label="Start"
-          class={styles.startButton}
-          onclick={() => {
-            fetch("/play", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: "[]",
-            })
-              .then((r) => {
-                if (!r.ok) {
-                  console.error("play request failed", r.status, r.statusText);
-                } else {
-                  console.log("play request succeeded", r);
-                }
-              })
-              .catch((err) => console.error("play request failed", err));
-          }}
-        ></sl-icon-button>
       </>
     );
   } else if (state.type === "closed") {

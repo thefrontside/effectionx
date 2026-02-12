@@ -30,10 +30,6 @@ global.around(api.Main, {
         }
 
         yield* body(args);
-
-        if (args.includes("--suspend")) {
-          yield* pause();
-        }
       } finally {
         yield* detach();
       }

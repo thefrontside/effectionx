@@ -17,7 +17,7 @@ This document defines the strict policy for required metadata fields in package.
 - Write for npm search and AI agent discovery
 - Use present tense, active voice
 - Start with a verb or noun describing what the package does
-- No markdown formatting
+- No Markdown formatting
 - No trailing period
 - Under 120 characters
 
@@ -80,7 +80,7 @@ Before marking a review complete, verify:
 
 - [ ] `description` field is present in package.json
 - [ ] Description is under 120 characters
-- [ ] Description does not contain markdown formatting
+- [ ] Description does not contain Markdown formatting
 - [ ] Description does not have a trailing period
 - [ ] Description starts with an action verb or noun (not "This package..." or "A library for...")
 

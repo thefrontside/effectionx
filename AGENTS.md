@@ -90,7 +90,7 @@ Each package requires:
 ### package.json Requirements
 
 - `name`: `@effectionx/<package-name>`
-- `description`: Required — concise, under 120 chars, no markdown (see [Package.json Metadata policy](.policies/package-json-metadata.md))
+- `description`: Required — single sentence, under 120 chars, no Markdown, no trailing period (see [Package.json Metadata policy](.policies/package-json-metadata.md))
 - `type`: `"module"`
 - `exports`: Must include `development` and `default` conditions
 - `peerDependencies`: Usually `effection: "^3 || ^4"`

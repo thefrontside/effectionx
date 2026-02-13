@@ -6,6 +6,7 @@ packages:
   - "converge"
   # deno-deploy excluded - deprecated Deno-only package
   - "effect-ts"
+  - "fetch"
   - "fs"
   - "fx"
   - "jsonl-store"

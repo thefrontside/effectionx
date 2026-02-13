@@ -48,7 +48,6 @@ export function createSubject<T>(): <TClose>(
         ? {
             *next() {
               iterator = upstream;
-              // biome-ignore lint/style/noNonNullAssertion: current checked in ternary condition
               return current!;
             },
           }

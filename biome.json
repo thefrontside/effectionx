@@ -9,7 +9,10 @@
       "recommended": true,
       "style": {
         "noParameterAssign": "off",
-        "useConst": "off"
+        "useConst": "off",
+        "noNonNullAssertion": "off",
+        "noUselessElse": "off",
+        "noUnusedTemplateLiteral": "off"
       },
       "correctness": {
         "useYield": "off"

@@ -269,8 +269,8 @@ importers:
   scope-eval:
     dependencies:
       effection:
-        specifier: https://pkg.pr.new/thefrontside/effection@5010883
-        version: https://pkg.pr.new/thefrontside/effection@5010883
+        specifier: 4.1.0-alpha.3
+        version: 4.1.0-alpha.3
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*

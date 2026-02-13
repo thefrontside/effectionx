@@ -74,7 +74,6 @@ export function useTaskBuffer(max: number): Operation<TaskBuffer> {
         if (requests.length === 0) {
           yield* next(input);
         } else if (buffer.size < max) {
-          // biome-ignore lint/style/noNonNullAssertion: requests.length > 0 from else branch
           const request = requests.pop()!;
           let task = yield* scope.spawn(request.operation);
           buffer.add(task);

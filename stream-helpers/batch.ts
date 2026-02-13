@@ -41,7 +41,6 @@ export function batch(
             value: undefined as never,
           };
           if (lastPull && options.maxTime) {
-            // biome-ignore lint/style/noNonNullAssertion: lastPull checked above
             const timeout = yield* timebox(options.maxTime, () => lastPull!);
             if (timeout.timeout) {
               yield* lastPull.halt();

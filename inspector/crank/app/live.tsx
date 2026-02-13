@@ -24,7 +24,6 @@ const hierarchies = pipe(
 );
 
 export async function* Live(this: Context): AsyncGenerator<Element> {
-  console.log({ this: this });
   let scope = createCrankScope(this);
 
   let connection = scope.bind(createConnection(hierarchies), {

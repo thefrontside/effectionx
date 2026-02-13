@@ -19,9 +19,23 @@ reviews:
 
     - path: "**/package.json"
       instructions: |
-        Review for compliance with `.policies/version-bump.md`:
+        Review for compliance with policies in `.policies/index.md`:
+        - `.policies/package-json-metadata.md` (Strict): every published package must include a non-empty `description` field
+        - Description policy requirements: single sentence, under 120 chars, no Markdown, no trailing period
+        - Strict policy violations must be treated as blocking
+        - `.policies/version-bump.md`:
         - If source files in this package changed, version must be bumped
         - Major for breaking changes, minor for features, patch for fixes
+
+  pre_merge_checks:
+    custom_checks:
+      - mode: error
+        name: Policy Compliance
+        instructions: |
+          Enforce policy compliance using `.policies/index.md` as the single source of truth.
+          - Strict and Recommended policy violations must fail this check.
+          - For `**/package.json`, enforce `.policies/package-json-metadata.md` (non-empty `description` with required format).
+          - For package source changes, enforce `.policies/version-bump.md`.
 
   tools:
     biome:

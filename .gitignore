@@ -40,3 +40,6 @@ dist/
 # pnpm config (created by test-matrix runner)
 .npmrc
 
+# Agent shell directories
+.agent-shell/
+

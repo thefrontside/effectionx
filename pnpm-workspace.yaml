@@ -14,6 +14,7 @@ packages:
   - "raf"
   - "scope-eval"
   - "signals"
+  - "inline"
   - "stream-helpers"
   - "stream-yaml"
   - "task-buffer"

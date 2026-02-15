@@ -44,14 +44,8 @@ import { run, type Operation } from "effection";
  * ```
  */
 export function vuIteration<T>(makeOp: () => Operation<T>) {
-  return function iteration(): void {
-    // Start Effection scope and run to completion
-    // Using .then() to handle the promise synchronously from K6's perspective
-    // K6 will wait for the event loop to drain before moving on
-    run(makeOp).catch((error) => {
-      // Re-throw to fail the iteration
-      throw error;
-    });
+  return function iteration() {
+    return run(makeOp);
   };
 }
 

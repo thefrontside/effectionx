@@ -56,6 +56,13 @@ const pendingTests: PendingTest[] = [];
 // Track describe path for full test names
 const describeStack: string[] = [];
 
+function isDebugEnabled(): boolean {
+  const env = (globalThis as Record<string, unknown>).__ENV as
+    | Record<string, string>
+    | undefined;
+  return env?.EFFECTIONX_K6_TEST_DEBUG === "1";
+}
+
 /**
  * Define a test suite. Can be nested.
  *
@@ -264,6 +271,7 @@ export interface TestSummary {
 export function* runTests(): Operation<TestSummary> {
   const results: TestResult[] = [];
   const adaptersToDestroy = new Set<TestAdapter>();
+  const debug = isDebugEnabled();
 
   for (const test of pendingTests) {
     // Collect all adapters for cleanup
@@ -296,6 +304,10 @@ export function* runTests(): Operation<TestSummary> {
     let passed = false;
     let error: Error | undefined;
 
+    if (debug) {
+      console.log(`[effectionx/k6/testing] START ${test.fullName}`);
+    }
+
     try {
       // Run the test through the adapter - Future extends Operation so we can yield* directly
       const result: Result<void> = yield* test.adapter.runTest(test.body);
@@ -312,6 +324,12 @@ export function* runTests(): Operation<TestSummary> {
     }
 
     const duration = Date.now() - startTime;
+
+    if (debug) {
+      console.log(
+        `[effectionx/k6/testing] END ${test.fullName} passed=${passed} duration=${duration}ms`,
+      );
+    }
 
     results.push({
       name: test.fullName,

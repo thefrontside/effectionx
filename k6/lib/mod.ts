@@ -76,7 +76,7 @@ export {
   type WebSocketMessage,
   type WebSocketCloseEvent,
   type WebSocketErrorEvent,
-} from "../websocket/mod.ts";
+} from "../websockets/mod.ts";
 
 // Re-export stream helpers for convenience
 export { each, interval } from "effection";

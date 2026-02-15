@@ -9,6 +9,14 @@
     ".": {
       "development": "./mod.ts",
       "default": "./dist/mod.js"
+    },
+    "./http": {
+      "development": "./http/mod.ts",
+      "default": "./dist/http/mod.js"
+    },
+    "./websockets": {
+      "development": "./websockets/mod.ts",
+      "default": "./dist/websockets/mod.js"
     }
   },
   "scripts": {

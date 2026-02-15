@@ -7,7 +7,7 @@
  * - Errors propagate properly and fail the test
  * - Cleanup is automatic when the scope ends
  *
- * Uses K6's experimental WebSocket API which has better event support.
+ * Uses K6's WebSocket API (k6/websockets) which has better event support.
  *
  * Note: K6's WebSocket has `addEventListener` but NOT `removeEventListener`,
  * so we cannot use the generic `on` helper from `@effectionx/node`. Instead,
@@ -41,7 +41,7 @@ import {
   withResolvers,
 } from "effection";
 
-// K6 WebSocket types - these match k6/experimental/websockets
+// K6 WebSocket types - these match k6/websockets
 // We declare them here to avoid module resolution issues at compile time
 // (k6/* modules only exist in the K6 runtime)
 
@@ -83,8 +83,8 @@ const ReadyState = {
   CLOSED: 3,
 } as const;
 
-// This will be available at runtime from k6/experimental/websockets
-import { WebSocket as K6WebSocketClass } from "k6/experimental/websockets";
+// This will be available at runtime from k6/websockets
+import { WebSocket as K6WebSocketClass } from "k6/websockets";
 
 type WebSocketConstructor = new (
   url: string,

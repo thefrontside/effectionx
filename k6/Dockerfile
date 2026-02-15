@@ -3,10 +3,12 @@
 # This builds a custom K6 binary that includes the Sobek yield-in-finally fix
 # required for Effection's structured concurrency cleanup semantics.
 #
+# Prerequisites:
+#   Run `node build.js` in the k6 directory to build the JS bundles first.
+#
 # Multi-stage build:
 #   1. Build custom K6 with patched Sobek
-#   2. Build JS bundle (conformance tests, demos, library)
-#   3. Alpine runtime with custom K6
+#   2. Alpine runtime with custom K6 + pre-built JS bundles
 
 # =============================================================================
 # Stage 1: Build custom K6 with Sobek fix
@@ -29,27 +31,7 @@ RUN echo 'replace github.com/grafana/sobek => github.com/taras/sobek v0.0.0-2026
 RUN go mod tidy && go build -mod=mod -o k6 ./
 
 # =============================================================================
-# Stage 2: Build JS bundles
-# =============================================================================
-FROM node:22-alpine AS js-builder
-
-WORKDIR /app
-
-# Copy package files
-COPY package.json pnpm-lock.yaml* ./
-
-# Install pnpm and dependencies
-RUN corepack enable && corepack prepare pnpm@latest --activate
-RUN npm install
-
-# Copy source files
-COPY . .
-
-# Build all bundles (conformance, library, demos)
-RUN pnpm run build:bundle
-
-# =============================================================================
-# Stage 3: Runtime image with custom K6
+# Stage 2: Runtime image with custom K6
 # =============================================================================
 FROM alpine:latest
 
@@ -59,8 +41,8 @@ RUN apk add --no-cache ca-certificates
 # Copy custom K6 binary
 COPY --from=k6-builder /build/k6 /usr/local/bin/k6
 
-# Copy built bundles
-COPY --from=js-builder /app/dist /tests
+# Copy pre-built bundles (must run `node build.js` first)
+COPY dist /tests
 
 # Set working directory
 WORKDIR /tests

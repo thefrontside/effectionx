@@ -2,7 +2,7 @@
  * Unified tags context for K6 metrics tagging.
  *
  * Groups are stored as a derived property on the tags map using "::" separator.
- * The tags context is seeded from exec.vu.tags at module load time.
+ * Call `initTags()` at the start of your main() operation to seed from exec.vu.tags.
  *
  * @packageDocumentation
  */
@@ -32,12 +32,27 @@ function parseTags(raw: Record<string, unknown> | undefined): Tags {
 }
 
 /**
- * Context holding the current tags, seeded from exec.vu.tags.
+ * Context holding the current tags.
+ * Default is empty - call initTags() to seed from exec.vu.tags.
  */
-export const TagsContext = createContext<Tags>(
-  "k6.tags",
-  parseTags(exec?.vu?.tags),
-);
+export const TagsContext = createContext<Tags>("k6.tags", {});
+
+/**
+ * Initialize tags context from K6's exec.vu.tags.
+ * Call this at the start of your main() operation.
+ *
+ * @example
+ * ```typescript
+ * export default main(function*() {
+ *   yield* initTags();
+ *   // Now useTags(), useGroups(), etc. work correctly
+ * });
+ * ```
+ */
+export function* initTags(): Operation<void> {
+  const vuTags = parseTags(exec?.vu?.tags);
+  yield* TagsContext.set(vuTags);
+}
 
 /**
  * Get current tags map.

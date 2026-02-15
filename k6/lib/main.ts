@@ -20,6 +20,7 @@
  */
 
 import { run, type Operation } from "effection";
+import { initTags } from "./tags.ts";
 
 /**
  * Wraps an Effection operation as a K6 VU iteration function.
@@ -29,6 +30,7 @@ import { run, type Operation } from "effection";
  * - Proper error propagation (test fails if operation throws)
  * - Proper cleanup (finally blocks run before iteration ends)
  * - Deterministic teardown (Effection scope closes before K6 moves on)
+ * - Tags context is initialized from K6's exec.vu.tags
  *
  * @param makeOp - Factory function that creates the operation to run.
  *                 Called fresh for each VU iteration.
@@ -45,6 +47,9 @@ import { run, type Operation } from "effection";
  */
 export function main<T>(makeOp: () => Operation<T>) {
   return function iteration() {
-    return run(makeOp);
+    return run(function* () {
+      yield* initTags();
+      return yield* makeOp();
+    });
   };
 }

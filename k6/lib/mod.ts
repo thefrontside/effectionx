@@ -67,7 +67,11 @@ export {
 } from "../http/mod.ts";
 
 // WebSocket (re-export from separate module)
-export { useWebSocket, type WebSocket, type WebSocketMessage } from "../websockets/mod.ts";
+export {
+  useWebSocket,
+  type WebSocket,
+  type WebSocketMessage,
+} from "../websockets/mod.ts";
 
 // Re-export Effection primitives for convenience
 export { each, interval, spawn } from "effection";

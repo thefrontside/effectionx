@@ -31,7 +31,7 @@ import type {
   RequestBody,
 } from "k6/http";
 import * as k6Http from "k6/http";
-import { useGroups } from "./group.ts";
+import { useTags } from "./tags.ts";
 
 type HttpURL = ReturnType<typeof k6Http.url>;
 
@@ -40,39 +40,24 @@ type HttpURL = ReturnType<typeof k6Http.url>;
  * Effection-specific options.
  */
 export interface HttpParams<RT extends ResponseType | undefined>
-  extends RefinedParams<RT> {
-  /**
-   * If true, automatically add the current group as a tag.
-   * Defaults to true.
-   */
-  tagWithGroup?: boolean;
-}
+  extends RefinedParams<RT> {}
 
 /**
- * Adds the current group as a tag to the request params.
+ * Merges context tags with request params.
  */
-function* addGroupTag<RT extends ResponseType | undefined>(
+function* mergeContextTags<RT extends ResponseType | undefined>(
   params?: HttpParams<RT>,
 ): Operation<RefinedParams<RT> | undefined> {
-  const tagWithGroup = params?.tagWithGroup ?? true;
-  if (!tagWithGroup) {
-    return params;
-  }
+  const contextTags = yield* useTags();
 
-  const groups = yield* useGroups();
-  const groupPath = groups.join("/");
-  if (groupPath === "") {
-    return params;
-  }
-
-  // RefinedParams extends Params which has tags
-  const existingTags = (params as RefinedParams<RT>)?.tags ?? {};
+  // Per-request tags override context tags
+  const requestTags = (params as RefinedParams<RT>)?.tags ?? {};
 
   return {
     ...params,
     tags: {
-      ...existingTags,
-      group: groupPath,
+      ...contextTags,
+      ...requestTags,
     },
   } as RefinedParams<RT>;
 }
@@ -98,7 +83,7 @@ export function* get<RT extends ResponseType | undefined = undefined>(
   url: string | HttpURL,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
-  const taggedParams = yield* addGroupTag(params);
+  const taggedParams = yield* mergeContextTags(params);
   return yield* call(() => k6Http.get<RT>(url, taggedParams));
 }
 
@@ -127,7 +112,7 @@ export function* post<RT extends ResponseType | undefined = undefined>(
   body?: RequestBody | null,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
-  const taggedParams = yield* addGroupTag(params);
+  const taggedParams = yield* mergeContextTags(params);
   return yield* call(() => k6Http.post<RT>(url, body, taggedParams));
 }
 
@@ -144,7 +129,7 @@ export function* put<RT extends ResponseType | undefined = undefined>(
   body?: RequestBody | null,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
-  const taggedParams = yield* addGroupTag(params);
+  const taggedParams = yield* mergeContextTags(params);
   return yield* call(() => k6Http.put<RT>(url, body, taggedParams));
 }
 
@@ -161,7 +146,7 @@ export function* patch<RT extends ResponseType | undefined = undefined>(
   body?: RequestBody | null,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
-  const taggedParams = yield* addGroupTag(params);
+  const taggedParams = yield* mergeContextTags(params);
   return yield* call(() => k6Http.patch<RT>(url, body, taggedParams));
 }
 
@@ -178,7 +163,7 @@ export function* del<RT extends ResponseType | undefined = undefined>(
   body?: RequestBody | null,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
-  const taggedParams = yield* addGroupTag(params);
+  const taggedParams = yield* mergeContextTags(params);
   return yield* call(() => k6Http.del<RT>(url, body, taggedParams));
 }
 
@@ -193,7 +178,7 @@ export function* head<RT extends ResponseType | undefined = undefined>(
   url: string | HttpURL,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
-  const taggedParams = yield* addGroupTag(params);
+  const taggedParams = yield* mergeContextTags(params);
   return yield* call(() => k6Http.head<RT>(url, taggedParams));
 }
 
@@ -210,7 +195,7 @@ export function* options<RT extends ResponseType | undefined = undefined>(
   body?: RequestBody | null,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
-  const taggedParams = yield* addGroupTag(params);
+  const taggedParams = yield* mergeContextTags(params);
   return yield* call(() => k6Http.options<RT>(url, body, taggedParams));
 }
 
@@ -231,7 +216,7 @@ export function* request<RT extends ResponseType | undefined = undefined>(
   body?: RequestBody | null,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
-  const taggedParams = yield* addGroupTag(params);
+  const taggedParams = yield* mergeContextTags(params);
   return yield* call(() => k6Http.request<RT>(method, url, body, taggedParams));
 }
 

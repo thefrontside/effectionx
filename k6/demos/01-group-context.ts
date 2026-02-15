@@ -20,7 +20,14 @@
  */
 
 import { sleep } from "k6";
-import { main, group, withGroup, useGroups, http } from "../lib/mod.ts";
+import {
+  main,
+  group,
+  withGroup,
+  useGroups,
+  useTags,
+  http,
+} from "../lib/mod.ts";
 
 // K6 options
 export const options = {
@@ -77,6 +84,10 @@ export default main(function* () {
   // Outside all groups
   const outside = yield* useGroups();
   console.log(`Current groups: ${JSON.stringify(outside)}`);
+
+  // Show full tags context
+  const tags = yield* useTags();
+  console.log(`Full tags context: ${JSON.stringify(tags)}`);
 
   console.log("\n=== Demo Complete ===");
   console.log("Group context was preserved across all async boundaries!");

@@ -41,13 +41,16 @@
 // VU iteration wrapper
 export { main } from "./run.ts";
 
-// Group context management
+// Tags and group context management
 export {
+  TagsContext,
+  useTags,
+  withTags,
+  useGroups,
   group,
   withGroup,
-  useGroups,
-  GroupContext,
-} from "./group.ts";
+  type Tags,
+} from "./tags.ts";
 
 // HTTP wrappers
 export {

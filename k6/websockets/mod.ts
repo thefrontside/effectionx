@@ -16,14 +16,14 @@
  *
  * @example
  * ```typescript
- * import { main, useWebSocket } from '@effectionx/k6';
+ * import { main, useWebSocket, each } from '@effectionx/k6';
  *
  * export default main(function*() {
  *   const ws = yield* useWebSocket('wss://echo.websocket.org');
  *
  *   ws.send('Hello');
  *
- *   for (const message of yield* each(ws.messages)) {
+ *   for (const message of yield* each(ws)) {
  *     console.log('Received:', message);
  *     yield* each.next();
  *   }
@@ -116,17 +116,18 @@ export interface WebSocketErrorEvent {
 /**
  * An Effection-managed WebSocket.
  *
- * The resource provides:
- * - `send()` - Send messages to the server
- * - `close()` - Close the connection (returns Operation that resolves when closed)
- * - `messages` - Stream of incoming messages
+ * The WebSocket is itself a Stream of messages. Use `each(ws)` to iterate:
+ *
+ * ```typescript
+ * for (const msg of yield* each(ws)) {
+ *   console.log('Received:', msg);
+ *   yield* each.next();
+ * }
+ * ```
  *
  * The WebSocket is automatically closed when the scope ends.
  */
-export interface WebSocket {
-  /** Stream of incoming messages */
-  readonly messages: Stream<WebSocketMessage, void>;
-
+export interface WebSocket extends Stream<WebSocketMessage, void> {
   /** Send a message to the server */
   send(data: string | ArrayBuffer): void;
 
@@ -150,7 +151,7 @@ export interface WebSocket {
  * const ws = yield* useWebSocket('wss://api.example.com/ws');
  * ws.send(JSON.stringify({ type: 'subscribe', channel: 'updates' }));
  *
- * for (const msg of yield* each(ws.messages)) {
+ * for (const msg of yield* each(ws)) {
  *   const data = JSON.parse(msg as string);
  *   console.log('Update:', data);
  *   yield* each.next();
@@ -216,7 +217,8 @@ export function useWebSocket(
 
     // Create the resource object
     const ws: WebSocket = {
-      messages: messageSignal,
+      // Delegate Stream iteration to messageSignal
+      [Symbol.iterator]: messageSignal[Symbol.iterator].bind(messageSignal),
 
       send(data: string | ArrayBuffer) {
         socket.send(data);
@@ -263,7 +265,7 @@ export function useWebSocket(
  * ```typescript
  * const result = yield* withWebSocket('wss://api.example.com', function*(ws) {
  *   ws.send('ping');
- *   const subscription = yield* ws.messages;
+ *   const subscription = yield* ws;
  *   const msg = yield* subscription.next();
  *   return msg.value;
  * });
@@ -297,7 +299,7 @@ export function* collectMessages(
   count: number,
 ): Operation<WebSocketMessage[]> {
   const messages: WebSocketMessage[] = [];
-  const subscription = yield* ws.messages;
+  const subscription = yield* ws;
 
   while (messages.length < count) {
     const result = yield* subscription.next();
@@ -332,7 +334,7 @@ export function* waitForMessage(
   ws: WebSocket,
   predicate: (msg: WebSocketMessage) => boolean,
 ): Operation<WebSocketMessage> {
-  const subscription = yield* ws.messages;
+  const subscription = yield* ws;
 
   while (true) {
     const result = yield* subscription.next();

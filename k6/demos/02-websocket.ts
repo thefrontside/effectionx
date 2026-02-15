@@ -81,7 +81,7 @@ export default main(function* () {
   ws.send("Message 3");
 
   let count = 0;
-  for (const message of yield* each(ws.messages)) {
+  for (const message of yield* each(ws)) {
     count++;
     console.log(`Stream message ${count}: ${message}`);
 

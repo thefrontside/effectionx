@@ -15,7 +15,10 @@ import { testYieldThrow } from "./04-yield-throw.ts";
 import { testYieldReturn } from "./05-yield-return.ts";
 import { testPromises, testPromisesAsync } from "./06-promises.ts";
 import { testTimers, testTimersAsync } from "./07-timers.ts";
-import { testAbortController, testAbortControllerAsync } from "./08-abort-controller.ts";
+import {
+  testAbortController,
+  testAbortControllerAsync,
+} from "./08-abort-controller.ts";
 
 export type { ConformanceResult, ConformanceResults };
 

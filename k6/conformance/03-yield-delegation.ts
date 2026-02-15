@@ -39,7 +39,12 @@ export function testYieldDelegation(): ConformanceResult {
       result = gen.next();
     }
 
-    if (values.length !== 3 || values[0] !== 1 || values[1] !== 2 || values[2] !== 3) {
+    if (
+      values.length !== 3 ||
+      values[0] !== 1 ||
+      values[1] !== 2 ||
+      values[2] !== 3
+    ) {
       return {
         pass: false,
         message: "yield* did not delegate values correctly",
@@ -85,7 +90,12 @@ export function testYieldDelegation(): ConformanceResult {
       opResult = opGen.next();
     }
 
-    if (opValues.length !== 3 || opValues[0] !== 10 || opValues[1] !== 20 || opValues[2] !== 30) {
+    if (
+      opValues.length !== 3 ||
+      opValues[0] !== 10 ||
+      opValues[1] !== 20 ||
+      opValues[2] !== 30
+    ) {
       return {
         pass: false,
         message: "yield* did not delegate to custom iterable",
@@ -130,7 +140,13 @@ export function testYieldDelegation(): ConformanceResult {
       nestedResult = nestedGen.next();
     }
 
-    const expectedNested = ["L1-before", "L2-before", "L3", "L2-after", "L1-after"];
+    const expectedNested = [
+      "L1-before",
+      "L2-before",
+      "L3",
+      "L2-after",
+      "L1-after",
+    ];
     if (JSON.stringify(nestedValues) !== JSON.stringify(expectedNested)) {
       return {
         pass: false,

@@ -128,7 +128,12 @@ export async function testTimersAsync(): Promise<ConformanceResult> {
       }, 30);
     });
 
-    if (sequence.length !== 3 || sequence[0] !== 1 || sequence[1] !== 2 || sequence[2] !== 3) {
+    if (
+      sequence.length !== 3 ||
+      sequence[0] !== 1 ||
+      sequence[1] !== 2 ||
+      sequence[2] !== 3
+    ) {
       return {
         pass: false,
         message: "setTimeout sequence order incorrect",

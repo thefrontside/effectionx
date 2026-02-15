@@ -19,7 +19,7 @@
 
 import { sleep } from "k6";
 import {
-  vuIteration,
+  main,
   group,
   currentGroupString,
   currentGroupPath,
@@ -48,7 +48,7 @@ export const options = {
  */
 
 // The @effectionx/k6 solution
-export default vuIteration(function* () {
+export default main(function* () {
   console.log("=== Demo: Group Context Preservation ===\n");
 
   // Demonstrate nested groups with context preservation

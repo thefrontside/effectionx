@@ -20,7 +20,7 @@
  */
 
 import {
-  vuIteration,
+  main,
   useWebSocket,
   collectMessages,
   waitForMessage,
@@ -58,7 +58,7 @@ export const options = {
  */
 
 // The @effectionx/k6 solution
-export default vuIteration(function* () {
+export default main(function* () {
   console.log("=== Demo: Structured WebSocket Handling ===\n");
 
   // Connect to WebSocket - connection is a resource with structured cleanup

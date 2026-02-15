@@ -130,7 +130,11 @@ export function testYieldThrow(): ConformanceResult {
       };
     }
 
-    if (errorPath[0] !== "L3-catch" || errorPath[1] !== "L2-catch" || errorPath[2] !== "L1-catch") {
+    if (
+      errorPath[0] !== "L3-catch" ||
+      errorPath[1] !== "L2-catch" ||
+      errorPath[2] !== "L1-catch"
+    ) {
       return {
         pass: false,
         message: "Error propagation order incorrect",
@@ -138,7 +142,10 @@ export function testYieldThrow(): ConformanceResult {
       };
     }
 
-    if (multiLevelResult.value !== "L1-recovered" || multiLevelResult.done !== true) {
+    if (
+      multiLevelResult.value !== "L1-recovered" ||
+      multiLevelResult.done !== true
+    ) {
       return {
         pass: false,
         message: "Final recovery value not correct",

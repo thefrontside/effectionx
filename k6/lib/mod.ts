@@ -11,9 +11,9 @@
  *
  * @example Basic usage
  * ```typescript
- * import { vuIteration, group, http } from '@effectionx/k6';
+ * import { main, group, http } from '@effectionx/k6';
  *
- * export default vuIteration(function*() {
+ * export default main(function*() {
  *   yield* group('api-tests', function*() {
  *     const response = yield* http.get('https://api.example.com/users');
  *     console.log(`Status: ${response.status}`);
@@ -23,9 +23,9 @@
  *
  * @example WebSocket with structured concurrency
  * ```typescript
- * import { vuIteration, useWebSocket, collectMessages } from '@effectionx/k6';
+ * import { main, useWebSocket, collectMessages } from '@effectionx/k6';
  *
- * export default vuIteration(function*() {
+ * export default main(function*() {
  *   const ws = yield* useWebSocket('wss://echo.websocket.org');
  *   ws.send('Hello!');
  *   const [echo] = yield* collectMessages(ws, 1);
@@ -38,7 +38,7 @@
  */
 
 // VU iteration wrapper
-export { vuIteration, runOperation } from "./run.ts";
+export { main } from "./run.ts";
 
 // Group context management
 export {

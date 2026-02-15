@@ -61,9 +61,9 @@ The conformance suite validates:
 ## Usage
 
 ```typescript
-import { vuIteration, group, currentGroupString, http } from '@effectionx/k6';
+import { main, group, currentGroupString, http } from '@effectionx/k6';
 
-export default vuIteration(function*() {
+export default main(function*() {
   // Async-aware group that preserves context
   yield* group("api-tests", function*() {
     const response = yield* http.get("https://api.example.com/users");
@@ -116,7 +116,7 @@ docker compose run --rm dev k6 run /scripts/dist/demos/01-group-context.js
 
 ### Core
 
-- **`vuIteration(op)`** - Wrap an Effection operation as a K6 VU iteration function
+- **`main(op)`** - Wrap an Effection operation as a K6 VU iteration function
 - **`group(name, op)`** - Execute operation within a named group with proper context scoping
 - **`currentGroupPath()`** - Get current group path as array (e.g., `["api", "users"]`)
 - **`currentGroupString()`** - Get current group path as string (e.g., `"api/users"`)

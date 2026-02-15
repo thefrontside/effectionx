@@ -11,9 +11,9 @@
  *
  * @example
  * ```typescript
- * import { vuIteration, group, http } from '@effectionx/k6';
+ * import { main, group, http } from '@effectionx/k6';
  *
- * export default vuIteration(function*() {
+ * export default main(function*() {
  *   yield* group("api-tests", function*() {
  *     // Context is preserved across async boundaries
  *     const response = yield* http.get("https://api.example.com");

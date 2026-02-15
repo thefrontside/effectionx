@@ -11,9 +11,9 @@
  *
  * @example
  * ```typescript
- * import { vuIteration, useWebSocket } from '@effectionx/k6';
+ * import { main, useWebSocket } from '@effectionx/k6';
  *
- * export default vuIteration(function*() {
+ * export default main(function*() {
  *   const ws = yield* useWebSocket('wss://echo.websocket.org');
  *
  *   ws.send('Hello');

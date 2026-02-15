@@ -6,9 +6,9 @@
  *
  * @example
  * ```typescript
- * import { vuIteration, group, currentGroup } from '@effectionx/k6';
+ * import { main, group, currentGroupPath } from '@effectionx/k6';
  *
- * export default vuIteration(function*() {
+ * export default main(function*() {
  *   yield* group('api-tests', function*() {
  *     const response = yield* httpGet('https://api.example.com');
  *
@@ -61,10 +61,7 @@ export const GroupContext = createContext<string[]>("k6.group", []);
  * });
  * ```
  */
-export function* group<T>(
-  name: string,
-  op: () => Operation<T>,
-): Operation<T> {
+export function* group<T>(name: string, op: () => Operation<T>): Operation<T> {
   const parent = yield* GroupContext.expect();
   // Use .with() for scoped context - automatically restores after op completes
   return yield* GroupContext.with([...parent, name], op);

@@ -10,7 +10,7 @@
  * something failed. This makes debugging incredibly difficult.
  *
  * THE SOLUTION:
- * @effectionx/k6's vuIteration() wrapper ensures all errors propagate:
+ * @effectionx/k6's main() wrapper ensures all errors propagate:
  * - Unhandled errors in the iteration fail the test
  * - Child task failures are fail-fast by default
  * - Stack traces are preserved for debugging
@@ -18,7 +18,7 @@
  * Run with: k6 run dist/demos/03-error-propagation.js
  */
 
-import { vuIteration, group, http } from "../lib/mod.ts";
+import { main, group, http } from "../lib/mod.ts";
 import { spawn, sleep } from "effection";
 
 // K6 options
@@ -51,7 +51,7 @@ export const options = {
 // Control which demo to run
 const DEMO_MODE = __ENV.DEMO_MODE || "success"; // 'success', 'sync-error', 'async-error', 'child-error'
 
-export default vuIteration(function* () {
+export default main(function* () {
   console.log("=== Demo: Error Propagation ===\n");
   console.log(`Running in mode: ${DEMO_MODE}\n`);
 

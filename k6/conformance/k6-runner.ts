@@ -37,7 +37,9 @@ export function setup(): { syncResults: ConformanceResults } {
 }
 
 // Default function runs for each VU iteration
-export default async function (data: { syncResults: ConformanceResults }): Promise<void> {
+export default async function (data: {
+  syncResults: ConformanceResults;
+}): Promise<void> {
   const { syncResults } = data;
 
   // Run async tests (K6 supports async default function)
@@ -63,7 +65,8 @@ export default async function (data: { syncResults: ConformanceResults }): Promi
   // Final summary check
   const criticalPassed = allCriticalTestsPassed(allResults);
   check(criticalPassed, {
-    "All critical tests passed (Effection can work)": (v: boolean) => v === true,
+    "All critical tests passed (Effection can work)": (v: boolean) =>
+      v === true,
   });
 
   if (!criticalPassed) {

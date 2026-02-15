@@ -22,7 +22,7 @@
  * Run with: k6 run dist/demos/04-cleanup.js
  */
 
-import { vuIteration, group, useWebSocket, http } from "../lib/mod.ts";
+import { main, group, useWebSocket, http } from "../lib/mod.ts";
 import { resource, spawn, sleep, type Operation } from "effection";
 
 // K6 options
@@ -55,7 +55,7 @@ function useTrackingResource(name: string): Operation<TrackedResource> {
   });
 }
 
-export default vuIteration(function* () {
+export default main(function* () {
   console.log("=== Demo: Structured Cleanup ===\n");
 
   // Demo 1: Normal scope exit

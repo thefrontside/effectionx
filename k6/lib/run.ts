@@ -6,10 +6,10 @@
  *
  * @example
  * ```typescript
- * import { vuIteration } from '@effectionx/k6';
+ * import { main } from '@effectionx/k6';
  * import { sleep } from 'effection';
  *
- * export default vuIteration(function*() {
+ * export default main(function*() {
  *   console.log('Starting iteration');
  *   yield* sleep(100);
  *   console.log('Done');
@@ -36,42 +36,15 @@ import { run, type Operation } from "effection";
  *
  * @example
  * ```typescript
- * export default vuIteration(function*() {
+ * export default main(function*() {
  *   const db = yield* useDatabase();
  *   yield* httpGet('https://api.example.com');
  *   // db cleanup runs even if httpGet fails or times out
  * });
  * ```
  */
-export function vuIteration<T>(makeOp: () => Operation<T>) {
+export function main<T>(makeOp: () => Operation<T>) {
   return function iteration() {
     return run(makeOp);
   };
-}
-
-/**
- * Lower-level run that returns the Task for manual control.
- *
- * Use this when you need to:
- * - Access the Task for manual halting
- * - Run multiple operations concurrently at the VU level
- * - Integrate with K6's setup/teardown lifecycle
- *
- * @param op - The operation to run
- * @returns The Effection Task
- *
- * @example
- * ```typescript
- * import { runOperation } from '@effectionx/k6';
- *
- * export function setup() {
- *   const task = runOperation(function*() {
- *     return yield* initializeTestData();
- *   });
- *   return task;
- * }
- * ```
- */
-export function runOperation<T>(op: () => Operation<T>) {
-  return run(op);
 }

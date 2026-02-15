@@ -63,7 +63,7 @@ await esbuild.build({
  * Effection is bundled - no external dependencies needed.
  * 
  * Import in K6 scripts:
- *   import { vuIteration, group, http } from './lib.js';
+ *   import { main, group, http } from './lib.js';
  */
 `,
   },

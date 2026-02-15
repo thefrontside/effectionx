@@ -171,7 +171,8 @@ export function testYieldReturn(): ConformanceResult {
 
     return {
       pass: true,
-      message: "yield* return() forwarding fully supported (cancellation semantics OK)",
+      message:
+        "yield* return() forwarding fully supported (cancellation semantics OK)",
       details: checks.join("; "),
     };
   } catch (error) {

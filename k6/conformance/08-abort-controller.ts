@@ -25,7 +25,8 @@ export function testAbortController(): ConformanceResult {
       return {
         pass: false,
         message: "AbortController does not exist",
-        details: "useAbortSignal() will not be available, but Effection core will work",
+        details:
+          "useAbortSignal() will not be available, but Effection core will work",
       };
     }
     checks.push("AbortController constructor exists");
@@ -170,7 +171,9 @@ export async function testAbortControllerAsync(): Promise<ConformanceResult> {
 
     // onabort may not be supported in all environments
     if ("onabort" in controller2.signal) {
-      (controller2.signal as unknown as { onabort: (() => void) | null }).onabort = () => {
+      (
+        controller2.signal as unknown as { onabort: (() => void) | null }
+      ).onabort = () => {
         onabortFired = true;
       };
       controller2.abort();

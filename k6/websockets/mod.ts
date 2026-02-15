@@ -114,24 +114,24 @@ export interface WebSocketErrorEvent {
 }
 
 /**
- * An Effection-managed WebSocket resource.
+ * An Effection-managed WebSocket.
  *
  * The resource provides:
  * - `send()` - Send messages to the server
- * - `close()` - Close the connection
+ * - `close()` - Close the connection (returns Operation that resolves when closed)
  * - `messages` - Stream of incoming messages
  *
  * The WebSocket is automatically closed when the scope ends.
  */
-export interface WebSocketResource {
+export interface WebSocket {
   /** Stream of incoming messages */
   readonly messages: Stream<WebSocketMessage, void>;
 
   /** Send a message to the server */
   send(data: string | ArrayBuffer): void;
 
-  /** Close the connection */
-  close(code?: number, reason?: string): void;
+  /** Close the connection. Resolves when the connection is closed. */
+  close(code?: number, reason?: string): Operation<void>;
 
   /** Current ready state */
   readonly readyState: number;
@@ -178,7 +178,7 @@ export interface WebSocketResource {
 export function useWebSocket(
   url: string,
   protocols?: string | string[],
-): Operation<WebSocketResource> {
+): Operation<WebSocket> {
   return resource(function* (provide) {
     // Create the K6 WebSocket
     const WebSocketCtor = K6WebSocketClass as unknown as WebSocketConstructor;
@@ -221,15 +221,16 @@ export function useWebSocket(
     };
 
     // Create the resource object
-    const wsResource: WebSocketResource = {
+    const ws: WebSocket = {
       messages: messageSignal,
 
       send(data: string | ArrayBuffer) {
         socket.send(data);
       },
 
-      close(code?: number, reason?: string) {
+      close(code?: number, reason?: string): Operation<void> {
         socket.close(code, reason);
+        return closed.operation;
       },
 
       get readyState() {
@@ -246,7 +247,7 @@ export function useWebSocket(
       yield* opened.operation;
 
       // Provide the resource
-      yield* provide(wsResource);
+      yield* provide(ws);
     } finally {
       // Ensure socket is closed on cleanup
       if (
@@ -284,7 +285,7 @@ export function useWebSocket(
  */
 export function* withWebSocket<T>(
   url: string,
-  op: (ws: WebSocketResource) => Operation<T>,
+  op: (ws: WebSocket) => Operation<T>,
   protocols?: string | string[],
 ): Operation<T> {
   const ws = yield* useWebSocket(url, protocols);
@@ -306,7 +307,7 @@ export function* withWebSocket<T>(
  * ```
  */
 export function* collectMessages(
-  ws: WebSocketResource,
+  ws: WebSocket,
   count: number,
 ): Operation<WebSocketMessage[]> {
   const messages: WebSocketMessage[] = [];
@@ -342,7 +343,7 @@ export function* collectMessages(
  * ```
  */
 export function* waitForMessage(
-  ws: WebSocketResource,
+  ws: WebSocket,
   predicate: (msg: WebSocketMessage) => boolean,
 ): Operation<WebSocketMessage> {
   const subscription = yield* ws.messages;

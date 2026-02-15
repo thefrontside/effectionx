@@ -66,13 +66,13 @@ export {
   type HttpParams,
 } from "../http/mod.ts";
 
-// WebSocket resource (re-export from separate module)
+// WebSocket (re-export from separate module)
 export {
   useWebSocket,
   withWebSocket,
   collectMessages,
   waitForMessage,
-  type WebSocketResource,
+  type WebSocket,
   type WebSocketMessage,
   type WebSocketCloseEvent,
   type WebSocketErrorEvent,

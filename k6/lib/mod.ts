@@ -24,12 +24,12 @@
  *
  * @example WebSocket with structured concurrency
  * ```typescript
- * import { main, useWebSocket, collectMessages } from '@effectionx/k6';
+ * import { main, useWebSocket, first } from '@effectionx/k6';
  *
  * export default main(function*() {
  *   const ws = yield* useWebSocket('wss://echo.websocket.org');
  *   ws.send('Hello!');
- *   const [echo] = yield* collectMessages(ws, 1);
+ *   const echo = yield* first.expect(ws);
  *   console.log(`Received: ${echo}`);
  * });
  * // WebSocket automatically closed
@@ -67,16 +67,7 @@ export {
 } from "../http/mod.ts";
 
 // WebSocket (re-export from separate module)
-export {
-  useWebSocket,
-  withWebSocket,
-  collectMessages,
-  waitForMessage,
-  type WebSocket,
-  type WebSocketMessage,
-  type WebSocketCloseEvent,
-  type WebSocketErrorEvent,
-} from "../websockets/mod.ts";
+export { useWebSocket, type WebSocket, type WebSocketMessage } from "../websockets/mod.ts";
 
 // Re-export stream helpers for convenience
 export { each, interval } from "effection";
@@ -85,5 +76,7 @@ export {
   take,
   takeWhile,
   takeUntil,
+  drain,
+  first,
 } from "@effectionx/stream-helpers";
 export { on, once } from "@effectionx/node";

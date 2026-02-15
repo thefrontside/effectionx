@@ -22,10 +22,10 @@
 import {
   main,
   useWebSocket,
-  collectMessages,
-  waitForMessage,
+  each,
+  first,
+  type WebSocketMessage,
 } from "../lib/mod.ts";
-import { each } from "effection";
 
 // K6 options
 export const options = {
@@ -70,8 +70,8 @@ export default main(function* () {
   console.log("\n--- Example 1: Send and receive ---");
   ws.send("Hello from Effection!");
 
-  // Use collectMessages helper to get exactly N messages
-  const [echo] = yield* collectMessages(ws, 1);
+  // Use first.expect() to get the first message (throws if stream closes)
+  const echo = yield* first.expect(ws);
   console.log(`Received echo: ${echo}`);
 
   // Example 2: Send multiple messages and process with a stream
@@ -91,18 +91,23 @@ export default main(function* () {
     yield* each.next();
   }
 
-  // Example 3: Wait for a specific message
+  // Example 3: Wait for a specific message using each loop
   console.log("\n--- Example 3: Wait for specific message ---");
   ws.send(JSON.stringify({ type: "ping", id: 123 }));
 
-  const pong = yield* waitForMessage(ws, (msg) => {
+  let pong: WebSocketMessage | undefined;
+  for (const msg of yield* each(ws)) {
     try {
       const data = JSON.parse(msg as string);
-      return data.type === "ping"; // Echo will have same content
+      if (data.type === "ping") {
+        pong = msg;
+        break;
+      }
     } catch {
-      return false;
+      // not JSON, continue
     }
-  });
+    yield* each.next();
+  }
   console.log(`Got specific message: ${pong}`);
 
   console.log("\n=== Demo Complete ===");

@@ -21,6 +21,8 @@ const k6BundleOptions = {
   format: "esm",
   target: "es2020",
   platform: "neutral", // K6's Sobek is not Node or browser
+  // Required for neutral platform to resolve packages like "immutable" that use "main" field
+  mainFields: ["module", "main"],
   sourcemap: true,
   minify: false, // Keep readable for debugging
   // K6 provides these modules - mark as external

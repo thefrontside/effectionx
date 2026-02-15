@@ -119,6 +119,8 @@ docker compose run --rm dev k6 run /scripts/dist/demos/01-group-context.js
 - **`group(name)`** - Append a group to the current context for this scope
 - **`withGroup(name, op)`** - Run `op` in a nested group context and restore outer context after
 - **`useGroups()`** - Get current group path as array (e.g., `["api", "users"]`)
+- **`useTags()`** - Get full tags context (includes groups and K6 VU tags)
+- **`withTags(tags, op)`** - Run `op` with additional tags merged into context
 
 ### HTTP
 
@@ -131,20 +133,33 @@ All HTTP operations automatically tag requests with the current group for proper
 ### WebSocket
 
 - **`useWebSocket(url, protocols?)`** - Create a WebSocket resource with structured cleanup
-- **`collectMessages(ws, count)`** - Collect N messages from a WebSocket
-- **`waitForMessage(ws, predicate)`** - Wait for a message matching a predicate
+
+The WebSocket is itself a Stream, so you iterate directly with `each(ws)`:
 
 ```typescript
 const ws = yield* useWebSocket('wss://api.example.com/ws');
 ws.send('hello');
 
 // Process messages as a stream
-for (const msg of yield* each(ws.messages)) {
+for (const msg of yield* each(ws)) {
   console.log(msg);
   yield* each.next();
 }
 // WebSocket automatically closed when scope ends
 ```
+
+### Stream Helpers
+
+Re-exported from `@effectionx/stream-helpers` for convenience:
+
+- **`each(stream)`** - Iterate over stream values (from Effection)
+- **`first(stream)`** - Get first value or `undefined` if empty
+- **`first.expect(stream)`** - Get first value or throw if empty
+- **`take(n)`** - Stream transformer: take first N values
+- **`takeWhile(predicate)`** - Stream transformer: take while predicate is true
+- **`takeUntil(signal)`** - Stream transformer: take until signal fires
+- **`drain(stream)`** - Exhaust stream, return close value
+- **`forEach(stream, fn)`** - Execute operation for each value
 
 ## Development
 
@@ -165,7 +180,15 @@ docker compose run --rm k6-conformance
 
 ```
 k6/
-├── conformance/           # Runtime conformance tests
+├── lib/                   # Core library
+│   ├── main.ts            # VU iteration wrapper (main())
+│   ├── tags.ts            # Tags & group context management
+│   └── mod.ts             # Library exports
+├── http/
+│   └── mod.ts             # HTTP operation wrappers
+├── websockets/
+│   └── mod.ts             # WebSocket resource
+├── conformance/           # Runtime conformance tests (internal)
 │   ├── 01-symbols.ts      # Symbol support
 │   ├── 02-generators.ts   # Basic generator support
 │   ├── 03-yield-delegation.ts  # yield* with custom iterables
@@ -176,12 +199,6 @@ k6/
 │   ├── 08-abort-controller.ts # AbortController (optional)
 │   ├── k6-runner.ts       # K6 test script
 │   └── mod.ts             # Test runner module
-├── lib/                   # Core library
-│   ├── run.ts             # VU iteration wrapper
-│   ├── group.ts           # Async-aware group context
-│   ├── http.ts            # HTTP wrappers
-│   ├── websocket.ts       # WebSocket resource
-│   └── mod.ts             # Library exports
 ├── demos/                 # Demo scripts
 │   ├── 01-group-context.ts
 │   ├── 02-websocket.ts

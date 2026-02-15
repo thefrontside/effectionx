@@ -39,7 +39,7 @@
  */
 
 // VU iteration wrapper
-export { main } from "./run.ts";
+export { main } from "./main.ts";
 
 // Tags and group context management
 export {

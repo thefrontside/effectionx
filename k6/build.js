@@ -14,6 +14,7 @@ import { existsSync } from "node:fs";
 // Ensure dist directory exists
 await mkdir("dist", { recursive: true });
 await mkdir("dist/demos", { recursive: true });
+await mkdir("dist/tests", { recursive: true });
 
 // Common esbuild options for K6 bundles
 const k6BundleOptions = {
@@ -93,6 +94,49 @@ if (existsSync(demosDir)) {
       },
     });
     console.log(`Built: dist/demos/${outName}`);
+  }
+}
+
+// Build the testing module
+await esbuild.build({
+  ...k6BundleOptions,
+  entryPoints: ["testing/mod.ts"],
+  outfile: "dist/testing.js",
+  banner: {
+    js: `/**
+ * @effectionx/k6 Testing Module
+ * 
+ * BDD testing for K6 with Effection structured concurrency.
+ * 
+ * Import in K6 scripts:
+ *   import { describe, it, expect, runTests } from './testing.js';
+ */
+`,
+  },
+});
+
+console.log("Built: dist/testing.js");
+
+// Build test scripts if they exist
+const testsDir = "tests";
+if (existsSync(testsDir)) {
+  const testFiles = (await readdir(testsDir)).filter((f) => f.endsWith(".ts"));
+
+  for (const testFile of testFiles) {
+    const outName = testFile.replace(".ts", ".js");
+    await esbuild.build({
+      ...k6BundleOptions,
+      entryPoints: [`${testsDir}/${testFile}`],
+      outfile: `dist/tests/${outName}`,
+      banner: {
+        js: `/**
+ * @effectionx/k6 Test: ${testFile.replace(".ts", "")}
+ * Auto-generated - do not edit directly.
+ */
+`,
+      },
+    });
+    console.log(`Built: dist/tests/${outName}`);
   }
 }
 

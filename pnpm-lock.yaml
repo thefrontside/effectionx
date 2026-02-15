@@ -156,6 +156,9 @@ importers:
       '@effectionx/stream-helpers':
         specifier: workspace:*
         version: link:../stream-helpers
+      '@effectionx/test-adapter':
+        specifier: workspace:*
+        version: link:../test-adapter
       effection:
         specifier: ^4
         version: 4.0.0

@@ -17,6 +17,10 @@
     "./websockets": {
       "development": "./websockets/mod.ts",
       "default": "./dist/websockets/mod.js"
+    },
+    "./testing": {
+      "development": "./testing/mod.ts",
+      "default": "./dist/testing.js"
     }
   },
   "scripts": {
@@ -28,7 +32,8 @@
   },
   "dependencies": {
     "@effectionx/stream-helpers": "workspace:*",
-    "@effectionx/node": "workspace:*"
+    "@effectionx/node": "workspace:*",
+    "@effectionx/test-adapter": "workspace:*"
   },
   "devDependencies": {
     "@types/k6": "^0.54",

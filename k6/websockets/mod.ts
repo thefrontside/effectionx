@@ -198,27 +198,23 @@ export function useWebSocket(
       // which will trigger onclose
     };
 
-    // Create the resource object
-    const ws: WebSocket = {
-      // Delegate Stream iteration to messageSignal
-      [Symbol.iterator]: messageSignal[Symbol.iterator].bind(messageSignal),
-
-      send(data: string | ArrayBuffer) {
-        socket.send(data);
-      },
-
-      close(code?: number, reason?: string): Operation<void> {
-        socket.close(code, reason);
-        return closed.operation;
-      },
-    };
-
     try {
       // Wait for connection to open
       yield* opened.operation;
 
       // Provide the resource
-      yield* provide(ws);
+      yield* provide({
+        [Symbol.iterator]: messageSignal[Symbol.iterator].bind(messageSignal),
+
+        send(data: string | ArrayBuffer) {
+          socket.send(data);
+        },
+
+        close(code?: number, reason?: string): Operation<void> {
+          socket.close(code, reason);
+          return closed.operation;
+        },
+      });
     } finally {
       // Ensure socket is closed on cleanup
       if (

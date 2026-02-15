@@ -80,5 +80,10 @@ export {
 
 // Re-export stream helpers for convenience
 export { each, interval } from "effection";
-export { forEach } from "@effectionx/stream-helpers";
+export {
+  forEach,
+  take,
+  takeWhile,
+  takeUntil,
+} from "@effectionx/stream-helpers";
 export { on, once } from "@effectionx/node";

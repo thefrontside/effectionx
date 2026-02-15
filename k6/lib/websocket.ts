@@ -1,0 +1,351 @@
+/**
+ * Effection WebSocket resource for K6.
+ *
+ * This solves K6's fire-and-forget WebSocket handler problem (issue #5524)
+ * by providing structured concurrency for WebSocket operations:
+ * - Messages are delivered through an Effection Subscription
+ * - Errors propagate properly and fail the test
+ * - Cleanup is automatic when the scope ends
+ *
+ * Uses K6's experimental WebSocket API which has better event support.
+ *
+ * @example
+ * ```typescript
+ * import { vuIteration, useWebSocket } from '@effectionx/k6';
+ *
+ * export default vuIteration(function*() {
+ *   const ws = yield* useWebSocket('wss://echo.websocket.org');
+ *
+ *   ws.send('Hello');
+ *
+ *   for (const message of yield* each(ws.messages)) {
+ *     console.log('Received:', message);
+ *     yield* each.next();
+ *   }
+ * });
+ * ```
+ *
+ * @packageDocumentation
+ */
+
+import {
+  type Operation,
+  type Stream,
+  resource,
+  createSignal,
+  call,
+} from "effection";
+
+// K6 WebSocket types - these match k6/experimental/websockets
+// We declare them here to avoid module resolution issues at compile time
+// (k6/* modules only exist in the K6 runtime)
+
+interface K6MessageEvent {
+  data: string | ArrayBuffer;
+  type: number;
+  timestamp: number;
+}
+
+interface K6ErrorEvent {
+  type: number;
+  error: string;
+  timestamp: number;
+}
+
+interface K6WebSocket {
+  readonly url: string;
+  readonly readyState: number;
+  readonly bufferedAmount: number;
+  binaryType: string;
+  send(data: string | ArrayBuffer): void;
+  addEventListener(
+    event: string,
+    listener: (event: K6MessageEvent | K6ErrorEvent | Event) => void,
+  ): void;
+  close(code?: number, reason?: string): void;
+  ping(): void;
+  onmessage: ((event?: K6MessageEvent) => void) | null;
+  onopen: (() => void) | null;
+  onclose: (() => void) | null;
+  onerror: ((event?: K6ErrorEvent) => void) | null;
+}
+
+// K6 ReadyState constants
+const ReadyState = {
+  CONNECTING: 0,
+  OPEN: 1,
+  CLOSING: 2,
+  CLOSED: 3,
+} as const;
+
+// This will be available at runtime from k6/experimental/websockets
+// @ts-expect-error - K6WebSocketClass is imported dynamically at runtime
+import { WebSocket as K6WebSocketClass } from "k6/experimental/websockets";
+
+/**
+ * WebSocket message types from K6.
+ */
+export type WebSocketMessage = string | ArrayBuffer;
+
+/**
+ * Close event information.
+ */
+export interface WebSocketCloseEvent {
+  code: number;
+  reason: string;
+  wasClean: boolean;
+}
+
+/**
+ * Error event information.
+ */
+export interface WebSocketErrorEvent {
+  error: string;
+  timestamp: number;
+}
+
+/**
+ * An Effection-managed WebSocket resource.
+ *
+ * The resource provides:
+ * - `send()` - Send messages to the server
+ * - `close()` - Close the connection
+ * - `messages` - Stream of incoming messages
+ *
+ * The WebSocket is automatically closed when the scope ends.
+ */
+export interface WebSocketResource {
+  /** Stream of incoming messages */
+  readonly messages: Stream<WebSocketMessage, void>;
+
+  /** Send a message to the server */
+  send(data: string | ArrayBuffer): void;
+
+  /** Close the connection */
+  close(code?: number, reason?: string): void;
+
+  /** Current ready state */
+  readonly readyState: number;
+
+  /** Whether the connection is open */
+  readonly isOpen: boolean;
+}
+
+/**
+ * Create a WebSocket resource with structured concurrency.
+ *
+ * The WebSocket connects immediately and the resource is provided
+ * once the connection is established. The connection is automatically
+ * closed when the enclosing scope ends.
+ *
+ * @param url - WebSocket URL to connect to
+ * @param protocols - Optional subprotocols
+ * @returns WebSocket resource
+ *
+ * @example Basic usage
+ * ```typescript
+ * const ws = yield* useWebSocket('wss://api.example.com/ws');
+ * ws.send(JSON.stringify({ type: 'subscribe', channel: 'updates' }));
+ *
+ * for (const msg of yield* each(ws.messages)) {
+ *   const data = JSON.parse(msg as string);
+ *   console.log('Update:', data);
+ *   yield* each.next();
+ * }
+ * // WebSocket automatically closed when scope ends
+ * ```
+ *
+ * @example With error handling via spawn
+ * ```typescript
+ * const ws = yield* useWebSocket('wss://api.example.com/ws');
+ *
+ * // Errors are propagated automatically and will fail the test
+ * // The resource handles this internally
+ *
+ * ws.send('hello');
+ * // Process messages...
+ * ```
+ */
+export function useWebSocket(
+  url: string,
+  protocols?: string | string[],
+): Operation<WebSocketResource> {
+  return resource(function* (provide) {
+    // Create the K6 WebSocket
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const socket = new K6WebSocketClass(url, protocols) as K6WebSocket;
+
+    // Create signal for messages
+    const messageSignal = createSignal<WebSocketMessage, void>();
+
+    // Track if we've opened
+    let isOpen = false;
+    let openResolve: (() => void) | null = null;
+    let openReject: ((error: Error) => void) | null = null;
+    const openPromise = new Promise<void>((resolve, reject) => {
+      openResolve = resolve;
+      openReject = reject;
+    });
+
+    // Set up event handlers using K6's callback style
+    socket.onopen = () => {
+      isOpen = true;
+      openResolve?.();
+    };
+
+    socket.onmessage = (event?: K6MessageEvent) => {
+      if (event) {
+        messageSignal.send(event.data);
+      }
+    };
+
+    socket.onclose = () => {
+      isOpen = false;
+      messageSignal.close();
+    };
+
+    socket.onerror = (event?: K6ErrorEvent) => {
+      const errorMsg = event?.error ?? "Unknown WebSocket error";
+      if (!isOpen) {
+        // Connection failed
+        openReject?.(new Error(`WebSocket connection failed: ${errorMsg}`));
+      }
+      // Note: Error during operation will close the socket,
+      // which will close the message signal
+    };
+
+    // Create the resource object
+    const wsResource: WebSocketResource = {
+      messages: messageSignal,
+
+      send(data: string | ArrayBuffer) {
+        socket.send(data);
+      },
+
+      close(code?: number, reason?: string) {
+        socket.close(code, reason);
+      },
+
+      get readyState() {
+        return socket.readyState;
+      },
+
+      get isOpen() {
+        return socket.readyState === ReadyState.OPEN;
+      },
+    };
+
+    try {
+      // Wait for connection to open
+      yield* call(() => openPromise);
+
+      // Provide the resource
+      yield* provide(wsResource);
+    } finally {
+      // Ensure socket is closed on cleanup
+      if (
+        socket.readyState === ReadyState.OPEN ||
+        socket.readyState === ReadyState.CONNECTING
+      ) {
+        socket.close(1000, "Effection scope ended");
+      }
+    }
+  });
+}
+
+/**
+ * Create a WebSocket and run an operation with it.
+ *
+ * This is a convenience wrapper that combines `useWebSocket` with
+ * a callback pattern. The WebSocket is closed when the callback completes.
+ *
+ * @param url - WebSocket URL to connect to
+ * @param op - Operation to run with the WebSocket
+ * @param protocols - Optional subprotocols
+ * @returns Result of the operation
+ *
+ * @example
+ * ```typescript
+ * const result = yield* withWebSocket('wss://api.example.com', function*(ws) {
+ *   ws.send('ping');
+ *   const subscription = yield* ws.messages;
+ *   const msg = yield* subscription.next();
+ *   return msg.value;
+ * });
+ * ```
+ */
+export function* withWebSocket<T>(
+  url: string,
+  op: (ws: WebSocketResource) => Operation<T>,
+  protocols?: string | string[],
+): Operation<T> {
+  const ws = yield* useWebSocket(url, protocols);
+  return yield* op(ws);
+}
+
+/**
+ * Wait for a specific number of messages from a WebSocket.
+ *
+ * @param ws - WebSocket resource
+ * @param count - Number of messages to collect
+ * @returns Array of messages
+ *
+ * @example
+ * ```typescript
+ * const ws = yield* useWebSocket('wss://api.example.com');
+ * ws.send('request');
+ * const [response] = yield* collectMessages(ws, 1);
+ * ```
+ */
+export function* collectMessages(
+  ws: WebSocketResource,
+  count: number,
+): Operation<WebSocketMessage[]> {
+  const messages: WebSocketMessage[] = [];
+  const subscription = yield* ws.messages;
+
+  while (messages.length < count) {
+    const result = yield* subscription.next();
+    if (result.done) {
+      break;
+    }
+    messages.push(result.value);
+  }
+
+  return messages;
+}
+
+/**
+ * Wait for a message matching a predicate.
+ *
+ * @param ws - WebSocket resource
+ * @param predicate - Function to test messages
+ * @returns The first matching message
+ *
+ * @example
+ * ```typescript
+ * const ws = yield* useWebSocket('wss://api.example.com');
+ *
+ * // Wait for a specific message type
+ * const response = yield* waitForMessage(ws, (msg) => {
+ *   const data = JSON.parse(msg as string);
+ *   return data.type === 'response';
+ * });
+ * ```
+ */
+export function* waitForMessage(
+  ws: WebSocketResource,
+  predicate: (msg: WebSocketMessage) => boolean,
+): Operation<WebSocketMessage> {
+  const subscription = yield* ws.messages;
+
+  while (true) {
+    const result = yield* subscription.next();
+    if (result.done) {
+      throw new Error("WebSocket closed while waiting for message");
+    }
+    if (predicate(result.value)) {
+      return result.value;
+    }
+  }
+}

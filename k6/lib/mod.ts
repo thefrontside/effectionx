@@ -1,0 +1,76 @@
+/**
+ * @effectionx/k6 - Structured Concurrency for K6 Load Testing
+ *
+ * This package provides Effection integration for K6, solving common
+ * async/concurrency pain points in K6 scripts:
+ *
+ * - **Group context preservation** - Groups work correctly across async operations
+ * - **Structured WebSocket handling** - No more fire-and-forget handlers
+ * - **Proper error propagation** - Unhandled errors fail tests as expected
+ * - **Automatic cleanup** - Resources are cleaned up when scopes end
+ *
+ * @example Basic usage
+ * ```typescript
+ * import { vuIteration, group, http } from '@effectionx/k6';
+ *
+ * export default vuIteration(function*() {
+ *   yield* group('api-tests', function*() {
+ *     const response = yield* http.get('https://api.example.com/users');
+ *     console.log(`Status: ${response.status}`);
+ *   });
+ * });
+ * ```
+ *
+ * @example WebSocket with structured concurrency
+ * ```typescript
+ * import { vuIteration, useWebSocket, collectMessages } from '@effectionx/k6';
+ *
+ * export default vuIteration(function*() {
+ *   const ws = yield* useWebSocket('wss://echo.websocket.org');
+ *   ws.send('Hello!');
+ *   const [echo] = yield* collectMessages(ws, 1);
+ *   console.log(`Received: ${echo}`);
+ * });
+ * // WebSocket automatically closed
+ * ```
+ *
+ * @packageDocumentation
+ */
+
+// VU iteration wrapper
+export { vuIteration, runOperation } from "./run.ts";
+
+// Group context management
+export {
+  group,
+  currentGroupPath,
+  currentGroupName,
+  currentGroupString,
+  GroupContext,
+} from "./group.ts";
+
+// HTTP wrappers
+export {
+  http,
+  get,
+  post,
+  put,
+  patch,
+  del,
+  head,
+  options,
+  request,
+  type HttpParams,
+} from "./http.ts";
+
+// WebSocket resource
+export {
+  useWebSocket,
+  withWebSocket,
+  collectMessages,
+  waitForMessage,
+  type WebSocketResource,
+  type WebSocketMessage,
+  type WebSocketCloseEvent,
+  type WebSocketErrorEvent,
+} from "./websocket.ts";

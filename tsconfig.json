@@ -21,6 +21,7 @@
     { "path": "fs" },
     { "path": "fx" },
     { "path": "jsonl-store" },
+    { "path": "k6" },
     { "path": "node" },
     { "path": "process" },
     { "path": "raf" },

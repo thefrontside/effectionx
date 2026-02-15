@@ -231,6 +231,89 @@ function* example() {
 }
 ```
 
+### Take
+
+The `take` helper creates a stream transformer that yields the first `n` values
+from the source stream, then closes with the last taken value.
+
+```typescript
+import { take, forEach, streamOf } from "@effectionx/stream-helpers";
+import { pipe } from "remeda";
+
+function* example() {
+  const stream = streamOf([1, 2, 3, 4, 5]);
+  // yields 1, 2, then closes with 3
+  const closeValue = yield* forEach(function* (value) {
+    console.log(value); // 1, then 2
+  }, take(3)(stream));
+  console.log(closeValue); // 3
+}
+
+// Works with pipe
+const limited = pipe(source, take(3));
+```
+
+### TakeWhile
+
+The `takeWhile` helper creates a stream transformer that yields values while
+the predicate returns true. When the predicate returns false, the stream closes
+immediately (the failing value is not included).
+
+```typescript
+import { takeWhile, forEach, streamOf } from "@effectionx/stream-helpers";
+import { pipe } from "remeda";
+
+function* example() {
+  const stream = streamOf([1, 2, 3, 4, 5]);
+  // yields 1, 2 (stops when value >= 3)
+  yield* forEach(function* (value) {
+    console.log(value); // 1, then 2
+  }, takeWhile((x) => x < 3)(stream));
+}
+
+// Works with pipe
+const filtered = pipe(source, takeWhile((x) => x.isValid));
+```
+
+### TakeUntil
+
+The `takeUntil` helper creates a stream transformer that yields values until
+the predicate returns true. When the predicate matches, the stream closes with
+the matching value. This is useful for "iterate until a condition is met"
+patterns.
+
+```typescript
+import { takeUntil, forEach } from "@effectionx/stream-helpers";
+import { pipe } from "remeda";
+
+function* example() {
+  // Iterate validation progress until we get a terminal status
+  const result = yield* forEach(
+    function* (progress) {
+      showSpinner(progress.status);
+    },
+    takeUntil((p) => p.status === "valid" || p.status === "invalid")(
+      validationStream,
+    ),
+  );
+
+  // result is the validation object with terminal status
+  if (result.status === "valid") {
+    console.log("Validation passed!");
+  }
+}
+
+// Works with pipe
+const untilDone = pipe(source, takeUntil((x) => x.done));
+```
+
+**Key difference between `takeWhile` and `takeUntil`:**
+
+| Helper      | Yields                  | Closes With    | Use Case                |
+| ----------- | ----------------------- | -------------- | ----------------------- |
+| `takeWhile` | While predicate is true | `undefined`    | "Keep going while good" |
+| `takeUntil` | Until predicate is true | Matching value | "Stop when you find it" |
+
 ### ForEach
 
 The `forEach` helper invokes a function for each item passing through a stream.

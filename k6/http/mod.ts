@@ -31,7 +31,7 @@ import type {
   RequestBody,
 } from "k6/http";
 import * as k6Http from "k6/http";
-import { useTags } from "./tags.ts";
+import { useTags } from "../lib/tags.ts";
 
 type HttpURL = ReturnType<typeof k6Http.url>;
 

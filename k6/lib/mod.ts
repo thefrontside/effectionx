@@ -52,7 +52,7 @@ export {
   type Tags,
 } from "./tags.ts";
 
-// HTTP wrappers
+// HTTP wrappers (re-export from separate module)
 export {
   http,
   get,
@@ -64,9 +64,9 @@ export {
   options,
   request,
   type HttpParams,
-} from "./http.ts";
+} from "../http/mod.ts";
 
-// WebSocket resource
+// WebSocket resource (re-export from separate module)
 export {
   useWebSocket,
   withWebSocket,
@@ -76,4 +76,9 @@ export {
   type WebSocketMessage,
   type WebSocketCloseEvent,
   type WebSocketErrorEvent,
-} from "./websocket.ts";
+} from "../websocket/mod.ts";
+
+// Re-export stream helpers for convenience
+export { each } from "effection";
+export { forEach } from "@effectionx/stream-helpers";
+export { on, once } from "@effectionx/node";

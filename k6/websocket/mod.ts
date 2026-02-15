@@ -9,6 +9,11 @@
  *
  * Uses K6's experimental WebSocket API which has better event support.
  *
+ * Note: K6's WebSocket has `addEventListener` but NOT `removeEventListener`,
+ * so we cannot use the generic `on` helper from `@effectionx/node`. Instead,
+ * we use K6's callback properties (`onmessage`, `onopen`, etc.) which are
+ * automatically cleaned up when the socket closes.
+ *
  * @example
  * ```typescript
  * import { main, useWebSocket } from '@effectionx/k6';

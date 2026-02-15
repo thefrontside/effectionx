@@ -22,6 +22,10 @@
   "peerDependencies": {
     "effection": "^4"
   },
+  "dependencies": {
+    "@effectionx/stream-helpers": "workspace:*",
+    "@effectionx/node": "workspace:*"
+  },
   "devDependencies": {
     "@types/k6": "^0.54",
     "esbuild": "^0.24"

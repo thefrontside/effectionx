@@ -150,6 +150,12 @@ importers:
 
   k6:
     dependencies:
+      '@effectionx/node':
+        specifier: workspace:*
+        version: link:../node
+      '@effectionx/stream-helpers':
+        specifier: workspace:*
+        version: link:../stream-helpers
       effection:
         specifier: ^4
         version: 4.0.0

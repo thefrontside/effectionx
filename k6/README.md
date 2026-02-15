@@ -77,6 +77,48 @@ export default main(function*() {
 });
 ```
 
+## BDD Testing
+
+`@effectionx/k6` includes a BDD-style testing module that reports results through K6 checks.
+
+```typescript
+import { testMain, describe, it, expect } from '@effectionx/k6/testing';
+import { group, useGroups } from '@effectionx/k6';
+
+export const options = {
+  vus: 1,
+  iterations: 1,
+  thresholds: { checks: ['rate==1'] },
+};
+
+export default testMain(function* () {
+  describe('Group Context', () => {
+    it('preserves groups', function* () {
+      yield* group('api');
+      expect(yield* useGroups()).toContain('api');
+    });
+  });
+});
+```
+
+Available primitives:
+
+- `describe`, `describe.skip`, `describe.only`
+- `it`, `it.skip`, `it.only`
+- `beforeAll`, `beforeEach`
+- `expect`
+- `runTests()`
+- `testMain()`
+
+Run test bundles with Docker:
+
+```bash
+docker compose run --rm k6-conformance tests/group-context.test.js
+docker compose run --rm k6-conformance tests/cleanup.test.js
+docker compose run --rm k6-conformance tests/error-propagation.test.js
+docker compose run --rm k6-conformance tests/websocket.test.js
+```
+
 ## Demos
 
 This package includes demo scripts showing how Effection solves each K6 problem:
@@ -121,6 +163,16 @@ docker compose run --rm dev k6 run /scripts/dist/demos/01-group-context.js
 - **`useGroups()`** - Get current group path as array (e.g., `["api", "users"]`)
 - **`useTags()`** - Get full tags context (includes groups and K6 VU tags)
 - **`withTags(tags, op)`** - Run `op` with additional tags merged into context
+
+### Testing
+
+- **`testMain(op)`** - K6 default export wrapper that initializes tags and runs registered tests
+- **`runTests()`** - Execute all registered tests and emit K6 `check()` metrics
+- **`describe(name, body)`** - Define test suites (supports nesting)
+- **`it(name, body)`** - Define test cases
+- **`beforeAll(op)`** - One-time setup for the current `describe`
+- **`beforeEach(op)`** - Per-test setup for the current `describe`
+- **`expect(value)`** - Assertion helper with common matchers
 
 ### HTTP
 
@@ -246,6 +298,17 @@ gen.return('X');   // Should be {value: 'cleanup', done: false}
 **Impact**: Effection tasks cannot perform async cleanup operations. Any `yield*` in a `finally` block (like `yield* sleep(5)` for graceful shutdown) will be skipped.
 
 **Status**: A fix has been submitted to Sobek. Once merged and released in a new K6 version, Effection will work correctly in K6.
+
+### Known Limitation: Sobek panic on spawned task throw in scoped flow
+
+While validating `@effectionx/k6/testing`, we found a separate runtime crash in Sobek: when a spawned task throws inside a `scoped(...)` flow (and the parent awaits), K6 can panic with a nil-pointer dereference in Sobek throw handling.
+
+Impact:
+
+- Two child-task error propagation tests are currently marked `describe.skip(...)` in `k6/tests/error-propagation.test.ts`.
+- Remaining suites still pass and validate group context, cleanup, and websocket behavior.
+
+This is under active investigation.
 
 ### Conformance Test Results
 

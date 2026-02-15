@@ -79,4 +79,3 @@ export {
   drain,
   first,
 } from "@effectionx/stream-helpers";
-export { on, once } from "@effectionx/node";

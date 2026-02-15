@@ -9,10 +9,6 @@
     ".": {
       "development": "./mod.ts",
       "default": "./dist/mod.js"
-    },
-    "./conformance": {
-      "development": "./conformance/mod.ts",
-      "default": "./dist/conformance/mod.js"
     }
   },
   "scripts": {

@@ -28,14 +28,3 @@
 
 // Re-export all library exports
 export * from "./lib/mod.ts";
-
-// Re-export conformance test utilities for runtime validation
-export {
-  runSyncTests,
-  runAsyncTests,
-  runAllTests,
-  printResults,
-  allCriticalTestsPassed,
-  type ConformanceResult,
-  type ConformanceResults,
-} from "./conformance/mod.ts";

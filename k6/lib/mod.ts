@@ -79,6 +79,6 @@ export {
 } from "../websocket/mod.ts";
 
 // Re-export stream helpers for convenience
-export { each } from "effection";
+export { each, interval } from "effection";
 export { forEach } from "@effectionx/stream-helpers";
 export { on, once } from "@effectionx/node";

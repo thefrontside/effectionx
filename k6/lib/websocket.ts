@@ -79,8 +79,12 @@ const ReadyState = {
 } as const;
 
 // This will be available at runtime from k6/experimental/websockets
-// @ts-expect-error - K6WebSocketClass is imported dynamically at runtime
 import { WebSocket as K6WebSocketClass } from "k6/experimental/websockets";
+
+type WebSocketConstructor = new (
+  url: string,
+  protocols?: string | string[],
+) => K6WebSocket;
 
 /**
  * WebSocket message types from K6.
@@ -172,8 +176,8 @@ export function useWebSocket(
 ): Operation<WebSocketResource> {
   return resource(function* (provide) {
     // Create the K6 WebSocket
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    const socket = new K6WebSocketClass(url, protocols) as K6WebSocket;
+    const WebSocketCtor = K6WebSocketClass as unknown as WebSocketConstructor;
+    const socket = new WebSocketCtor(url, protocols);
 
     // Create signal for messages
     const messageSignal = createSignal<WebSocketMessage, void>();

@@ -11,10 +11,11 @@
  *
  * @example Basic usage
  * ```typescript
- * import { main, group, http } from '@effectionx/k6';
+ * import { main, group, withGroup, http } from '@effectionx/k6';
  *
  * export default main(function*() {
- *   yield* group('api-tests', function*() {
+ *   yield* group('api-tests');
+ *   yield* withGroup('users', function*() {
  *     const response = yield* http.get('https://api.example.com/users');
  *     console.log(`Status: ${response.status}`);
  *   });
@@ -43,9 +44,8 @@ export { main } from "./run.ts";
 // Group context management
 export {
   group,
-  currentGroupPath,
-  currentGroupName,
-  currentGroupString,
+  withGroup,
+  useGroups,
   GroupContext,
 } from "./group.ts";
 

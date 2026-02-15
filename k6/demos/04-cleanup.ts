@@ -22,7 +22,7 @@
  * Run with: k6 run dist/demos/04-cleanup.js
  */
 
-import { main, group, useWebSocket, http } from "../lib/mod.ts";
+import { main, withGroup, useWebSocket, http } from "../lib/mod.ts";
 import { resource, spawn, sleep, type Operation } from "effection";
 
 // K6 options
@@ -60,7 +60,7 @@ export default main(function* () {
 
   // Demo 1: Normal scope exit
   console.log("--- Demo 1: Normal scope exit ---");
-  yield* group("normal-exit", function* () {
+  yield* withGroup("normal-exit", function* () {
     const res = yield* useTrackingResource("resource-1");
     console.log(`Using ${res.name}...`);
     yield* sleep(100);
@@ -72,7 +72,7 @@ export default main(function* () {
   // Demo 2: Cleanup on error
   console.log("--- Demo 2: Cleanup on error ---");
   try {
-    yield* group("error-exit", function* () {
+    yield* withGroup("error-exit", function* () {
       const res = yield* useTrackingResource("resource-2");
       console.log(`Using ${res.name}...`);
       throw new Error("Something went wrong!");
@@ -85,7 +85,7 @@ export default main(function* () {
 
   // Demo 3: Nested resources - cleanup in reverse order
   console.log("--- Demo 3: Nested resources ---");
-  yield* group("nested", function* () {
+  yield* withGroup("nested", function* () {
     const outer = yield* useTrackingResource("outer");
     console.log(`Acquired ${outer.name}`);
 
@@ -99,7 +99,7 @@ export default main(function* () {
 
   // Demo 4: WebSocket cleanup
   console.log("--- Demo 4: WebSocket automatic cleanup ---");
-  yield* group("websocket-cleanup", function* () {
+  yield* withGroup("websocket-cleanup", function* () {
     console.log("Connecting to WebSocket...");
     const ws = yield* useWebSocket("wss://echo.websocket.org");
     console.log("WebSocket connected!");
@@ -114,7 +114,7 @@ export default main(function* () {
 
   // Demo 5: Spawned tasks are cleaned up with their parent
   console.log("--- Demo 5: Child task cleanup ---");
-  yield* group("child-cleanup", function* () {
+  yield* withGroup("child-cleanup", function* () {
     yield* spawn(function* () {
       const res = yield* useTrackingResource("child-resource");
       console.log(`Child task using ${res.name}`);

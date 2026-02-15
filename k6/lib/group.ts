@@ -1,24 +1,22 @@
 /**
- * Async-aware group() implementation using Effection contexts.
+ * Async-aware group context APIs built with Effection contexts.
  *
  * This solves K6's group context loss problem (issues #2848, #5435)
  * where metrics get attributed to wrong groups after async operations.
  *
  * @example
  * ```typescript
- * import { main, group, currentGroupPath } from '@effectionx/k6';
+ * import { main, group, withGroup, useGroups } from '@effectionx/k6';
  *
  * export default main(function*() {
- *   yield* group('api-tests', function*() {
- *     const response = yield* httpGet('https://api.example.com');
+ *   yield* group('api-tests');
+ *   console.log(yield* useGroups()); // ['api-tests']
  *
- *     // Context is preserved across async boundaries!
- *     console.log(yield* currentGroupPath()); // ['api-tests']
- *
- *     yield* group('nested', function*() {
- *       console.log(yield* currentGroupPath()); // ['api-tests', 'nested']
- *     });
+ *   yield* withGroup('nested', function*() {
+ *     console.log(yield* useGroups()); // ['api-tests', 'nested']
  *   });
+ *
+ *   console.log(yield* useGroups()); // ['api-tests']
  * });
  * ```
  *
@@ -36,100 +34,71 @@ import { createContext, type Operation } from "effection";
 export const GroupContext = createContext<string[]>("k6.group", []);
 
 /**
- * Execute an operation within a named group.
+ * Append a named group to the current group context.
  *
- * The group name is scoped - it automatically reverts when the
- * operation completes, even if it throws an error.
- *
- * Uses `Context.with()` for proper scoping (not `Context.set()`),
- * ensuring context is restored after the operation completes.
+ * This mutation is persistent for the remainder of the current scope.
+ * Calling `group()` multiple times appends multiple segments.
  *
  * @param name - The group name
- * @param op - The operation to run within the group
- * @returns The result of the operation
+ * @returns Nothing
  *
  * @example
  * ```typescript
- * yield* group('outer', function*() {
- *   // currentGroupPath() returns ['outer']
+ * yield* group('outer');
+ * console.log(yield* useGroups()); // ['outer']
  *
- *   yield* group('inner', function*() {
- *     // currentGroupPath() returns ['outer', 'inner']
- *   });
- *
- *   // Back to ['outer'] after inner completes
- * });
+ * yield* group('inner');
+ * console.log(yield* useGroups()); // ['outer', 'inner']
  * ```
  */
-export function* group<T>(name: string, op: () => Operation<T>): Operation<T> {
-  const parent = yield* GroupContext.expect();
-  // Use .with() for scoped context - automatically restores after op completes
-  return yield* GroupContext.with([...parent, name], op);
+export function* group(name: string): Operation<void> {
+  const groups = yield* GroupContext.expect();
+  yield* GroupContext.set([...groups, name]);
 }
 
 /**
- * Get the current group path as an array.
+ * Run an operation in a nested group context.
  *
- * Returns the full path from root to current group.
- * Empty array if not inside any group.
+ * Unlike `group()`, this does not permanently mutate the current context.
+ * The appended group is only visible while `op` executes.
  *
- * @returns Array of group names from outermost to innermost
+ * @param name - The group name
+ * @param op - The operation to run in the nested group
+ * @returns The result of `op`
  *
  * @example
  * ```typescript
- * yield* group('api', function*() {
- *   yield* group('users', function*() {
- *     const path = yield* currentGroupPath();
- *     // path = ['api', 'users']
- *   });
+ * yield* group('api');
+ *
+ * yield* withGroup('users', function*() {
+ *   console.log(yield* useGroups()); // ['api', 'users']
+ * });
+ *
+ * console.log(yield* useGroups()); // ['api']
+ * ```
+ */
+export function* withGroup<T>(
+  name: string,
+  op: () => Operation<T>,
+): Operation<T> {
+  const groups = yield* GroupContext.expect();
+  return yield* GroupContext.with([...groups, name], op);
+}
+
+/**
+ * Get all current group segments from outermost to innermost.
+ *
+ * @returns Group path as an array
+ *
+ * @example
+ * ```typescript
+ * yield* group('api');
+ *
+ * yield* withGroup('users', function*() {
+ *   console.log(yield* useGroups()); // ['api', 'users']
  * });
  * ```
  */
-export function* currentGroupPath(): Operation<string[]> {
+export function* useGroups(): Operation<string[]> {
   return yield* GroupContext.expect();
-}
-
-/**
- * Get the current (innermost) group name.
- *
- * Returns undefined if not inside any group.
- *
- * @returns The innermost group name, or undefined
- *
- * @example
- * ```typescript
- * yield* group('api', function*() {
- *   yield* group('users', function*() {
- *     const name = yield* currentGroupName();
- *     // name = 'users'
- *   });
- * });
- * ```
- */
-export function* currentGroupName(): Operation<string | undefined> {
-  const path = yield* currentGroupPath();
-  return path.length > 0 ? path[path.length - 1] : undefined;
-}
-
-/**
- * Get the current group path as a string.
- *
- * Groups are joined with "/" separator.
- * Returns empty string if not inside any group.
- *
- * @returns Group path string like "api/users/list"
- *
- * @example
- * ```typescript
- * yield* group('api', function*() {
- *   yield* group('users', function*() {
- *     const pathStr = yield* currentGroupString();
- *     // pathStr = 'api/users'
- *   });
- * });
- * ```
- */
-export function* currentGroupString(): Operation<string> {
-  const path = yield* currentGroupPath();
-  return path.join("/");
 }

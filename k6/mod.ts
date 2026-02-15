@@ -11,13 +11,14 @@
  *
  * @example
  * ```typescript
- * import { main, group, http } from '@effectionx/k6';
+ * import { main, group, withGroup, useGroups, http } from '@effectionx/k6';
  *
  * export default main(function*() {
- *   yield* group("api-tests", function*() {
+ *   yield* group("api-tests");
+ *   yield* withGroup("users", function*() {
  *     // Context is preserved across async boundaries
  *     const response = yield* http.get("https://api.example.com");
- *     console.log(yield* currentGroupString()); // "api-tests"
+ *     console.log(yield* useGroups()); // ["api-tests", "users"]
  *   });
  * });
  * ```

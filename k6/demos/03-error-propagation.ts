@@ -18,7 +18,7 @@
  * Run with: k6 run dist/demos/03-error-propagation.js
  */
 
-import { main, group, http } from "../lib/mod.ts";
+import { main, withGroup, http } from "../lib/mod.ts";
 import { spawn, sleep } from "effection";
 
 // K6 options
@@ -57,7 +57,7 @@ export default main(function* () {
 
   if (DEMO_MODE === "success") {
     // Normal successful operation
-    yield* group("success-demo", function* () {
+    yield* withGroup("success-demo", function* () {
       console.log("Making a successful HTTP request...");
       const response = yield* http.get("https://test.k6.io");
       console.log(`Response status: ${response.status}`);
@@ -65,13 +65,13 @@ export default main(function* () {
     });
   } else if (DEMO_MODE === "sync-error") {
     // Synchronous error - propagates immediately
-    yield* group("sync-error-demo", function* () {
+    yield* withGroup("sync-error-demo", function* () {
       console.log("About to throw a synchronous error...");
       throw new Error("Synchronous error - this will fail the test!");
     });
   } else if (DEMO_MODE === "async-error") {
     // Error after an async operation - still propagates
-    yield* group("async-error-demo", function* () {
+    yield* withGroup("async-error-demo", function* () {
       console.log("Making an HTTP request...");
       yield* http.get("https://test.k6.io");
       console.log("HTTP succeeded, now throwing error...");
@@ -81,7 +81,7 @@ export default main(function* () {
     });
   } else if (DEMO_MODE === "child-error") {
     // Error in a spawned child task - propagates to parent
-    yield* group("child-error-demo", function* () {
+    yield* withGroup("child-error-demo", function* () {
       console.log("Spawning a child task that will fail...");
 
       yield* spawn(function* () {

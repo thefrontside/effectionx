@@ -11,20 +11,16 @@
  * or to no group at all.
  *
  * THE SOLUTION:
- * @effectionx/k6's group() uses Effection's Context.with() for proper scoping.
- * The context is maintained across all async operations within the group.
+ * @effectionx/k6 provides:
+ * - group(name): append to the current context for this scope
+ * - withGroup(name, op): run op in nested group context without mutating outer scope
+ * - useGroups(): read full context path
  *
  * Run with: k6 run dist/demos/01-group-context.js
  */
 
 import { sleep } from "k6";
-import {
-  main,
-  group,
-  currentGroupString,
-  currentGroupPath,
-  http,
-} from "../lib/mod.ts";
+import { main, group, withGroup, useGroups, http } from "../lib/mod.ts";
 
 // K6 options
 export const options = {
@@ -51,40 +47,36 @@ export const options = {
 export default main(function* () {
   console.log("=== Demo: Group Context Preservation ===\n");
 
-  // Demonstrate nested groups with context preservation
-  yield* group("api-tests", function* () {
-    const path1 = yield* currentGroupString();
-    console.log(`Inside api-tests group: "${path1}"`);
+  // Append to the current scope context
+  yield* group("api-tests");
+  console.log(
+    `After group("api-tests"): ${JSON.stringify(yield* useGroups())}`,
+  );
 
-    // Make an HTTP request - context is preserved!
-    const response = yield* http.get("https://test.k6.io");
-    console.log(`HTTP response status: ${response.status}`);
+  // Make an HTTP request - context is preserved
+  const response = yield* http.get("https://test.k6.io");
+  console.log(`HTTP response status: ${response.status}`);
+  console.log(`After HTTP call: ${JSON.stringify(yield* useGroups())}`);
 
-    // Check context after async operation
-    const path2 = yield* currentGroupString();
-    console.log(`After HTTP call, still in: "${path2}"`);
-
-    // Nested group
-    yield* group("users", function* () {
-      const nestedPath = yield* currentGroupPath();
-      console.log(`Nested group path: ${JSON.stringify(nestedPath)}`);
-
-      // Another HTTP call in nested group
-      yield* http.get("https://test.k6.io/contacts.php");
-
-      // Context still preserved
-      const stillNested = yield* currentGroupString();
-      console.log(`After nested HTTP, group is: "${stillNested}"`);
-    });
-
-    // Back to parent group automatically
-    const backToParent = yield* currentGroupString();
-    console.log(`After nested group, back to: "${backToParent}"`);
+  // Scoped nested group
+  yield* withGroup("users", function* () {
+    console.log(
+      `Inside withGroup("users"): ${JSON.stringify(yield* useGroups())}`,
+    );
+    yield* http.get("https://test.k6.io/contacts.php");
+    console.log(`After nested HTTP: ${JSON.stringify(yield* useGroups())}`);
   });
 
+  // Back to outer context after withGroup
+  console.log(`After withGroup returns: ${JSON.stringify(yield* useGroups())}`);
+
+  // Repeated group() appends again in same scope
+  yield* group("world");
+  console.log(`After group("world"): ${JSON.stringify(yield* useGroups())}`);
+
   // Outside all groups
-  const outside = yield* currentGroupString();
-  console.log(`Outside groups: "${outside}" (empty string)`);
+  const outside = yield* useGroups();
+  console.log(`Current groups: ${JSON.stringify(outside)}`);
 
   console.log("\n=== Demo Complete ===");
   console.log("Group context was preserved across all async boundaries!");

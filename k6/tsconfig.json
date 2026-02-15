@@ -3,7 +3,12 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": ".",
-    "types": ["k6"]
+    "types": ["k6"],
+    "baseUrl": ".",
+    "paths": {
+      "k6": ["node_modules/@types/k6/index.d.ts"],
+      "k6/*": ["node_modules/@types/k6/*/index.d.ts"]
+    }
   },
   "include": ["**/*.ts"],
   "exclude": ["dist", "node_modules"]

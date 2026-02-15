@@ -61,19 +61,18 @@ The conformance suite validates:
 ## Usage
 
 ```typescript
-import { main, group, currentGroupString, http } from '@effectionx/k6';
+import { main, group, withGroup, useGroups, http } from '@effectionx/k6';
 
 export default main(function*() {
-  // Async-aware group that preserves context
-  yield* group("api-tests", function*() {
+  // Append to current context for this scope
+  yield* group("api-tests");
+  
+  // Run nested operations without mutating outer context
+  yield* withGroup("users", function*() {
     const response = yield* http.get("https://api.example.com/users");
     
     // Context is preserved across async boundaries!
-    console.log(`Current group: ${yield* currentGroupString()}`); // "api-tests"
-    
-    yield* group("nested", function*() {
-      console.log(`Current group: ${yield* currentGroupString()}`); // "api-tests/nested"
-    });
+    console.log(`Current groups: ${JSON.stringify(yield* useGroups())}`); // ["api-tests", "users"]
   });
 });
 ```
@@ -117,9 +116,9 @@ docker compose run --rm dev k6 run /scripts/dist/demos/01-group-context.js
 ### Core
 
 - **`main(op)`** - Wrap an Effection operation as a K6 VU iteration function
-- **`group(name, op)`** - Execute operation within a named group with proper context scoping
-- **`currentGroupPath()`** - Get current group path as array (e.g., `["api", "users"]`)
-- **`currentGroupString()`** - Get current group path as string (e.g., `"api/users"`)
+- **`group(name)`** - Append a group to the current context for this scope
+- **`withGroup(name, op)`** - Run `op` in a nested group context and restore outer context after
+- **`useGroups()`** - Get current group path as array (e.g., `["api", "users"]`)
 
 ### HTTP
 

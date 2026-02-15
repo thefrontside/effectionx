@@ -9,10 +9,11 @@
  *
  * @example
  * ```typescript
- * import { main, group, http } from '@effectionx/k6';
+ * import { main, group, withGroup, http } from '@effectionx/k6';
  *
  * export default main(function*() {
- *   yield* group('api-tests', function*() {
+ *   yield* group('api-tests');
+ *   yield* withGroup('users', function*() {
  *     const response = yield* http.get('https://api.example.com/users');
  *     console.log(response.status); // 200
  *   });
@@ -28,10 +29,11 @@ import type {
   ResponseType,
   RefinedParams,
   RequestBody,
-  HttpURL,
 } from "k6/http";
 import * as k6Http from "k6/http";
-import { currentGroupString } from "./group.ts";
+import { useGroups } from "./group.ts";
+
+type HttpURL = ReturnType<typeof k6Http.url>;
 
 /**
  * Parameters for HTTP requests, extending K6's params with
@@ -57,8 +59,9 @@ function* addGroupTag<RT extends ResponseType | undefined>(
     return params;
   }
 
-  const groupPath = yield* currentGroupString();
-  if (!groupPath) {
+  const groups = yield* useGroups();
+  const groupPath = groups.join("/");
+  if (groupPath === "") {
     return params;
   }
 
@@ -85,14 +88,14 @@ function* addGroupTag<RT extends ResponseType | undefined>(
  *
  * @example
  * ```typescript
- * yield* group('users', function*() {
+ * yield* withGroup('users', function*() {
  *   const res = yield* http.get('https://api.example.com/users');
  *   // Request is automatically tagged with group: 'users'
  * });
  * ```
  */
 export function* get<RT extends ResponseType | undefined = undefined>(
-  url: string | k6Http.URL,
+  url: string | HttpURL,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
   const taggedParams = yield* addGroupTag(params);
@@ -109,7 +112,7 @@ export function* get<RT extends ResponseType | undefined = undefined>(
  *
  * @example
  * ```typescript
- * yield* group('create-user', function*() {
+ * yield* withGroup('create-user', function*() {
  *   const res = yield* http.post('https://api.example.com/users', JSON.stringify({
  *     name: 'Test User',
  *     email: 'test@example.com',
@@ -120,8 +123,8 @@ export function* get<RT extends ResponseType | undefined = undefined>(
  * ```
  */
 export function* post<RT extends ResponseType | undefined = undefined>(
-  url: string | k6Http.URL,
-  body?: k6Http.RequestBody | null,
+  url: string | HttpURL,
+  body?: RequestBody | null,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
   const taggedParams = yield* addGroupTag(params);
@@ -137,8 +140,8 @@ export function* post<RT extends ResponseType | undefined = undefined>(
  * @returns The HTTP response
  */
 export function* put<RT extends ResponseType | undefined = undefined>(
-  url: string | k6Http.URL,
-  body?: k6Http.RequestBody | null,
+  url: string | HttpURL,
+  body?: RequestBody | null,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
   const taggedParams = yield* addGroupTag(params);
@@ -154,8 +157,8 @@ export function* put<RT extends ResponseType | undefined = undefined>(
  * @returns The HTTP response
  */
 export function* patch<RT extends ResponseType | undefined = undefined>(
-  url: string | k6Http.URL,
-  body?: k6Http.RequestBody | null,
+  url: string | HttpURL,
+  body?: RequestBody | null,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
   const taggedParams = yield* addGroupTag(params);
@@ -171,8 +174,8 @@ export function* patch<RT extends ResponseType | undefined = undefined>(
  * @returns The HTTP response
  */
 export function* del<RT extends ResponseType | undefined = undefined>(
-  url: string | k6Http.URL,
-  body?: k6Http.RequestBody | null,
+  url: string | HttpURL,
+  body?: RequestBody | null,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
   const taggedParams = yield* addGroupTag(params);
@@ -187,7 +190,7 @@ export function* del<RT extends ResponseType | undefined = undefined>(
  * @returns The HTTP response
  */
 export function* head<RT extends ResponseType | undefined = undefined>(
-  url: string | k6Http.URL,
+  url: string | HttpURL,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
   const taggedParams = yield* addGroupTag(params);
@@ -203,8 +206,8 @@ export function* head<RT extends ResponseType | undefined = undefined>(
  * @returns The HTTP response
  */
 export function* options<RT extends ResponseType | undefined = undefined>(
-  url: string | k6Http.URL,
-  body?: k6Http.RequestBody | null,
+  url: string | HttpURL,
+  body?: RequestBody | null,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
   const taggedParams = yield* addGroupTag(params);
@@ -224,8 +227,8 @@ export function* options<RT extends ResponseType | undefined = undefined>(
  */
 export function* request<RT extends ResponseType | undefined = undefined>(
   method: string,
-  url: string | k6Http.URL,
-  body?: k6Http.RequestBody | null,
+  url: string | HttpURL,
+  body?: RequestBody | null,
   params?: HttpParams<RT>,
 ): Operation<RefinedResponse<RT>> {
   const taggedParams = yield* addGroupTag(params);

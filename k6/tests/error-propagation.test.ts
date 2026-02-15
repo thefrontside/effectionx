@@ -6,7 +6,7 @@
  */
 
 import { testMain, describe, it, expect } from "../testing/mod.ts";
-import { withGroup, http } from "../lib/mod.ts";
+import { group, http } from "../lib/mod.ts";
 import { spawn, sleep, scoped } from "effection";
 
 // K6 options
@@ -21,12 +21,12 @@ export const options = {
 export default testMain(function* () {
   describe("Error Propagation", () => {
     describe("Synchronous errors", () => {
-      it("catches synchronous errors in withGroup", function* () {
+      it("catches synchronous errors in group(name, op)", function* () {
         let caught = false;
         let errorMessage = "";
 
         try {
-          yield* withGroup("sync-error", function* () {
+          yield* group("sync-error", function* () {
             throw new Error("Sync error in group");
           });
         } catch (e) {
@@ -42,7 +42,7 @@ export default testMain(function* () {
         let message = "";
 
         try {
-          yield* withGroup("message-test", function* () {
+          yield* group("message-test", function* () {
             throw new Error("Custom error message");
           });
         } catch (e) {
@@ -58,7 +58,7 @@ export default testMain(function* () {
         let caught = false;
 
         try {
-          yield* withGroup("async-error", function* () {
+          yield* group("async-error", function* () {
             yield* http.get("https://test.k6.io");
             throw new Error("Error after HTTP");
           });
@@ -73,7 +73,7 @@ export default testMain(function* () {
         let caught = false;
 
         try {
-          yield* withGroup("sleep-error", function* () {
+          yield* group("sleep-error", function* () {
             yield* sleep(10);
             throw new Error("Error after sleep");
           });
@@ -89,7 +89,7 @@ export default testMain(function* () {
         let message = "";
 
         try {
-          yield* withGroup("multi-async", function* () {
+          yield* group("multi-async", function* () {
             yield* sleep(5);
             yield* http.get("https://test.k6.io");
             yield* sleep(5);
@@ -152,7 +152,7 @@ export default testMain(function* () {
         let recovered = false;
 
         try {
-          yield* withGroup("will-fail", function* () {
+          yield* group("will-fail", function* () {
             throw new Error("Expected failure");
           });
         } catch {
@@ -160,7 +160,7 @@ export default testMain(function* () {
         }
 
         // Continue with more work after recovery
-        yield* withGroup("after-recovery", function* () {
+        yield* group("after-recovery", function* () {
           yield* http.get("https://test.k6.io");
           recovered = true;
         });
@@ -172,7 +172,7 @@ export default testMain(function* () {
         let finallyRan = false;
 
         try {
-          yield* withGroup("finally-test", function* () {
+          yield* group("finally-test", function* () {
             try {
               throw new Error("Error during work");
             } finally {
@@ -190,7 +190,7 @@ export default testMain(function* () {
         let innerCaught = false;
         let outerReached = false;
 
-        yield* withGroup("nested-try", function* () {
+        yield* group("nested-try", function* () {
           try {
             throw new Error("Inner error");
           } catch {

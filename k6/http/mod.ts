@@ -9,11 +9,11 @@
  *
  * @example
  * ```typescript
- * import { main, group, withGroup, http } from '@effectionx/k6';
+ * import { main, group, http } from '@effectionx/k6';
  *
  * export default main(function*() {
  *   yield* group('api-tests');
- *   yield* withGroup('users', function*() {
+ *   yield* group('users', function*() {
  *     const response = yield* http.get('https://api.example.com/users');
  *     console.log(response.status); // 200
  *   });
@@ -73,7 +73,7 @@ function* mergeContextTags<RT extends ResponseType | undefined>(
  *
  * @example
  * ```typescript
- * yield* withGroup('users', function*() {
+ * yield* group('users', function*() {
  *   const res = yield* http.get('https://api.example.com/users');
  *   // Request is automatically tagged with group: 'users'
  * });
@@ -97,7 +97,7 @@ export function* get<RT extends ResponseType | undefined = undefined>(
  *
  * @example
  * ```typescript
- * yield* withGroup('create-user', function*() {
+ * yield* group('create-user', function*() {
  *   const res = yield* http.post('https://api.example.com/users', JSON.stringify({
  *     name: 'Test User',
  *     email: 'test@example.com',

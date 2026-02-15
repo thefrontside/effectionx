@@ -1,54 +1,51 @@
+# syntax=docker/dockerfile:1.7
 # Dockerfile for K6 with Effection support
 #
-# This builds a custom K6 binary that includes the Sobek yield-in-finally fix
-# required for Effection's structured concurrency cleanup semantics.
+# Builds a custom K6 binary with patched Sobek for Effection's
+# structured concurrency cleanup semantics.
 #
 # Prerequisites:
 #   Run `node build.js` in the k6 directory to build the JS bundles first.
-#
-# Multi-stage build:
-#   1. Build custom K6 with patched Sobek
-#   2. Alpine runtime with custom K6 + pre-built JS bundles
 
 # =============================================================================
 # Stage 1: Build custom K6 with Sobek fix
 # =============================================================================
-FROM golang:1.24-alpine AS k6-builder
+FROM golang:1.24.13-alpine AS k6-builder
 
-WORKDIR /build
+ARG K6_REF=v0.57.0
+ARG SOBEK_VERSION=v0.0.0-20260215012414-013550b38489
 
-# Install git for cloning
-RUN apk add --no-cache git
+WORKDIR /src
 
-# Clone K6 source
-RUN git clone --depth 1 https://github.com/grafana/k6.git .
+RUN apk add --no-cache git ca-certificates
 
-# Add replace directive to use our fixed Sobek fork
-# This fixes: https://github.com/grafana/sobek/issues/114
-RUN echo 'replace github.com/grafana/sobek => github.com/taras/sobek v0.0.0-20260215012414-013550b38489' >> go.mod
+RUN git clone --depth 1 --branch "${K6_REF}" https://github.com/grafana/k6.git .
 
-# Build K6 with the patched Sobek
-RUN go mod tidy && go build -mod=mod -o k6 ./
+RUN go mod edit -replace=github.com/grafana/sobek=github.com/taras/sobek@${SOBEK_VERSION}
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download && \
+    CGO_ENABLED=0 go build -mod=mod -trimpath -ldflags="-s -w" -o /out/k6 ./
 
 # =============================================================================
-# Stage 2: Runtime image with custom K6
+# Stage 2: Runtime image
 # =============================================================================
-FROM alpine:latest
+FROM alpine:3.20
 
-# Install ca-certificates for HTTPS requests
-RUN apk add --no-cache ca-certificates
+# Install ca-certificates and create non-root user
+RUN apk add --no-cache ca-certificates \
+    && addgroup -S k6 \
+    && adduser -S k6 -G k6
 
 # Copy custom K6 binary
-COPY --from=k6-builder /build/k6 /usr/local/bin/k6
+COPY --from=k6-builder /out/k6 /usr/local/bin/k6
 
-# Copy pre-built bundles (must run `node build.js` first)
-COPY dist /tests
+# Copy pre-built test bundles (must run `node build.js` first)
+COPY --chown=k6:k6 dist /tests
 
-# Set working directory
 WORKDIR /tests
+USER k6
 
-# Default entrypoint
 ENTRYPOINT ["k6", "run"]
-
-# Default command runs conformance tests
-CMD ["conformance-bundle.js"]
+CMD ["tests/group-context.test.js"]

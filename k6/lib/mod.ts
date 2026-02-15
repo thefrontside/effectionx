@@ -11,11 +11,11 @@
  *
  * @example Basic usage
  * ```typescript
- * import { main, group, withGroup, http } from '@effectionx/k6';
+ * import { main, group, http } from '@effectionx/k6';
  *
  * export default main(function*() {
  *   yield* group('api-tests');
- *   yield* withGroup('users', function*() {
+ *   yield* group('users', function*() {
  *     const response = yield* http.get('https://api.example.com/users');
  *     console.log(`Status: ${response.status}`);
  *   });
@@ -48,9 +48,10 @@ export {
   withTags,
   useGroups,
   group,
-  withGroup,
   type Tags,
 } from "./tags.ts";
+
+export { groupDuration } from "./metrics.ts";
 
 // HTTP wrappers (re-export from separate module)
 export {
@@ -74,7 +75,7 @@ export {
 } from "../websockets/mod.ts";
 
 // Re-export Effection primitives for convenience
-export { each, interval, spawn } from "effection";
+export { each, ensure, interval, resource, spawn } from "effection";
 export {
   forEach,
   take,

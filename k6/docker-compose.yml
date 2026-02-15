@@ -1,20 +1,23 @@
 # Docker Compose for K6 Effection testing
 #
 # Services:
-#   k6-conformance    - Build custom K6 and run conformance tests
-#   k6-dev            - Use local K6 binary for fast iteration
-#   k6-demo           - Run demo scripts
+#   k6-test  - Build custom K6 and run tests
+#   k6-dev   - Use local K6 binary for fast iteration
+#   k6-demo  - Run demo scripts
 #
 # Usage:
-#   docker compose run --rm k6-conformance
-#   docker compose run --rm --profile dev k6-dev conformance-bundle.js
-#   docker compose run --rm k6-demo 01-group-context/solution.js
+#   docker compose run --rm k6-test
+#   docker compose run --rm --profile dev k6-dev tests/group-context.test.js
+#   docker compose run --rm k6-demo 01-group-context.js
+#
+# For runtime conformance tests, see:
+#   https://gist.github.com/taras/ba692690e1695c44dedcc71a6624880b
 
 services:
   # ==========================================================================
   # Main service: Build custom K6 with Sobek fix and run tests
   # ==========================================================================
-  k6-conformance:
+  k6-test:
     build:
       context: .
       dockerfile: Dockerfile
@@ -22,20 +25,19 @@ services:
       # Mount test output for inspection
       - ./test-results:/results
     environment:
-      - K6_OUT=json=/results/conformance-results.json
+      - K6_OUT=json=/results/test-results.json
 
   # ==========================================================================
   # Development: Use local K6 binary (faster iteration)
   # ==========================================================================
   # Prerequisites:
-  #   1. Build custom K6: cd /tmp/k6-custom && go build -mod=mod -o k6-effection ./
+  #   1. Build custom K6: see gist for instructions
   #   2. Build JS bundles: pnpm run build:bundle
   #
   # Usage:
-  #   docker compose run --rm --profile dev k6-dev conformance-bundle.js
-  #   docker compose run --rm --profile dev k6-dev demos/01-group-context/solution.js
+  #   docker compose run --rm --profile dev k6-dev tests/group-context.test.js
   k6-dev:
-    image: alpine:latest
+    image: alpine:3.20
     volumes:
       # Mount local K6 binary (built with Sobek fix)
       - /tmp/k6-custom/k6-effection:/usr/local/bin/k6:ro
@@ -45,7 +47,7 @@ services:
       - ./test-results:/results
     working_dir: /tests
     entrypoint: ["k6", "run"]
-    command: ["conformance-bundle.js"]
+    command: ["tests/group-context.test.js"]
     profiles:
       - dev
 
@@ -53,8 +55,7 @@ services:
   # Demo runner: Run demo scripts with custom K6
   # ==========================================================================
   # Usage:
-  #   docker compose run --rm k6-demo 01-group-context/solution.js
-  #   docker compose run --rm k6-demo 02-websocket/solution.js
+  #   docker compose run --rm k6-demo 01-group-context.js
   k6-demo:
     build:
       context: .
@@ -63,16 +64,4 @@ services:
       - ./test-results:/results
     working_dir: /tests/demos
     entrypoint: ["k6", "run"]
-    # Default demo - override with command line
-    command: ["01-group-context/solution.js"]
-
-  # ==========================================================================
-  # Build only: Verify Docker build works (useful for CI)
-  # ==========================================================================
-  k6-build:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    entrypoint: ["k6", "version"]
-    profiles:
-      - build
+    command: ["01-group-context.js"]

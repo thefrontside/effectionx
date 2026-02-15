@@ -9,6 +9,7 @@
 
 import { createContext, type Operation } from "effection";
 import exec from "k6/execution";
+import { groupDuration } from "./metrics.ts";
 
 /**
  * Normalized tags map used for K6 metrics tagging.
@@ -83,27 +84,30 @@ export function* useGroups(): Operation<string[]> {
 }
 
 /**
- * Append a group to current context for this scope.
+ * Add a group tag to the current context.
  */
-export function* group(name: string): Operation<void> {
-  const groups = yield* useGroups();
-  const tags = yield* useTags();
-  yield* TagsContext.set({
-    ...tags,
-    group: [...groups, name].join(GROUP_SEPARATOR),
-  });
-}
-
-/**
- * Run an operation in a nested group context.
- */
-export function* withGroup<T>(
+export function group(name: string): Operation<void>;
+export function group<T>(name: string, op: () => Operation<T>): Operation<T>;
+export function* group<T = void>(
   name: string,
-  op: () => Operation<T>,
+  op?: () => Operation<T>,
 ): Operation<T> {
   const groups = yield* useGroups();
-  return yield* withTags(
-    { group: [...groups, name].join(GROUP_SEPARATOR) },
-    op,
-  );
+  const groupPath = `${GROUP_SEPARATOR}${[...groups, name].join(GROUP_SEPARATOR)}`;
+
+  if (!op) {
+    const tags = yield* useTags();
+    yield* TagsContext.set({
+      ...tags,
+      group: groupPath,
+    });
+    return undefined as T;
+  }
+
+  const start = Date.now();
+  try {
+    return yield* withTags({ group: groupPath }, op);
+  } finally {
+    groupDuration.add(Date.now() - start, { group: groupPath });
+  }
 }

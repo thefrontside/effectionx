@@ -21,54 +21,33 @@ pnpm add @effectionx/k6
 
 ## Runtime Conformance
 
-Before using Effection in K6, you should validate that K6's Sobek runtime supports all required JavaScript features. This package includes a conformance test suite.
+Before using Effection in K6, you should validate that K6's Sobek runtime supports all required JavaScript features.
 
-### Run Conformance Tests
+**Conformance tests are available as a GitHub Gist:**
 
-Using Docker (recommended):
+- **Gist:** [k6-effection-conformance](https://gist.github.com/taras/ba692690e1695c44dedcc71a6624880b)
+- **Skill file:** Instructions for running with stock k6, custom k6 build, or Docker
 
-```bash
-cd k6
-docker compose run --rm k6-conformance
-```
-
-Or locally (requires K6 installed):
+### Quick Check (Stock K6)
 
 ```bash
-pnpm run build:bundle
-k6 run dist/conformance-bundle.js
+k6 run https://gist.githubusercontent.com/taras/ba692690e1695c44dedcc71a6624880b/raw/conformance-bundle.js
 ```
 
-### What's Tested
-
-The conformance suite validates:
-
-1. **Symbol Support** - `Symbol.iterator`, `Symbol.toStringTag`
-2. **Generator Functions** - `function*`, `yield`, `return()`, `throw()`
-3. **yield* Delegation** - Custom iterables, return value propagation
-4. **yield* throw() Forwarding** - Error propagation through delegation
-5. **yield* return() Forwarding** - Cancellation semantics, finally blocks
-6. **Promise Support** - Promise constructor, async/await, Promise.all/race
-7. **Timer Support** - setTimeout, clearTimeout (required for `sleep()`)
-8. **AbortController** - Optional, for `useAbortSignal()` integration
-
-### Critical vs Optional Tests
-
-- **Critical** (tests 1-5): Effection cannot work without these
-- **Important** (tests 6-7): Core functionality needs these
-- **Optional** (test 8): Some features won't be available
+> **Note:** Stock k6 will fail test 05 (yield-return) due to a Sobek runtime bug. See the gist for custom build instructions.
 
 ## Usage
 
 ```typescript
-import { main, group, withGroup, useGroups, http } from '@effectionx/k6';
+import { main, group, useGroups, http } from '@effectionx/k6';
 
 export default main(function*() {
-  // Append to current context for this scope
+  // Append to the current group path for the rest of this scope
   yield* group("api-tests");
   
-  // Run nested operations without mutating outer context
-  yield* withGroup("users", function*() {
+  // Run nested operations in a scoped group (restores outer context)
+  // and emits the standard k6 `group_duration` metric.
+  yield* group("users", function*() {
     const response = yield* http.get("https://api.example.com/users");
     
     // Context is preserved across async boundaries!
@@ -105,18 +84,23 @@ Available primitives:
 
 - `describe`, `describe.skip`, `describe.only`
 - `it`, `it.skip`, `it.only`
-- `beforeAll`, `beforeEach`
+- `beforeEach`
 - `expect`
 - `runTests()`
 - `testMain()`
 
-Run test bundles with Docker:
+> **Note:** `beforeAll` is intentionally omitted. Use `beforeEach` with `resource` or `ensure` for setup that needs cleanup — this ensures proper structured concurrency semantics with per-test isolation.
+
+Run tests with Docker:
 
 ```bash
-docker compose run --rm k6-conformance tests/group-context.test.js
-docker compose run --rm k6-conformance tests/cleanup.test.js
-docker compose run --rm k6-conformance tests/error-propagation.test.js
-docker compose run --rm k6-conformance tests/websocket.test.js
+docker compose run --rm k6-test
+```
+
+Or with a local custom k6 binary:
+
+```bash
+/tmp/k6-custom/k6-effection run dist/tests/group-context.test.js
 ```
 
 ## Demos
@@ -143,14 +127,13 @@ node build.js
 Then run with the custom K6 binary (with Sobek fix):
 
 ```bash
-# Use the custom K6 binary with yield-in-finally fix
 /tmp/k6-custom/k6-effection run dist/demos/01-group-context.js
 ```
 
-Or via Docker (which includes the fix):
+Or via Docker:
 
 ```bash
-docker compose run --rm dev k6 run /scripts/dist/demos/01-group-context.js
+docker compose run --rm k6-demo 01-group-context.js
 ```
 
 ## API Reference
@@ -158,11 +141,12 @@ docker compose run --rm dev k6 run /scripts/dist/demos/01-group-context.js
 ### Core
 
 - **`main(op)`** - Wrap an Effection operation as a K6 VU iteration function
-- **`group(name)`** - Append a group to the current context for this scope
-- **`withGroup(name, op)`** - Run `op` in a nested group context and restore outer context after
+- **`group(name)`** - Append a group to the current context for the rest of the current scope
+- **`group(name, op)`** - Run `op` in a nested group context (restores outer context) and emit `group_duration`
 - **`useGroups()`** - Get current group path as array (e.g., `["api", "users"]`)
 - **`useTags()`** - Get full tags context (includes groups and K6 VU tags)
 - **`withTags(tags, op)`** - Run `op` with additional tags merged into context
+- **`groupDuration`** - k6 `Trend` metric instance (`group_duration`) used by `group(name, op)`
 
 ### Testing
 
@@ -170,7 +154,6 @@ docker compose run --rm dev k6 run /scripts/dist/demos/01-group-context.js
 - **`runTests()`** - Execute all registered tests and emit K6 `check()` metrics
 - **`describe(name, body)`** - Define test suites (supports nesting)
 - **`it(name, body)`** - Define test cases
-- **`beforeAll(op)`** - One-time setup for the current `describe`
 - **`beforeEach(op)`** - Per-test setup for the current `describe`
 - **`expect(value)`** - Assertion helper with common matchers
 
@@ -181,6 +164,14 @@ docker compose run --rm dev k6 run /scripts/dist/demos/01-group-context.js
 - **`http.put/patch/del/head/options`** - Other HTTP methods
 
 All HTTP operations automatically tag requests with the current group for proper metrics attribution.
+
+### Group Metrics
+
+- `group(name)` updates the `group` tag only.
+- `group(name, op)` also emits a `group_duration` sample in milliseconds.
+- The emitted `group_duration` sample is tagged with the full group path for that scope.
+- Group tag values use k6's native group path format (leading root marker), e.g. `::api::users`.
+- `useGroups()` returns the same path as an array (root marker omitted), e.g. `["api", "users"]`.
 
 ### WebSocket
 
@@ -225,7 +216,7 @@ pnpm run build:bundle
 ### Testing in Docker
 
 ```bash
-docker compose run --rm k6-conformance
+docker compose run --rm k6-test
 ```
 
 ### Project Structure
@@ -234,38 +225,31 @@ docker compose run --rm k6-conformance
 k6/
 ├── lib/                   # Core library
 │   ├── main.ts            # VU iteration wrapper (main())
+│   ├── metrics.ts         # Custom k6 metrics (group_duration)
 │   ├── tags.ts            # Tags & group context management
 │   └── mod.ts             # Library exports
 ├── http/
 │   └── mod.ts             # HTTP operation wrappers
 ├── websockets/
 │   └── mod.ts             # WebSocket resource
-├── conformance/           # Runtime conformance tests (internal)
-│   ├── 01-symbols.ts      # Symbol support
-│   ├── 02-generators.ts   # Basic generator support
-│   ├── 03-yield-delegation.ts  # yield* with custom iterables
-│   ├── 04-yield-throw.ts  # Error propagation
-│   ├── 05-yield-return.ts # Cancellation semantics (critical!)
-│   ├── 06-promises.ts     # Promise support
-│   ├── 07-timers.ts       # setTimeout/clearTimeout
-│   ├── 08-abort-controller.ts # AbortController (optional)
-│   ├── k6-runner.ts       # K6 test script
-│   └── mod.ts             # Test runner module
+├── testing/
+│   └── mod.ts             # BDD testing primitives
+├── tests/                 # Package tests (run in k6)
+│   ├── group-context.test.ts
+│   ├── cleanup.test.ts
+│   ├── error-propagation.test.ts
+│   └── websocket.test.ts
 ├── demos/                 # Demo scripts
 │   ├── 01-group-context.ts
 │   ├── 02-websocket.ts
 │   ├── 03-error-propagation.ts
 │   └── 04-cleanup.ts
 ├── dist/                  # Built bundles
-│   ├── lib.js             # Library bundle (includes Effection)
-│   ├── conformance-bundle.js
-│   └── demos/             # Built demo scripts
 ├── build.js               # esbuild configuration
 ├── docker-compose.yml     # Docker test setup
-├── Dockerfile             # K6 test image (with Sobek fix)
+├── Dockerfile             # K6 image with Sobek fix
 ├── mod.ts                 # Package entry point
-├── package.json
-└── tsconfig.json
+└── package.json
 ```
 
 ## Current Status
@@ -299,46 +283,15 @@ gen.return('X');   // Should be {value: 'cleanup', done: false}
 
 **Status**: A fix has been submitted to Sobek. Once merged and released in a new K6 version, Effection will work correctly in K6.
 
-### Known Limitation: Sobek panic on spawned task throw in scoped flow
+### Known Limitation: Sobek panic on spawned task throw
 
-While validating `@effectionx/k6/testing`, we found a separate runtime crash in Sobek: when a spawned task throws inside a `scoped(...)` flow (and the parent awaits), K6 can panic with a nil-pointer dereference in Sobek throw handling.
+When a spawned task throws inside a `scoped(...)` flow (and the parent awaits), K6 can panic with a nil-pointer dereference in Sobek throw handling.
 
 Impact:
-
 - Two child-task error propagation tests are currently marked `describe.skip(...)` in `k6/tests/error-propagation.test.ts`.
 - Remaining suites still pass and validate group context, cleanup, and websocket behavior.
 
 This is under active investigation.
-
-### Conformance Test Results
-
-**With stock K6 v0.55.0:**
-
-| Test | Status | Notes |
-|------|--------|-------|
-| 01-symbols | ✅ PASS | |
-| 02-generators | ✅ PASS | |
-| 03-yield-delegation | ✅ PASS | |
-| 04-yield-throw | ✅ PASS | |
-| 05-yield-return | ❌ FAIL | **Blocker** - yield in finally skipped |
-| 06-promises | ✅ PASS | |
-| 07-timers | ✅ PASS | |
-| 08-abort-controller | ❌ FAIL | Expected - AbortController not available |
-
-**With custom K6 (Sobek fix applied):**
-
-| Test | Status | Notes |
-|------|--------|-------|
-| 01-symbols | ✅ PASS | |
-| 02-generators | ✅ PASS | |
-| 03-yield-delegation | ✅ PASS | |
-| 04-yield-throw | ✅ PASS | |
-| 05-yield-return | ✅ PASS | **Fixed!** |
-| 06-promises | ✅ PASS | |
-| 07-timers | ✅ PASS | |
-| 08-abort-controller | ❌ FAIL | Expected - AbortController not available |
-
-A custom K6 binary with the Sobek fix is available at `/tmp/k6-custom/k6-effection` (built from the PR branch).
 
 ## Background
 

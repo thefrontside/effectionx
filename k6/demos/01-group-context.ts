@@ -13,7 +13,7 @@
  * THE SOLUTION:
  * @effectionx/k6 provides:
  * - group(name): append to the current context for this scope
- * - withGroup(name, op): run op in nested group context without mutating outer scope
+ * - group(name, op): run op in nested group context without mutating outer scope
  * - useGroups(): read full context path
  *
  * Run with: k6 run dist/demos/01-group-context.js
@@ -23,7 +23,6 @@ import { sleep } from "k6";
 import {
   main,
   group,
-  withGroup,
   useGroups,
   useTags,
   http,
@@ -66,16 +65,16 @@ export default main(function* () {
   console.log(`After HTTP call: ${JSON.stringify(yield* useGroups())}`);
 
   // Scoped nested group
-  yield* withGroup("users", function* () {
+  yield* group("users", function* () {
     console.log(
-      `Inside withGroup("users"): ${JSON.stringify(yield* useGroups())}`,
+      `Inside group("users", op): ${JSON.stringify(yield* useGroups())}`,
     );
     yield* http.get("https://test.k6.io/contacts.php");
     console.log(`After nested HTTP: ${JSON.stringify(yield* useGroups())}`);
   });
 
-  // Back to outer context after withGroup
-  console.log(`After withGroup returns: ${JSON.stringify(yield* useGroups())}`);
+  // Back to outer context after group(name, op)
+  console.log(`After group(name, op) returns: ${JSON.stringify(yield* useGroups())}`);
 
   // Repeated group() appends again in same scope
   yield* group("world");

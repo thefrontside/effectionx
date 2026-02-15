@@ -11,11 +11,11 @@
  *
  * @example
  * ```typescript
- * import { main, group, withGroup, useGroups, http } from '@effectionx/k6';
+ * import { main, group, useGroups, http } from '@effectionx/k6';
  *
  * export default main(function*() {
  *   yield* group("api-tests");
- *   yield* withGroup("users", function*() {
+ *   yield* group("users", function*() {
  *     // Context is preserved across async boundaries
  *     const response = yield* http.get("https://api.example.com");
  *     console.log(yield* useGroups()); // ["api-tests", "users"]

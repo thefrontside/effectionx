@@ -7,7 +7,7 @@
  */
 
 import { testMain, describe, it, expect } from "../testing/mod.ts";
-import { group, withGroup, useGroups, useTags, http } from "../lib/mod.ts";
+import { group, useGroups, useTags, http } from "../lib/mod.ts";
 
 // K6 options
 export const options = {
@@ -52,11 +52,11 @@ export default testMain(function* () {
       });
     });
 
-    describe("withGroup() function", () => {
+    describe("group(name, op) overload", () => {
       it("creates scoped nested context", function* () {
         yield* group("outer");
 
-        yield* withGroup("inner", function* () {
+        yield* group("inner", function* () {
           const groups = yield* useGroups();
           expect(groups).toHaveLength(2);
           expect(groups[0]).toBe("outer");
@@ -64,11 +64,11 @@ export default testMain(function* () {
         });
       });
 
-      it("restores context after withGroup returns", function* () {
+      it("restores context after group(name, op) returns", function* () {
         yield* group("outer");
 
-        yield* withGroup("inner", function* () {
-          // Inside withGroup
+        yield* group("inner", function* () {
+          // Inside scoped group overload
         });
 
         const groups = yield* useGroups();
@@ -79,23 +79,45 @@ export default testMain(function* () {
       it("preserves context across HTTP in nested group", function* () {
         yield* group("outer");
 
-        yield* withGroup("inner", function* () {
+        yield* group("inner", function* () {
           yield* http.get("https://test.k6.io");
           const groups = yield* useGroups();
           expect(groups).toContain("inner");
         });
       });
 
-      it("handles deeply nested withGroups", function* () {
-        yield* withGroup("level1", function* () {
-          yield* withGroup("level2", function* () {
-            yield* withGroup("level3", function* () {
+      it("handles deeply nested group(name, op) calls", function* () {
+        yield* group("level1", function* () {
+          yield* group("level2", function* () {
+            yield* group("level3", function* () {
               const groups = yield* useGroups();
               expect(groups).toHaveLength(3);
               expect(groups).toEqual(["level1", "level2", "level3"]);
             });
           });
         });
+      });
+
+      it("preserves return values", function* () {
+        const value = yield* group("returns-value", function* () {
+          return 42;
+        });
+
+        expect(value).toBe(42);
+      });
+
+      it("rethrows errors from grouped operation", function* () {
+        let message = "";
+
+        try {
+          yield* group("throws", function* () {
+            throw new Error("boom");
+          });
+        } catch (error) {
+          message = (error as Error).message;
+        }
+
+        expect(message).toBe("boom");
       });
     });
 
@@ -118,14 +140,14 @@ export default testMain(function* () {
       it("includes group in tags", function* () {
         yield* group("tagged-group");
         const tags = yield* useTags();
-        expect(tags.group).toBe("tagged-group");
+        expect(tags.group).toBe("::tagged-group");
       });
 
       it("formats nested groups with :: separator", function* () {
         yield* group("outer");
         yield* group("inner");
         const tags = yield* useTags();
-        expect(tags.group).toBe("outer::inner");
+        expect(tags.group).toBe("::outer::inner");
       });
     });
   });

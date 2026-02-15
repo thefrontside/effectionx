@@ -1,7 +1,7 @@
 /**
  * @effectionx/k6/testing - BDD Testing for K6 with Effection
  *
- * Provides BDD-style testing primitives (describe, it, beforeAll, beforeEach)
+ * Provides BDD-style testing primitives (describe, it, beforeEach)
  * that work with Effection's structured concurrency and report results via
  * K6's check() function.
  *
@@ -178,32 +178,10 @@ it.only = function only(desc: string, body: () => Operation<void>): void {
 };
 
 /**
- * Run setup once before all tests in the current describe block.
- *
- * @example
- * ```typescript
- * describe("API Tests", () => {
- *   let apiClient: ApiClient;
- *
- *   beforeAll(function*() {
- *     apiClient = yield* createApiClient();
- *   });
- *
- *   it("uses the client", function*() {
- *     yield* apiClient.get("/users");
- *   });
- * });
- * ```
- */
-export function beforeAll(body: () => Operation<void>): void {
-  if (!currentAdapter) {
-    throw new Error("beforeAll() must be called within a describe() block");
-  }
-  currentAdapter.addOnetimeSetup(body);
-}
-
-/**
  * Run setup before each test in the current describe block.
+ *
+ * Use `resource` or `ensure` within `beforeEach` for setup that needs cleanup.
+ * This ensures proper structured concurrency semantics with per-test isolation.
  *
  * @example
  * ```typescript
@@ -442,7 +420,10 @@ export function expect<T>(actual: T): Expectation<T> {
 }
 
 class Expectation<T> {
-  constructor(private actual: T) {}
+  private actual: T;
+  constructor(actual: T) {
+    this.actual = actual;
+  }
 
   toBe(expected: T): void {
     if (this.actual !== expected) {

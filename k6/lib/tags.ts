@@ -72,9 +72,11 @@ export function* useGroups(): Operation<string[]> {
  */
 export function* group(name: string): Operation<void> {
   const groups = yield* useGroups();
-  groups.push(name);
   const tags = yield* useTags();
-  yield* TagsContext.set({ ...tags, group: groups.join(GROUP_SEPARATOR) });
+  yield* TagsContext.set({
+    ...tags,
+    group: [...groups, name].join(GROUP_SEPARATOR),
+  });
 }
 
 /**

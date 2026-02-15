@@ -16,17 +16,18 @@
  *
  * @example
  * ```typescript
- * import { main, useWebSocket, each } from '@effectionx/k6';
+ * import { main, useWebSocket, spawn, forEach } from '@effectionx/k6';
  *
  * export default main(function*() {
  *   const ws = yield* useWebSocket('wss://echo.websocket.org');
  *
- *   ws.send('Hello');
+ *   yield* spawn(function*() {
+ *     yield* forEach(ws, function*(message) {
+ *       console.log('Received:', message);
+ *     });
+ *   });
  *
- *   for (const message of yield* each(ws)) {
- *     console.log('Received:', message);
- *     yield* each.next();
- *   }
+ *   ws.send('Hello');
  * });
  * ```
  *

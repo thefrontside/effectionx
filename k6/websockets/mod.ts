@@ -132,12 +132,6 @@ export interface WebSocket {
 
   /** Close the connection. Resolves when the connection is closed. */
   close(code?: number, reason?: string): Operation<void>;
-
-  /** Current ready state */
-  readonly readyState: number;
-
-  /** Whether the connection is open */
-  readonly isOpen: boolean;
 }
 
 /**
@@ -231,14 +225,6 @@ export function useWebSocket(
       close(code?: number, reason?: string): Operation<void> {
         socket.close(code, reason);
         return closed.operation;
-      },
-
-      get readyState() {
-        return socket.readyState;
-      },
-
-      get isOpen() {
-        return socket.readyState === ReadyState.OPEN;
       },
     };
 

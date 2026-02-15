@@ -38,7 +38,7 @@ import {
   type Stream,
   resource,
   createSignal,
-  call,
+  withResolvers,
 } from "effection";
 
 // K6 WebSocket types - these match k6/experimental/websockets
@@ -189,17 +189,12 @@ export function useWebSocket(
 
     // Track if we've opened
     let isOpen = false;
-    let openResolve: (() => void) | null = null;
-    let openReject: ((error: Error) => void) | null = null;
-    const openPromise = new Promise<void>((resolve, reject) => {
-      openResolve = resolve;
-      openReject = reject;
-    });
+    const opened = withResolvers<void>();
 
     // Set up event handlers using K6's callback style
     socket.onopen = () => {
       isOpen = true;
-      openResolve?.();
+      opened.resolve();
     };
 
     socket.onmessage = (event?: K6MessageEvent) => {
@@ -217,7 +212,7 @@ export function useWebSocket(
       const errorMsg = event?.error ?? "Unknown WebSocket error";
       if (!isOpen) {
         // Connection failed
-        openReject?.(new Error(`WebSocket connection failed: ${errorMsg}`));
+        opened.reject(new Error(`WebSocket connection failed: ${errorMsg}`));
       }
       // Note: Error during operation will close the socket,
       // which will close the message signal
@@ -246,7 +241,7 @@ export function useWebSocket(
 
     try {
       // Wait for connection to open
-      yield* call(() => openPromise);
+      yield* opened.operation;
 
       // Provide the resource
       yield* provide(wsResource);

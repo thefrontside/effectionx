@@ -25,7 +25,7 @@ RUN git clone --depth 1 https://github.com/grafana/k6.git .
 
 # Add replace directive to use our fixed Sobek fork
 # This fixes: https://github.com/grafana/sobek/issues/114
-RUN echo 'replace github.com/grafana/sobek => github.com/taras/sobek v0.0.0-20260214233038-2ff728dfa619' >> go.mod
+RUN echo 'replace github.com/grafana/sobek => github.com/taras/sobek v0.0.0-20260215012414-013550b38489' >> go.mod
 
 # Build K6 with the patched Sobek
 RUN go mod tidy && go build -mod=mod -o k6 ./

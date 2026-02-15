@@ -14,5 +14,16 @@
     }
   },
   "include": ["**/*.ts"],
-  "exclude": ["dist", "node_modules"]
+  "exclude": ["dist", "node_modules"],
+  "references": [
+    {
+      "path": "../node"
+    },
+    {
+      "path": "../stream-helpers"
+    },
+    {
+      "path": "../test-adapter"
+    }
+  ]
 }

@@ -189,7 +189,9 @@ export function useWebSocket(
       messageSignal.close();
       if (!wasOpen) {
         // Socket closed before it opened - reject the open promise
-        opened.reject(new Error("WebSocket closed before connection established"));
+        opened.reject(
+          new Error("WebSocket closed before connection established"),
+        );
       }
       closed.resolve();
     };

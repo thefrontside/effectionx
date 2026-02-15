@@ -20,13 +20,7 @@
  */
 
 import { sleep } from "k6";
-import {
-  main,
-  group,
-  useGroups,
-  useTags,
-  http,
-} from "../lib/mod.ts";
+import { main, group, useGroups, useTags, http } from "../lib/mod.ts";
 
 // K6 options
 export const options = {
@@ -74,7 +68,9 @@ export default main(function* () {
   });
 
   // Back to outer context after group(name, op)
-  console.log(`After group(name, op) returns: ${JSON.stringify(yield* useGroups())}`);
+  console.log(
+    `After group(name, op) returns: ${JSON.stringify(yield* useGroups())}`,
+  );
 
   // Repeated group() appends again in same scope
   yield* group("world");

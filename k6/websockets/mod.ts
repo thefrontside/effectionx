@@ -187,9 +187,10 @@ export function useWebSocket(
     // Create signal for messages
     const messageSignal = createSignal<WebSocketMessage, void>();
 
-    // Track if we've opened
+    // Track connection state with resolvers
     let isOpen = false;
     const opened = withResolvers<void>();
+    const closed = withResolvers<void>();
 
     // Set up event handlers using K6's callback style
     socket.onopen = () => {
@@ -206,6 +207,7 @@ export function useWebSocket(
     socket.onclose = () => {
       isOpen = false;
       messageSignal.close();
+      closed.resolve();
     };
 
     socket.onerror = (event?: K6ErrorEvent) => {
@@ -215,7 +217,7 @@ export function useWebSocket(
         opened.reject(new Error(`WebSocket connection failed: ${errorMsg}`));
       }
       // Note: Error during operation will close the socket,
-      // which will close the message signal
+      // which will trigger onclose
     };
 
     // Create the resource object
@@ -253,6 +255,8 @@ export function useWebSocket(
       ) {
         socket.close(1000, "Effection scope ended");
       }
+      // Wait for onclose to fire before completing cleanup
+      yield* closed.operation;
     }
   });
 }

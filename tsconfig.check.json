@@ -6,7 +6,9 @@
     "incremental": false,
     "baseUrl": ".",
     "paths": {
-      "@effectionx/*": ["*/mod.ts"]
+      "@effectionx/*": ["*/mod.ts"],
+      "k6": ["k6/node_modules/@types/k6/index.d.ts"],
+      "k6/*": ["k6/node_modules/@types/k6/*/index.d.ts"]
     }
   },
   "include": ["**/*.ts"],

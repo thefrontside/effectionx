@@ -3,6 +3,10 @@
 Execute and manage system processes with structured concurrency. A library for
 spawning and controlling child processes in Effection programs.
 
+> **Note**: Starting with version 0.2.0, this package requires Effection v4.1 or greater
+> for full functionality. The middleware/API features (`processApi`) require the new
+> `createApi` function introduced in Effection v4.1.
+
 ---
 
 This package provides two main functions: `exec()` for running processes with a
@@ -198,4 +202,54 @@ interface Process {
   // Wait for successful completion (throws on non-zero exit)
   expect(): Operation<ExitStatus>;
 }
+
+### `processApi`
+
+The process API object that supports middleware decoration. Use `processApi.around()`
+to add middleware for logging, mocking, or instrumentation.
+
+```typescript
+import { processApi, exec } from "@effectionx/process";
+import { run } from "effection";
+
+// Add logging middleware
+await run(function* () {
+  yield* processApi.around({
+    *createProcess(args, next) {
+      let [command, options] = args;
+      console.log("Executing:", command, options?.arguments);
+      return yield* next(...args);
+    },
+  });
+
+  // All exec calls in this scope now log
+  yield* exec("echo hello").expect();
+});
+```
+
+#### Capturing process executions for testing
+
+```typescript
+import { processApi, exec } from "@effectionx/process";
+import { run } from "effection";
+
+await run(function* () {
+  let executed: string[] = [];
+
+  yield* processApi.around({
+    *createProcess(args, next) {
+      executed.push(args[0]);
+      return yield* next(...args);
+    },
+  });
+
+  yield* exec("git status").expect();
+  yield* exec("npm install").expect();
+
+  console.log(executed); // ["git status", "npm install"]
+});
+```
+
+Middleware is scoped - it only applies to the current scope and its children,
+and is automatically cleaned up when the scope exits.
 ```

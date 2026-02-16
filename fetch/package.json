@@ -1,6 +1,6 @@
 {
   "name": "@effectionx/fetch",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
@@ -10,6 +10,7 @@
       "default": "./dist/mod.js"
     }
   },
+  "files": ["dist", "mod.ts", "fetch.ts"],
   "description": "Effection-native fetch with structured concurrency and streaming response support",
   "peerDependencies": {
     "effection": "^4.1.0-alpha.3"

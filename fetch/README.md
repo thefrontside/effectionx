@@ -197,7 +197,7 @@ await run(function* () {
 #### Mocking responses for testing
 
 ```ts
-import { fetchApi, fetch, type FetchResponse } from "@effectionx/fetch";
+import { fetchApi, fetch, FetchResponse } from "@effectionx/fetch";
 import { run } from "effection";
 
 await run(function* () {
@@ -205,8 +205,13 @@ await run(function* () {
     *request(args, next) {
       let [input] = args;
       if (String(input).includes("/api/users")) {
-        // Return a mock response
-        return createMockResponse({ users: [] });
+        // Return a mock FetchResponse
+        return new FetchResponse(
+          new Response(JSON.stringify({ users: [] }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          })
+        );
       }
       return yield* next(...args);
     },

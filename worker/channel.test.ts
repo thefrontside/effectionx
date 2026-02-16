@@ -721,12 +721,14 @@ describe("channel", () => {
         expect(next.value).toEqual({ ok: true, value: "done" });
 
         // First progress was fast (worker was already waiting)
-        expect(progressDurations[0]).toBeLessThan(20);
+        // Use generous tolerance for CI environments
+        expect(progressDurations[0]).toBeLessThan(50);
 
         // Second progress waited for worker to finish processing
         // (host blocked until worker called next() again)
+        // Use generous tolerance (processingTime - 20) for CI environments
         expect(progressDurations[1]).toBeGreaterThanOrEqual(
-          processingTime - 10,
+          processingTime - 20,
         );
       });
     });

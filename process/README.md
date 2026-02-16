@@ -227,7 +227,7 @@ await run(function* () {
 });
 ```
 
-#### Capturing process executions for testing
+### Capturing process executions for testing
 
 ```typescript
 import { processApi, exec } from "@effectionx/process";
@@ -252,4 +252,3 @@ await run(function* () {
 
 Middleware is scoped - it only applies to the current scope and its children,
 and is automatically cleaned up when the scope exits.
-```

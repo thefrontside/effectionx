@@ -1,7 +1,7 @@
 {
   "name": "@effectionx/process",
   "description": "Spawn and manage child processes with structured concurrency",
-  "version": "0.7.3",
+  "version": "0.8.0",
   "keywords": [
     "effection",
     "effectionx",
@@ -32,9 +32,6 @@
   },
   "bugs": {
     "url": "https://github.com/thefrontside/effectionx/issues"
-  },
-  "engines": {
-    "node": ">= 22"
   },
   "sideEffects": false,
   "dependencies": {

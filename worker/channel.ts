@@ -257,7 +257,11 @@ export function useChannelResponse<TResponse, TProgress = never>(
                   return { done: true, value: msg.result };
                 }
 
-                // If timeout specified, use timebox
+                // If timeout specified, use timebox.
+                // Note: timeout is applied per-call (each next() has its own timeout window),
+                // not cumulatively for the entire exchange. This means a slow stream with many
+                // progress updates could exceed the intended overall timeout if each individual
+                // update arrives within the per-call limit.
                 if (timeout !== undefined) {
                   const result = yield* timebox(timeout, waitForNext);
                   if (result.timeout) {

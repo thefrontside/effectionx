@@ -1,7 +1,9 @@
 import {
   stream,
+  type Api,
   type Operation,
   type Stream,
+  createApi,
   until,
   useAbortSignal,
 } from "effection";
@@ -126,10 +128,101 @@ export class HttpError extends Error {
 }
 
 /**
+ * Core interface for the fetch API operations.
+ * Used internally by createApi to enable middleware support.
+ */
+interface FetchApiCore {
+  /**
+   * Perform the actual HTTP request operation.
+   * This is the core operation that middleware can intercept.
+   */
+  request(
+    input: RequestInfo | URL,
+    init: FetchInit | undefined,
+    shouldExpect: boolean,
+  ): Operation<FetchResponse>;
+}
+
+/**
+ * The fetch API object that supports middleware decoration.
+ *
+ * Use `fetchApi.around()` to add middleware for logging, mocking, or instrumentation.
+ * Middleware intercepts the actual HTTP request operation, not the FetchOperation builder.
+ *
+ * @example
+ * ```ts
+ * import { fetchApi, fetch } from "@effectionx/fetch";
+ * import { run } from "effection";
+ *
+ * await run(function*() {
+ *   // Add logging middleware
+ *   yield* fetchApi.around({
+ *     *request(args, next) {
+ *       let [input, init] = args;
+ *       console.log("Fetching:", input);
+ *       return yield* next(...args);
+ *     }
+ *   });
+ *
+ *   // All fetch calls in this scope now log
+ *   let data = yield* fetch("/api/users").json();
+ * });
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Mock responses for testing
+ * import { fetchApi, fetch, type FetchResponse } from "@effectionx/fetch";
+ *
+ * await run(function*() {
+ *   yield* fetchApi.around({
+ *     *request(args, next) {
+ *       let [input] = args;
+ *       if (input === "/api/users") {
+ *         // Return a mock response
+ *         return createMockResponse({ users: [] });
+ *       }
+ *       return yield* next(...args);
+ *     }
+ *   });
+ *
+ *   // Fetch returns mocked data in this scope
+ *   let users = yield* fetch("/api/users").json();
+ * });
+ * ```
+ */
+export const fetchApi: Api<FetchApiCore> = createApi("fetch", {
+  *request(
+    input: RequestInfo | URL,
+    init: FetchInit | undefined,
+    shouldExpect: boolean,
+  ): Operation<FetchResponse> {
+    let signal = yield* useAbortSignal();
+
+    let response = yield* until(globalThis.fetch(input, { ...init, signal }));
+    let fetchResponse = createFetchResponse(response);
+
+    if (shouldExpect && !response.ok) {
+      throw new HttpError(
+        response.status,
+        response.statusText,
+        response.url,
+        fetchResponse,
+      );
+    }
+
+    return fetchResponse;
+  },
+});
+
+/**
  * Perform an HTTP request using the Fetch API with Effection structured concurrency.
  *
  * Cancellation is automatically handled via the current Effection scope.
  * When the scope exits, the request is aborted.
+ *
+ * This function supports middleware via {@link fetchApi}. Use `fetchApi.around()`
+ * to add logging, mocking, or other middleware that will intercept all fetch calls.
  *
  * @param input - The URL or Request object
  * @param init - Optional request configuration (same as RequestInit, but without signal)
@@ -153,6 +246,28 @@ export class HttpError extends Error {
  *   yield* each.next();
  * }
  * ```
+ *
+ * @example
+ * ```ts
+ * // Use middleware to mock responses in tests
+ * import { fetchApi, fetch } from "@effectionx/fetch";
+ *
+ * await run(function*() {
+ *   yield* fetchApi.around({
+ *     *request(args, next) {
+ *       let [input] = args;
+ *       if (input === "/api/test") {
+ *         // Return a mock response
+ *         return createMockResponse({ data: "mocked" });
+ *       }
+ *       return yield* next(...args);
+ *     }
+ *   });
+ *
+ *   // This call uses the mock
+ *   let data = yield* fetch("/api/test").json();
+ * });
+ * ```
  */
 export function fetch(
   input: RequestInfo | URL,
@@ -166,22 +281,9 @@ function createFetchOperation(
   init: FetchInit | undefined,
   shouldExpect: boolean,
 ): FetchOperation {
+  // Use the API's request operation so middleware can intercept
   function* doFetch(): Operation<FetchResponse> {
-    let signal = yield* useAbortSignal();
-
-    let response = yield* until(globalThis.fetch(input, { ...init, signal }));
-    let fetchResponse = createFetchResponse(response);
-
-    if (shouldExpect && !response.ok) {
-      throw new HttpError(
-        response.status,
-        response.statusText,
-        response.url,
-        fetchResponse,
-      );
-    }
-
-    return fetchResponse;
+    return yield* fetchApi.operations.request(input, init, shouldExpect);
   }
 
   return {

@@ -15,7 +15,11 @@
     }
   },
   "peerDependencies": {
-    "effection": "^3 || ^4"
+    "effection": "^4.1.0-alpha.3"
+  },
+  "devDependencies": {
+    "@effectionx/bdd": "workspace:*",
+    "effection": "https://pkg.pr.new/thefrontside/effection@1116"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",
@@ -26,9 +30,5 @@
   "bugs": {
     "url": "https://github.com/thefrontside/effectionx/issues"
   },
-  "sideEffects": false,
-  "devDependencies": {
-    "@effectionx/bdd": "workspace:*",
-    "effection": "^4"
-  }
+  "sideEffects": false
 }

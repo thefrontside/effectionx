@@ -202,70 +202,68 @@ describe("@effectionx/fs", () => {
       expect(regex.test("file.txt")).toBe(false);
     });
   });
-});
 
-describe("fsApi middleware", () => {
-  it("can intercept file reads with logging", function* () {
-    const logged: string[] = [];
+  describe("fsApi middleware", () => {
+    it("can intercept file reads with logging", function* () {
+      const logged: string[] = [];
 
-    yield* fsApi.around({
-      *readTextFile(args, next) {
-        logged.push(`read:${args[0]}`);
-        return yield* next(...args);
-      },
-    });
-
-    // Create a test file
-    const filePath = path.join(__dirname, "test-tmp", "middleware-read.txt");
-    yield* until(fsp.mkdir(path.dirname(filePath), { recursive: true }));
-    yield* until(fsp.writeFile(filePath, "test content"));
-
-    const content = yield* readTextFile(filePath);
-
-    expect(content).toBe("test content");
-    expect(logged).toContain(`read:${filePath}`);
-  });
-
-  it("middleware is scoped and does not leak", function* () {
-    const logged: string[] = [];
-    const filePath = path.join(__dirname, "test-tmp", "middleware-scope.txt");
-
-    // Setup test file
-    yield* until(fsp.mkdir(path.dirname(filePath), { recursive: true }));
-    yield* until(fsp.writeFile(filePath, "scoped content"));
-
-    // First scope with middleware
-    yield* run(function* () {
       yield* fsApi.around({
         *readTextFile(args, next) {
-          logged.push("inner");
+          logged.push(`read:${args[0]}`);
           return yield* next(...args);
         },
       });
-      yield* readTextFile(filePath);
+
+      // Create a test file (testDir is cleaned up by beforeEach)
+      const filePath = path.join(testDir, "middleware-read.txt");
+      yield* until(fsp.writeFile(filePath, "test content"));
+
+      const content = yield* readTextFile(filePath);
+
+      expect(content).toBe("test content");
+      expect(logged).toContain(`read:${filePath}`);
     });
 
-    // Second scope without middleware
-    yield* run(function* () {
-      yield* readTextFile(filePath);
+    it("middleware is scoped and does not leak", function* () {
+      const logged: string[] = [];
+      const filePath = path.join(testDir, "middleware-scope.txt");
+
+      // Setup test file
+      yield* until(fsp.writeFile(filePath, "scoped content"));
+
+      // First scope with middleware
+      yield* run(function* () {
+        yield* fsApi.around({
+          *readTextFile(args, next) {
+            logged.push("inner");
+            return yield* next(...args);
+          },
+        });
+        yield* readTextFile(filePath);
+      });
+
+      // Second scope without middleware
+      yield* run(function* () {
+        yield* readTextFile(filePath);
+      });
+
+      // Middleware should only have been called once (in the first scope)
+      expect(logged).toEqual(["inner"]);
     });
 
-    // Middleware should only have been called once (in the first scope)
-    expect(logged).toEqual(["inner"]);
-  });
+    it("can mock file contents for testing", function* () {
+      yield* fsApi.around({
+        *readTextFile(args, next) {
+          const [pathOrUrl] = args;
+          if (String(pathOrUrl).includes("mocked.json")) {
+            return JSON.stringify({ mocked: true });
+          }
+          return yield* next(...args);
+        },
+      });
 
-  it("can mock file contents for testing", function* () {
-    yield* fsApi.around({
-      *readTextFile(args, next) {
-        const [pathOrUrl] = args;
-        if (String(pathOrUrl).includes("mocked.json")) {
-          return JSON.stringify({ mocked: true });
-        }
-        return yield* next(...args);
-      },
+      const content = yield* readTextFile("/fake/path/mocked.json");
+      expect(JSON.parse(content)).toEqual({ mocked: true });
     });
-
-    const content = yield* readTextFile("/fake/path/mocked.json");
-    expect(JSON.parse(content)).toEqual({ mocked: true });
   });
 });

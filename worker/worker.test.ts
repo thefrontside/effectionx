@@ -380,12 +380,14 @@ describe("worker", () => {
       );
 
       const forEachStarted = withResolvers<void>();
+      const allowHandlerToComplete = withResolvers<void>();
 
       // Start first forEach in background
       yield* spawn(function* () {
         yield* worker.forEach<string, string>(function* (_request) {
           forEachStarted.resolve();
-          yield* sleep(100); // Slow handler - inside handler, this is allowed
+          // Block until test signals completion (deterministic latch instead of sleep)
+          yield* allowHandlerToComplete.operation;
           return "slow response";
         });
       });
@@ -401,6 +403,9 @@ describe("worker", () => {
       } catch (e) {
         expect((e as Error).message).toEqual("forEach is already in progress");
       }
+
+      // Allow first handler to complete so test can clean up
+      allowHandlerToComplete.resolve();
     });
 
     it("error cause contains name, message, and stack from host", function* () {

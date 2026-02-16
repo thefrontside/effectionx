@@ -133,10 +133,10 @@ export class HttpError extends Error {
  */
 interface FetchApiCore {
   /**
-   * Perform the actual HTTP request operation.
+   * Perform an HTTP fetch operation.
    * This is the core operation that middleware can intercept.
    */
-  request(
+  fetch(
     input: RequestInfo | URL,
     init: FetchInit | undefined,
     shouldExpect: boolean,
@@ -157,7 +157,7 @@ interface FetchApiCore {
  * await run(function*() {
  *   // Add logging middleware
  *   yield* fetchApi.around({
- *     *request(args, next) {
+ *     *fetch(args, next) {
  *       let [input, init] = args;
  *       console.log("Fetching:", input);
  *       return yield* next(...args);
@@ -172,11 +172,11 @@ interface FetchApiCore {
  * @example
  * ```ts
  * // Mock responses for testing
- * import { fetchApi, fetch, type FetchResponse } from "@effectionx/fetch";
+ * import { fetchApi, fetch, createMockResponse } from "@effectionx/fetch";
  *
  * await run(function*() {
  *   yield* fetchApi.around({
- *     *request(args, next) {
+ *     *fetch(args, next) {
  *       let [input] = args;
  *       if (input === "/api/users") {
  *         // Return a mock response
@@ -192,7 +192,7 @@ interface FetchApiCore {
  * ```
  */
 export const fetchApi: Api<FetchApiCore> = createApi("fetch", {
-  *request(
+  *fetch(
     input: RequestInfo | URL,
     init: FetchInit | undefined,
     shouldExpect: boolean,
@@ -250,11 +250,11 @@ export const fetchApi: Api<FetchApiCore> = createApi("fetch", {
  * @example
  * ```ts
  * // Use middleware to mock responses in tests
- * import { fetchApi, fetch } from "@effectionx/fetch";
+ * import { fetchApi, fetch, createMockResponse } from "@effectionx/fetch";
  *
  * await run(function*() {
  *   yield* fetchApi.around({
- *     *request(args, next) {
+ *     *fetch(args, next) {
  *       let [input] = args;
  *       if (input === "/api/test") {
  *         // Return a mock response
@@ -281,9 +281,9 @@ function createFetchOperation(
   init: FetchInit | undefined,
   shouldExpect: boolean,
 ): FetchOperation {
-  // Use the API's request operation so middleware can intercept
+  // Use the API's fetch operation so middleware can intercept
   function* doFetch(): Operation<FetchResponse> {
-    return yield* fetchApi.operations.request(input, init, shouldExpect);
+    return yield* fetchApi.operations.fetch(input, init, shouldExpect);
   }
 
   return {
@@ -329,6 +329,27 @@ function createFetchOperation(
       return createFetchOperation(input, init, true);
     },
   };
+}
+
+/**
+ * Create a FetchResponse from a native Response object.
+ *
+ * Useful for creating mock responses in middleware for testing.
+ *
+ * @example
+ * ```ts
+ * import { createMockResponse } from "@effectionx/fetch";
+ *
+ * // Create a mock JSON response
+ * let mock = createMockResponse({ users: [] });
+ * ```
+ */
+export function createMockResponse(data: unknown): FetchResponse {
+  let response = new Response(JSON.stringify(data), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+  return createFetchResponse(response);
 }
 
 function createFetchResponse(response: Response): FetchResponse {

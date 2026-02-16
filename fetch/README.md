@@ -182,7 +182,7 @@ import { run } from "effection";
 // Add logging middleware
 await run(function* () {
   yield* fetchApi.around({
-    *request(args, next) {
+    *fetch(args, next) {
       let [input] = args;
       console.log("Fetching:", input);
       return yield* next(...args);
@@ -202,7 +202,7 @@ import { run } from "effection";
 
 await run(function* () {
   yield* fetchApi.around({
-    *request(args, next) {
+    *fetch(args, next) {
       let [input] = args;
       if (String(input).includes("/api/users")) {
         // Return a mock FetchResponse

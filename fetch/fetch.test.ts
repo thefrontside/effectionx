@@ -204,7 +204,7 @@ describe("fetch()", () => {
       let requestedUrls: string[] = [];
 
       yield* fetchApi.around({
-        *request(args, next) {
+        *fetch(args, next) {
           let [input] = args;
           requestedUrls.push(String(input));
           return yield* next(...args);
@@ -253,7 +253,7 @@ describe("fetch()", () => {
       };
 
       yield* fetchApi.around({
-        *request(args, next) {
+        *fetch(args, next) {
           let [input] = args;
           if (String(input).includes("/mocked")) {
             return mockResponse;
@@ -281,7 +281,7 @@ describe("fetch()", () => {
       let innerCalls: string[] = [];
 
       yield* fetchApi.around({
-        *request(args, next) {
+        *fetch(args, next) {
           outerCalls.push("outer");
           return yield* next(...args);
         },
@@ -293,7 +293,7 @@ describe("fetch()", () => {
       // Spawn a child scope with additional middleware
       let task = yield* spawn(function* () {
         yield* fetchApi.around({
-          *request(args, next) {
+          *fetch(args, next) {
             innerCalls.push("inner");
             return yield* next(...args);
           },

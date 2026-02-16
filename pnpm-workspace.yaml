@@ -10,6 +10,7 @@ packages:
   - "fs"
   - "fx"
   - "jsonl-store"
+  - "k6"
   - "node"
   - "process"
   - "raf"

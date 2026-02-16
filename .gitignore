@@ -27,6 +27,7 @@ dist/
 !process/test/fixtures/dump-args.js
 !process/test/fixtures/hello-world.js
 !process/test/fixtures/hello-world-failed.js
+!k6/build.js
 
 # turborepo cache
 .turbo
@@ -36,10 +37,10 @@ dist/
 
 # Test temp directories
 **/test-tmp/
+k6/test-results/
 
 # pnpm config (created by test-matrix runner)
 .npmrc
 
 # Agent shell directories
 .agent-shell/
-

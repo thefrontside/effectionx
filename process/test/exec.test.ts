@@ -6,7 +6,7 @@ import { expect } from "expect";
 import { captureError, fetchText } from "./helpers.ts";
 
 import { lines } from "@effectionx/stream-helpers";
-import { type Process, type ProcessResult, exec } from "../mod.ts";
+import { type Process, type ProcessResult, exec, processApi } from "../mod.ts";
 
 const SystemRoot = process.env.SystemRoot;
 
@@ -521,4 +521,58 @@ describe("handles env vars", () => {
   }
 
   // Close the main "handles env vars" describe block
+});
+
+describe("processApi middleware", () => {
+  it("can intercept process creation with logging", function* () {
+    let createdCommands: string[] = [];
+
+    yield* processApi.around({
+      *createProcess(args, next) {
+        let [cmd] = args;
+        createdCommands.push(cmd);
+        return yield* next(...args);
+      },
+    });
+
+    yield* exec("echo hello").join();
+    yield* exec("echo world").join();
+
+    expect(createdCommands).toEqual(["echo", "echo"]);
+  });
+
+  it("middleware is scoped and does not leak", function* () {
+    let outerCalls: string[] = [];
+    let innerCalls: string[] = [];
+
+    yield* processApi.around({
+      *createProcess(args, next) {
+        outerCalls.push("outer");
+        return yield* next(...args);
+      },
+    });
+
+    // Make a call in outer scope
+    yield* exec("echo outer").join();
+
+    // Spawn a child scope with additional middleware
+    let task = yield* spawn(function* () {
+      yield* processApi.around({
+        *createProcess(args, next) {
+          innerCalls.push("inner");
+          return yield* next(...args);
+        },
+      });
+
+      // Make call in inner scope - should hit both middlewares
+      yield* exec("echo inner").join();
+    });
+
+    yield* task;
+
+    // Outer scope should have both outer middleware calls
+    expect(outerCalls).toEqual(["outer", "outer"]);
+    // Inner scope should have one call
+    expect(innerCalls).toEqual(["inner"]);
+  });
 });

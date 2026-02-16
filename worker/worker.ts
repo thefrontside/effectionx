@@ -261,7 +261,11 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
             let next = yield* requestSubscription.next();
             while (!next.done) {
               const request = next.value;
-              yield* spawn(function* () {
+              // Track handler errors - we forward to worker but also re-throw to host
+              let handlerError: Error | undefined;
+
+              // Create a task for this request and wait for it to complete
+              const task = yield* spawn(function* () {
                 const channelRequest = yield* useChannelRequest<
                   WResponse,
                   WProgress
@@ -275,9 +279,20 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
                   const result = yield* fn(request.value as WRequest, ctx);
                   yield* channelRequest.resolve(result);
                 } catch (error) {
+                  // Forward error to worker so it knows the request failed
                   yield* channelRequest.reject(error as Error);
+                  // Store error to re-throw after forwarding (don't swallow host errors)
+                  handlerError = error as Error;
                 }
               });
+
+              // Wait for the handler to complete
+              yield* task;
+
+              // If the handler failed, stop processing and re-throw
+              if (handlerError) {
+                throw handlerError;
+              }
               next = yield* requestSubscription.next();
             }
             return yield* outcome.operation;

@@ -216,20 +216,28 @@ describe("worker", () => {
       expect(result).toEqual(3);
     });
 
-    it("propagates errors from host handler to worker", function* () {
+    it("propagates errors from host handler to worker and crashes host", function* () {
       const worker = yield* useWorker<never, never, string, void>(
         import.meta.resolve("./test-assets/error-handling-worker.ts"),
         { type: "module" },
       );
 
-      const result = yield* worker.forEach<string, string>(function* (request) {
-        if (request === "fail") {
-          throw new Error("host error");
-        }
-        return "ok";
-      });
+      // Host should crash after forwarding error to worker
+      let hostError: Error | undefined;
+      try {
+        yield* worker.forEach<string, string>(function* (request) {
+          if (request === "fail") {
+            throw new Error("host error");
+          }
+          return "ok";
+        });
+      } catch (e) {
+        hostError = e as Error;
+      }
 
-      expect(result).toEqual("caught: Host handler failed: host error");
+      // Verify host crashed with the original error
+      expect(hostError).toBeDefined();
+      expect(hostError?.message).toEqual("host error");
     });
 
     it("handles concurrent requests from worker", function* () {
@@ -401,16 +409,21 @@ describe("worker", () => {
         { type: "module" },
       );
 
-      const result = yield* worker.forEach<string, string>(
-        function* (_request) {
+      // Host should crash after forwarding error to worker
+      let hostError: Error | undefined;
+      try {
+        yield* worker.forEach<string, string>(function* (_request) {
           const error = new TypeError("custom type error");
           throw error;
-        },
-      );
+        });
+      } catch (e) {
+        hostError = e as Error;
+      }
 
-      expect(result).toMatch(/caught error with cause/);
-      expect(result).toContain("TypeError");
-      expect(result).toContain("custom type error");
+      // Verify host crashed with the original error
+      expect(hostError).toBeDefined();
+      expect(hostError?.name).toEqual("TypeError");
+      expect(hostError?.message).toEqual("custom type error");
     });
 
     it("error cause contains name, message, and stack from worker", function* () {

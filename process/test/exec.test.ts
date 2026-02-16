@@ -535,10 +535,11 @@ describe("processApi middleware", () => {
       },
     });
 
-    yield* exec("echo hello").join();
-    yield* exec("echo world").join();
+    // Use node -e for cross-platform compatibility (Windows doesn't have echo as executable)
+    yield* exec("node", { arguments: ["-e", "console.log('hello')"] }).join();
+    yield* exec("node", { arguments: ["-e", "console.log('world')"] }).join();
 
-    expect(createdCommands).toEqual(["echo", "echo"]);
+    expect(createdCommands).toEqual(["node", "node"]);
   });
 
   it("middleware is scoped and does not leak", function* () {
@@ -552,8 +553,8 @@ describe("processApi middleware", () => {
       },
     });
 
-    // Make a call in outer scope
-    yield* exec("echo outer").join();
+    // Make a call in outer scope (use node for cross-platform)
+    yield* exec("node", { arguments: ["-e", "console.log('outer')"] }).join();
 
     // Spawn a child scope with additional middleware
     let task = yield* spawn(function* () {
@@ -565,7 +566,7 @@ describe("processApi middleware", () => {
       });
 
       // Make call in inner scope - should hit both middlewares
-      yield* exec("echo inner").join();
+      yield* exec("node", { arguments: ["-e", "console.log('inner')"] }).join();
     });
 
     yield* task;

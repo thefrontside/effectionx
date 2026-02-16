@@ -206,16 +206,17 @@ interface Process {
 ### `processApi`
 
 The process API object that supports middleware decoration. Use `processApi.around()`
-to add middleware for logging, mocking, or instrumentation.
+to add middleware for logging, mocking, or instrumentation. The API exposes two
+interceptable operations: `exec` and `daemon`.
 
 ```typescript
 import { processApi, exec } from "@effectionx/process";
 import { run } from "effection";
 
-// Add logging middleware
+// Add logging middleware for exec calls
 await run(function* () {
   yield* processApi.around({
-    *createProcess(args, next) {
+    *exec(args, next) {
       let [command, options] = args;
       console.log("Executing:", command, options?.arguments);
       return yield* next(...args);
@@ -227,7 +228,27 @@ await run(function* () {
 });
 ```
 
-### Capturing process executions for testing
+#### Intercepting daemon calls
+
+```typescript
+import { processApi, daemon } from "@effectionx/process";
+import { run } from "effection";
+
+await run(function* () {
+  yield* processApi.around({
+    *daemon(args, next) {
+      let [command] = args;
+      console.log("Starting daemon:", command);
+      return yield* next(...args);
+    },
+  });
+
+  // All daemon calls in this scope now log
+  let server = yield* daemon("node server.js");
+});
+```
+
+#### Capturing process executions for testing
 
 ```typescript
 import { processApi, exec } from "@effectionx/process";
@@ -237,7 +258,7 @@ await run(function* () {
   let executed: string[] = [];
 
   yield* processApi.around({
-    *createProcess(args, next) {
+    *exec(args, next) {
       executed.push(args[0]);
       return yield* next(...args);
     },

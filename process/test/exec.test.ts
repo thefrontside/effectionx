@@ -524,13 +524,13 @@ describe("handles env vars", () => {
 });
 
 describe("processApi middleware", () => {
-  it("can intercept process creation with logging", function* () {
-    let createdCommands: string[] = [];
+  it("can intercept exec calls with logging", function* () {
+    let executedCommands: string[] = [];
 
     yield* processApi.around({
-      *createProcess(args, next) {
+      *exec(args, next) {
         let [cmd] = args;
-        createdCommands.push(cmd);
+        executedCommands.push(cmd);
         return yield* next(...args);
       },
     });
@@ -539,7 +539,7 @@ describe("processApi middleware", () => {
     yield* exec("node", { arguments: ["-e", "console.log('hello')"] }).join();
     yield* exec("node", { arguments: ["-e", "console.log('world')"] }).join();
 
-    expect(createdCommands).toEqual(["node", "node"]);
+    expect(executedCommands).toEqual(["node", "node"]);
   });
 
   it("middleware is scoped and does not leak", function* () {
@@ -547,7 +547,7 @@ describe("processApi middleware", () => {
     let innerCalls: string[] = [];
 
     yield* processApi.around({
-      *createProcess(args, next) {
+      *exec(args, next) {
         outerCalls.push("outer");
         return yield* next(...args);
       },
@@ -559,7 +559,7 @@ describe("processApi middleware", () => {
     // Spawn a child scope with additional middleware
     let task = yield* spawn(function* () {
       yield* processApi.around({
-        *createProcess(args, next) {
+        *exec(args, next) {
           innerCalls.push("inner");
           return yield* next(...args);
         },

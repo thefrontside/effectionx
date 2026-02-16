@@ -128,7 +128,7 @@ describe("channel", () => {
         throw new Error("should have thrown");
       } catch (e) {
         expect(e).toBeInstanceOf(Error);
-        expect((e as Error).message).toContain("Expected ACK");
+        expect((e as Error).message).toContain("Expected ack");
       }
     });
   });

@@ -321,86 +321,52 @@ export function useChannelRequest<TResponse, TProgress = never>(
   return resource(function* (provide) {
     port.start();
 
+    /**
+     * Wait for an ACK message from the requester, or exit gracefully if port closes.
+     * @param expectedType - The expected ACK type ("ack" or "progress_ack")
+     */
+    function* waitForAck(expectedType: ChannelAck["type"]): Operation<void> {
+      const event = yield* race([once(port, "message"), once(port, "close")]);
+
+      // If port closed, requester was cancelled - exit gracefully
+      if ((event as Event).type === "close") {
+        return;
+      }
+
+      // Validate ACK
+      const ack = (event as MessageEvent).data as ChannelAck;
+      if (ack?.type !== expectedType) {
+        throw new Error(`Expected ${expectedType}, got: ${ack?.type}`);
+      }
+    }
+
     try {
       yield* provide({
         *resolve(value: TResponse) {
-          // Send as typed response message
           const msg: ChannelMessage<TResponse, TProgress> = {
             type: "response",
             result: { ok: true, value },
           };
           port.postMessage(msg);
-
-          // Race between ACK message and port close (requester cancelled)
-          const event = yield* race([
-            once(port, "message"),
-            once(port, "close"),
-          ]);
-
-          // If port closed, requester was cancelled - exit gracefully
-          if ((event as Event).type === "close") {
-            return;
-          }
-
-          // Validate ACK
-          const ack = (event as MessageEvent).data as ChannelAck;
-          if (ack?.type !== "ack") {
-            throw new Error(`Expected ACK, got: ${ack?.type}`);
-          }
-          // Port cleanup handled by finally block
+          yield* waitForAck("ack");
         },
 
         *reject(error: Error) {
-          // Send as typed response message with error
           const msg: ChannelMessage<TResponse, TProgress> = {
             type: "response",
             result: { ok: false, error: serializeError(error) },
           };
           port.postMessage(msg);
-
-          // Race between ACK message and port close (requester cancelled)
-          const event = yield* race([
-            once(port, "message"),
-            once(port, "close"),
-          ]);
-
-          // If port closed, requester was cancelled - exit gracefully
-          if ((event as Event).type === "close") {
-            return;
-          }
-
-          // Validate ACK
-          const ack = (event as MessageEvent).data as ChannelAck;
-          if (ack?.type !== "ack") {
-            throw new Error(`Expected ACK, got: ${ack?.type}`);
-          }
-          // Port cleanup handled by finally block
+          yield* waitForAck("ack");
         },
 
         *progress(data: TProgress) {
-          // Send progress message
           const msg: ChannelMessage<TResponse, TProgress> = {
             type: "progress",
             data,
           };
           port.postMessage(msg);
-
-          // Race between progress ACK and port close (requester cancelled)
-          const event = yield* race([
-            once(port, "message"),
-            once(port, "close"),
-          ]);
-
-          // If port closed, requester was cancelled - exit gracefully
-          if ((event as Event).type === "close") {
-            return;
-          }
-
-          // Validate progress ACK
-          const ack = (event as MessageEvent).data as ChannelAck;
-          if (ack?.type !== "progress_ack") {
-            throw new Error(`Expected progress_ack, got: ${ack?.type}`);
-          }
+          yield* waitForAck("progress_ack");
         },
       });
     } finally {

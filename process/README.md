@@ -3,7 +3,7 @@
 Execute and manage system processes with structured concurrency. A library for
 spawning and controlling child processes in Effection programs.
 
-> **Note**: Starting with version 0.2.0, this package requires Effection v4.1 or greater
+> **Note**: Starting with version 0.8.0, this package requires Effection v4.1 or greater
 > for full functionality. The middleware/API features (`processApi`) require the new
 > `createApi` function introduced in Effection v4.1.
 
@@ -246,7 +246,7 @@ await run(function* () {
   yield* exec("git status").expect();
   yield* exec("npm install").expect();
 
-  console.log(executed); // ["git status", "npm install"]
+  console.log(executed); // ["git", "npm"]
 });
 ```
 

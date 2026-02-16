@@ -1,14 +1,10 @@
 import { describe, it } from "@effectionx/bdd";
+import { timebox } from "@effectionx/timebox";
 import { once, race, sleep, spawn, suspend, withResolvers } from "effection";
 import { expect } from "expect";
 
 import { useChannelRequest, useChannelResponse } from "./channel.ts";
 import type { SerializedResult } from "./types.ts";
-
-function* sleepThenTimeout(ms: number) {
-  yield* sleep(ms);
-  return "timeout" as const;
-}
 
 describe("channel", () => {
   describe("useChannelResponse", () => {
@@ -389,13 +385,10 @@ describe("channel", () => {
         // The finally block should close the port
       });
 
-      // Wait for close event with a timeout (use race with sleep)
-      const result = yield* race([
-        closeReceived.operation,
-        sleepThenTimeout(100),
-      ]);
+      // Wait for close event with a timeout
+      const result = yield* timebox(100, () => closeReceived.operation);
 
-      expect(result).not.toBe("timeout");
+      expect(result.timeout).toBe(false);
     });
 
     it("port closes if responder throws before responding", function* () {
@@ -424,12 +417,9 @@ describe("channel", () => {
       yield* task;
 
       // Wait for close event with a timeout
-      const result = yield* race([
-        closeReceived.operation,
-        sleepThenTimeout(100),
-      ]);
+      const result = yield* timebox(100, () => closeReceived.operation);
 
-      expect(result).not.toBe("timeout");
+      expect(result.timeout).toBe(false);
     });
 
     it("requester sees close if cancelled while waiting", function* () {
@@ -468,12 +458,9 @@ describe("channel", () => {
       yield* requesterTask.halt();
 
       // Verify responder saw close with timeout
-      const result = yield* race([
-        closeReceived.operation,
-        sleepThenTimeout(100),
-      ]);
+      const result = yield* timebox(100, () => closeReceived.operation);
 
-      expect(result).not.toBe("timeout");
+      expect(result.timeout).toBe(false);
     });
 
     it("port closes if requester scope exits without yielding response", function* () {
@@ -506,12 +493,9 @@ describe("channel", () => {
       yield* requesterTask;
 
       // Verify close was received with timeout
-      const result = yield* race([
-        closeReceived.operation,
-        sleepThenTimeout(100),
-      ]);
+      const result = yield* timebox(100, () => closeReceived.operation);
 
-      expect(result).not.toBe("timeout");
+      expect(result.timeout).toBe(false);
     });
   });
 
@@ -877,12 +861,9 @@ describe("channel", () => {
         yield* requesterTask.halt();
 
         // Responder should exit gracefully
-        const result = yield* race([
-          responderExited.operation,
-          sleepThenTimeout(100),
-        ]);
+        const result = yield* timebox(100, () => responderExited.operation);
 
-        expect(result).not.toBe("timeout");
+        expect(result.timeout).toBe(false);
       });
     });
 

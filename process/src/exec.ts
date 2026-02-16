@@ -1,6 +1,12 @@
 import shellwords from "shellwords-ts";
 
-import { type Api, type Operation, createApi, spawn } from "effection";
+import {
+  type Api,
+  type Operation,
+  createApi,
+  resource,
+  spawn,
+} from "effection";
 import type {
   CreateOSProcess,
   ExecOptions,
@@ -8,6 +14,7 @@ import type {
   Process,
   ProcessResult,
 } from "./exec/api.ts";
+import { DaemonExitError } from "./exec/error.ts";
 import { createPosixProcess } from "./exec/posix.ts";
 import { createWin32Process, isWin32 } from "./exec/win32.ts";
 
@@ -18,6 +25,8 @@ export interface Exec extends Operation<Process> {
   join(): Operation<ProcessResult>;
   expect(): Operation<ProcessResult>;
 }
+
+export interface Daemon extends Operation<void>, Process {}
 
 const createOSProcess: CreateOSProcess = (cmd, opts) => {
   if (isWin32()) {
@@ -32,10 +41,16 @@ const createOSProcess: CreateOSProcess = (cmd, opts) => {
  */
 interface ProcessApiCore {
   /**
-   * Create a process operation.
-   * This is the core operation that middleware can intercept.
+   * Execute a command and return the process.
+   * This is the core exec operation that middleware can intercept.
    */
-  createProcess(cmd: string, opts: ExecOptions): Operation<Process>;
+  exec(command: string, options: ExecOptions): Operation<Process>;
+
+  /**
+   * Start a long-running daemon process.
+   * This is the core daemon operation that middleware can intercept.
+   */
+  daemon(command: string, options: ExecOptions): Operation<Daemon>;
 }
 
 /**
@@ -51,9 +66,9 @@ interface ProcessApiCore {
  * await run(function*() {
  *   // Add logging middleware
  *   yield* processApi.around({
- *     *createProcess(args, next) {
+ *     *exec(args, next) {
  *       let [cmd, opts] = args;
- *       console.log("Spawning process:", cmd);
+ *       console.log("Executing:", cmd);
  *       return yield* next(...args);
  *     }
  *   });
@@ -65,25 +80,47 @@ interface ProcessApiCore {
  *
  * @example
  * ```ts
- * // Mock processes for testing
+ * // Mock daemon processes for testing
  * await run(function*() {
  *   yield* processApi.around({
- *     *createProcess(args, next) {
+ *     *daemon(args, next) {
  *       let [cmd] = args;
- *       if (cmd === "expensive-command") {
- *         return createMockProcess({ stdout: "mocked output" });
- *       }
+ *       console.log("Starting daemon:", cmd);
  *       return yield* next(...args);
  *     }
  *   });
  *
- *   // exec("expensive-command") returns mocked data in this scope
+ *   // daemon() calls in this scope now log
+ *   let server = yield* daemon("node server.js");
  * });
  * ```
  */
 export const processApi: Api<ProcessApiCore> = createApi("process", {
-  *createProcess(cmd: string, opts: ExecOptions): Operation<Process> {
+  *exec(command: string, options: ExecOptions = {}): Operation<Process> {
+    let [cmd, ...args] = options.shell ? [command] : shellwords.split(command);
+    let opts = { ...options, arguments: args.concat(options.arguments || []) };
     return yield* createOSProcess(cmd, opts);
+  },
+
+  *daemon(command: string, options: ExecOptions = {}): Operation<Daemon> {
+    return yield* resource(function* (provide) {
+      let [cmd, ...args] = options.shell
+        ? [command]
+        : shellwords.split(command);
+      let opts = {
+        ...options,
+        arguments: args.concat(options.arguments || []),
+      };
+      let process = yield* createOSProcess(cmd, opts);
+
+      yield* provide({
+        *[Symbol.iterator]() {
+          let status: ExitStatus = yield* process.join();
+          throw new DaemonExitError(status, command, options);
+        },
+        ...process,
+      });
+    });
   },
 });
 
@@ -94,23 +131,19 @@ export const processApi: Api<ProcessApiCore> = createApi("process", {
  * forever, consider using `daemon()`
  *
  * This function supports middleware via {@link processApi}. Use `processApi.around()`
- * to add logging, mocking, or other middleware that will intercept all process creation.
+ * to add logging, mocking, or other middleware that will intercept all exec calls.
  */
 export function exec(command: string, options: ExecOptions = {}): Exec {
-  let [cmd, ...args] = options.shell ? [command] : shellwords.split(command);
-  let opts = { ...options, arguments: args.concat(options.arguments || []) };
-
-  // Use the API's createProcess operation so middleware can intercept
-  function* doCreateProcess(): Operation<Process> {
-    return yield* processApi.operations.createProcess(cmd, opts);
+  function* doExec(): Operation<Process> {
+    return yield* processApi.operations.exec(command, options);
   }
 
   return {
     *[Symbol.iterator]() {
-      return yield* doCreateProcess();
+      return yield* doExec();
     },
     *join() {
-      const process = yield* doCreateProcess();
+      const process = yield* doExec();
 
       let stdout = "";
       let stderr = "";
@@ -138,7 +171,7 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
       return { ...status, stdout, stderr };
     },
     *expect() {
-      const process = yield* doCreateProcess();
+      const process = yield* doExec();
 
       let stdout = "";
       let stderr = "";
@@ -166,4 +199,19 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
       return { ...status, stdout, stderr };
     },
   };
+}
+
+/**
+ * Start a long-running process, like a web server that run perpetually.
+ * Daemon operations are expected to run forever, and if they exit pre-maturely
+ * before the operation containing them passes out of scope it raises an error.
+ *
+ * This function supports middleware via {@link processApi}. Use `processApi.around()`
+ * to add logging, mocking, or other middleware that will intercept all daemon calls.
+ */
+export function daemon(
+  command: string,
+  options: ExecOptions = {},
+): Operation<Daemon> {
+  return processApi.operations.daemon(command, options);
 }

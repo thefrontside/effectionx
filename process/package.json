@@ -11,6 +11,7 @@
       "default": "./dist/mod.js"
     }
   },
+  "files": ["dist", "mod.ts", "src"],
   "peerDependencies": {
     "effection": "^4.1.0-alpha.3"
   },

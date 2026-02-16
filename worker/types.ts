@@ -36,6 +36,7 @@ export interface SerializedError {
   name: string;
   message: string;
   stack?: string;
+  cause?: SerializedError;
 }
 
 /**
@@ -80,13 +81,21 @@ export interface ForEachContext<TProgress> {
 
 /**
  * Serialize an Error for transmission via postMessage.
+ * Recursively serializes error.cause if present.
  */
 export function serializeError(error: Error): SerializedError {
-  return {
+  const serialized: SerializedError = {
     name: error.name,
     message: error.message,
     stack: error.stack,
   };
+
+  // Recursively serialize cause if it's an Error
+  if (error.cause instanceof Error) {
+    serialized.cause = serializeError(error.cause);
+  }
+
+  return serialized;
 }
 
 /**

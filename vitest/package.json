@@ -21,6 +21,7 @@
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
     "@effectionx/process": "workspace:*",
+    "effection": "^4",
     "vitest": "^3"
   },
   "license": "MIT",

@@ -17,6 +17,9 @@
   "dependencies": {
     "@effectionx/test-adapter": "workspace:*"
   },
+  "devDependencies": {
+    "effection": "^4"
+  },
   "license": "MIT",
   "author": "engineering@frontside.com",
   "repository": {

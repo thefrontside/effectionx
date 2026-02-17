@@ -29,6 +29,7 @@
   "sideEffects": false,
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
-    "@essentials/raf": "^1"
+    "@essentials/raf": "^1",
+    "effection": "^4"
   }
 }

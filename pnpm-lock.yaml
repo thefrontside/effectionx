@@ -68,48 +68,43 @@ importers:
       '@effectionx/test-adapter':
         specifier: workspace:*
         version: link:../test-adapter
+    devDependencies:
       effection:
-        specifier: ^3 || ^4
+        specifier: ^4
         version: 4.0.0
 
   chain:
-    dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   context-api:
-    dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   converge:
     dependencies:
       '@effectionx/timebox':
         specifier: workspace:*
         version: link:../timebox
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   effect-ts:
-    dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -117,56 +112,54 @@ importers:
       effect:
         specifier: ^3
         version: 3.19.14
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   fetch:
-    dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   fs:
-    dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   fx:
-    dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   jsonl-store:
-    dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   node:
-    dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   process:
     dependencies:
@@ -179,9 +172,6 @@ importers:
       ctrlc-windows:
         specifier: ^2
         version: 2.2.0
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
       shellwords-ts:
         specifier: ^3.0.1
         version: 3.0.1
@@ -195,12 +185,11 @@ importers:
       '@types/cross-spawn':
         specifier: ^6
         version: 6.0.6
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   raf:
-    dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -208,22 +197,21 @@ importers:
       '@essentials/raf':
         specifier: ^1
         version: 1.2.0
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   scope-eval:
-    dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   signals:
     dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
       immutable:
         specifier: ^5
         version: 5.1.4
@@ -231,6 +219,9 @@ importers:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   stream-helpers:
     dependencies:
@@ -240,9 +231,6 @@ importers:
       '@effectionx/timebox':
         specifier: workspace:*
         version: link:../timebox
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
       immutable:
         specifier: ^5
         version: 5.1.4
@@ -253,12 +241,12 @@ importers:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   stream-yaml:
     dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
       yaml:
         specifier: ^2
         version: 2.8.2
@@ -269,12 +257,11 @@ importers:
       '@effectionx/stream-helpers':
         specifier: workspace:*
         version: link:../stream-helpers
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   task-buffer:
-    dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -285,40 +272,40 @@ importers:
       '@types/sinonjs__fake-timers':
         specifier: ^8
         version: 8.1.5
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   test-adapter:
-    dependencies:
+    devDependencies:
       effection:
-        specifier: ^3 || ^4
+        specifier: ^4
         version: 4.0.0
 
   timebox:
-    dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   tinyexec:
     dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
       tinyexec:
         specifier: ^0.3.2
         version: 0.3.2
+    devDependencies:
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   vitest:
     dependencies:
       '@effectionx/test-adapter':
         specifier: workspace:*
         version: link:../test-adapter
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -326,6 +313,9 @@ importers:
       '@effectionx/process':
         specifier: workspace:*
         version: link:../process
+      effection:
+        specifier: ^4
+        version: 4.0.0
       vitest:
         specifier: ^3
         version: 3.2.4(@types/node@22.19.7)(yaml@2.8.2)
@@ -341,9 +331,6 @@ importers:
       chokidar:
         specifier: ^4
         version: 4.0.3
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
       ignore:
         specifier: ^7
         version: 7.0.5
@@ -366,12 +353,11 @@ importers:
       '@effectionx/stream-helpers':
         specifier: workspace:*
         version: link:../stream-helpers
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
   websocket:
-    dependencies:
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*
@@ -379,6 +365,9 @@ importers:
       '@types/ws':
         specifier: ^8
         version: 8.18.1
+      effection:
+        specifier: ^4
+        version: 4.0.0
       ws:
         specifier: ^8
         version: 8.19.0
@@ -388,9 +377,6 @@ importers:
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals
-      effection:
-        specifier: ^3 || ^4
-        version: 4.0.0
       web-worker:
         specifier: ^1
         version: 1.5.0
@@ -401,6 +387,9 @@ importers:
       '@effectionx/converge':
         specifier: workspace:*
         version: link:../converge
+      effection:
+        specifier: ^4
+        version: 4.0.0
 
 packages:
 

@@ -14,6 +14,9 @@
   "peerDependencies": {
     "effection": "^3 || ^4"
   },
+  "devDependencies": {
+    "effection": "^4"
+  },
   "license": "MIT",
   "author": "engineering@frontside.com",
   "repository": {

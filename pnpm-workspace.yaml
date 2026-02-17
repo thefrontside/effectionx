@@ -25,3 +25,5 @@ packages:
   - "watch"
   - "websocket"
   - "worker"
+
+resolvePeersFromWorkspaceRoot: false

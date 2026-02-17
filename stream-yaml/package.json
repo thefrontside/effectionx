@@ -32,6 +32,7 @@
   "sideEffects": false,
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
-    "@effectionx/stream-helpers": "workspace:*"
+    "@effectionx/stream-helpers": "workspace:*",
+    "effection": "^4"
   }
 }

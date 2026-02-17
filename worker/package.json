@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
-    "@effectionx/converge": "workspace:*"
+    "@effectionx/converge": "workspace:*",
+    "effection": "^4"
   }
 }

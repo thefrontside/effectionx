@@ -30,6 +30,7 @@
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
     "@types/ws": "^8",
+    "effection": "^4",
     "ws": "^8"
   }
 }

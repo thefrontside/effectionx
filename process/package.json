@@ -36,6 +36,7 @@
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
     "@effectionx/stream-helpers": "workspace:*",
-    "@types/cross-spawn": "^6"
+    "@types/cross-spawn": "^6",
+    "effection": "^4"
   }
 }

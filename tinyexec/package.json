@@ -17,6 +17,9 @@
   "dependencies": {
     "tinyexec": "^0.3.2"
   },
+  "devDependencies": {
+    "effection": "^4"
+  },
   "license": "MIT",
   "author": "engineering@frontside.com",
   "repository": {

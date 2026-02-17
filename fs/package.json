@@ -15,7 +15,8 @@
     "effection": "^3 || ^4"
   },
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*"
+    "@effectionx/bdd": "workspace:*",
+    "effection": "^4"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",

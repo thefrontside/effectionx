@@ -43,6 +43,7 @@
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
     "@effectionx/signals": "workspace:*",
-    "@effectionx/stream-helpers": "workspace:*"
+    "@effectionx/stream-helpers": "workspace:*",
+    "effection": "^4"
   }
 }

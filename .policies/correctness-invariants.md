@@ -60,20 +60,31 @@ function getStatusMessage(status: Status): string {
 ### Compliant: Testing all paths
 
 ```typescript
-describe("useConnection", () => {
+describe("useHttpClient", () => {
   it("connects successfully", function* () {
-    let conn = yield* useConnection("ws://localhost");
-    expect(conn.ready).toBe(true);
+    let client = yield* useHttpClient("https://api.example.com");
+    expect(client.ready).toBe(true);
   });
 
   it("throws on invalid URL", function* () {
-    yield* expect(useConnection("invalid")).rejects.toThrow("invalid URL");
+    let error: Error | undefined;
+    try {
+      yield* useHttpClient("not-a-url");
+    } catch (e) {
+      error = e as Error;
+    }
+    expect(error?.message).toMatch("invalid URL");
   });
 
   it("cleans up on halt", function* () {
     let closed = false;
-    let task = yield* spawn(useConnection("ws://localhost"));
+    let task = yield* spawn(function* () {
+      yield* useHttpClient("https://api.example.com");
+      // Resource cleanup sets closed = true in finally block
+      closed = true;
+    });
     yield* task.halt();
+    // Cleanup ran even though task was halted
     expect(closed).toBe(true);
   });
 });
@@ -90,10 +101,10 @@ function* readPort(value: unknown): Operation<number> {
 ### Non-Compliant: Missing error/halt path tests
 
 ```typescript
-describe("useConnection", () => {
+describe("useHttpClient", () => {
   it("connects", function* () {
-    let conn = yield* useConnection("ws://localhost");
-    expect(conn).toBeDefined();
+    let client = yield* useHttpClient("https://api.example.com");
+    expect(client).toBeDefined();
   });
   // BAD: No tests for error case or halt/cleanup
 });

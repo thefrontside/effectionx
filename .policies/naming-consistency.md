@@ -54,13 +54,14 @@ export function mapAsync<T, U>(
 
 ```typescript
 // BAD: "run" is too generic, doesn't indicate Operation semantics
-export function runAsyncThing<T>(x: any): any {
+export function runAsyncThing<T>(x: T): T {
   return x;
 }
 
 // BAD: inconsistent with Effection vocabulary
 export function executeTask<T>(operation: Operation<T>): Promise<T> {
-  // "execute" not standard; should be "run" at entry point only
+  // "execute" not standard; use "run" only at entry points
+  return Promise.resolve() as Promise<T>;
 }
 ```
 

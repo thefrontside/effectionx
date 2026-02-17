@@ -20,7 +20,7 @@ This document defines the experimental policy for understanding intent before pr
 
 ### Compliant: PR with clear motivation
 
-````markdown
+```markdown
 ## PR Description
 
 ### Problem
@@ -36,10 +36,26 @@ Currently this requires:
 
 Add `fetchJson()` helper that handles all three steps:
 
-```typescript
-let data = yield * fetchJson("/api/users");
+### Alternatives Considered
+
+- Document the pattern instead: Rejected because it's error-prone
+- Add to effection core: Rejected to keep core minimal
 ```
-````
+
+### Compliant: Code with explanatory comments
+
+```typescript
+function* race<T>(ops: Operation<T>[]): Operation<T> {
+  // We halt losers immediately rather than waiting for them to settle.
+  // This ensures cleanup runs promptly and prevents resource leaks
+  // when the winner completes quickly.
+  return yield* scoped(function* (scope) {
+    let winner = yield* Promise.race(ops.map((op) => scope.run(op)));
+    // Losers are halted when scope exits
+    return winner;
+  });
+}
+```
 
 ### Alternatives Considered
 

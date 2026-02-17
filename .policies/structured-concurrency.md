@@ -41,7 +41,7 @@ function* main(): Operation<void> {
 ### Compliant: Resource with proper teardown
 
 ```typescript
-import { resource, type Operation } from "effection";
+import { resource, until, type Operation } from "effection";
 
 interface Connection {
   send(msg: string): Operation<void>;

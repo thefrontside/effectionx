@@ -81,12 +81,16 @@ describe("useHttpClient", () => {
   it("cleans up on halt", function* () {
     let closed = false;
     let task = yield* spawn(function* () {
-      yield* useHttpClient("https://api.example.com");
-      // Resource cleanup sets closed = true in finally block
-      closed = true;
+      try {
+        yield* useHttpClient("https://api.example.com");
+        yield* suspend(); // Keep resource alive until halted
+      } finally {
+        // Cleanup runs when task.halt() is called
+        closed = true;
+      }
     });
     yield* task.halt();
-    // Cleanup ran even though task was halted
+    // Cleanup ran because finally block executed on halt
     expect(closed).toBe(true);
   });
 });

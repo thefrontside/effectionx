@@ -44,7 +44,7 @@ These policies were extracted from cowboyd's historical code review comments acr
 
 Some policies are closely related or intentionally create productive tension:
 
-```
+```text
 Lifecycle & Concurrency (core)
 ├── Structured Concurrency ──────► foundation for lifecycle patterns
 │   ├── Deterministic Tests ─────► extends No-Sleep Test Sync

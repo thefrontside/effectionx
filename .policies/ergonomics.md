@@ -59,7 +59,7 @@ export function map<T, U>(
 
 // Both available - user chooses
 let transformed = map(processItem)(inputStream);
-let transformed2 = yield * mapStream(processItem, inputStream);
+let transformed2 = yield* mapStream(processItem, inputStream);
 ```
 
 ### Non-Compliant: Helper that hides ownership

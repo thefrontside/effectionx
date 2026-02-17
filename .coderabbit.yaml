@@ -10,7 +10,7 @@ reviews:
   collapse_walkthrough: true
 
   path_instructions:
-    - path: "**/*.ts"
+    - path: "**/*.{ts,tsx}"
       instructions: |
         Review for compliance with policies in `.policies/index.md`:
 

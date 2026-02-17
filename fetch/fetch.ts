@@ -131,7 +131,7 @@ export class HttpError extends Error {
  * Core interface for the fetch API operations.
  * Used internally by createApi to enable middleware support.
  */
-interface FetchApiCore {
+export interface FetchApiCore {
   /**
    * Perform an HTTP fetch operation.
    * This is the core operation that middleware can intercept.

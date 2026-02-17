@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  effection: https://pkg.pr.new/thefrontside/effection@1116
+
 importers:
 
   .:
@@ -18,8 +21,8 @@ importers:
         specifier: ^7
         version: 7.7.1
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
       expect:
         specifier: ^29
         version: 29.7.0
@@ -48,8 +51,8 @@ importers:
         specifier: workspace:*
         version: link:../tinyexec
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
       generatorics:
         specifier: ^1
         version: 1.1.0
@@ -70,8 +73,8 @@ importers:
         version: link:../test-adapter
     devDependencies:
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   chain:
     devDependencies:
@@ -79,8 +82,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   context-api:
     devDependencies:
@@ -88,8 +91,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   converge:
     dependencies:
@@ -101,8 +104,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   effect-ts:
     devDependencies:
@@ -113,8 +116,8 @@ importers:
         specifier: ^3
         version: 3.19.14
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   fetch:
     devDependencies:
@@ -122,8 +125,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   fs:
     devDependencies:
@@ -131,8 +134,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   fx:
     devDependencies:
@@ -140,8 +143,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   jsonl-store:
     devDependencies:
@@ -149,8 +152,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   node:
     devDependencies:
@@ -158,8 +161,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   process:
     dependencies:
@@ -186,8 +189,8 @@ importers:
         specifier: ^6
         version: 6.0.6
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   raf:
     devDependencies:
@@ -198,8 +201,8 @@ importers:
         specifier: ^1
         version: 1.2.0
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   scope-eval:
     devDependencies:
@@ -207,8 +210,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   signals:
     dependencies:
@@ -220,8 +223,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   stream-helpers:
     dependencies:
@@ -242,8 +245,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   stream-yaml:
     dependencies:
@@ -258,8 +261,8 @@ importers:
         specifier: workspace:*
         version: link:../stream-helpers
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   task-buffer:
     devDependencies:
@@ -273,14 +276,14 @@ importers:
         specifier: ^8
         version: 8.1.5
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   test-adapter:
     devDependencies:
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   timebox:
     devDependencies:
@@ -288,8 +291,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   tinyexec:
     dependencies:
@@ -298,8 +301,8 @@ importers:
         version: 0.3.2
     devDependencies:
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   vitest:
     dependencies:
@@ -314,8 +317,8 @@ importers:
         specifier: workspace:*
         version: link:../process
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
       vitest:
         specifier: ^3
         version: 3.2.4(@types/node@22.19.7)(yaml@2.8.2)
@@ -354,8 +357,8 @@ importers:
         specifier: workspace:*
         version: link:../stream-helpers
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
   websocket:
     devDependencies:
@@ -366,8 +369,8 @@ importers:
         specifier: ^8
         version: 8.18.1
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
       ws:
         specifier: ^8
         version: 8.19.0
@@ -388,8 +391,8 @@ importers:
         specifier: workspace:*
         version: link:../converge
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: https://pkg.pr.new/thefrontside/effection@1116
+        version: https://pkg.pr.new/thefrontside/effection@1116
 
 packages:
 
@@ -910,8 +913,9 @@ packages:
   effect@3.19.14:
     resolution: {integrity: sha512-3vwdq0zlvQOxXzXNKRIPKTqZNMyGCdaFUBfMPqpsyzZDre67kgC1EEHDV4EoQTovJ4w5fmJW756f86kkuz7WFA==}
 
-  effection@4.0.0:
-    resolution: {integrity: sha512-eW2yqhyBdey4k8lkp7hpiev2FSHvJvQqvaIebI3EGikHZvfUWvNy7SmkwOnJa6WcsUtSh7VHUwdjHTbV++8M9w==}
+  effection@https://pkg.pr.new/thefrontside/effection@1116:
+    resolution: {tarball: https://pkg.pr.new/thefrontside/effection@1116}
+    version: 4.1.0-alpha.3-pr
     engines: {node: '>= 16'}
 
   es-module-lexer@1.7.0:
@@ -1680,7 +1684,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
 
-  effection@4.0.0: {}
+  effection@https://pkg.pr.new/thefrontside/effection@1116: {}
 
   es-module-lexer@1.7.0: {}
 

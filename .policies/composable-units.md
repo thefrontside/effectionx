@@ -6,6 +6,8 @@ This document defines the experimental policy for extracting focused helpers and
 
 **Extract concepts into focused helpers/modules so each piece has one reason to change.** Small operations compose cleanly.
 
+> **Note:** For the canonical `resource()` pattern with teardown, see [Structured Concurrency](./structured-concurrency.md).
+
 ## The Rule
 
 | Scenario          | Required Behavior                         |

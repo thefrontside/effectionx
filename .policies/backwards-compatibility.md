@@ -22,15 +22,15 @@ This document defines the experimental policy for managing breaking changes and 
 
 ```typescript
 /**
- * @deprecated Use `useWebSocket()` instead. Will be removed in v3.0.
+ * @deprecated Use `useSession()` instead. Will be removed in v3.0.
  */
-export function connectSocket(url: string): Operation<Socket> {
-  console.warn("connectSocket is deprecated, use useWebSocket instead");
-  return useWebSocket(url);
+export function createSession(options: SessionOptions): Operation<Session> {
+  console.warn("createSession is deprecated, use useSession instead");
+  return useSession(options);
 }
 
-// New API exported alongside
-export function useWebSocket(url: string): Operation<WebSocket> {
+// New API exported alongside (follows 'use' prefix convention)
+export function useSession(options: SessionOptions): Operation<Session> {
   // ...
 }
 ```

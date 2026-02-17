@@ -6,6 +6,8 @@ This document defines the experimental policy for API ergonomics that guide user
 
 **Prefer APIs that guide users into the right thing with minimal ceremony.** If the same boilerplate appears in multiple call sites, consider an ergonomic helper that preserves the underlying primitive semantics.
 
+> **Note:** This policy creates intentional tension with [Minimal APIs](./minimal-apis.md). Balance ergonomics against API surface growth - add helpers only when patterns repeat 3+ times.
+
 ## The Rule
 
 | Scenario               | Required Behavior                                      |

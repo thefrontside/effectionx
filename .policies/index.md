@@ -40,9 +40,30 @@ These policies were extracted from cowboyd's historical code review comments acr
 | [Make the Happy Path Easy](./ergonomics.md)                            | Experimental | Ergonomic helpers that preserve structured concurrency semantics  |
 | [Keep PRs Focused](./focused-prs.md)                                   | Experimental | No mixing feature changes with formatting/refactors               |
 
+## Policy Relationships
+
+Some policies are closely related or intentionally create productive tension:
+
+```
+Lifecycle & Concurrency (core)
+├── Structured Concurrency ──────► foundation for lifecycle patterns
+│   ├── Deterministic Tests ─────► extends No-Sleep Test Sync
+│   ├── Correctness Invariants ──► tests success/error/halt paths
+│   └── Composable Units ────────► uses resource() for teardown
+
+API Design (balance)
+├── Minimal APIs ◄──── tension ────► Ergonomics
+└── Documentation ◄─── supports ───► Backwards Compatibility
+
+Code Quality
+├── Type-Driven Design ◄── complements ──► Correctness Invariants
+└── Naming Consistency ──► supports all policies
+```
+
 ## Adding a New Policy
 
 1. Copy [template.md](./template.md) to a new file (e.g., `my-policy.md`)
 2. Fill in all sections following the template structure
 3. Add an entry to the **Policy Documents** table above
 4. Set the appropriate state (Strict, Recommended, or Experimental)
+5. Add cross-references to related policies in the Core Principle section

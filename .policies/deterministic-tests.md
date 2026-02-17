@@ -6,6 +6,8 @@ This document defines the experimental policy for writing stable, non-flaky test
 
 **Tests should be stable (no flakes/timeouts) and produce clear failure output.** Tie assertions to lifecycle invariants, not elapsed time.
 
+> **Note:** This policy extends [No-Sleep Test Synchronization](./no-sleep-test-sync.md) with broader guidance on test structure and lifecycle assertions.
+
 ## The Rule
 
 | Scenario          | Required Behavior                                                             |

@@ -6,6 +6,8 @@ This document defines the experimental policy for treating documentation as a fi
 
 **Invest in a narrative that helps the next reader/user understand the system and its tradeoffs.** Any user-visible behavior change must come with corresponding docs/examples.
 
+> **Note:** For breaking changes and deprecation documentation, see [Backwards Compatibility](./backwards-compatibility.md).
+
 ## The Rule
 
 | Change Type                     | Documentation Required              |

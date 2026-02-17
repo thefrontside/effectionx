@@ -29,7 +29,7 @@ export function toStream<T>(iterable: AsyncIterable<T>): Stream<T> {
 }
 
 // Resource convention with 'use' prefix
-export function useConnection(url: string): Operation<Connection> {
+export function useCache(options: CacheOptions): Operation<Cache> {
   return resource(/* ... */);
 }
 ```

@@ -6,6 +6,8 @@ This document defines the experimental policy for encoding assumptions explicitl
 
 **Prefer explicit invariants and error handling to "it probably works" assumptions.** Validate inputs, handle error paths, and test edge cases.
 
+> **Note:** For resource lifecycle patterns (setup/teardown), see [Structured Concurrency](./structured-concurrency.md). For test structure, see [Deterministic Tests](./deterministic-tests.md).
+
 ## The Rule
 
 | Context              | Required Behavior                            |

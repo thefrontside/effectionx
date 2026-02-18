@@ -21,6 +21,7 @@
     { "path": "fetch" },
     { "path": "fs" },
     { "path": "fx" },
+    { "path": "inline" },
     { "path": "jsonl-store" },
     { "path": "node" },
     { "path": "process" },

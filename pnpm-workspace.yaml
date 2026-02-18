@@ -9,6 +9,7 @@ packages:
   - "fetch"
   - "fs"
   - "fx"
+  - "mdx"
   - "jsonl-store"
   - "node"
   - "process"

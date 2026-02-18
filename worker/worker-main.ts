@@ -6,6 +6,7 @@ import {
   Ok,
   type Operation,
   type Task,
+  createChannel,
   createSignal,
   each,
   main,
@@ -14,7 +15,14 @@ import {
   spawn,
 } from "effection";
 
-import type { WorkerControl, WorkerMainOptions } from "./types.ts";
+import type { Subscription } from "effection";
+import { useChannelRequest, useChannelResponse } from "./channel.ts";
+import type {
+  SerializedResult,
+  WorkerControl,
+  WorkerMainOptions,
+} from "./types.ts";
+import { errorFromSerialized } from "./types.ts";
 
 // Get the appropriate worker port for the current environment as a resource
 function useWorkerPort(): Operation<MessagePort> {
@@ -74,19 +82,42 @@ function useWorkerPort(): Operation<MessagePort> {
  * );
  * ```
  *
+ * @example Sending requests to the host
+ * ```ts
+ * import { workerMain } from "../worker.ts";
+ *
+ * await workerMain<never, never, string, void, string, string>(
+ *   function* ({ send }) {
+ *     const response = yield* send("hello");
+ *     return `received: ${response}`;
+ *   },
+ * );
+ * ```
+ *
  * @template TSend - value main thread will send to the worker
  * @template TRecv - value main thread will receive from the worker
  * @template TReturn - worker operation return value
  * @template TData - data passed from the main thread to the worker during initialization
- * @param {(options: WorkerMainOptions<TSend, TRecv, TData>) => Operation<TReturn>} body
+ * @template WRequest - value worker sends to the host in requests
+ * @template WResponse - value worker receives from the host (response to worker's send)
+ * @param {(options: WorkerMainOptions<TSend, TRecv, TData, WRequest, WResponse>) => Operation<TReturn>} body
  * @returns {Promise<void>}
  */
-export async function workerMain<TSend, TRecv, TReturn, TData>(
-  body: (options: WorkerMainOptions<TSend, TRecv, TData>) => Operation<TReturn>,
+export async function workerMain<
+  TSend,
+  TRecv,
+  TReturn,
+  TData,
+  WRequest = never,
+  WResponse = never,
+>(
+  body: (
+    options: WorkerMainOptions<TSend, TRecv, TData, WRequest, WResponse>,
+  ) => Operation<TReturn>,
 ): Promise<void> {
   await main(function* () {
     const port = yield* useWorkerPort();
-    let sent = createSignal<{ value: TSend; response: MessagePort }>();
+    let sent = createChannel<{ value: TSend; response: MessagePort }>();
     let worker = yield* createWorkerStatesSignal();
 
     yield* spawn(function* () {
@@ -98,23 +129,103 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
             worker.start(
               yield* spawn(function* () {
                 try {
+                  // Helper to unwrap SerializedResult
+                  function unwrapResult<T>(result: SerializedResult<T>): T {
+                    if (result.ok) {
+                      return result.value;
+                    }
+                    throw errorFromSerialized(
+                      "Host handler failed",
+                      result.error,
+                    );
+                  }
+
+                  // Create send function for worker-initiated requests
+                  function send(requestValue: WRequest): Operation<WResponse> {
+                    return {
+                      *[Symbol.iterator]() {
+                        const response = yield* useChannelResponse<WResponse>();
+                        port.postMessage(
+                          {
+                            type: "request",
+                            value: requestValue,
+                            response: response.port,
+                          },
+                          // biome-ignore lint/suspicious/noExplicitAny: cross-env MessagePort compatibility
+                          [response.port] as any,
+                        );
+                        const result = yield* response;
+                        return unwrapResult(result);
+                      },
+                    };
+                  }
+
+                  // Add stream method for progress streaming
+                  send.stream = <WProgress>(
+                    requestValue: WRequest,
+                  ): Operation<Subscription<WProgress, WResponse>> => ({
+                    *[Symbol.iterator]() {
+                      const response = yield* useChannelResponse<
+                        WResponse,
+                        WProgress
+                      >();
+                      port.postMessage(
+                        {
+                          type: "request",
+                          value: requestValue,
+                          response: response.port,
+                        },
+                        // biome-ignore lint/suspicious/noExplicitAny: cross-env MessagePort compatibility
+                        [response.port] as any,
+                      );
+
+                      // Get the progress subscription
+                      const progressSubscription = yield* response.progress;
+
+                      // Wrap it to unwrap the SerializedResult at the end
+                      const wrappedSubscription: Subscription<
+                        WProgress,
+                        WResponse
+                      > = {
+                        *next() {
+                          const result = yield* progressSubscription.next();
+                          if (result.done) {
+                            // Unwrap the SerializedResult
+                            return {
+                              done: true as const,
+                              value: unwrapResult(result.value),
+                            };
+                          }
+                          return result;
+                        },
+                      };
+
+                      return wrappedSubscription;
+                    },
+                  });
+
                   let value = yield* body({
                     data: control.data,
                     messages: {
                       *forEach(fn: (value: TSend) => Operation<TRecv>) {
                         for (let { value, response } of yield* each(sent)) {
                           yield* spawn(function* () {
+                            const { resolve, reject } =
+                              yield* useChannelRequest<TRecv>(
+                                response as unknown as globalThis.MessagePort,
+                              );
                             try {
                               let result = yield* fn(value);
-                              response.postMessage(Ok(result));
+                              yield* resolve(result);
                             } catch (error) {
-                              response.postMessage(Err(error as Error));
+                              yield* reject(error as Error);
                             }
                           });
                           yield* each.next();
                         }
                       },
                     },
+                    send,
                   });
 
                   worker.complete(value);
@@ -132,7 +243,7 @@ export async function workerMain<TSend, TRecv, TReturn, TData>(
               response instanceof MessagePort,
               "Expect response to be an instance of MessagePort",
             );
-            sent.send({ value, response });
+            yield* sent.send({ value, response });
             break;
           }
           case "close": {

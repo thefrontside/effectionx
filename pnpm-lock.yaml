@@ -377,6 +377,9 @@ importers:
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals
+      '@effectionx/timebox':
+        specifier: workspace:*
+        version: link:../timebox
       web-worker:
         specifier: ^1
         version: 1.5.0

@@ -10,12 +10,25 @@ reviews:
   collapse_walkthrough: true
 
   path_instructions:
-    - path: "**/*.ts"
+    - path: "**/*.{ts,tsx}"
       instructions: |
         Review for compliance with policies in `.policies/index.md`:
+
+        **Established Policies (Required):**
         - `.policies/stateless-streams.md` - Stream operations returning `Operation<T>` must use `*[Symbol.iterator]` pattern
         - `.policies/no-sleep-test-sync.md` - Tests must not use `sleep()` for waiting; use deterministic helpers
         - `.policies/version-bump.md` - PRs changing package source files must bump the version
+
+        **Experimental Policies (Advisory - cowboyd review patterns):**
+        - `.policies/type-driven-design.md` - No `any` in public APIs; use `unknown` + narrowing
+        - `.policies/structured-concurrency.md` - All async work must be scope-owned; no fire-and-forget
+        - `.policies/minimal-apis.md` - Minimal exports; align with platform conventions
+        - `.policies/deterministic-tests.md` - Assert on lifecycle invariants, not timing
+        - `.policies/documentation.md` - Document lifecycle/cancellation semantics
+        - `.policies/naming-consistency.md` - Use Effection vocabulary consistently
+        - `.policies/correctness-invariants.md` - Validate inputs; test success/error/halt paths
+        - `.policies/composable-units.md` - Extract focused helpers with single responsibility
+        - `.policies/ergonomics.md` - Ergonomic helpers must preserve scope semantics
 
     - path: "**/package.json"
       instructions: |
@@ -34,8 +47,15 @@ reviews:
         instructions: |
           Enforce policy compliance using `.policies/index.md` as the single source of truth.
           - Strict and Recommended policy violations must fail this check.
+          - Experimental policy violations are advisory only (do not block).
           - For `**/package.json`, enforce `.policies/package-json-metadata.md` (non-empty `description` with required format).
           - For package source changes, enforce `.policies/version-bump.md`.
+
+          Experimental policies (advisory feedback):
+          - Type-Driven Design, Structured Concurrency, Minimal APIs
+          - Deterministic Tests, Documentation, Backwards Compatibility
+          - Naming Consistency, Correctness Invariants, Composable Units
+          - Start With Why, Ergonomics, Focused PRs
 
   tools:
     biome:

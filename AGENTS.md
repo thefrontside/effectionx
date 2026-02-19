@@ -74,6 +74,12 @@ When reviewing PRs:
 - Use `*[Symbol.iterator]` pattern for reusable stream operations (see Stateless Streams policy)
 - Avoid `sleep()` for test synchronization (see No-Sleep Test Sync policy)
 
+## Commit and PR conventions
+
+Use [gitmoji](https://gitmoji.dev) for commit and pull request subjects. For
+changes to files that direct the behavior of AI such as AGENTS.md or llms.txt
+use a robot emoji instead of the standard gitmoji for documentation
+
 ## Package Structure
 
 Each package requires:

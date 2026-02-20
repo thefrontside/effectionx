@@ -44,7 +44,7 @@ export function ogImagePlugin(): Plugin {
 
 ```typescript
 // Routes resolve at request time, staticalize captures them
-export function blogRoutes(): Route[] {
+export function blogRoutes(): Route {
   return {
     *intercept(request, next) {
       let posts = yield* loadBlogPosts();

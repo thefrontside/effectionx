@@ -189,6 +189,25 @@ importers:
         specifier: ^4
         version: 4.0.0
 
+  project-repo:
+    dependencies:
+      '@effectionx/fs':
+        specifier: workspace:*
+        version: link:../fs
+      '@effectionx/process':
+        specifier: workspace:*
+        version: link:../process
+      effection:
+        specifier: ^3 || ^4
+        version: 4.0.0
+      semver:
+        specifier: ^7.6.3
+        version: 7.7.3
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+
   raf:
     devDependencies:
       '@effectionx/bdd':

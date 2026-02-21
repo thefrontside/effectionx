@@ -35,28 +35,33 @@ import type { Stream, Subscription } from "effection";
  * ]);
  * ```
  */
-export function createSubject<T>(): <TClose>(
-  stream: Stream<T, TClose>,
-) => Stream<T, TClose> {
-  let current: IteratorResult<T> | undefined = undefined;
+export function createSubject<T>(
+  initial?: T,
+): <TClose>(stream: Stream<T, TClose>) => Stream<T, TClose> {
+  let current: IteratorResult<T> | undefined =
+    typeof initial !== "undefined"
+      ? { done: false, value: initial }
+      : undefined;
 
   return <TClose>(stream: Stream<T, TClose>) => ({
     *[Symbol.iterator]() {
       let upstream = yield* stream;
 
+      let tracking: Subscription<T, TClose> = {
+        *next() {
+          current = yield* upstream.next();
+          return current;
+        },
+      };
+
       let iterator: Subscription<T, TClose> = current
         ? {
             *next() {
-              iterator = upstream;
+              iterator = tracking;
               return current!;
             },
           }
-        : {
-            *next() {
-              current = yield* upstream.next();
-              return current;
-            },
-          };
+        : tracking;
 
       return {
         next: () => iterator.next(),

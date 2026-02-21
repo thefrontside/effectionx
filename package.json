@@ -20,7 +20,7 @@
     "@biomejs/biome": "^1",
     "@types/node": "^22",
     "@types/semver": "^7",
-    "effection": "^4",
+    "effection": "https://pkg.pr.new/thefrontside/effection@1116",
     "expect": "^29",
     "semver": "^7.6.3",
     "turbo": "^2",
@@ -30,6 +30,9 @@
     "peerDependencyRules": {
       "ignoreMissing": [],
       "allowAny": []
+    },
+    "overrides": {
+      "effection": "https://pkg.pr.new/thefrontside/effection@1116"
     }
   },
   "volta": {

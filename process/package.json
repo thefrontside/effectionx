@@ -1,7 +1,7 @@
 {
   "name": "@effectionx/process",
   "description": "Spawn and manage child processes with structured concurrency",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
@@ -11,8 +11,9 @@
       "default": "./dist/mod.js"
     }
   },
+  "files": ["dist", "mod.ts", "src"],
   "peerDependencies": {
-    "effection": "^3 || ^4"
+    "effection": "^4.1.0-alpha.3"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",

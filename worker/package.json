@@ -1,13 +1,15 @@
 {
   "name": "@effectionx/worker",
   "description": "Web Worker integration with two-way messaging and graceful shutdown",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/mod.d.ts",
       "development": "./mod.ts",
+      "import": "./dist/mod.js",
       "default": "./dist/mod.js"
     }
   },

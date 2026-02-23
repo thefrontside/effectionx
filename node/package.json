@@ -1,21 +1,27 @@
 {
   "name": "@effectionx/node",
   "description": "Node.js stream and event emitter adapters for Effection",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/mod.d.ts",
       "development": "./mod.ts",
+      "import": "./dist/mod.js",
       "default": "./dist/mod.js"
     },
     "./stream": {
+      "types": "./dist/stream.d.ts",
       "development": "./stream.ts",
+      "import": "./dist/stream.js",
       "default": "./dist/stream.js"
     },
     "./events": {
+      "types": "./dist/events.d.ts",
       "development": "./events.ts",
+      "import": "./dist/events.js",
       "default": "./dist/events.js"
     }
   },

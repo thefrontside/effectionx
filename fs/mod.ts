@@ -1,15 +1,17 @@
-import * as fsp from "node:fs/promises";
 import type { Stats } from "node:fs";
+import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  type Api,
+  type Operation,
+  type Stream,
   all,
+  createApi,
+  createSignal,
   resource,
   spawn,
   until,
-  type Operation,
-  type Stream,
-  createSignal,
 } from "effection";
 
 /**
@@ -20,7 +22,112 @@ export function toPath(pathOrUrl: string | URL): string {
 }
 
 /**
+ * Core interface for the file system API operations.
+ * Used internally by createApi to enable middleware support.
+ */
+interface FsApiCore {
+  /**
+   * Get file or directory stats.
+   */
+  stat(pathOrUrl: string | URL): Operation<Stats>;
+  /**
+   * Get file or directory stats without following symlinks.
+   */
+  lstat(pathOrUrl: string | URL): Operation<Stats>;
+  /**
+   * Read a file as text.
+   */
+  readTextFile(pathOrUrl: string | URL): Operation<string>;
+  /**
+   * Write text to a file.
+   */
+  writeTextFile(pathOrUrl: string | URL, content: string): Operation<void>;
+  /**
+   * Remove a file or directory.
+   */
+  rm(
+    pathOrUrl: string | URL,
+    options?: { recursive?: boolean; force?: boolean },
+  ): Operation<void>;
+  /**
+   * Read directory entries.
+   */
+  readdir(pathOrUrl: string | URL): Operation<string[]>;
+}
+
+/**
+ * The file system API object that supports middleware decoration.
+ *
+ * Use `fsApi.around()` to add middleware for logging, mocking, or instrumentation.
+ *
+ * @example
+ * ```ts
+ * import { fsApi, readTextFile } from "@effectionx/fs";
+ * import { run } from "effection";
+ *
+ * await run(function*() {
+ *   // Add logging middleware
+ *   yield* fsApi.around({
+ *     *readTextFile(args, next) {
+ *       let [pathOrUrl] = args;
+ *       console.log("Reading file:", pathOrUrl);
+ *       return yield* next(...args);
+ *     }
+ *   });
+ *
+ *   // All readTextFile calls in this scope now log
+ *   let content = yield* readTextFile("./config.json");
+ * });
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Mock file system for testing
+ * await run(function*() {
+ *   yield* fsApi.around({
+ *     *readTextFile(args, next) {
+ *       let [pathOrUrl] = args;
+ *       if (String(pathOrUrl).includes("config.json")) {
+ *         return JSON.stringify({ mock: true });
+ *       }
+ *       return yield* next(...args);
+ *     }
+ *   });
+ *
+ *   // Returns mocked content in this scope
+ *   let config = yield* readTextFile("./config.json");
+ * });
+ * ```
+ */
+export const fsApi: Api<FsApiCore> = createApi("fs", {
+  *stat(pathOrUrl: string | URL): Operation<Stats> {
+    return yield* until(fsp.stat(toPath(pathOrUrl)));
+  },
+  *lstat(pathOrUrl: string | URL): Operation<Stats> {
+    return yield* until(fsp.lstat(toPath(pathOrUrl)));
+  },
+  *readTextFile(pathOrUrl: string | URL): Operation<string> {
+    return yield* until(fsp.readFile(toPath(pathOrUrl), "utf-8"));
+  },
+  *writeTextFile(pathOrUrl: string | URL, content: string): Operation<void> {
+    return yield* until(fsp.writeFile(toPath(pathOrUrl), content));
+  },
+  *rm(
+    pathOrUrl: string | URL,
+    options?: { recursive?: boolean; force?: boolean },
+  ): Operation<void> {
+    return yield* until(fsp.rm(toPath(pathOrUrl), options));
+  },
+  *readdir(pathOrUrl: string | URL): Operation<string[]> {
+    return yield* until(fsp.readdir(toPath(pathOrUrl)));
+  },
+});
+
+/**
  * Get file or directory stats
+ *
+ * This function supports middleware via {@link fsApi}. Use `fsApi.around()`
+ * to add logging, mocking, or other middleware.
  *
  * @example
  * ```ts
@@ -31,11 +138,14 @@ export function toPath(pathOrUrl: string | URL): string {
  * ```
  */
 export function stat(pathOrUrl: string | URL): Operation<Stats> {
-  return until(fsp.stat(toPath(pathOrUrl)));
+  return fsApi.operations.stat(pathOrUrl);
 }
 
 /**
  * Get file or directory stats without following symlinks
+ *
+ * This function supports middleware via {@link fsApi}. Use `fsApi.around()`
+ * to add logging, mocking, or other middleware.
  *
  * @example
  * ```ts
@@ -46,7 +156,7 @@ export function stat(pathOrUrl: string | URL): Operation<Stats> {
  * ```
  */
 export function lstat(pathOrUrl: string | URL): Operation<Stats> {
-  return until(fsp.lstat(toPath(pathOrUrl)));
+  return fsApi.operations.lstat(pathOrUrl);
 }
 
 /**
@@ -107,6 +217,9 @@ export function* ensureFile(pathOrUrl: string | URL): Operation<void> {
 /**
  * Read the contents of a directory
  *
+ * This function supports middleware via {@link fsApi}. Use `fsApi.around()`
+ * to add logging, mocking, or other middleware.
+ *
  * @example
  * ```ts
  * import { readdir } from "@effectionx/fs";
@@ -115,7 +228,7 @@ export function* ensureFile(pathOrUrl: string | URL): Operation<void> {
  * ```
  */
 export function readdir(pathOrUrl: string | URL): Operation<string[]> {
-  return until(fsp.readdir(toPath(pathOrUrl)));
+  return fsApi.operations.readdir(pathOrUrl);
 }
 
 /**
@@ -152,6 +265,9 @@ export function* emptyDir(pathOrUrl: string | URL): Operation<void> {
 /**
  * Remove a file or directory
  *
+ * This function supports middleware via {@link fsApi}. Use `fsApi.around()`
+ * to add logging, mocking, or other middleware.
+ *
  * @example
  * ```ts
  * import { rm } from "@effectionx/fs";
@@ -163,7 +279,7 @@ export function rm(
   pathOrUrl: string | URL,
   options?: { recursive?: boolean; force?: boolean },
 ): Operation<void> {
-  return until(fsp.rm(toPath(pathOrUrl), options));
+  return fsApi.operations.rm(pathOrUrl, options);
 }
 
 /**
@@ -186,6 +302,9 @@ export function copyFile(
 /**
  * Read a file as text
  *
+ * This function supports middleware via {@link fsApi}. Use `fsApi.around()`
+ * to add logging, mocking, or other middleware.
+ *
  * @example
  * ```ts
  * import { readTextFile } from "@effectionx/fs";
@@ -194,11 +313,14 @@ export function copyFile(
  * ```
  */
 export function readTextFile(pathOrUrl: string | URL): Operation<string> {
-  return until(fsp.readFile(toPath(pathOrUrl), "utf-8"));
+  return fsApi.operations.readTextFile(pathOrUrl);
 }
 
 /**
  * Write text to a file
+ *
+ * This function supports middleware via {@link fsApi}. Use `fsApi.around()`
+ * to add logging, mocking, or other middleware.
  *
  * @example
  * ```ts
@@ -211,7 +333,7 @@ export function writeTextFile(
   pathOrUrl: string | URL,
   content: string,
 ): Operation<void> {
-  return until(fsp.writeFile(toPath(pathOrUrl), content));
+  return fsApi.operations.writeTextFile(pathOrUrl, content);
 }
 
 /**

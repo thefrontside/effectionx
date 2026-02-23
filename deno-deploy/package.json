@@ -1,6 +1,7 @@
 {
   "name": "@effectionx/deno-deploy",
-  "version": "0.4.1",
+  "description": "Detect Deno Deploy environment and access deployment metadata",
+  "version": "0.4.2",
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",

@@ -1,0 +1,61 @@
+{
+  "name": "@effectionx/inline",
+  "description": "Optimize deeply nested operations by collapsing yield delegation into a single iterator",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/mod.js",
+  "types": "./dist/mod.d.ts",
+  "exports": {
+    ".": {
+      "development": "./mod.ts",
+      "default": "./dist/mod.js"
+    },
+    "./swc": {
+      "default": "./swc/target/wasm32-wasip1/release/swc_plugin_inline.wasm"
+    },
+    "./esbuild": {
+      "development": "./esbuild.ts",
+      "default": "./dist/esbuild.js"
+    }
+  },
+  "peerDependencies": {
+    "effection": "^3 || ^4"
+  },
+  "peerDependenciesMeta": {
+    "@swc/core": {
+      "optional": true
+    },
+    "esbuild": {
+      "optional": true
+    }
+  },
+  "license": "MIT",
+  "author": "engineering@frontside.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thefrontside/effectionx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thefrontside/effectionx/issues"
+  },
+  "engines": {
+    "node": ">= 22"
+  },
+  "scripts": {
+    "build:bundle": "cargo build --manifest-path swc/Cargo.toml --target wasm32-wasip1 --release",
+    "prepack": "pnpm run build:bundle"
+  },
+  "files": [
+    "dist",
+    "mod.ts",
+    "esbuild.ts",
+    "swc/target/wasm32-wasip1/release/swc_plugin_inline.wasm"
+  ],
+  "sideEffects": false,
+  "devDependencies": {
+    "@effectionx/bdd": "workspace:*",
+    "@swc/core": "^1.15.0",
+    "esbuild": "^0.25.0",
+    "expect": "^29"
+  }
+}

@@ -1,17 +1,21 @@
 {
   "name": "@effectionx/watch",
   "description": "Run commands and restart them gracefully when source files change",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "type": "module",
   "main": "./dist/main.js",
   "types": "./dist/main.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/main.d.ts",
       "development": "./main.ts",
+      "import": "./dist/main.js",
       "default": "./dist/main.js"
     },
     "./lib": {
+      "types": "./dist/mod.d.ts",
       "development": "./mod.ts",
+      "import": "./dist/mod.js",
       "default": "./dist/mod.js"
     }
   },

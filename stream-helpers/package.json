@@ -1,17 +1,21 @@
 {
   "name": "@effectionx/stream-helpers",
   "description": "Type-safe stream operators like filter, map, reduce, and forEach",
-  "version": "0.7.3",
+  "version": "0.8.1",
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/mod.d.ts",
       "development": "./mod.ts",
+      "import": "./dist/mod.js",
       "default": "./dist/mod.js"
     },
     "./test-helpers": {
+      "types": "./dist/test-helpers.d.ts",
       "development": "./test-helpers.ts",
+      "import": "./dist/test-helpers.js",
       "default": "./dist/test-helpers.js"
     }
   },

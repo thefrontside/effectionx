@@ -1,13 +1,15 @@
 {
   "name": "@effectionx/raf",
   "description": "Stream of requestAnimationFrame updates for Effection",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/mod.d.ts",
       "development": "./mod.ts",
+      "import": "./dist/mod.js",
       "default": "./dist/mod.js"
     }
   },

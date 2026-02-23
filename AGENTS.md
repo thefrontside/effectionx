@@ -92,7 +92,7 @@ Each package requires:
 - `name`: `@effectionx/<package-name>`
 - `description`: Required — single sentence, under 120 chars, no Markdown, no trailing period (see [Package.json Metadata policy](.policies/package-json-metadata.md))
 - `type`: `"module"`
-- `exports`: Must include `development` and `default` conditions
+- `exports`: Must include `types`, `development`, `import`, and `default` conditions
 - `peerDependencies`: Usually `effection: "^3 || ^4"`
 - `files`: Include `dist`, `mod.ts`, and source files
 

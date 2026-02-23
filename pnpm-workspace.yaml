@@ -9,6 +9,7 @@ packages:
   - "fetch"
   - "fs"
   - "fx"
+  - "project-repo"
   - "jsonl-store"
   - "node"
   - "process"

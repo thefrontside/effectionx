@@ -54,7 +54,7 @@ export function userFacingEffects(
     .map((e) => e.event)
     .filter((e) => {
       if (e.type === "effect:yielded") {
-        if (INFRASTRUCTURE_EFFECTS.includes(e.description)) return false;
+        if (INFRASTRUCTURE_EFFECTS.has(e.description)) return false;
         if (e.description.startsWith("do <")) return false;
       }
       return true;

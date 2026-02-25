@@ -184,6 +184,8 @@ describe("durable error handling", () => {
         expect((error as Error).message).toEqual("live-boom");
       }
 
+      // Flush microtask queue so the scope middleware's destroy handler can
+      // emit the root scope:destroyed event before we assert on it.
       yield* sleep(0);
 
       expect(firstEntered).toEqual(false);

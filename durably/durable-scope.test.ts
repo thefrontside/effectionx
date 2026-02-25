@@ -35,8 +35,8 @@ describe("durable scope lifecycle", () => {
         { stream },
       );
 
-      yield* sleep(0);
-
+      // Root lifecycle events are emitted synchronously in the scope
+      // middleware's destroy handler — no sleep needed for simple workflows.
       let events = allEvents(stream);
       let last = events[events.length - 1];
       expect(last.type).toEqual("scope:destroyed");
@@ -60,6 +60,8 @@ describe("durable scope lifecycle", () => {
         { stream },
       );
 
+      // Child scope lifecycle events may be emitted asynchronously during
+      // structured teardown — need a tick for spawned children to settle.
       yield* sleep(0);
 
       let events = scopeEvents(stream);
@@ -70,14 +72,17 @@ describe("durable scope lifecycle", () => {
       expect(created.length).toBeGreaterThanOrEqual(2);
       expect(destroyed.length).toBeGreaterThanOrEqual(2);
 
-      expect(created[0].type === "scope:created" && created[0].scopeId).toEqual(
-        "root",
-      );
+      let firstCreated = created[0];
+      expect(firstCreated.type).toEqual("scope:created");
+      if (firstCreated.type === "scope:created") {
+        expect(firstCreated.scopeId).toEqual("root");
+      }
 
       let lastDestroyed = destroyed[destroyed.length - 1];
-      expect(
-        lastDestroyed.type === "scope:destroyed" && lastDestroyed.scopeId,
-      ).toEqual("root");
+      expect(lastDestroyed.type).toEqual("scope:destroyed");
+      if (lastDestroyed.type === "scope:destroyed") {
+        expect(lastDestroyed.scopeId).toEqual("root");
+      }
     });
 
     it("records parent-child relationship in scope:created events", function* () {
@@ -123,6 +128,7 @@ describe("durable scope lifecycle", () => {
         { stream },
       );
 
+      // Child scope lifecycle events need a tick to settle.
       yield* sleep(0);
 
       let events = scopeEvents(stream);
@@ -286,6 +292,8 @@ describe("durable scope lifecycle", () => {
         // expected
       }
 
+      // Flush microtask queue so the scope middleware's destroy handler
+      // emits the root scope:destroyed event after the error path.
       yield* sleep(0);
 
       let events = allEvents(stream);

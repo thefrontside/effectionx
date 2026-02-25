@@ -21,7 +21,7 @@ const api = effection.Scope;
  * Effection ^4 internal effect descriptions that should always execute live
  * (never recorded/replayed). Update if Effection adds/renames infrastructure effects.
  */
-export const INFRASTRUCTURE_EFFECTS: readonly string[] = [
+export const INFRASTRUCTURE_EFFECTS: ReadonlySet<string> = new Set([
   "useCoroutine()",
   "useScope()",
   "trap return",
@@ -33,13 +33,13 @@ export const INFRASTRUCTURE_EFFECTS: readonly string[] = [
   "await callcc",
   "await each done",
   "await each context",
-];
+]);
 
 /**
  * Effection ^4 internal context names that should not be recorded.
  * Update if Effection adds/renames internal contexts.
  */
-export const INFRASTRUCTURE_CONTEXTS: readonly string[] = [
+export const INFRASTRUCTURE_CONTEXTS: ReadonlySet<string> = new Set([
   "@effection/scope.generation",
   "@effection/scope.children",
   "@effection/coroutine",
@@ -48,7 +48,7 @@ export const INFRASTRUCTURE_CONTEXTS: readonly string[] = [
   "@effection/boundary",
   "@effection/task-group",
   "each",
-];
+]);
 
 /**
  * Serialize a value to Json, replacing non-serializable values with
@@ -773,7 +773,7 @@ export class DurableReducer {
 
   private isInfrastructureEffect(description: string): boolean {
     if (description.startsWith("do <")) return true;
-    return INFRASTRUCTURE_EFFECTS.includes(description);
+    return INFRASTRUCTURE_EFFECTS.has(description);
   }
 
   private handleEffect(effect: Effect<unknown>, routine: Coroutine): void {
@@ -875,5 +875,5 @@ export class DurableReducer {
 
 function isInfrastructureContext(name: string): boolean {
   if (name.startsWith("api::")) return true;
-  return INFRASTRUCTURE_CONTEXTS.includes(name);
+  return INFRASTRUCTURE_CONTEXTS.has(name);
 }

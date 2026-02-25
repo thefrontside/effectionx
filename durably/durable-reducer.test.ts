@@ -1096,12 +1096,14 @@ describe("effect ID collision prevention", () => {
     let firstYielded = recordedEvents.findIndex(
       (e) => e.type === "effect:yielded" && e.description === "step-1",
     );
+    let yieldedEvent = recordedEvents[firstYielded];
+    expect(yieldedEvent).toBeDefined();
+    expect(yieldedEvent.type).toEqual("effect:yielded");
+    let yieldedEffectId =
+      yieldedEvent.type === "effect:yielded" ? yieldedEvent.effectId : "";
     let firstResolved = recordedEvents.findIndex(
       (e) =>
-        e.type === "effect:resolved" &&
-        firstYielded >= 0 &&
-        recordedEvents[firstYielded].type === "effect:yielded" &&
-        e.effectId === (recordedEvents[firstYielded] as { effectId: string }).effectId,
+        e.type === "effect:resolved" && e.effectId === yieldedEffectId,
     );
 
     expect(firstResolved).toBeGreaterThan(firstYielded);

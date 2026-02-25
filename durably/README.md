@@ -233,9 +233,11 @@ recorded. Indicates the workflow code has changed between runs.
 - Effection ^4 — requires the experimental reducer exports from
   [PR 1127](https://github.com/thefrontside/effection/pull/1127).
   Until this PR is merged and published, use the preview build:
-  ```
+
+  ```bash
   npm install effection@https://pkg.pr.new/thefrontside/effection@1127
   ```
+
   Once PR 1127 is released, switch to the published version (`effection@^4.x`).
 - `@durable-streams/client` >= 0.1.0 (optional — only needed for
   `@effectionx/durably/http`)

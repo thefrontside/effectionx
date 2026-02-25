@@ -92,19 +92,25 @@ import { durably, InMemoryDurableStream, DivergenceError } from "@effectionx/dur
 await main(function* () {
   let stream = new InMemoryDurableStream();
 
-  // First run records sleep(100)
+  // Record a workflow that uses sleep(1)
   yield* durably(function* () {
-    yield* sleep(100);
-    return "v1";
+    yield* sleep(1);
+    return "done";
   }, { stream });
 
-  // Second run yields action() where sleep(100) was expected
+  // Create a replay stream from the recorded events
+  let replayStream = InMemoryDurableStream.from(
+    stream.read().map(e => e.event),
+  );
+
+  // Replay with different code — action where sleep was expected
   try {
     yield* durably(function* () {
-      yield* action(function* (resolve) { resolve("v2"); });
-    }, { stream });
+      yield* action((resolve) => { resolve(); return () => {}; }, "different-action");
+      return "done";
+    }, { stream: replayStream });
   } catch (error) {
-    // DivergenceError: expected "sleep(100)" but got "action"
+    // DivergenceError: expected "sleep(1)" but got "different-action"
   }
 });
 ```

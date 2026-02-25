@@ -2,6 +2,7 @@ import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
 import { action, sleep, spawn, suspend, until } from "effection";
 import type { DurableEvent } from "./mod.ts";
+import type { Task } from "effection";
 import { durably, InMemoryDurableStream, DivergenceError } from "./mod.ts";
 
 function userEvents(stream: InMemoryDurableStream): DurableEvent[] {
@@ -903,5 +904,197 @@ describe("durable run", () => {
         expect(error).toBeInstanceOf(DivergenceError);
       }
     });
+  });
+});
+
+describe("multiple durable streams", () => {
+  it("runs two sequential durably() calls with independent streams", function* () {
+    let streamA = new InMemoryDurableStream();
+    let streamB = new InMemoryDurableStream();
+
+    let resultA = yield* durably(
+      function* () {
+        yield* sleep(1);
+        return "alpha";
+      },
+      { stream: streamA },
+    );
+
+    let resultB = yield* durably(
+      function* () {
+        let v = yield* action<number>((resolve) => {
+          resolve(42);
+          return () => {};
+        }, "beta-work");
+        return v;
+      },
+      { stream: streamB },
+    );
+
+    expect(resultA).toEqual("alpha");
+    expect(resultB).toEqual(42);
+
+    // Both streams recorded events
+    expect(streamA.length).toBeGreaterThan(0);
+    expect(streamB.length).toBeGreaterThan(0);
+
+    // Stream A has sleep events, stream B has "beta-work" events
+    let eventsA = streamA.read().map((e) => e.event);
+    let eventsB = streamB.read().map((e) => e.event);
+
+    let sleepInA = eventsA.some(
+      (e) => e.type === "effect:yielded" && e.description === "sleep(1)",
+    );
+    let betaInB = eventsB.some(
+      (e) => e.type === "effect:yielded" && e.description === "beta-work",
+    );
+
+    expect(sleepInA).toEqual(true);
+    expect(betaInB).toEqual(true);
+
+    // No cross-contamination: stream A has no "beta-work", stream B has no "sleep(1)"
+    let betaInA = eventsA.some(
+      (e) => e.type === "effect:yielded" && e.description === "beta-work",
+    );
+    let sleepInB = eventsB.some(
+      (e) => e.type === "effect:yielded" && e.description === "sleep(1)",
+    );
+
+    expect(betaInA).toEqual(false);
+    expect(sleepInB).toEqual(false);
+
+    // Both streams have scope:created for root (lifecycle started)
+    let rootCreatedA = eventsA.some(
+      (e) => e.type === "scope:created" && e.scopeId === "root",
+    );
+    let rootCreatedB = eventsB.some(
+      (e) => e.type === "scope:created" && e.scopeId === "root",
+    );
+
+    expect(rootCreatedA).toEqual(true);
+    expect(rootCreatedB).toEqual(true);
+  });
+
+  it("runs two concurrent durably() calls with independent streams", function* () {
+    let streamA = new InMemoryDurableStream();
+    let streamB = new InMemoryDurableStream();
+
+    let taskA: Task<string> = yield* spawn(function* () {
+      return yield* durably(
+        function* () {
+          yield* sleep(1);
+          return "alpha";
+        },
+        { stream: streamA },
+      );
+    });
+
+    let taskB: Task<string> = yield* spawn(function* () {
+      return yield* durably(
+        function* () {
+          yield* action<void>((resolve) => {
+            resolve();
+            return () => {};
+          }, "beta-work");
+          return "beta";
+        },
+        { stream: streamB },
+      );
+    });
+
+    let resultA = yield* taskA;
+    let resultB = yield* taskB;
+
+    expect(resultA).toEqual("alpha");
+    expect(resultB).toEqual("beta");
+
+    // Each stream has only its own events
+    let eventsA = streamA.read().map((e) => e.event);
+    let eventsB = streamB.read().map((e) => e.event);
+
+    let sleepInA = eventsA.some(
+      (e) => e.type === "effect:yielded" && e.description === "sleep(1)",
+    );
+    let betaInB = eventsB.some(
+      (e) => e.type === "effect:yielded" && e.description === "beta-work",
+    );
+
+    expect(sleepInA).toEqual(true);
+    expect(betaInB).toEqual(true);
+
+    // No cross-contamination
+    let betaInA = eventsA.some(
+      (e) => e.type === "effect:yielded" && e.description === "beta-work",
+    );
+    let sleepInB = eventsB.some(
+      (e) => e.type === "effect:yielded" && e.description === "sleep(1)",
+    );
+
+    expect(betaInA).toEqual(false);
+    expect(sleepInB).toEqual(false);
+  });
+
+  it("replays one stream while another runs live", function* () {
+    // First: record stream A
+    let recordStreamA = new InMemoryDurableStream();
+
+    yield* durably(
+      function* () {
+        yield* sleep(1);
+        return "alpha";
+      },
+      { stream: recordStreamA },
+    );
+
+    // Create replay stream from recorded events
+    let replayStreamA = InMemoryDurableStream.from(
+      recordStreamA.read().map((e) => e.event),
+    );
+    let streamB = new InMemoryDurableStream();
+
+    let sleepExecutedOnReplay = false;
+    let liveBExecuted = false;
+
+    // Run replay of A and live B concurrently
+    let taskA: Task<string> = yield* spawn(function* () {
+      return yield* durably(
+        function* () {
+          // This sleep matches the recorded event — should be replayed, not executed
+          yield* action<void>((resolve) => {
+            sleepExecutedOnReplay = true;
+            resolve();
+            return () => {};
+          }, "sleep(1)");
+          return "alpha";
+        },
+        { stream: replayStreamA },
+      );
+    });
+
+    let taskB: Task<string> = yield* spawn(function* () {
+      return yield* durably(
+        function* () {
+          yield* action<void>((resolve) => {
+            liveBExecuted = true;
+            resolve();
+            return () => {};
+          }, "live-work");
+          return "beta";
+        },
+        { stream: streamB },
+      );
+    });
+
+    let resultA = yield* taskA;
+    let resultB = yield* taskB;
+
+    expect(resultA).toEqual("alpha");
+    expect(resultB).toEqual("beta");
+
+    // Stream A was replayed — its effect was NOT re-executed
+    expect(sleepExecutedOnReplay).toEqual(false);
+
+    // Stream B ran live — its effect WAS executed
+    expect(liveBExecuted).toEqual(true);
   });
 });

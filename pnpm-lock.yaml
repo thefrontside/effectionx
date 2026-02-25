@@ -104,6 +104,18 @@ importers:
         specifier: ^4
         version: 4.0.0
 
+  durably:
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+      effection:
+        specifier: https://pkg.pr.new/thefrontside/effection@1127
+        version: https://pkg.pr.new/thefrontside/effection@1127
+      expect:
+        specifier: ^29
+        version: 29.7.0
+
   effect-ts:
     devDependencies:
       '@effectionx/bdd':
@@ -917,6 +929,11 @@ packages:
     resolution: {integrity: sha512-eW2yqhyBdey4k8lkp7hpiev2FSHvJvQqvaIebI3EGikHZvfUWvNy7SmkwOnJa6WcsUtSh7VHUwdjHTbV++8M9w==}
     engines: {node: '>= 16'}
 
+  effection@https://pkg.pr.new/thefrontside/effection@1127:
+    resolution: {tarball: https://pkg.pr.new/thefrontside/effection@1127}
+    version: 4.1.0-alpha.5-pr
+    engines: {node: '>= 16'}
+
   es-module-lexer@1.7.0:
     resolution: {integrity: sha512-jEQoCwk8hyb2AZziIOLhDqpm5+2ww5uIE6lkO/6jcOCusfk6LhMHpXXfBLXTZ7Ydyt0j4VoUQv6uGNYbdW+kBA==}
 
@@ -1684,6 +1701,8 @@ snapshots:
       fast-check: 3.23.2
 
   effection@4.0.0: {}
+
+  effection@https://pkg.pr.new/thefrontside/effection@1127: {}
 
   es-module-lexer@1.7.0: {}
 

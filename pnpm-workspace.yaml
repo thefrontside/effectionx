@@ -4,6 +4,7 @@ packages:
   - "chain"
   - "context-api"
   - "converge"
+  - "durably"
   # deno-deploy excluded - deprecated Deno-only package
   - "effect-ts"
   - "fetch"

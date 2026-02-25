@@ -1,0 +1,907 @@
+import { describe, it } from "@effectionx/bdd";
+import { expect } from "expect";
+import { action, sleep, spawn, suspend, until } from "effection";
+import type { DurableEvent } from "./mod.ts";
+import { durably, InMemoryDurableStream, DivergenceError } from "./mod.ts";
+
+function userEvents(stream: InMemoryDurableStream): DurableEvent[] {
+  return stream
+    .read()
+    .map((e) => e.event)
+    .filter((e) => {
+      if (e.type === "effect:yielded") {
+        let desc = e.description;
+        if (desc === "useCoroutine()" || desc.startsWith("do <")) {
+          return false;
+        }
+      }
+      return true;
+    });
+}
+
+function userEffectPairs(
+  stream: InMemoryDurableStream,
+): Array<[DurableEvent, DurableEvent]> {
+  let events = stream.read().map((e) => e.event);
+  let pairs: Array<[DurableEvent, DurableEvent]> = [];
+  for (let i = 0; i < events.length - 1; i++) {
+    let ev = events[i];
+    if (ev.type !== "effect:yielded") continue;
+    if (
+      ev.description === "useCoroutine()" ||
+      ev.description.startsWith("do <")
+    )
+      continue;
+    let next = events[i + 1];
+    if (
+      next &&
+      (next.type === "effect:resolved" || next.type === "effect:errored") &&
+      next.effectId === ev.effectId
+    ) {
+      pairs.push([ev, next]);
+      i++;
+    }
+  }
+  return pairs;
+}
+
+describe("durable run", () => {
+  describe("stream recording", () => {
+    it("records scope lifecycle events for a pure return (no user-facing effects)", function* () {
+      let stream = new InMemoryDurableStream();
+
+      yield* durably(
+        function* () {
+          return "hello";
+        },
+        { stream },
+      );
+
+      let events = stream.read().map((e) => e.event);
+      let userEffects = events.filter(
+        (e) =>
+          e.type === "effect:yielded" ||
+          e.type === "effect:resolved" ||
+          e.type === "effect:errored",
+      );
+      expect(userEffects.length).toEqual(0);
+
+      let scopeCreated = events.filter((e) => e.type === "scope:created");
+      let scopeDestroyed = events.filter((e) => e.type === "scope:destroyed");
+      expect(scopeCreated.length).toBeGreaterThanOrEqual(1);
+      expect(scopeDestroyed.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("records events for action effects", function* () {
+      let stream = new InMemoryDurableStream();
+
+      yield* durably(
+        function* () {
+          let value = yield* action<number>((resolve) => {
+            resolve(42);
+            return () => {};
+          });
+          return value;
+        },
+        { stream },
+      );
+
+      let pairs = userEffectPairs(stream);
+      expect(pairs.length).toEqual(1);
+
+      let [yielded, resolved] = pairs[0];
+      expect(yielded.type).toEqual("effect:yielded");
+      if (yielded.type === "effect:yielded") {
+        expect(yielded.description).toEqual("action");
+      }
+      expect(resolved.type).toEqual("effect:resolved");
+      if (resolved.type === "effect:resolved") {
+        expect(resolved.value).toEqual(42);
+      }
+    });
+
+    it("records events for multi-step workflows", function* () {
+      let stream = new InMemoryDurableStream();
+
+      let result = yield* durably(
+        function* () {
+          let a = yield* until(Promise.resolve(10));
+          let b = yield* until(Promise.resolve(20));
+          return a + b;
+        },
+        { stream },
+      );
+
+      expect(result).toEqual(30);
+
+      let pairs = userEffectPairs(stream);
+      expect(pairs.length).toEqual(2);
+
+      if (pairs[0][1].type === "effect:resolved") {
+        expect(pairs[0][1].value).toEqual(10);
+      }
+
+      if (pairs[1][1].type === "effect:resolved") {
+        expect(pairs[1][1].value).toEqual(20);
+      }
+    });
+
+    it("records effect:errored events when an effect fails", function* () {
+      let stream = new InMemoryDurableStream();
+
+      try {
+        yield* durably(
+          function* () {
+            yield* until(Promise.reject(new Error("boom")));
+          },
+          { stream },
+        );
+      } catch {
+        // expected
+      }
+
+      let pairs = userEffectPairs(stream);
+      expect(pairs.length).toEqual(1);
+
+      let [yielded, errored] = pairs[0];
+      expect(yielded.type).toEqual("effect:yielded");
+      expect(errored.type).toEqual("effect:errored");
+      if (errored.type === "effect:errored") {
+        expect(errored.error.message).toEqual("boom");
+      }
+    });
+
+    it("records events for sleep effects", function* () {
+      let stream = new InMemoryDurableStream();
+
+      yield* durably(
+        function* () {
+          yield* sleep(1);
+          return "done";
+        },
+        { stream },
+      );
+
+      let pairs = userEffectPairs(stream);
+      expect(pairs.length).toEqual(1);
+      expect(pairs[0][1].type).toEqual("effect:resolved");
+    });
+
+    it("records events when errors are caught and execution continues", function* () {
+      let stream = new InMemoryDurableStream();
+
+      let result = yield* durably(
+        function* () {
+          let value: number;
+          try {
+            yield* until(Promise.reject(new Error("oops")));
+            value = 0;
+          } catch {
+            value = yield* until(Promise.resolve(99));
+          }
+          return value;
+        },
+        { stream },
+      );
+
+      expect(result).toEqual(99);
+
+      let pairs = userEffectPairs(stream);
+      expect(pairs.length).toEqual(2);
+      expect(pairs[0][1].type).toEqual("effect:errored");
+      expect(pairs[1][1].type).toEqual("effect:resolved");
+
+      if (pairs[1][1].type === "effect:resolved") {
+        expect(pairs[1][1].value).toEqual(99);
+      }
+    });
+  });
+
+  describe("replay", () => {
+    it("replays effects from a pre-recorded stream", function* () {
+      let recordStream = new InMemoryDurableStream();
+
+      yield* durably(
+        function* () {
+          let value = yield* action<number>((resolve) => {
+            resolve(42);
+            return () => {};
+          });
+          return value;
+        },
+        { stream: recordStream },
+      );
+
+      let replayStream = InMemoryDurableStream.from(
+        recordStream.read().map((e) => e.event),
+      );
+
+      let effectExecuted = false;
+      let result = yield* durably(
+        function* () {
+          let value = yield* action<number>((resolve) => {
+            effectExecuted = true;
+            resolve(999);
+            return () => {};
+          });
+          return value;
+        },
+        { stream: replayStream },
+      );
+
+      expect(effectExecuted).toEqual(false);
+      expect(result).toEqual(42);
+    });
+
+    it("replays multiple effects from a pre-recorded stream", function* () {
+      let recordStream = new InMemoryDurableStream();
+
+      yield* durably(
+        function* () {
+          let a = yield* action<number>((resolve) => {
+            resolve(10);
+            return () => {};
+          });
+          let b = yield* action<number>((resolve) => {
+            resolve(20);
+            return () => {};
+          });
+          return a + b;
+        },
+        { stream: recordStream },
+      );
+
+      let replayStream = InMemoryDurableStream.from(
+        recordStream.read().map((e) => e.event),
+      );
+
+      let execCount = 0;
+      let result = yield* durably(
+        function* () {
+          let a = yield* action<number>((resolve) => {
+            execCount++;
+            resolve(100);
+            return () => {};
+          });
+          let b = yield* action<number>((resolve) => {
+            execCount++;
+            resolve(200);
+            return () => {};
+          });
+          return a + b;
+        },
+        { stream: replayStream },
+      );
+
+      expect(execCount).toEqual(0);
+      expect(result).toEqual(30);
+    });
+
+    it("replays errors from a pre-recorded stream", function* () {
+      let recordStream = new InMemoryDurableStream();
+
+      try {
+        yield* durably(
+          function* () {
+            yield* until(Promise.reject(new Error("stored error")));
+          },
+          { stream: recordStream },
+        );
+      } catch {
+        // expected
+      }
+
+      let replayStream = InMemoryDurableStream.from(
+        recordStream.read().map((e) => e.event),
+      );
+
+      let effectExecuted = false;
+      try {
+        yield* durably(
+          function* () {
+            yield* action<number>((resolve) => {
+              effectExecuted = true;
+              resolve(42);
+              return () => {};
+            });
+          },
+          { stream: replayStream },
+        );
+        throw new Error("should have thrown");
+      } catch (error) {
+        expect((error as Error).message).toEqual("stored error");
+      }
+
+      expect(effectExecuted).toEqual(false);
+    });
+  });
+
+  describe("mid-workflow resume", () => {
+    it("replays stored effects then continues live", function* () {
+      let recordStream = new InMemoryDurableStream();
+
+      yield* durably(
+        function* () {
+          let a = yield* action<number>((resolve) => {
+            resolve(10);
+            return () => {};
+          });
+          let b = yield* action<number>((resolve) => {
+            resolve(20);
+            return () => {};
+          });
+          return a + b;
+        },
+        { stream: recordStream },
+      );
+
+      let allEvents = recordStream.read().map((e) => e.event);
+
+      let cutIndex = -1;
+      for (let i = 0; i < allEvents.length; i++) {
+        let ev = allEvents[i];
+        if (ev.type === "effect:resolved") {
+          if (i > 0 && allEvents[i - 1].type === "effect:yielded") {
+            let yielded = allEvents[i - 1];
+            if (
+              yielded.type === "effect:yielded" &&
+              yielded.description !== "useCoroutine()" &&
+              !yielded.description.startsWith("do <")
+            ) {
+              cutIndex = i + 1;
+              break;
+            }
+          }
+        }
+      }
+
+      expect(cutIndex).toBeGreaterThan(0);
+
+      let partialStream = InMemoryDurableStream.from(
+        allEvents.slice(0, cutIndex),
+      );
+
+      let liveEffectExecuted = false;
+      let result = yield* durably(
+        function* () {
+          let a = yield* action<number>((resolve) => {
+            resolve(100);
+            return () => {};
+          });
+          let b = yield* action<number>((resolve) => {
+            liveEffectExecuted = true;
+            resolve(20);
+            return () => {};
+          });
+          return a + b;
+        },
+        { stream: partialStream },
+      );
+
+      expect(result).toEqual(30);
+      expect(liveEffectExecuted).toEqual(true);
+    });
+
+    it("heals unresolved replay boundary and fully replays on next run", function* () {
+      let recordStream = new InMemoryDurableStream();
+
+      let recorded = yield* durably(
+        function* () {
+          let first = yield* action<string>((resolve) => {
+            resolve("A");
+            return () => {};
+          }, "first-action");
+
+          yield* sleep(1);
+
+          let second = yield* action<string>((resolve) => {
+            resolve("B");
+            return () => {};
+          }, "second-action");
+
+          yield* sleep(1);
+          return `${first}-${second}`;
+        },
+        { stream: recordStream },
+      );
+
+      expect(recorded).toEqual("A-B");
+
+      let allEvents = recordStream.read().map((e) => e.event);
+      let boundaryIdx = allEvents.findIndex((e, i) => {
+        if (e.type !== "effect:yielded" || e.description !== "sleep(1)") {
+          return false;
+        }
+        let next = allEvents[i + 1];
+        return (
+          !next ||
+          next.type !== "effect:resolved" ||
+          next.effectId !== e.effectId
+        );
+      });
+
+      if (boundaryIdx === -1) {
+        boundaryIdx = allEvents.findIndex(
+          (e) => e.type === "effect:yielded" && e.description === "sleep(1)",
+        );
+      }
+
+      expect(boundaryIdx).toBeGreaterThan(0);
+
+      let boundaryEvent = allEvents[boundaryIdx];
+      expect(boundaryEvent.type).toEqual("effect:yielded");
+      let boundaryEffectId =
+        boundaryEvent.type === "effect:yielded" ? boundaryEvent.effectId : "";
+
+      let partialStream = InMemoryDurableStream.from(
+        allEvents.slice(0, boundaryIdx + 1),
+      );
+
+      let run2FirstEntered = false;
+      let run2SecondEntered = false;
+
+      let resumed = yield* durably(
+        function* () {
+          let first = yield* action<string>((resolve) => {
+            run2FirstEntered = true;
+            resolve("WRONG");
+            return () => {};
+          }, "first-action");
+
+          yield* sleep(1);
+
+          let second = yield* action<string>((resolve) => {
+            run2SecondEntered = true;
+            resolve("B");
+            return () => {};
+          }, "second-action");
+
+          yield* sleep(1);
+          return `${first}-${second}`;
+        },
+        { stream: partialStream },
+      );
+
+      expect(resumed).toEqual("A-B");
+      expect(run2FirstEntered).toEqual(false);
+      expect(run2SecondEntered).toEqual(true);
+
+      let afterRun2 = partialStream.read().map((e) => e.event);
+      let yieldedIds = new Map<string, number>();
+      for (let event of afterRun2) {
+        if (event.type === "effect:yielded") {
+          yieldedIds.set(
+            event.effectId,
+            (yieldedIds.get(event.effectId) ?? 0) + 1,
+          );
+        }
+      }
+
+      let duplicates = Array.from(yieldedIds.entries()).filter(
+        ([, count]) => count > 1,
+      );
+      expect(duplicates).toEqual([]);
+
+      let boundaryYieldedCount = afterRun2.filter(
+        (e) => e.type === "effect:yielded" && e.effectId === boundaryEffectId,
+      ).length;
+      let boundaryResolvedCount = afterRun2.filter(
+        (e) =>
+          (e.type === "effect:resolved" || e.type === "effect:errored") &&
+          e.effectId === boundaryEffectId,
+      ).length;
+
+      expect(boundaryYieldedCount).toEqual(1);
+      expect(boundaryResolvedCount).toEqual(1);
+
+      let run3FirstEntered = false;
+      let run3SecondEntered = false;
+
+      let replayed = yield* durably(
+        function* () {
+          let first = yield* action<string>((resolve) => {
+            run3FirstEntered = true;
+            resolve("WRONG");
+            return () => {};
+          }, "first-action");
+
+          yield* sleep(1);
+
+          let second = yield* action<string>((resolve) => {
+            run3SecondEntered = true;
+            resolve("WRONG");
+            return () => {};
+          }, "second-action");
+
+          yield* sleep(1);
+          return `${first}-${second}`;
+        },
+        { stream: partialStream },
+      );
+
+      expect(replayed).toEqual("A-B");
+      expect(run3FirstEntered).toEqual(false);
+      expect(run3SecondEntered).toEqual(false);
+    });
+  });
+
+  describe("divergence detection", () => {
+    it("throws DivergenceError when effect description doesn't match", function* () {
+      let recordStream = new InMemoryDurableStream();
+
+      yield* durably(
+        function* () {
+          yield* sleep(1);
+          return "done";
+        },
+        { stream: recordStream },
+      );
+
+      let replayStream = InMemoryDurableStream.from(
+        recordStream.read().map((e) => e.event),
+      );
+
+      try {
+        yield* durably(
+          function* () {
+            yield* action<void>((resolve) => {
+              resolve();
+              return () => {};
+            }, "different-action");
+            return "done";
+          },
+          { stream: replayStream },
+        );
+        throw new Error("should have thrown DivergenceError");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DivergenceError);
+      }
+    });
+  });
+
+  describe("halt during durable execution", () => {
+    it("records suspend effect and supports halt", function* () {
+      let stream = new InMemoryDurableStream();
+      let halted = false;
+
+      let task = durably(
+        function* () {
+          try {
+            yield* suspend();
+          } finally {
+            halted = true;
+          }
+        },
+        { stream },
+      );
+
+      yield* task.halt();
+      expect(halted).toEqual(true);
+
+      let events = stream.read().map((e) => e.event);
+      let suspendEvents = events.filter(
+        (e) => e.type === "effect:yielded" && e.description === "suspend",
+      );
+      expect(suspendEvents.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("records cleanup effects in finally blocks", function* () {
+      let stream = new InMemoryDurableStream();
+
+      let task = durably(
+        function* () {
+          try {
+            yield* suspend();
+          } finally {
+            yield* sleep(1);
+          }
+        },
+        { stream },
+      );
+
+      yield* task.halt();
+
+      let events = stream.read().map((e) => e.event);
+      let yieldedDescs = events
+        .filter((e) => e.type === "effect:yielded")
+        .map((e) => (e.type === "effect:yielded" ? e.description : ""));
+
+      expect(yieldedDescs).toContain("suspend");
+      expect(
+        yieldedDescs.some((d) => d === "sleep(1)" || d === "action"),
+      ).toEqual(true);
+    });
+  });
+
+  describe("workflow:return", () => {
+    it("emits workflow:return before scope:destroyed for a simple workflow", function* () {
+      let stream = new InMemoryDurableStream();
+
+      yield* durably(
+        function* () {
+          return 42;
+        },
+        { stream },
+      );
+
+      yield* sleep(0);
+
+      let events = stream.read().map((e) => e.event);
+
+      let workflowReturns = events.filter((e) => e.type === "workflow:return");
+      expect(workflowReturns.length).toBeGreaterThanOrEqual(1);
+
+      let rootReturn = workflowReturns.find(
+        (e) => e.type === "workflow:return" && e.scopeId === "root",
+      );
+      expect(rootReturn).toBeDefined();
+      if (rootReturn && rootReturn.type === "workflow:return") {
+        expect(rootReturn.value).toEqual(42);
+      }
+
+      let rootReturnIdx = events.indexOf(rootReturn!);
+      let rootDestroyIdx = events.findIndex(
+        (e) => e.type === "scope:destroyed" && e.scopeId === "root",
+      );
+      expect(rootReturnIdx).toBeLessThan(rootDestroyIdx);
+    });
+
+    it("emits workflow:return for spawned child tasks", function* () {
+      let stream = new InMemoryDurableStream();
+
+      yield* durably(
+        function* () {
+          let task = yield* spawn(function* () {
+            yield* sleep(1);
+            return 42;
+          });
+          return yield* task;
+        },
+        { stream },
+      );
+
+      yield* sleep(0);
+
+      let events = stream.read().map((e) => e.event);
+      let workflowReturns = events.filter((e) => e.type === "workflow:return");
+
+      expect(workflowReturns.length).toBeGreaterThanOrEqual(2);
+
+      let childReturns = workflowReturns.filter(
+        (e) => e.type === "workflow:return" && e.scopeId !== "root",
+      );
+      let has42 = childReturns.some(
+        (e) => e.type === "workflow:return" && e.value === 42,
+      );
+      expect(has42).toEqual(true);
+    });
+
+    it("does not emit workflow:return when workflow errors", function* () {
+      let stream = new InMemoryDurableStream();
+
+      try {
+        yield* durably(
+          function* () {
+            throw new Error("boom");
+          },
+          { stream },
+        );
+      } catch {
+        // expected
+      }
+
+      let events = stream.read().map((e) => e.event);
+      let workflowReturns = events.filter((e) => e.type === "workflow:return");
+
+      let rootReturn = workflowReturns.find(
+        (e) => e.type === "workflow:return" && e.scopeId === "root",
+      );
+      expect(rootReturn).toBeUndefined();
+    });
+
+    it("does not emit workflow:return when halted", function* () {
+      let stream = new InMemoryDurableStream();
+
+      let task = durably(
+        function* () {
+          yield* suspend();
+          return "unreachable";
+        },
+        { stream },
+      );
+
+      yield* task.halt();
+
+      let events = stream.read().map((e) => e.event);
+      let rootReturn = events.find(
+        (e) => e.type === "workflow:return" && e.scopeId === "root",
+      );
+      expect(rootReturn).toBeUndefined();
+    });
+
+    it("workflow:return is replayed correctly", function* () {
+      let recordStream = new InMemoryDurableStream();
+      yield* durably(
+        function* () {
+          yield* sleep(1);
+          return "hello";
+        },
+        { stream: recordStream },
+      );
+
+      let replayStream = InMemoryDurableStream.from(
+        recordStream.read().map((e) => e.event),
+      );
+
+      let result = yield* durably(
+        function* () {
+          yield* sleep(1);
+          return "hello";
+        },
+        { stream: replayStream },
+      );
+
+      expect(result).toEqual("hello");
+    });
+  });
+
+  describe("durable spawn resume", () => {
+    it("replays a full spawn workflow without re-executing child effects", function* () {
+      let recordStream = new InMemoryDurableStream();
+
+      yield* durably(
+        function* () {
+          let task = yield* spawn(function* () {
+            yield* action<void>((resolve) => {
+              resolve();
+              return () => {};
+            }, "child-work");
+            return 42;
+          });
+          return yield* task;
+        },
+        { stream: recordStream },
+      );
+
+      let replayStream = InMemoryDurableStream.from(
+        recordStream.read().map((e) => e.event),
+      );
+
+      let childExecuted = false;
+      let result = yield* durably(
+        function* () {
+          let task = yield* spawn(function* () {
+            yield* action<void>((resolve) => {
+              childExecuted = true;
+              resolve();
+              return () => {};
+            }, "child-work");
+            return 42;
+          });
+          return yield* task;
+        },
+        { stream: replayStream },
+      );
+
+      expect(childExecuted).toEqual(false);
+      expect(result).toEqual(42);
+    });
+
+    it("resumes mid-workflow after spawn completes", function* () {
+      let recordStream = new InMemoryDurableStream();
+
+      yield* durably(
+        function* () {
+          let task = yield* spawn(function* () {
+            yield* action<void>((resolve) => {
+              resolve();
+              return () => {};
+            }, "child-work");
+            return 10;
+          });
+          let childResult = yield* task;
+          let extra = yield* action<number>((resolve) => {
+            resolve(20);
+            return () => {};
+          }, "parent-extra");
+          return childResult + extra;
+        },
+        { stream: recordStream },
+      );
+
+      let allEvents = recordStream.read().map((e) => e.event);
+
+      let parentExtraIdx = allEvents.findIndex(
+        (e) => e.type === "effect:yielded" && e.description === "parent-extra",
+      );
+      expect(parentExtraIdx).toBeGreaterThan(0);
+
+      let partialStream = InMemoryDurableStream.from(
+        allEvents.slice(0, parentExtraIdx),
+      );
+
+      let childExecuted = false;
+      let parentExtraExecuted = false;
+
+      let result = yield* durably(
+        function* () {
+          let task = yield* spawn(function* () {
+            yield* action<void>((resolve) => {
+              childExecuted = true;
+              resolve();
+              return () => {};
+            }, "child-work");
+            return 10;
+          });
+          let childResult = yield* task;
+          let extra = yield* action<number>((resolve) => {
+            parentExtraExecuted = true;
+            resolve(20);
+            return () => {};
+          }, "parent-extra");
+          return childResult + extra;
+        },
+        { stream: partialStream },
+      );
+
+      expect(childExecuted).toEqual(false);
+      expect(parentExtraExecuted).toEqual(true);
+      expect(result).toEqual(30);
+    });
+
+    it("detects divergence when child effect description changes", function* () {
+      let recordStream = new InMemoryDurableStream();
+
+      yield* durably(
+        function* () {
+          let task = yield* spawn(function* () {
+            yield* action<void>((resolve) => {
+              resolve();
+              return () => {};
+            }, "original-work");
+            return 42;
+          });
+          return yield* task;
+        },
+        { stream: recordStream },
+      );
+
+      let events = recordStream.read().map((e) => e.event);
+      let originalYielded = events.find(
+        (ev) =>
+          ev.type === "effect:yielded" && ev.description === "original-work",
+      );
+      let originalEffectId =
+        originalYielded && originalYielded.type === "effect:yielded"
+          ? originalYielded.effectId
+          : "";
+      let childResolvedIdx = events.findIndex(
+        (e) => e.type === "effect:resolved" && e.effectId === originalEffectId,
+      );
+      expect(childResolvedIdx).toBeGreaterThan(0);
+
+      let partialStream = InMemoryDurableStream.from(
+        events.slice(0, childResolvedIdx),
+      );
+
+      try {
+        yield* durably(
+          function* () {
+            let task = yield* spawn(function* () {
+              yield* action<void>((resolve) => {
+                resolve();
+                return () => {};
+              }, "changed-work");
+              return 42;
+            });
+            return yield* task;
+          },
+          { stream: partialStream },
+        );
+        throw new Error("should have thrown DivergenceError");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DivergenceError);
+      }
+    });
+  });
+});

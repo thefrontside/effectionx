@@ -1,4 +1,4 @@
-import { resource, spawn, each, createSignal, call } from "effection";
+import { resource, spawn, each, createSignal, until } from "effection";
 import type { Operation } from "effection";
 import {
   DurableStream as RemoteStream,
@@ -47,14 +47,17 @@ export { HttpDurableStream } from "./http-durable-stream.ts";
 export function useDurableStream(url: string): Operation<HttpDurableStream> {
   return resource(function* (provide) {
     // Connect to existing stream or create a new one
-    let remote = yield* call(() => connectOrCreate(url));
+    let remote = yield* connectOrCreate(url);
 
     // Pre-fetch existing events for replay
-    let entries: StreamEntry[] = yield* call(async () => {
-      let res = await remote.stream<DurableEvent>({ json: true, live: false });
-      let items = await res.json<DurableEvent>();
-      return items.map((event, i) => ({ offset: i, event }));
-    });
+    let res = yield* until(
+      remote.stream<DurableEvent>({ json: true, live: false }),
+    );
+    let items = yield* until(res.json<DurableEvent>());
+    let entries: StreamEntry[] = items.map((event, i) => ({
+      offset: i,
+      event,
+    }));
 
     // Create the adapter
     let stream = new HttpDurableStream(remote, entries);
@@ -76,23 +79,27 @@ export function useDurableStream(url: string): Operation<HttpDurableStream> {
     } finally {
       // Flush pending writes, then detach producer.
       // Does NOT close the remote stream — it stays open for resume.
-      yield* call(() => stream.flushAndDetach());
+      yield* until(stream.flushAndDetach());
     }
   });
 }
 
-async function connectOrCreate(url: string): Promise<RemoteStream> {
+function* connectOrCreate(url: string): Operation<RemoteStream> {
   try {
-    return await RemoteStream.connect({
-      url,
-      contentType: "application/json",
-    });
-  } catch (e: unknown) {
-    if (e instanceof FetchError && (e as FetchError).status === 404) {
-      return await RemoteStream.create({
+    return yield* until(
+      RemoteStream.connect({
         url,
         contentType: "application/json",
-      });
+      }),
+    );
+  } catch (e: unknown) {
+    if (e instanceof FetchError && (e as FetchError).status === 404) {
+      return yield* until(
+        RemoteStream.create({
+          url,
+          contentType: "application/json",
+        }),
+      );
     }
     throw e;
   }

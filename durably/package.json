@@ -7,12 +7,26 @@
   "types": "./dist/mod.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/mod.d.ts",
       "development": "./mod.ts",
+      "import": "./dist/mod.js",
       "default": "./dist/mod.js"
+    },
+    "./http": {
+      "types": "./dist/http.d.ts",
+      "development": "./http.ts",
+      "import": "./dist/http.js",
+      "default": "./dist/http.js"
     }
   },
   "peerDependencies": {
-    "effection": "^4"
+    "effection": "^4",
+    "@durable-streams/client": ">=0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@durable-streams/client": {
+      "optional": true
+    }
   },
   "license": "MIT",
   "author": "engineering@frontside.com",
@@ -28,6 +42,7 @@
   },
   "sideEffects": false,
   "devDependencies": {
+    "@durable-streams/client": "^0.2",
     "@effectionx/bdd": "workspace:*",
     "effection": "https://pkg.pr.new/thefrontside/effection@1127",
     "expect": "^29"

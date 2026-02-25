@@ -1,6 +1,7 @@
 # durably
 
-Record, replay, and resume Effection workflows with durable streams.
+Record, replay, and resume Effection workflows with
+[Durable Streams](https://github.com/durable-streams/durable-streams).
 
 ---
 
@@ -8,6 +9,12 @@ Record, replay, and resume Effection workflows with durable streams.
 
 ```bash
 npm install @effectionx/durably effection
+```
+
+For HTTP-backed persistent streams, also install the Durable Streams client:
+
+```bash
+npm install @durable-streams/client
 ```
 
 ## Usage
@@ -18,13 +25,15 @@ results are replayed without re-executing effects, enabling mid-workflow
 resume after restarts.
 
 ```ts
-import { main } from "effection";
-import { durably, InMemoryDurableStream } from "@effectionx/durably";
-import { sleep } from "effection";
+import { main, sleep } from "effection";
+import { durably } from "@effectionx/durably";
+import { useDurableStream } from "@effectionx/durably/http";
 
-let stream = new InMemoryDurableStream();
+const STREAM_URL = "http://localhost:4437/my-workflow";
 
 await main(function* () {
+  let stream = yield* useDurableStream(STREAM_URL);
+
   let result = yield* durably(function* () {
     yield* sleep(1000);
     return "hello";
@@ -34,32 +43,41 @@ await main(function* () {
 });
 ```
 
+Run this twice: the first run records `sleep(1000)` to the server. The
+second run replays it instantly and returns `"hello"` without waiting.
+
 ### Mid-workflow resume
 
-Pass a stream that already contains recorded events. The workflow replays
-stored results instantly, then continues live from where it left off:
+Interrupt a workflow mid-execution (Ctrl+C, process crash, deployment),
+then run the same code again. Completed effects replay instantly from the
+stream; execution resumes live from the point of interruption:
 
 ```ts
-import { durably, InMemoryDurableStream } from "@effectionx/durably";
-import { sleep, action } from "effection";
+import { main, sleep, call } from "effection";
+import { durably } from "@effectionx/durably";
+import { useDurableStream } from "@effectionx/durably/http";
 
-// First run — records events to the stream
-let stream = new InMemoryDurableStream();
+await main(function* () {
+  let stream = yield* useDurableStream("http://localhost:4437/pipeline");
 
-yield* durably(function* () {
-  yield* sleep(1000);    // recorded
-  yield* action(function* (resolve) {
-    // ... long-running work that gets interrupted
-  });
-}, { stream });
+  yield* durably(function* () {
+    // Step 1: fetch data (recorded)
+    let data = yield* call(async () => {
+      let res = await fetch("https://api.example.com/items");
+      return res.json();
+    });
 
-// Second run — replays the sleep instantly, resumes from the action
-yield* durably(function* () {
-  yield* sleep(1000);    // replayed from stream (instant)
-  yield* action(function* (resolve) {
-    resolve("done");     // executes live
-  });
-}, { stream });
+    // Step 2: process each item (2s each — interrupt here)
+    for (let item of data) {
+      yield* sleep(2000);
+      yield* call(async () => processItem(item));
+    }
+
+    // Step 3: aggregate
+    yield* sleep(1000);
+    console.log("pipeline complete");
+  }, { stream });
+});
 ```
 
 ### Divergence detection
@@ -68,25 +86,49 @@ If the workflow code changes between runs, mismatched effects throw a
 `DivergenceError`:
 
 ```ts
+import { main, sleep, action } from "effection";
 import { durably, InMemoryDurableStream, DivergenceError } from "@effectionx/durably";
-import { sleep, action } from "effection";
 
-let stream = new InMemoryDurableStream();
+await main(function* () {
+  let stream = new InMemoryDurableStream();
 
-// First run records sleep(100)
-yield* durably(function* () {
-  yield* sleep(100);
-  return "v1";
-}, { stream });
-
-// Second run yields action() where sleep(100) was expected
-try {
+  // First run records sleep(100)
   yield* durably(function* () {
-    yield* action(function* (resolve) { resolve("v2"); });
+    yield* sleep(100);
+    return "v1";
   }, { stream });
-} catch (error) {
-  // DivergenceError: expected "sleep(100)" but got "action"
-}
+
+  // Second run yields action() where sleep(100) was expected
+  try {
+    yield* durably(function* () {
+      yield* action(function* (resolve) { resolve("v2"); });
+    }, { stream });
+  } catch (error) {
+    // DivergenceError: expected "sleep(100)" but got "action"
+  }
+});
+```
+
+### Testing with in-memory streams
+
+For tests, use `InMemoryDurableStream` — no server required:
+
+```ts
+import { main, sleep } from "effection";
+import { durably, InMemoryDurableStream } from "@effectionx/durably";
+
+await main(function* () {
+  let stream = new InMemoryDurableStream();
+
+  yield* durably(function* () {
+    yield* sleep(100);
+    return 42;
+  }, { stream });
+
+  // Stream captured all events
+  let events = stream.read().map(e => e.event);
+  console.log(events);
+});
 ```
 
 ## How it works
@@ -121,22 +163,48 @@ Execute an operation with durable execution semantics. Returns a `Task<T>`.
 - `options.stream` — a `DurableStream` for persistence (defaults to an
   ephemeral `InMemoryDurableStream`)
 
+### `useDurableStream(url)`
+
+*Exported from `@effectionx/durably/http`*
+
+An Effection [resource](https://frontside.com/effection/docs/resources) that
+connects to a [Durable Streams](https://github.com/durable-streams/durable-streams)
+server and provides an `HttpDurableStream`.
+
+On creation:
+1. Connects to the remote stream (creates it if it doesn't exist)
+2. Pre-fetches existing events for replay
+3. Returns an `HttpDurableStream` that buffers locally and replicates
+   writes to the server via an `IdempotentProducer`
+
+On cleanup (when the enclosing scope exits):
+- Flushes all pending writes to the server
+- Detaches the producer
+- Does **not** delete the remote stream — it stays open for future resume
+
+Requires `@durable-streams/client` as a peer dependency.
+
 ### `InMemoryDurableStream`
 
 An in-memory implementation of `DurableStream`. Events are stored in an
 array and lost when the process exits. Useful for testing.
 
 - `append(event)` — add an event to the stream
-- `read()` — return all stored entries
+- `read(fromOffset?)` — return all stored entries from the given offset
+- `length` — number of entries
+- `closed` / `close()` — stream lifecycle
 
 ### `DurableStream` (interface)
 
-Implement this interface to provide persistent storage:
+Implement this interface to provide your own persistent storage:
 
 ```ts
 interface DurableStream {
-  append(event: DurableEvent): void;
-  read(): StreamEntry[];
+  append(event: DurableEvent): number;
+  read(fromOffset?: number): StreamEntry[];
+  length: number;
+  closed: boolean;
+  close(): void;
 }
 ```
 
@@ -150,3 +218,5 @@ recorded. Indicates the workflow code has changed between runs.
 - Node.js >= 22
 - Effection ^4 (requires [PR 1127](https://github.com/thefrontside/effection/pull/1127)
   for `effection/experimental` reducer exports)
+- `@durable-streams/client` >= 0.1.0 (optional — only needed for
+  `@effectionx/durably/http`)

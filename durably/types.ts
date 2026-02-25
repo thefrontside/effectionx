@@ -12,6 +12,7 @@ export interface SerializedError {
   name: string;
   message: string;
   stack?: string;
+  cause?: SerializedError;
 }
 
 // ── Durable Event types ────────────────────────────────────────────

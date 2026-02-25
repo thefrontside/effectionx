@@ -18,28 +18,75 @@ import {
 const api = effection.Scope;
 
 /**
- * Serialize a value to Json, replacing non-serializable values with
- * a __liveOnly sentinel.
+ * Effection ^4 internal effect descriptions that should always execute live
+ * (never recorded/replayed). Update if Effection adds/renames infrastructure effects.
  */
-export function toJson(value: unknown): Json {
+export const INFRASTRUCTURE_EFFECTS: readonly string[] = [
+  "useCoroutine()",
+  "useScope()",
+  "trap return",
+  "await resource",
+  "await winner",
+  "await delimiter",
+  "await future",
+  "await destruction",
+  "await callcc",
+  "await each done",
+  "await each context",
+];
+
+/**
+ * Effection ^4 internal context names that should not be recorded.
+ * Update if Effection adds/renames internal contexts.
+ */
+export const INFRASTRUCTURE_CONTEXTS: readonly string[] = [
+  "@effection/scope.generation",
+  "@effection/scope.children",
+  "@effection/coroutine",
+  "@effection/reducer",
+  "@effection/delimiter",
+  "@effection/boundary",
+  "@effection/task-group",
+  "each",
+];
+
+/**
+ * Serialize a value to Json, replacing non-serializable values with
+ * a __liveOnly sentinel. Uses a WeakSet for cycle detection to avoid
+ * stack overflow on circular object graphs.
+ */
+export function toJson(value: unknown, seen?: WeakSet<object>): Json {
   if (value === null || value === undefined) return null;
   if (typeof value === "string") return value;
   if (typeof value === "number") return value;
   if (typeof value === "boolean") return value;
 
   if (Array.isArray(value)) {
-    return value.map(toJson);
+    let tracking = seen ?? new WeakSet();
+    if (tracking.has(value)) {
+      return createLiveOnlySentinel(value) as unknown as Json;
+    }
+    tracking.add(value);
+    return value.map((item) => toJson(item, tracking));
   }
 
   if (typeof value === "object") {
+    let tracking = seen ?? new WeakSet();
+    if (tracking.has(value)) {
+      return createLiveOnlySentinel(value) as unknown as Json;
+    }
+    tracking.add(value);
+
     let proto = Object.getPrototypeOf(value);
     if (proto === Object.prototype || proto === null) {
-      try {
-        let json = JSON.stringify(value);
-        return JSON.parse(json) as Json;
-      } catch {
-        return createLiveOnlySentinel(value) as unknown as Json;
+      // Recursively walk own properties so non-serializable nested values
+      // become LiveOnlySentinel markers instead of being silently dropped
+      // (which JSON.stringify/parse would do for functions, undefined, etc.).
+      let result: Record<string, Json> = {};
+      for (let key of Object.keys(value as Record<string, unknown>)) {
+        result[key] = toJson((value as Record<string, unknown>)[key], tracking);
       }
+      return result;
     }
     return createLiveOnlySentinel(value) as unknown as Json;
   }
@@ -52,16 +99,31 @@ function normalizeError(value: unknown): Error {
   return new Error(typeof value === "string" ? value : String(value));
 }
 
-function serializeError(error: Error): SerializedError {
-  return {
+function serializeError(
+  error: Error,
+  seen?: WeakSet<Error>,
+): SerializedError {
+  let result: SerializedError = {
     name: error.name,
     message: error.message,
     stack: error.stack,
   };
+  if (error.cause instanceof Error) {
+    let tracking = seen ?? new WeakSet();
+    if (!tracking.has(error.cause)) {
+      tracking.add(error.cause);
+      result.cause = serializeError(error.cause, tracking);
+    }
+  }
+  return result;
 }
 
 function deserializeError(serialized: SerializedError): Error {
-  let error = new Error(serialized.message);
+  let cause: Error | undefined;
+  if (serialized.cause) {
+    cause = deserializeError(serialized.cause);
+  }
+  let error = new Error(serialized.message, cause ? { cause } : undefined);
   error.name = serialized.name;
   if (serialized.stack) {
     error.stack = serialized.stack;
@@ -205,12 +267,12 @@ class ReplayIndex {
    * Peek at the next scope:created event in creation order.
    */
   peekScopeCreation(): (DurableEvent & { type: "scope:created" }) | undefined {
-    if (this.scopeCreationCursor < this.scopeCreationOrder.length) {
+    while (this.scopeCreationCursor < this.scopeCreationOrder.length) {
       let ev = this.scopeCreationOrder[this.scopeCreationCursor];
       if (this.consumedCreations.has(ev.scopeId)) {
         // Already consumed (e.g., root was consumed directly)
         this.scopeCreationCursor++;
-        return this.peekScopeCreation();
+        continue;
       }
       return ev;
     }
@@ -710,20 +772,8 @@ export class DurableReducer {
   };
 
   private isInfrastructureEffect(description: string): boolean {
-    return (
-      description === "useCoroutine()" ||
-      description.startsWith("do <") ||
-      description === "useScope()" ||
-      description === "trap return" ||
-      description === "await resource" ||
-      description === "await winner" ||
-      description === "await delimiter" ||
-      description === "await future" ||
-      description === "await destruction" ||
-      description === "await callcc" ||
-      description === "await each done" ||
-      description === "await each context"
-    );
+    if (description.startsWith("do <")) return true;
+    return INFRASTRUCTURE_EFFECTS.includes(description);
   }
 
   private handleEffect(effect: Effect<unknown>, routine: Coroutine): void {
@@ -795,6 +845,10 @@ export class DurableReducer {
     let originalNext = routine.next.bind(routine);
     let stream = this.stream;
 
+    // Single-invocation invariant: Effection's effect protocol guarantees
+    // each effect is resolved exactly once (each yield corresponds to a
+    // single resolution). wrappedNext records the result then restores
+    // routine.next to originalNext so subsequent calls bypass the wrapper.
     let wrappedNext = (result: Result<unknown>) => {
       if (result.ok) {
         stream.append({
@@ -820,15 +874,6 @@ export class DurableReducer {
 }
 
 function isInfrastructureContext(name: string): boolean {
-  return (
-    name === "@effection/scope.generation" ||
-    name === "@effection/scope.children" ||
-    name === "@effection/coroutine" ||
-    name === "@effection/reducer" ||
-    name === "@effection/delimiter" ||
-    name === "@effection/boundary" ||
-    name === "@effection/task-group" ||
-    name === "each" ||
-    name.startsWith("api::")
-  );
+  if (name.startsWith("api::")) return true;
+  return INFRASTRUCTURE_CONTEXTS.includes(name);
 }

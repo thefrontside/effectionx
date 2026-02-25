@@ -4,10 +4,7 @@ import { action, each, sleep, spawn } from "effection";
 import type { Operation, Stream } from "effection";
 import type { DurableEvent } from "./mod.ts";
 import { durably, InMemoryDurableStream } from "./mod.ts";
-
-function allEvents(stream: InMemoryDurableStream): DurableEvent[] {
-  return stream.read().map((e) => e.event);
-}
+import { allEvents } from "./test-helpers.ts";
 
 function asyncSequence(...values: string[]): Stream<string, void> {
   return {

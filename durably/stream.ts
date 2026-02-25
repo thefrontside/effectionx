@@ -33,6 +33,11 @@ export class InMemoryDurableStream implements DurableStream {
   }
 
   read(fromOffset = 0): StreamEntry[] {
+    if (!Number.isInteger(fromOffset) || fromOffset < 0) {
+      throw new RangeError(
+        `fromOffset must be a non-negative integer, got ${fromOffset}`,
+      );
+    }
     return this.entries.slice(fromOffset);
   }
 

@@ -214,6 +214,14 @@ interface DurableStream {
 }
 ```
 
+> **Note**: The interface is intentionally synchronous for v0.1. The
+> `DurableReducer` runs inside Effection's synchronous reduction loop where
+> effects are intercepted and replayed. Async I/O for persistent backends
+> is handled at the adapter level (see `HttpDurableStream` which buffers
+> writes locally and replicates asynchronously via an `IdempotentProducer`).
+> Future releases may introduce an async variant if the synchronous
+> constraint proves too limiting for custom backends.
+
 ### `DivergenceError`
 
 Thrown when a replayed effect's description does not match what was
@@ -222,7 +230,12 @@ recorded. Indicates the workflow code has changed between runs.
 ## Requirements
 
 - Node.js >= 22
-- Effection ^4 (requires [PR 1127](https://github.com/thefrontside/effection/pull/1127)
-  for `effection/experimental` reducer exports)
+- Effection ^4 — requires the experimental reducer exports from
+  [PR 1127](https://github.com/thefrontside/effection/pull/1127).
+  Until this PR is merged and published, use the preview build:
+  ```
+  npm install effection@https://pkg.pr.new/thefrontside/effection@1127
+  ```
+  Once PR 1127 is released, switch to the published version (`effection@^4.x`).
 - `@durable-streams/client` >= 0.1.0 (optional — only needed for
   `@effectionx/durably/http`)

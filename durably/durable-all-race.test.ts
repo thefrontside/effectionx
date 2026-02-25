@@ -1,12 +1,8 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
 import { action, all, race, sleep } from "effection";
-import type { DurableEvent } from "./mod.ts";
 import { durably, InMemoryDurableStream } from "./mod.ts";
-
-function allEvents(stream: InMemoryDurableStream): DurableEvent[] {
-  return stream.read().map((e) => e.event);
-}
+import { allEvents } from "./test-helpers.ts";
 
 describe("durable all", () => {
   describe("recording", () => {

@@ -16,12 +16,8 @@ import {
   useAbortSignal,
   withResolvers,
 } from "effection";
-import type { DurableEvent } from "./mod.ts";
 import { durably, InMemoryDurableStream, isLiveOnly } from "./mod.ts";
-
-function allEvents(stream: InMemoryDurableStream): DurableEvent[] {
-  return stream.read().map((e) => e.event);
-}
+import { allEvents } from "./test-helpers.ts";
 
 describe("durable error handling", () => {
   describe("replay of caught errors", () => {
@@ -814,6 +810,10 @@ describe("durable useAbortSignal", () => {
         { stream: recordStream },
       );
 
+      // Intentional: sleep(10) tests the real async window between a task
+      // reaching suspend() and an external halt(). Using withResolvers or
+      // other deterministic handshakes would change the lifecycle semantics
+      // being tested (the halt must arrive while the task is suspended).
       yield* sleep(10);
       yield* task.halt();
 
@@ -840,6 +840,8 @@ describe("durable useAbortSignal", () => {
         { stream: partialStream },
       );
 
+      // See comment above — sleep(10) is intentional for testing the
+      // async window between suspend and halt during replay-to-live resume.
       yield* sleep(10);
 
       expect(signalRef!.aborted).toEqual(false);

@@ -88,7 +88,7 @@ function* connectOrCreate(url: string): Operation<RemoteStream> {
       }),
     );
   } catch (e: unknown) {
-    if (e instanceof FetchError && (e as FetchError).status === 404) {
+    if (e instanceof FetchError && e.status === 404) {
       return yield* until(
         RemoteStream.create({
           url,

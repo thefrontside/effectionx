@@ -1,50 +1,9 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
 import { action, sleep, spawn, suspend, until } from "effection";
-import type { DurableEvent } from "./mod.ts";
 import type { Task } from "effection";
 import { durably, InMemoryDurableStream, DivergenceError } from "./mod.ts";
-
-function userEvents(stream: InMemoryDurableStream): DurableEvent[] {
-  return stream
-    .read()
-    .map((e) => e.event)
-    .filter((e) => {
-      if (e.type === "effect:yielded") {
-        let desc = e.description;
-        if (desc === "useCoroutine()" || desc.startsWith("do <")) {
-          return false;
-        }
-      }
-      return true;
-    });
-}
-
-function userEffectPairs(
-  stream: InMemoryDurableStream,
-): Array<[DurableEvent, DurableEvent]> {
-  let events = stream.read().map((e) => e.event);
-  let pairs: Array<[DurableEvent, DurableEvent]> = [];
-  for (let i = 0; i < events.length - 1; i++) {
-    let ev = events[i];
-    if (ev.type !== "effect:yielded") continue;
-    if (
-      ev.description === "useCoroutine()" ||
-      ev.description.startsWith("do <")
-    )
-      continue;
-    let next = events[i + 1];
-    if (
-      next &&
-      (next.type === "effect:resolved" || next.type === "effect:errored") &&
-      next.effectId === ev.effectId
-    ) {
-      pairs.push([ev, next]);
-      i++;
-    }
-  }
-  return pairs;
-}
+import { userEffectPairs } from "./test-helpers.ts";
 
 describe("durable run", () => {
   describe("stream recording", () => {
@@ -625,8 +584,9 @@ describe("durable run", () => {
         { stream },
       );
 
-      yield* sleep(0);
-
+      // Root lifecycle events (workflow:return, scope:destroyed) are emitted
+      // synchronously in the scope middleware's destroy handler, so they are
+      // available immediately after durably() resolves — no sleep needed.
       let events = stream.read().map((e) => e.event);
 
       let workflowReturns = events.filter((e) => e.type === "workflow:return");
@@ -661,6 +621,9 @@ describe("durable run", () => {
         { stream },
       );
 
+      // Child task workflow:return events may be emitted asynchronously
+      // during structured teardown (child scopes destroy before parents).
+      // The root's lifecycle is synchronous, but spawned children need a tick.
       yield* sleep(0);
 
       let events = stream.read().map((e) => e.event);

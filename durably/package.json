@@ -41,6 +41,17 @@
     "node": ">= 22"
   },
   "sideEffects": false,
+  "files": [
+    "dist",
+    "mod.ts",
+    "http.ts",
+    "durably.ts",
+    "durable-reducer.ts",
+    "http-durable-stream.ts",
+    "stream.ts",
+    "types.ts",
+    "README.md"
+  ],
   "devDependencies": {
     "@durable-streams/client": "^0.2",
     "@effectionx/bdd": "workspace:*",

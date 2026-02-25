@@ -1,6 +1,5 @@
 export { durably } from "./durably.ts";
 export type { DurablyOptions } from "./durably.ts";
-export { DurableReducer, toJson } from "./durable-reducer.ts";
 export { InMemoryDurableStream } from "./stream.ts";
 export {
   DivergenceError,

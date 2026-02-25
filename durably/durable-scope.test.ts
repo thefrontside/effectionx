@@ -1,39 +1,8 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
 import { action, sleep, spawn, suspend } from "effection";
-import type { DurableEvent } from "./mod.ts";
 import { durably, DivergenceError, InMemoryDurableStream } from "./mod.ts";
-
-function scopeEvents(stream: InMemoryDurableStream): DurableEvent[] {
-  return stream
-    .read()
-    .map((e) => e.event)
-    .filter((e) => e.type === "scope:created" || e.type === "scope:destroyed");
-}
-
-function allEvents(stream: InMemoryDurableStream): DurableEvent[] {
-  return stream.read().map((e) => e.event);
-}
-
-function userFacingEvents(stream: InMemoryDurableStream): DurableEvent[] {
-  return stream
-    .read()
-    .map((e) => e.event)
-    .filter((e) => {
-      if (e.type === "effect:yielded") {
-        let desc = e.description;
-        if (
-          desc === "useCoroutine()" ||
-          desc.startsWith("do <") ||
-          desc === "useScope()" ||
-          desc === "trap return"
-        ) {
-          return false;
-        }
-      }
-      return true;
-    });
-}
+import { allEvents, scopeEvents } from "./test-helpers.ts";
 
 describe("durable scope lifecycle", () => {
   describe("scope:created and scope:destroyed", () => {

@@ -18,15 +18,6 @@ import {
 const api = effection.Scope;
 
 /**
- * A unique effect ID counter, scoped to a single DurableReducer instance.
- */
-let globalEffectCounter = 0;
-
-function nextEffectId(): string {
-  return `effect-${++globalEffectCounter}`;
-}
-
-/**
  * Serialize a value to Json, replacing non-serializable values with
  * a __liveOnly sentinel.
  */
@@ -54,6 +45,11 @@ export function toJson(value: unknown): Json {
   }
 
   return createLiveOnlySentinel(value) as unknown as Json;
+}
+
+function normalizeError(value: unknown): Error {
+  if (value instanceof Error) return value;
+  return new Error(typeof value === "string" ? value : String(value));
 }
 
 function serializeError(error: Error): SerializedError {
@@ -361,15 +357,24 @@ export class DurableReducer {
 
   private replayIndex: ReplayIndex;
   private scopeIds = new WeakMap<Scope, string>();
+  private scopeParents = new Map<string, string | undefined>();
   private scopeOrdinal = 0;
+  private effectCounter: number;
 
   readonly stream: DurableStream;
 
   constructor(stream: DurableStream) {
     this.stream = stream;
+    // Seed counter from stream length so new effect IDs never collide
+    // with existing entries after a process restart.
+    this.effectCounter = stream.length;
     this.replayIndex = new ReplayIndex(stream.read(0), (desc) =>
       this.isInfrastructureEffect(desc),
     );
+  }
+
+  private nextEffectId(): string {
+    return `effect-${++this.effectCounter}`;
   }
 
   private nextScopeId(): string {
@@ -387,8 +392,13 @@ export class DurableReducer {
     return id;
   }
 
-  private registerScope(scope: Scope, id: string): void {
+  private registerScope(scope: Scope, id: string, parentId?: string): void {
     this.scopeIds.set(scope, id);
+    this.scopeParents.set(id, parentId);
+  }
+
+  getParentScopeId(scopeId: string): string | undefined {
+    return this.scopeParents.get(scopeId);
   }
 
   private unregisterScope(scope: Scope): void {
@@ -409,6 +419,10 @@ export class DurableReducer {
     }
 
     let reducer = this;
+
+    // Track whether root's scope:destroyed has been emitted, to
+    // prevent double-recording.
+    let rootDestroyedEmitted = false;
 
     runScope.around(
       api,
@@ -433,12 +447,12 @@ export class DurableReducer {
                 -1,
               );
             }
-            reducer.registerScope(child, ev.scopeId);
+            reducer.registerScope(child, ev.scopeId, parentScopeId);
             reducer.replayIndex.consumeScopeCreation(ev.scopeId);
           } else {
             // Live path: assign ID and record
             let scopeId = reducer.nextScopeId();
-            reducer.registerScope(child, scopeId);
+            reducer.registerScope(child, scopeId, parentScopeId);
             reducer.stream.append({
               type: "scope:created",
               scopeId,
@@ -461,7 +475,7 @@ export class DurableReducer {
           } catch (error) {
             outcome = {
               ok: false,
-              error: serializeError(error as Error),
+              error: serializeError(normalizeError(error)),
             };
             throw error;
           } finally {
@@ -479,6 +493,49 @@ export class DurableReducer {
                 });
               }
               reducer.unregisterScope(scope);
+
+              // When a direct child of root is destroyed, the root
+              // scope is shutting down. Record root's lifecycle events
+              // here — synchronously within the scope's structured
+              // teardown — so they happen before any parent resource
+              // cleanup (e.g., useDurableStream closing the stream).
+              //
+              // This replaces the previous .then() microtask approach
+              // which raced against resource cleanup.
+              if (
+                reducer.scopeIds.get(runScope) === "root" &&
+                !rootDestroyedEmitted
+              ) {
+                // Check if this scope's parent is root
+                let parentId = reducer.getParentScopeId(scopeId);
+                if (parentId === "root") {
+                  rootDestroyedEmitted = true;
+
+                  // Determine root's outcome from the child scope's
+                  // delimiter. The `outcome` variable reflects cleanup
+                  // success, not the task's result — a workflow can
+                  // error but its cleanup succeeds. We need to check
+                  // the delimiter to know if the workflow returned or
+                  // errored.
+                  let rootOutcome = reducer.getRootOutcome(scope, outcome);
+
+                  // Root's workflow:return — only if the workflow
+                  // completed successfully (not on error/halt)
+                  if (rootOutcome.ok) {
+                    reducer.emitWorkflowReturn(scope, "root");
+                  }
+
+                  if (reducer.replayIndex.hasScopeDestruction("root")) {
+                    reducer.replayIndex.consumeScopeDestruction("root");
+                  } else {
+                    reducer.stream.append({
+                      type: "scope:destroyed",
+                      scopeId: "root",
+                      result: rootOutcome,
+                    });
+                  }
+                }
+              }
             }
           }
         },
@@ -541,31 +598,48 @@ export class DurableReducer {
     );
   }
 
-  isReplayingRoot(): boolean {
-    return this.replayIndex.hasScopeDestruction("root");
-  }
+  /**
+   * Determine the root scope's outcome from the child scope's delimiter.
+   *
+   * The middleware `destroy` handler's `outcome` reflects whether cleanup
+   * succeeded, not whether the workflow returned or errored. A workflow
+   * that throws an error can still have successful cleanup (outcome.ok
+   * is true). We check the child scope's DelimiterContext to determine
+   * the actual workflow result.
+   */
+  getRootOutcome(
+    childScope: Scope,
+    cleanupOutcome: { ok: true } | { ok: false; error: SerializedError },
+  ): { ok: true } | { ok: false; error: SerializedError } {
+    // If cleanup itself failed, that's the outcome
+    if (!cleanupOutcome.ok) return cleanupOutcome;
 
-  consumeRootDestroyed(): void {
-    this.replayIndex.consumeScopeDestruction("root");
-  }
-
-  emitWorkflowReturn(scope: Scope, scopeId: string, ...rest: unknown[]): void {
-    let returnValue: unknown = rest[0];
-    let hasValue = rest.length > 0;
-
-    if (!hasValue) {
-      let delimiter = scope.get(DelimiterContext);
-      if (
-        delimiter?.computed &&
-        delimiter.outcome?.exists &&
-        delimiter.outcome.value.ok
-      ) {
-        returnValue = delimiter.outcome.value.value;
-        hasValue = true;
+    // Check the child scope's delimiter for the workflow result
+    let delimiter = childScope.get(DelimiterContext);
+    if (delimiter?.computed && delimiter.outcome?.exists) {
+      let delimOutcome = delimiter.outcome.value;
+      if (!delimOutcome.ok) {
+        return {
+          ok: false,
+          error: serializeError(delimOutcome.error),
+        };
       }
     }
 
-    if (!hasValue) return;
+    return { ok: true };
+  }
+
+  emitWorkflowReturn(scope: Scope, scopeId: string): void {
+    let delimiter = scope.get(DelimiterContext);
+    if (
+      !delimiter?.computed ||
+      !delimiter.outcome?.exists ||
+      !delimiter.outcome.value.ok
+    ) {
+      return;
+    }
+
+    let returnValue = delimiter.outcome.value.value;
 
     if (this.replayIndex.hasWorkflowReturn(scopeId)) {
       this.replayIndex.consumeWorkflowReturn(scopeId);
@@ -626,7 +700,7 @@ export class DurableReducer {
             // before the error instruction is dequeued).
             throw error;
           }
-          routine.next(Err(error as Error));
+          routine.next(Err(normalizeError(error)));
         }
         item = queue.dequeue();
       }
@@ -654,10 +728,15 @@ export class DurableReducer {
 
   private handleEffect(effect: Effect<unknown>, routine: Coroutine): void {
     let description = effect.description ?? "unknown";
-    let effectId = nextEffectId();
+    let effectId = this.nextEffectId();
     let shouldRecordYielded = true;
 
-    let scopeId = this.scopeIds.get(routine.scope) ?? "unknown";
+    let scopeId = this.scopeIds.get(routine.scope);
+    if (!scopeId) {
+      throw new Error(
+        `DurableReducer: scope not registered for effect "${description}". This indicates a lifecycle bug — the scope was not created through the durable middleware.`,
+      );
+    }
 
     // Infrastructure effects always execute live
     if (this.isInfrastructureEffect(description)) {
@@ -727,7 +806,7 @@ export class DurableReducer {
         stream.append({
           type: "effect:errored",
           effectId,
-          error: serializeError(result.error),
+          error: serializeError(normalizeError(result.error)),
         });
       }
 

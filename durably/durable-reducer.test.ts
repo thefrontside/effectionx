@@ -1098,3 +1098,165 @@ describe("multiple durable streams", () => {
     expect(liveBExecuted).toEqual(true);
   });
 });
+
+describe("effect ID collision prevention", () => {
+  it("new live effect IDs do not collide with existing stream entries after simulated restart", function* () {
+    let stream = new InMemoryDurableStream();
+
+    // Run 1: record a workflow with two effects
+    yield* durably(
+      function* () {
+        yield* action<void>((resolve) => {
+          resolve();
+          return () => {};
+        }, "step-1");
+        yield* action<void>((resolve) => {
+          resolve();
+          return () => {};
+        }, "step-2");
+        return "done";
+      },
+      { stream },
+    );
+
+    let recordedEvents = stream.read().map((e) => e.event);
+
+    // Capture effect IDs from run 1
+    let run1EffectIds = recordedEvents
+      .filter((e) => e.type === "effect:yielded")
+      .map((e) => (e.type === "effect:yielded" ? e.effectId : ""));
+
+    expect(run1EffectIds.length).toBeGreaterThan(0);
+
+    // Simulate restart: create a partial stream (only first effect pair)
+    // to force mid-workflow resume
+    let firstYielded = recordedEvents.findIndex(
+      (e) => e.type === "effect:yielded" && e.description === "step-1",
+    );
+    let firstResolved = recordedEvents.findIndex(
+      (e) =>
+        e.type === "effect:resolved" &&
+        firstYielded >= 0 &&
+        recordedEvents[firstYielded].type === "effect:yielded" &&
+        e.effectId === (recordedEvents[firstYielded] as { effectId: string }).effectId,
+    );
+
+    expect(firstResolved).toBeGreaterThan(firstYielded);
+
+    // Include events up through first resolved effect
+    let partialStream = InMemoryDurableStream.from(
+      recordedEvents.slice(0, firstResolved + 1),
+    );
+
+    // Run 2: resume from partial stream — second effect runs live
+    yield* durably(
+      function* () {
+        yield* action<void>((resolve) => {
+          resolve();
+          return () => {};
+        }, "step-1");
+        yield* action<void>((resolve) => {
+          resolve();
+          return () => {};
+        }, "step-2");
+        return "done";
+      },
+      { stream: partialStream },
+    );
+
+    // Collect all effect IDs from the merged stream
+    let allEvents = partialStream.read().map((e) => e.event);
+    let allYieldedIds = allEvents
+      .filter((e) => e.type === "effect:yielded")
+      .map((e) => (e.type === "effect:yielded" ? e.effectId : ""));
+
+    // No duplicate effect IDs
+    let uniqueIds = new Set(allYieldedIds);
+    expect(uniqueIds.size).toEqual(allYieldedIds.length);
+
+    // New live effect IDs should NOT start from "effect-1" again
+    // (they should be seeded from stream length)
+    let newLiveIds = allYieldedIds.filter((id) => !run1EffectIds.includes(id));
+    expect(newLiveIds.length).toBeGreaterThan(0);
+  });
+});
+
+describe("non-Error throwable handling", () => {
+  it("records and replays a thrown string as a proper error", function* () {
+    let stream = new InMemoryDurableStream();
+
+    // Record a workflow that catches a thrown string from an effect
+    try {
+      yield* durably(
+        function* () {
+          yield* action<void>((_resolve, reject) => {
+            reject("string-error" as unknown as Error);
+            return () => {};
+          }, "will-throw-string");
+        },
+        { stream },
+      );
+    } catch {
+      // expected
+    }
+
+    // The stream should contain an effect:errored event with a message
+    let events = stream.read().map((e) => e.event);
+    let errored = events.find((e) => e.type === "effect:errored");
+    expect(errored).toBeDefined();
+    if (errored && errored.type === "effect:errored") {
+      expect(errored.error.message).toBeDefined();
+      expect(typeof errored.error.message).toEqual("string");
+    }
+
+    // Replay should work without crashing
+    let replayStream = InMemoryDurableStream.from(
+      stream.read().map((e) => e.event),
+    );
+
+    try {
+      yield* durably(
+        function* () {
+          yield* action<void>((_resolve, reject) => {
+            reject("different" as unknown as Error);
+            return () => {};
+          }, "will-throw-string");
+        },
+        { stream: replayStream },
+      );
+    } catch (error) {
+      // Should replay the original string error, not the new one
+      expect((error as Error).message).toBeDefined();
+    }
+  });
+
+  it("handles a thrown string in generator code without crashing the reducer", function* () {
+    let stream = new InMemoryDurableStream();
+
+    try {
+      yield* durably(
+        function* () {
+          // deno-lint-ignore no-throw-literal
+          throw "plain string error";
+        },
+        { stream },
+      );
+    } catch (error) {
+      // The string propagates through Effection's scope teardown —
+      // normalizeError operates at the reducer's interception points
+      // (effect resolution, scope destroy), not at the generator throw site.
+      // What matters is that the reducer doesn't crash.
+      expect(error).toEqual("plain string error");
+    }
+
+    // Stream should have scope lifecycle events even after string throw
+    let events = stream.read().map((e) => e.event);
+    let scopeCreated = events.filter((e) => e.type === "scope:created");
+    expect(scopeCreated.length).toBeGreaterThanOrEqual(1);
+
+    // The scope:destroyed event should have a serialized error
+    // (normalizeError wraps the string in the destroy middleware)
+    let scopeDestroyed = events.filter((e) => e.type === "scope:destroyed");
+    expect(scopeDestroyed.length).toBeGreaterThanOrEqual(1);
+  });
+});

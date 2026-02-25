@@ -2,7 +2,7 @@ import type { Operation, Task } from "effection";
 import { createScope, global } from "effection";
 import { ReducerContext } from "effection/experimental";
 import type { DurableStream } from "./types.ts";
-import { DurableReducer, toJson } from "./durable-reducer.ts";
+import { DurableReducer } from "./durable-reducer.ts";
 import { InMemoryDurableStream } from "./stream.ts";
 
 /**
@@ -65,49 +65,14 @@ export function durably<T>(
   // Install scope lifecycle middleware to record/replay scope events.
   // This must be done before any operations run so all scope creation/
   // destruction flows through the durable middleware.
+  //
+  // Root scope lifecycle events (workflow:return + scope:destroyed for
+  // "root") are recorded by the middleware when the root scope's first
+  // child is destroyed — see installScopeMiddleware for details. This
+  // replaces the previous .then() microtask approach which raced
+  // against resource cleanup (useDurableStream closing the stream
+  // before the microtask could append).
   reducer.installScopeMiddleware(scope);
 
-  let task = scope.run(operation);
-
-  // Eagerly attach a settlement handler to record root scope lifecycle
-  // events. This fires regardless of whether the consumer uses `await`
-  // (Promise .then) or `yield*` (generator/Operation protocol).
-  //
-  // The root scope is created/destroyed outside the scope tree managed
-  // by the middleware, so we record its destruction when the task settles.
-  task.then(
-    (value: T) => {
-      reducer.emitWorkflowReturn(scope, "root", value);
-      if (reducer.isReplayingRoot()) {
-        reducer.consumeRootDestroyed();
-      } else {
-        stream.append({
-          type: "scope:destroyed",
-          scopeId: "root",
-          result: { ok: true },
-        });
-      }
-    },
-    (error: unknown) => {
-      if (reducer.isReplayingRoot()) {
-        reducer.consumeRootDestroyed();
-      } else {
-        let err = error as Error;
-        stream.append({
-          type: "scope:destroyed",
-          scopeId: "root",
-          result: {
-            ok: false,
-            error: {
-              name: err.name,
-              message: err.message,
-              stack: err.stack,
-            },
-          },
-        });
-      }
-    },
-  );
-
-  return task;
+  return scope.run(operation);
 }

@@ -1,4 +1,4 @@
-import { resource, spawn, each, createSignal, until } from "effection";
+import { action, resource, until } from "effection";
 import type { Operation } from "effection";
 import {
   DurableStream as RemoteStream,
@@ -59,19 +59,14 @@ export function useDurableStream(url: string): Operation<HttpDurableStream> {
       event,
     }));
 
-    // Create the adapter
-    let stream = new HttpDurableStream(remote, entries);
-
-    // Surface producer errors into structured concurrency —
-    // if the producer can't write to the server, the workflow should fail
-    let errors = createSignal<Error>();
-    stream.errorHandler = errors.send;
-
-    yield* spawn(function* () {
-      for (let error of yield* each(errors)) {
-        throw error;
-        yield* each.next();
-      }
+    // Create the adapter and bind producer errors into structured
+    // concurrency — if the producer can't write to the server, reject
+    // the action so the enclosing scope fails.
+    let stream = yield* action<HttpDurableStream>((resolve, reject) => {
+      let s = new HttpDurableStream(remote, entries);
+      s.errorHandler = reject;
+      resolve(s);
+      return () => {};
     });
 
     try {

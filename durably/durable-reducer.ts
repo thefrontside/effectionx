@@ -199,7 +199,6 @@ class ReplayIndex {
           continue;
         }
         this.resolutions.set(event.effectId, event);
-        continue;
       }
     }
   }
@@ -550,15 +549,14 @@ export class DurableReducer {
     this.replayIndex.consumeScopeDestruction("root");
   }
 
-  emitWorkflowReturn(scope: Scope, scopeId: string, value?: unknown): void {
-    let returnValue: unknown = value;
-    let hasValue = arguments.length > 2;
+  emitWorkflowReturn(scope: Scope, scopeId: string, ...rest: unknown[]): void {
+    let returnValue: unknown = rest[0];
+    let hasValue = rest.length > 0;
 
     if (!hasValue) {
       let delimiter = scope.get(DelimiterContext);
       if (
-        delimiter &&
-        delimiter.computed &&
+        delimiter?.computed &&
         delimiter.outcome?.exists &&
         delimiter.outcome.value.ok
       ) {

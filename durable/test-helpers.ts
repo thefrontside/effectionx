@@ -1,9 +1,21 @@
-import { INFRASTRUCTURE_EFFECTS } from "./reducer.ts";
-import type { InMemoryDurableStream } from "./stream.ts";
 /**
  * Shared test helpers for @effectionx/durable test suites.
  */
-import type { DurableEvent } from "./types.ts";
+import type { Operation } from "effection";
+import { INFRASTRUCTURE_EFFECTS } from "./reducer.ts";
+import type { InMemoryDurableStream } from "./stream.ts";
+import type { DurableEvent, DurableOperation } from "./types.ts";
+
+/**
+ * Cast a plain Operation factory to a DurableOperation factory for tests.
+ *
+ * In production code, only the durable runtime mints branded operations.
+ * In tests, we need to pass plain generators to `durable()`. This helper
+ * performs the unsafe cast so test code doesn't need `as unknown as`.
+ */
+export function op<T>(fn: () => Operation<T>): () => DurableOperation<T> {
+  return fn as unknown as () => DurableOperation<T>;
+}
 
 /** Return all events from the stream. */
 export function allEvents(stream: InMemoryDurableStream): DurableEvent[] {

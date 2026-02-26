@@ -458,11 +458,12 @@ export class DurableReducer {
                 }
                 reducer.stream.append(closeEvent);
               }
+              // Capture parent before unregistering (unregister deletes the mapping)
+              let parentId = reducer.getParentCoroutineId(coroutineId);
               reducer.unregisterCoroutine(scope);
 
               // When a direct child of root is destroyed, emit root's
               // close event synchronously within structured teardown.
-              let parentId = reducer.getParentCoroutineId(coroutineId);
               if (
                 parentId === "root" &&
                 reducer.coroutineIds.get(runScope) === "root" &&

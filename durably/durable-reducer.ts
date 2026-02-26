@@ -464,6 +464,8 @@ export class DurableReducer {
   }
 
   private unregisterScope(scope: Scope): void {
+    let id = this.scopeIds.get(scope);
+    if (id) this.scopeParents.delete(id);
     this.scopeIds.delete(scope);
   }
 
@@ -778,18 +780,26 @@ export class DurableReducer {
 
   private handleEffect(effect: Effect<unknown>, routine: Coroutine): void {
     let description = effect.description ?? "unknown";
+
+    // Infrastructure effects always execute live — they don't need
+    // scope registration because they are never recorded or replayed.
+    // Check this first because infrastructure effects may fire on
+    // scopes that were already unregistered during teardown, or on
+    // the scoped() scope itself which sits outside the durable scope
+    // tree (e.g., when awaiting the spawned task result).
+    if (this.isInfrastructureEffect(description)) {
+      routine.data.exit = effect.enter(routine.next, routine);
+      return;
+    }
+
     let effectId = this.nextEffectId();
     let shouldRecordYielded = true;
 
     let scopeId = this.scopeIds.get(routine.scope);
     if (!scopeId) {
-      throw new Error(
-        `DurableReducer: scope not registered for effect "${description}". This indicates a lifecycle bug — the scope was not created through the durable middleware.`,
-      );
-    }
-
-    // Infrastructure effects always execute live
-    if (this.isInfrastructureEffect(description)) {
+      // The scope was unregistered during teardown. Effects that fire
+      // after scope destruction (e.g., cleanup in finally blocks)
+      // execute live — there is nothing to record or replay.
       routine.data.exit = effect.enter(routine.next, routine);
       return;
     }
@@ -869,7 +879,14 @@ export class DurableReducer {
     };
 
     routine.next = wrappedNext;
-    routine.data.exit = effect.enter(routine.next, routine);
+    try {
+      routine.data.exit = effect.enter(routine.next, routine);
+    } catch (e) {
+      // Restore original next if enter() throws synchronously,
+      // so the coroutine isn't left with a stale wrapper.
+      routine.next = originalNext;
+      throw e;
+    }
   }
 }
 

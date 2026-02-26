@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@effectionx/durable>effection': https://pkg.pr.new/thefrontside/effection@1127
+
 importers:
 
   .:

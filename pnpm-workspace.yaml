@@ -5,6 +5,7 @@ packages:
   - "context-api"
   - "converge"
   # deno-deploy excluded - deprecated Deno-only package
+  - "durable"
   - "effect-ts"
   - "fetch"
   - "fs"

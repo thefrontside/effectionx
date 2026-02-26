@@ -17,6 +17,7 @@
     { "path": "chain" },
     { "path": "context-api" },
     { "path": "converge" },
+    { "path": "durable" },
     { "path": "effect-ts" },
     { "path": "fetch" },
     { "path": "fs" },

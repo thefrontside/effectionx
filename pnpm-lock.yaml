@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  effection: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+
 importers:
 
   .:
@@ -18,8 +21,8 @@ importers:
         specifier: ^7
         version: 7.7.1
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
       expect:
         specifier: ^29
         version: 29.7.0
@@ -48,8 +51,8 @@ importers:
         specifier: workspace:*
         version: link:../tinyexec
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
       generatorics:
         specifier: ^1
         version: 1.1.0
@@ -70,8 +73,8 @@ importers:
         version: link:../test-adapter
     devDependencies:
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   chain:
     devDependencies:
@@ -79,8 +82,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   context-api:
     devDependencies:
@@ -88,8 +91,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   converge:
     dependencies:
@@ -101,8 +104,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   durably:
     devDependencies:
@@ -113,8 +116,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: https://pkg.pr.new/thefrontside/effection@1127
-        version: https://pkg.pr.new/thefrontside/effection@1127
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
       expect:
         specifier: ^29
         version: 29.7.0
@@ -128,8 +131,8 @@ importers:
         specifier: ^3
         version: 3.19.14
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   fetch:
     devDependencies:
@@ -137,8 +140,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   fs:
     devDependencies:
@@ -146,8 +149,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   fx:
     devDependencies:
@@ -155,8 +158,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   jsonl-store:
     devDependencies:
@@ -164,8 +167,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   node:
     devDependencies:
@@ -173,8 +176,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   process:
     dependencies:
@@ -201,8 +204,8 @@ importers:
         specifier: ^6
         version: 6.0.6
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   raf:
     devDependencies:
@@ -213,8 +216,8 @@ importers:
         specifier: ^1
         version: 1.2.0
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   scope-eval:
     devDependencies:
@@ -222,8 +225,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   signals:
     dependencies:
@@ -235,8 +238,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   stream-helpers:
     dependencies:
@@ -257,8 +260,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   stream-yaml:
     dependencies:
@@ -273,8 +276,8 @@ importers:
         specifier: workspace:*
         version: link:../stream-helpers
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   task-buffer:
     devDependencies:
@@ -288,14 +291,14 @@ importers:
         specifier: ^8
         version: 8.1.5
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   test-adapter:
     devDependencies:
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   timebox:
     devDependencies:
@@ -303,8 +306,8 @@ importers:
         specifier: workspace:*
         version: link:../bdd
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   tinyexec:
     dependencies:
@@ -313,8 +316,8 @@ importers:
         version: 0.3.2
     devDependencies:
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   vitest:
     dependencies:
@@ -329,8 +332,8 @@ importers:
         specifier: workspace:*
         version: link:../process
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
       vitest:
         specifier: ^3
         version: 3.2.4(@types/node@22.19.7)(yaml@2.8.2)
@@ -369,8 +372,8 @@ importers:
         specifier: workspace:*
         version: link:../stream-helpers
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
   websocket:
     devDependencies:
@@ -381,8 +384,8 @@ importers:
         specifier: ^8
         version: 8.18.1
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
       ws:
         specifier: ^8
         version: 8.19.0
@@ -406,8 +409,8 @@ importers:
         specifier: workspace:*
         version: link:../converge
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm
+        version: file:../effection/build/npm
 
 packages:
 
@@ -935,13 +938,8 @@ packages:
   effect@3.19.14:
     resolution: {integrity: sha512-3vwdq0zlvQOxXzXNKRIPKTqZNMyGCdaFUBfMPqpsyzZDre67kgC1EEHDV4EoQTovJ4w5fmJW756f86kkuz7WFA==}
 
-  effection@4.0.0:
-    resolution: {integrity: sha512-eW2yqhyBdey4k8lkp7hpiev2FSHvJvQqvaIebI3EGikHZvfUWvNy7SmkwOnJa6WcsUtSh7VHUwdjHTbV++8M9w==}
-    engines: {node: '>= 16'}
-
-  effection@https://pkg.pr.new/thefrontside/effection@1127:
-    resolution: {tarball: https://pkg.pr.new/thefrontside/effection@1127}
-    version: 4.1.0-alpha.5-pr
+  effection@file:../effection/build/npm:
+    resolution: {directory: ../effection/build/npm, type: directory}
     engines: {node: '>= 16'}
 
   es-module-lexer@1.7.0:
@@ -1724,9 +1722,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
 
-  effection@4.0.0: {}
-
-  effection@https://pkg.pr.new/thefrontside/effection@1127: {}
+  effection@file:../effection/build/npm: {}
 
   es-module-lexer@1.7.0: {}
 

@@ -1,6 +1,6 @@
-import type { Operation, Task } from "effection";
-import { createScope, global } from "effection";
-import { ReducerContext } from "effection/experimental";
+import type { Operation } from "effection";
+import { scoped, spawn, useScope } from "effection";
+import { api, type Instruction } from "effection/experimental";
 import type { DurableStream } from "./types.ts";
 import { DurableReducer } from "./durable-reducer.ts";
 import { InMemoryDurableStream } from "./stream.ts";
@@ -27,52 +27,62 @@ export interface DurablyOptions {
  * events is provided, stored results are replayed without re-executing
  * effects, enabling mid-workflow resume after restarts.
  *
- * This is analogous to Effection's `run()` but with recording and
- * replay built in. By default, an ephemeral in-memory stream is used.
- * Pass a persistent stream via `options.stream` to enable durable
- * execution that survives restarts.
+ * Returns an `Operation<T>` that must be yielded. The durable scope is
+ * a structured child of the caller's scope, so cancellation propagates
+ * correctly. If you need a haltable task handle, spawn it:
+ * `yield* spawn(() => durably(op, opts))`.
  *
  * @example
  * ```typescript
+ * import { main, sleep } from "effection";
  * import { durably, InMemoryDurableStream } from "@effectionx/durably";
- * import { sleep } from "effection";
  *
  * let stream = new InMemoryDurableStream();
  *
- * await durably(function*() {
- *   yield* sleep(1000);
- *   return "hello";
- * }, { stream });
+ * await main(function*() {
+ *   let result = yield* durably(function*() {
+ *     yield* sleep(1000);
+ *     return "hello";
+ *   }, { stream });
+ * });
  * ```
  *
  * @param operation - the operation to run durably
  * @param options - optional configuration including a DurableStream
- * @returns a task representing the running operation
+ * @returns an operation that yields the result of the inner operation
  */
 export function durably<T>(
   operation: () => Operation<T>,
   options?: DurablyOptions,
-): Task<T> {
-  let stream = options?.stream ?? new InMemoryDurableStream();
-  let reducer = new DurableReducer(stream);
+): Operation<T> {
+  return scoped(function* () {
+    let stream = options?.stream ?? new InMemoryDurableStream();
+    let reducer = new DurableReducer(stream);
+    let apis = api as typeof api & { Reducer: unknown; Scope: unknown };
 
-  // Create a child scope from global and inject our DurableReducer.
-  // All coroutines created within this scope (and its children) will
-  // use our reducer instead of the default one.
-  let [scope] = createScope(global);
-  scope.set(ReducerContext, reducer);
+    let scope = yield* useScope();
 
-  // Install scope lifecycle middleware to record/replay scope events.
-  // This must be done before any operations run so all scope creation/
-  // destruction flows through the durable middleware.
-  //
-  // Root scope lifecycle events (workflow:return + scope:destroyed for
-  // "root") are recorded by the middleware when the root scope's first
-  // child is destroyed — see installScopeMiddleware for details. This
-  // replaces the previous .then() microtask approach which raced
-  // against resource cleanup (useDurableStream closing the stream
-  // before the microtask could append).
-  reducer.installScopeMiddleware(scope);
+    scope.around(apis.Reducer as never, {
+      reduce([instruction]: [Instruction]) {
+        reducer.reduce(instruction);
+      },
+    } as never);
 
-  return scope.run(operation);
+    scope.around(apis.Scope as never, reducer.createScopeMiddleware(scope) as never, {
+      at: "max",
+    });
+
+    // The user's operation must run in a spawned task — not via
+    // generator delegation (yield* operation()). scoped() reuses the
+    // parent coroutine: it swaps routine.scope but doesn't create a
+    // new coroutine. With generator delegation, the parent's reducer
+    // steps through the inner effects in a single reduce cycle, so
+    // api.Reducer middleware on the child scope never intercepts
+    // effect entry. Only a new coroutine (created by spawn) routes
+    // every reduce step — including effect entry — through
+    // api.Reducer on this scope, allowing the DurableReducer to
+    // decide whether to call effect.enter() or replay from the stream.
+    let task = yield* spawn(operation);
+    return yield* task;
+  });
 }

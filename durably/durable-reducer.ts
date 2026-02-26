@@ -2,7 +2,6 @@ import {
   InstructionQueue,
   type Instruction,
   DelimiterContext,
-  api as effection,
 } from "effection/experimental";
 import { Err, Ok, type Result } from "effection";
 import type { Context, Coroutine, Effect, Operation, Scope } from "effection";
@@ -14,8 +13,6 @@ import {
   DivergenceError,
   createLiveOnlySentinel,
 } from "./types.ts";
-
-const api = effection.Scope;
 
 /**
  * Effection ^4 internal effect descriptions that should always execute live
@@ -469,7 +466,7 @@ export class DurableReducer {
     this.scopeIds.delete(scope);
   }
 
-  installScopeMiddleware(runScope: Scope): void {
+  createScopeMiddleware(runScope: Scope) {
     this.registerScope(runScope, "root");
 
     // Record or consume scope:created for the root scope
@@ -488,178 +485,176 @@ export class DurableReducer {
     // prevent double-recording.
     let rootDestroyedEmitted = false;
 
-    runScope.around(
-      api,
-      {
-        create(
-          args: [Scope],
-          next: (parent: Scope) => [Scope, () => Operation<void>],
-        ) {
-          let [parent] = args;
-          let parentScopeId = reducer.scopeIds.get(parent);
+    return {
+      create(
+        args: [Scope],
+        next: (parent: Scope) => [Scope, () => Operation<void>],
+      ) {
+        let [parent] = args;
+        let parentScopeId = reducer.scopeIds.get(parent);
 
-          let [child, destroy] = next(parent);
+        let [child, destroy] = next(parent);
 
-          // Check if the next scope creation in the replay matches
-          let ev = reducer.replayIndex.peekScopeCreation();
-          if (ev) {
-            // Validate parent relationship
-            if (parentScopeId && ev.parentScopeId !== parentScopeId) {
-              throw new DivergenceError(
-                `scope:created with parent ${ev.parentScopeId}`,
-                `scope:created with parent ${parentScopeId}`,
-                -1,
-              );
-            }
-            reducer.registerScope(child, ev.scopeId, parentScopeId);
-            reducer.replayIndex.consumeScopeCreation(ev.scopeId);
-          } else {
-            // Live path: assign ID and record
-            let scopeId = reducer.nextScopeId();
-            reducer.registerScope(child, scopeId, parentScopeId);
-            reducer.stream.append({
-              type: "scope:created",
-              scopeId,
-              parentScopeId,
-            });
+        // Check if the next scope creation in the replay matches
+        let ev = reducer.replayIndex.peekScopeCreation();
+        if (ev) {
+          // Validate parent relationship
+          if (parentScopeId && ev.parentScopeId !== parentScopeId) {
+            throw new DivergenceError(
+              `scope:created with parent ${ev.parentScopeId}`,
+              `scope:created with parent ${parentScopeId}`,
+              -1,
+            );
           }
+          reducer.registerScope(child, ev.scopeId, parentScopeId);
+          reducer.replayIndex.consumeScopeCreation(ev.scopeId);
+        } else {
+          // Live path: assign ID and record
+          let scopeId = reducer.nextScopeId();
+          reducer.registerScope(child, scopeId, parentScopeId);
+          reducer.stream.append({
+            type: "scope:created",
+            scopeId,
+            parentScopeId,
+          });
+        }
 
-          return [child, destroy];
-        },
+        return [child, destroy] as [Scope, () => Operation<void>];
+      },
 
-        *destroy(args: [Scope], next: (scope: Scope) => Operation<void>) {
-          let [scope] = args;
-          let scopeId = reducer.scopeIds.get(scope);
+      *destroy(args: [Scope], next: (scope: Scope) => Operation<void>) {
+        let [scope] = args;
+        let scopeId = reducer.scopeIds.get(scope);
 
-          let outcome: { ok: true } | { ok: false; error: SerializedError } = {
-            ok: true,
+        let outcome: { ok: true } | { ok: false; error: SerializedError } = {
+          ok: true,
+        };
+        try {
+          yield* next(scope);
+        } catch (error) {
+          outcome = {
+            ok: false,
+            error: serializeError(normalizeError(error)),
           };
-          try {
-            yield* next(scope);
-          } catch (error) {
-            outcome = {
-              ok: false,
-              error: serializeError(normalizeError(error)),
-            };
-            throw error;
-          } finally {
-            if (scopeId) {
-              // Emit workflow:return before scope:destroyed
-              reducer.emitWorkflowReturn(scope, scopeId);
+          throw error;
+        } finally {
+          if (scopeId) {
+            // Capture parent ID before unregistering (unregister
+            // deletes the parent mapping).
+            let parentId = reducer.getParentScopeId(scopeId);
 
-              if (reducer.replayIndex.hasScopeDestruction(scopeId)) {
-                reducer.replayIndex.consumeScopeDestruction(scopeId);
-              } else {
-                reducer.stream.append({
-                  type: "scope:destroyed",
-                  scopeId,
-                  result: outcome,
-                });
-              }
-              reducer.unregisterScope(scope);
+            // Emit workflow:return before scope:destroyed
+            reducer.emitWorkflowReturn(scope, scopeId);
 
-              // When a direct child of root is destroyed, the root
-              // scope is shutting down. Record root's lifecycle events
-              // here — synchronously within the scope's structured
-              // teardown — so they happen before any parent resource
-              // cleanup (e.g., useDurableStream closing the stream).
-              //
-              // This replaces the previous .then() microtask approach
-              // which raced against resource cleanup.
-              if (
-                reducer.scopeIds.get(runScope) === "root" &&
-                !rootDestroyedEmitted
-              ) {
-                // Check if this scope's parent is root
-                let parentId = reducer.getParentScopeId(scopeId);
-                if (parentId === "root") {
-                  rootDestroyedEmitted = true;
+            if (reducer.replayIndex.hasScopeDestruction(scopeId)) {
+              reducer.replayIndex.consumeScopeDestruction(scopeId);
+            } else {
+              reducer.stream.append({
+                type: "scope:destroyed",
+                scopeId,
+                result: outcome,
+              });
+            }
+            reducer.unregisterScope(scope);
 
-                  // Determine root's outcome from the child scope's
-                  // delimiter. The `outcome` variable reflects cleanup
-                  // success, not the task's result — a workflow can
-                  // error but its cleanup succeeds. We need to check
-                  // the delimiter to know if the workflow returned or
-                  // errored.
-                  let rootOutcome = reducer.getRootOutcome(scope, outcome);
+            // When a direct child of root is destroyed, the root
+            // scope is shutting down. Record root's lifecycle events
+            // here — synchronously within the scope's structured
+            // teardown — so they happen before any parent resource
+            // cleanup (e.g., useDurableStream closing the stream).
+            //
+            // This replaces the previous .then() microtask approach
+            // which raced against resource cleanup.
+            if (
+              reducer.scopeIds.get(runScope) === "root" &&
+              !rootDestroyedEmitted
+            ) {
+              if (parentId === "root") {
+                rootDestroyedEmitted = true;
 
-                  // Root's workflow:return — only if the workflow
-                  // completed successfully (not on error/halt)
-                  if (rootOutcome.ok) {
-                    reducer.emitWorkflowReturn(scope, "root");
-                  }
+                // Determine root's outcome from the child scope's
+                // delimiter. The `outcome` variable reflects cleanup
+                // success, not the task's result — a workflow can
+                // error but its cleanup succeeds. We need to check
+                // the delimiter to know if the workflow returned or
+                // errored.
+                let rootOutcome = reducer.getRootOutcome(scope, outcome);
 
-                  if (reducer.replayIndex.hasScopeDestruction("root")) {
-                    reducer.replayIndex.consumeScopeDestruction("root");
-                  } else {
-                    reducer.stream.append({
-                      type: "scope:destroyed",
-                      scopeId: "root",
-                      result: rootOutcome,
-                    });
-                  }
+                // Root's workflow:return — only if the workflow
+                // completed successfully (not on error/halt)
+                if (rootOutcome.ok) {
+                  reducer.emitWorkflowReturn(scope, "root");
+                }
+
+                if (reducer.replayIndex.hasScopeDestruction("root")) {
+                  reducer.replayIndex.consumeScopeDestruction("root");
+                } else {
+                  reducer.stream.append({
+                    type: "scope:destroyed",
+                    scopeId: "root",
+                    result: rootOutcome,
+                  });
                 }
               }
             }
           }
-        },
-
-        set(
-          args: [Scope, Context<unknown>, unknown],
-          next: (
-            scope: Scope,
-            context: Context<unknown>,
-            value: unknown,
-          ) => unknown,
-        ) {
-          let [scope, context, value] = args;
-          let result = next(scope, context, value);
-
-          let scopeId = reducer.scopeIds.get(scope);
-          if (scopeId && !isInfrastructureContext(context.name)) {
-            // Only record in live mode (not during replay of this scope)
-            if (
-              !reducer.replayIndex.hasScopeEffects(scopeId) &&
-              !reducer.replayIndex.hasScopeDestruction(scopeId)
-            ) {
-              reducer.stream.append({
-                type: "scope:set",
-                scopeId,
-                contextName: context.name,
-                value: toJson(value),
-              });
-            }
-          }
-
-          return result;
-        },
-
-        delete(
-          args: [Scope, Context<unknown>],
-          next: (scope: Scope, context: Context<unknown>) => boolean,
-        ) {
-          let [scope, context] = args;
-          let result = next(scope, context);
-
-          let scopeId = reducer.scopeIds.get(scope);
-          if (scopeId && !isInfrastructureContext(context.name)) {
-            if (
-              !reducer.replayIndex.hasScopeEffects(scopeId) &&
-              !reducer.replayIndex.hasScopeDestruction(scopeId)
-            ) {
-              reducer.stream.append({
-                type: "scope:delete",
-                scopeId,
-                contextName: context.name,
-              });
-            }
-          }
-
-          return result;
-        },
+        }
       },
-      { at: "max" },
-    );
+
+      set(
+        args: [Scope, Context<unknown>, unknown],
+        next: (
+          scope: Scope,
+          context: Context<unknown>,
+          value: unknown,
+        ) => unknown,
+      ) {
+        let [scope, context, value] = args;
+        let result = next(scope, context, value);
+
+        let scopeId = reducer.scopeIds.get(scope);
+        if (scopeId && !isInfrastructureContext(context.name)) {
+          // Only record in live mode (not during replay of this scope)
+          if (
+            !reducer.replayIndex.hasScopeEffects(scopeId) &&
+            !reducer.replayIndex.hasScopeDestruction(scopeId)
+          ) {
+            reducer.stream.append({
+              type: "scope:set",
+              scopeId,
+              contextName: context.name,
+              value: toJson(value),
+            });
+          }
+        }
+
+        return result;
+      },
+
+      delete(
+        args: [Scope, Context<unknown>],
+        next: (scope: Scope, context: Context<unknown>) => boolean,
+      ) {
+        let [scope, context] = args;
+        let result = next(scope, context);
+
+        let scopeId = reducer.scopeIds.get(scope);
+        if (scopeId && !isInfrastructureContext(context.name)) {
+          if (
+            !reducer.replayIndex.hasScopeEffects(scopeId) &&
+            !reducer.replayIndex.hasScopeDestruction(scopeId)
+          ) {
+            reducer.stream.append({
+              type: "scope:delete",
+              scopeId,
+              contextName: context.name,
+            });
+          }
+        }
+
+        return result;
+      },
+    };
   }
 
   /**

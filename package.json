@@ -27,6 +27,9 @@
     "typescript": "^5"
   },
   "pnpm": {
+    "overrides": {
+      "effection": "file:///Users/tarasmankovski/Repositories/frontside/effection/build/npm"
+    },
     "peerDependencyRules": {
       "ignoreMissing": [],
       "allowAny": []

@@ -317,7 +317,7 @@ describe("durable scope lifecycle", () => {
     it("records scope lifecycle during halt", function* () {
       let stream = new InMemoryDurableStream();
 
-      let task = durably(
+      let task = yield* spawn(() => durably(
         function* () {
           try {
             yield* suspend();
@@ -326,8 +326,9 @@ describe("durable scope lifecycle", () => {
           }
         },
         { stream },
-      );
+      ));
 
+      yield* sleep(0);
       yield* task.halt();
 
       let events = scopeEvents(stream);

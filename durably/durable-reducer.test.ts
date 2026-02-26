@@ -524,7 +524,7 @@ describe("durable run", () => {
       let stream = new InMemoryDurableStream();
       let halted = false;
 
-      let task = durably(
+      let task = yield* spawn(() => durably(
         function* () {
           try {
             yield* suspend();
@@ -533,8 +533,10 @@ describe("durable run", () => {
           }
         },
         { stream },
-      );
+      ));
 
+      // Allow the spawned task to start and enter suspend()
+      yield* sleep(0);
       yield* task.halt();
       expect(halted).toEqual(true);
 
@@ -548,7 +550,7 @@ describe("durable run", () => {
     it("records cleanup effects in finally blocks", function* () {
       let stream = new InMemoryDurableStream();
 
-      let task = durably(
+      let task = yield* spawn(() => durably(
         function* () {
           try {
             yield* suspend();
@@ -557,8 +559,10 @@ describe("durable run", () => {
           }
         },
         { stream },
-      );
+      ));
 
+      // Allow the spawned task to start and enter suspend()
+      yield* sleep(0);
       yield* task.halt();
 
       let events = stream.read().map((e) => e.event);
@@ -666,13 +670,13 @@ describe("durable run", () => {
     it("does not emit workflow:return when halted", function* () {
       let stream = new InMemoryDurableStream();
 
-      let task = durably(
+      let task = yield* spawn(() => durably(
         function* () {
           yield* suspend();
           return "unreachable";
         },
         { stream },
-      );
+      ));
 
       yield* task.halt();
 

@@ -166,9 +166,10 @@ export function createTestAdapter(
       }
       scope = withResolvers<Result<Scope>>();
 
+      let [rootScope] = createScope();
       let parent = adapter.parent
         ? yield* adapter.parent["@@init@@"]()
-        : Ok(createScope()[0]);
+        : Ok(rootScope);
 
       if (!parent.ok) {
         scope.resolve(parent);

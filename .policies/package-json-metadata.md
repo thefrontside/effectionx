@@ -4,13 +4,14 @@ This document defines the strict policy for required metadata fields in package.
 
 ## Core Principle
 
-**Every published package must include a `description` field in package.json to enable npm search and AI agent discovery.**
+**Every published package must include `description` and `keywords` fields in package.json to enable npm search, AI agent discovery, and website categorization.**
 
 ## The Rule
 
 | Field | Requirement | Format |
 |-------|-------------|--------|
 | `description` | Required for all published packages | Single sentence, under 120 characters |
+| `keywords` | Required for all published packages | Array of category keywords |
 
 ### Description Guidelines
 
@@ -21,38 +22,76 @@ This document defines the strict policy for required metadata fields in package.
 - No trailing period
 - Under 120 characters
 
+### Keywords Guidelines
+
+Keywords are used to categorize packages on the website and in llms.txt. Each package must include at least one keyword from the approved categories:
+
+| Keyword | Category | Use for packages that... |
+|---------|----------|--------------------------|
+| `testing` | Testing | provide test utilities, assertions, or test framework adapters |
+| `io` | I/O & Network | handle file systems, HTTP, WebSockets, or network operations |
+| `process` | Processes | spawn or manage child processes |
+| `streams` | Streams | provide stream utilities, transformations, or adapters |
+| `concurrency` | Concurrency | manage concurrent operations, task buffers, or timeouts |
+| `reactivity` | Reactivity | provide reactive primitives like signals or computed values |
+| `interop` | Interop | bridge Effection with other libraries or paradigms |
+| `platform` | Platform | provide browser or runtime-specific APIs |
+
+- Include all applicable keywords (packages can appear in multiple categories)
+- Order keywords by relevance (most relevant first)
+- Use only the approved keywords listed above
+
 ## Examples
 
-### Compliant: Concise action-oriented descriptions
+### Compliant: Complete metadata with description and keywords
 
 ```json
 {
   "name": "@effectionx/process",
-  "description": "Spawn and manage child processes with structured concurrency"
+  "description": "Spawn and manage child processes with structured concurrency",
+  "keywords": ["process"]
 }
 ```
 
 ```json
 {
   "name": "@effectionx/websocket",
-  "description": "WebSocket client with structured concurrency lifecycle management"
+  "description": "WebSocket client with stream-based message handling and automatic cleanup",
+  "keywords": ["io"]
 }
 ```
 
 ```json
 {
-  "name": "@effectionx/signals",
-  "description": "Reactive signals and computed values for Effection operations"
+  "name": "@effectionx/node",
+  "description": "Node.js stream and event emitter adapters for Effection",
+  "keywords": ["io", "streams"]
 }
 ```
 
-### Non-Compliant: Missing description
+```json
+{
+  "name": "@effectionx/converge",
+  "description": "Poll and wait for conditions to be met with automatic retry and timeout",
+  "keywords": ["testing", "concurrency"]
+}
+```
+
+### Non-Compliant: Missing description or keywords
 
 ```json
 {
   "name": "@effectionx/process",
   "version": "1.0.0"
-  // BAD: no description field
+  // BAD: no description or keywords fields
+}
+```
+
+```json
+{
+  "name": "@effectionx/process",
+  "description": "Spawn and manage child processes with structured concurrency"
+  // BAD: missing keywords field
 }
 ```
 
@@ -74,6 +113,17 @@ This document defines the strict policy for required metadata fields in package.
 }
 ```
 
+### Non-Compliant: Invalid keywords
+
+```json
+{
+  "name": "@effectionx/process",
+  "description": "Spawn and manage child processes with structured concurrency",
+  "keywords": ["child-process", "spawn"]
+  // BAD: uses custom keywords instead of approved categories
+}
+```
+
 ## Verification Checklist
 
 Before marking a review complete, verify:
@@ -83,17 +133,22 @@ Before marking a review complete, verify:
 - [ ] Description does not contain Markdown formatting
 - [ ] Description does not have a trailing period
 - [ ] Description starts with an action verb or noun (not "This package..." or "A library for...")
+- [ ] `keywords` field is present in package.json
+- [ ] Keywords array contains at least one approved category keyword
+- [ ] All keywords are from the approved list (testing, io, process, streams, concurrency, reactivity, interop, platform)
 
 ## Common Mistakes
 
 | Mistake | Fix |
 |---------|-----|
 | Missing description entirely | Add a concise description field |
+| Missing keywords entirely | Add keywords array with at least one category |
 | Starting with "This package..." | Start with what it does: "Spawn processes..." |
 | Starting with "A library for..." | Start with the action: "Reactive signals..." |
 | Including markdown (`backticks`, **bold**) | Use plain text only |
 | Ending with a period | Remove trailing punctuation |
 | Over 120 characters | Shorten to essential functionality |
+| Using custom/arbitrary keywords | Use only approved category keywords |
 
 ## Related Policies
 

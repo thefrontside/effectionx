@@ -1,9 +1,11 @@
 # @effectionx/bdd
 
-A BDD (Behavior-Driven Development) testing harness for Deno that integrates
+A BDD (Behavior-Driven Development) testing harness that integrates
 seamlessly with [Effection](https://github.com/thefrontside/effection)
 operations. This package provides a familiar `describe`/`it`/`beforeEach` API
 that works natively with Effection's generator-based operations.
+
+Supports both **Node.js** and **Deno** runtimes.
 
 ## Features
 
@@ -14,10 +16,18 @@ that works natively with Effection's generator-based operations.
 - 🧹 **Automatic Cleanup**: Proper resource management and cleanup for Effection
   operations
 - 🎯 **Skip and Only**: Full support for `.skip` and `.only` modifiers
-- 📦 **Zero Configuration**: Works out of the box with Deno's built-in testing
+- 📦 **Zero Configuration**: Works out of the box with your runtime's testing
   framework
 
 ## Installation
+
+### Node.js (npm)
+
+```bash
+npm install @effectionx/bdd
+```
+
+### Deno (JSR)
 
 Add to your `deno.json` imports:
 
@@ -25,6 +35,27 @@ Add to your `deno.json` imports:
 {
   "imports": {
     "@effectionx/bdd": "jsr:@effectionx/bdd"
+  }
+}
+```
+
+## Entry Points
+
+This package provides multiple entry points for different runtimes:
+
+- `@effectionx/bdd` - Auto-detects runtime (Node.js or Deno)
+- `@effectionx/bdd/node` - Explicit Node.js entry (uses `node:test`)
+- `@effectionx/bdd/deno` - Explicit Deno entry (uses `@std/testing/bdd`)
+
+### Deno via npm
+
+If you're using the npm package in Deno (not JSR), you'll need to add `@std/testing` to your import map:
+
+```json
+{
+  "imports": {
+    "@std/testing": "jsr:@std/testing@^1",
+    "@effectionx/bdd": "npm:@effectionx/bdd"
   }
 }
 ```

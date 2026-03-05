@@ -6,8 +6,8 @@ import type {
   WithResolvers,
 } from "effection";
 import {
-  createScope,
   Ok,
+  createScope,
   run,
   suspend,
   useScope,
@@ -166,9 +166,13 @@ export function createTestAdapter(
       }
       scope = withResolvers<Result<Scope>>();
 
-      let parent = adapter.parent
-        ? yield* adapter.parent["@@init@@"]()
-        : Ok(createScope()[0]);
+      let parent: Result<Scope>;
+      if (adapter.parent) {
+        parent = yield* adapter.parent["@@init@@"]();
+      } else {
+        let [rootScope] = createScope();
+        parent = Ok(rootScope);
+      }
 
       if (!parent.ok) {
         scope.resolve(parent);

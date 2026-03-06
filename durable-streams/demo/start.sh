@@ -4,18 +4,17 @@
 #
 # Starts a 3-pane tmux session:
 #
-#   ┌────────────────────────────────────┐
-#   │  Observer (server + journal tail)  │  40%
-#   │  (demo:observe)                    │
-#   ├───────────────────┬────────────────┤
-#   │  Cook (focused)   │  Control       │  60%
-#   │  (demo:cook)      │  (kill cmd)    │
-#   └───────────────────┴────────────────┘
+#   ┌──────────────────┬─────────────────────┐
+#   │                  │  Observer            │  80%
+#   │  Cook (focused)  │  (server + journal)  │
+#   │                  ├─────────────────────┤
+#   │                  │  Control (kill cmd)  │  20%
+#   └──────────────────┴─────────────────────┘
 #
 # Usage:
 #   ./demo/start.sh [stream-id]   # launch with optional stream ID
 #
-# The cook pane (bottom-left) is focused with the command pre-typed.
+# The cook pane (left) is focused with the command pre-typed.
 # The control pane (bottom-right) has the kill command pre-typed.
 # Press Enter in each when ready.
 
@@ -50,45 +49,45 @@ tmux kill-session -t "$SESSION" 2>/dev/null || true
 # Build the layout
 # ------------------------------------------------------------------
 
-# Pane 0 (top): Observer (server + journal tailer)
+# Pane 0 (left): Cook — full height
 tmux new-session -d -s "$SESSION" -c "$DIR" -x 200 -y 50
 
 # Set stream ID as a tmux environment variable
 tmux set-environment -t "$SESSION" DURABLE_STREAM_ID "$STREAM_ID"
 
-# Split horizontally — bottom gets 60% (cook + control), top gets 40% (observer)
-tmux split-window -v -t "$SESSION" -c "$DIR" -p 60
+# Split vertically — right side gets 55% width (observer + control)
+tmux split-window -h -t "$SESSION" -c "$DIR" -p 55
 
-# Split the bottom pane vertically — right side becomes control
-tmux split-window -h -t "${SESSION}:0.1" -c "$DIR" -p 40
+# Split the right pane horizontally — bottom 20% becomes control
+tmux split-window -v -t "${SESSION}:0.1" -c "$DIR" -p 20
 
 # After all splits, pane indices are:
-#   0 = top          (Observer)
-#   1 = bottom-left  (Cook)
+#   0 = left         (Cook)
+#   1 = top-right    (Observer)
 #   2 = bottom-right (Control)
 
 # ------------------------------------------------------------------
 # Start processes
 # ------------------------------------------------------------------
 
-# Pane 0: Start the observer (server + tailer)
-tmux send-keys -t "${SESSION}:0.0" "$NODE demo/observe.ts" Enter
+# Pane 1: Start the observer (server + tailer)
+tmux send-keys -t "${SESSION}:0.1" "$NODE demo/observe.ts" Enter
 
 # Give the server a moment to bind its port
 sleep 2
 
-# Pane 1: Pre-type the cook command (presenter hits Enter when ready)
-tmux send-keys -t "${SESSION}:0.1" "$NODE demo/cook.ts"
+# Pane 0: Pre-type the cook command (presenter hits Enter when ready)
+tmux send-keys -t "${SESSION}:0.0" "$NODE demo/cook.ts"
 
 # Pane 2: Pre-type a pane-scoped kill command for the cook pane process group
-tmux send-keys -t "${SESSION}:0.2" "bash -lc 'PGID=\$(ps -o pgid= -p \$(tmux display-message -p -t \"${SESSION}:0.1\" \"#{pane_pid}\") | tr -d \" \" ); kill -9 -\$PGID'"
+tmux send-keys -t "${SESSION}:0.2" "bash -lc 'PGID=\$(ps -o pgid= -p \$(tmux display-message -p -t \"${SESSION}:0.0\" \"#{pane_pid}\") | tr -d \" \" ); kill -9 -\$PGID'"
 
 # ------------------------------------------------------------------
 # Focus & attach
 # ------------------------------------------------------------------
 
-# Focus the cook pane (bottom-left)
-tmux select-pane -t "${SESSION}:0.1"
+# Focus the cook pane (left)
+tmux select-pane -t "${SESSION}:0.0"
 
 # Attach (or switch if already inside tmux)
 if [ -n "${TMUX:-}" ]; then

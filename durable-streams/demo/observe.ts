@@ -12,7 +12,7 @@
  *   #22 close  root                               ok  "Dinner is served!"
  */
 
-import { stream as fetchStream } from "@durable-streams/client";
+import { FetchError, stream as fetchStream } from "@durable-streams/client";
 import { DurableStreamTestServer } from "@durable-streams/server";
 import { call, createChannel, each, main, resource, spawn } from "effection";
 import type { Operation, Stream } from "effection";
@@ -74,11 +74,9 @@ function useDurableStreamTail(opts: TailOptions): Stream<DurableEvent, void> {
         url: opts.url,
         offset: opts.offset ?? "-1",
         live: true,
-        onError: (error) => {
-          if (
-            "code" in error &&
-            (error as { code: string }).code === "NOT_FOUND"
-          ) {
+        onError: async (error) => {
+          if (error instanceof FetchError && error.status === 404) {
+            await new Promise((r) => setTimeout(r, 500));
             return {};
           }
           return undefined;

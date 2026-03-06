@@ -3,7 +3,8 @@
  *
  * Usage: node --experimental-strip-types demo/tail.ts
  *
- * Polls the Durable Streams server and prints new events in a compact format:
+ * Connects to a Durable Streams server via SSE (live mode) and prints
+ * new events in a compact format as they arrive:
  *   #<n> <yield|close> <coroutineId> <type>(<name>) <status> <value?>
  *
  * Examples:
@@ -11,9 +12,14 @@
  *   #5  yield  root.0  sleep(sleep)       ok
  *   #18 close  root.1.1  cancelled
  *   #22 close  root  ok  "Dinner is served!"
+ *
+ * Uses Effection's main() for lifecycle management — Ctrl+C triggers
+ * clean shutdown via structured concurrency teardown.
  */
 
 import { stream as fetchStream } from "@durable-streams/client";
+import { call, createChannel, each, main, resource, spawn } from "effection";
+import type { Stream } from "effection";
 import type { DurableEvent } from "../mod.ts";
 
 // ---------------------------------------------------------------------------
@@ -22,14 +28,66 @@ import type { DurableEvent } from "../mod.ts";
 
 const SERVER_URL = process.env.DURABLE_SERVER_URL ?? "http://localhost:4437";
 const STREAM_ID = process.env.DURABLE_STREAM_ID ?? "dinner-demo";
-const POLL_MS = 500;
-
 const streamUrl = `${SERVER_URL}/${STREAM_ID}`;
 
-function isNotFoundError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  const upper = message.toUpperCase();
-  return upper.includes("NOT_FOUND") || upper.includes("404");
+// ---------------------------------------------------------------------------
+// Resource: live stream tail as an Effection Subscription
+// ---------------------------------------------------------------------------
+
+interface TailOptions {
+  /** Full URL of the durable stream to tail. */
+  url: string;
+  /** Starting offset. Defaults to "-1" (beginning of stream). */
+  offset?: string;
+}
+
+/**
+ * Effection resource that connects to a durable stream in live mode
+ * (SSE/long-poll) and produces a Subscription of DurableEvent values.
+ *
+ * - Retries automatically on NOT_FOUND (stream not yet created)
+ * - Cancels the SSE connection on scope teardown
+ * - Bridges the async ReadableStream into Effection's channel/subscription
+ */
+function useDurableStreamTail(opts: TailOptions): Stream<DurableEvent, void> {
+  return resource(function* (provide) {
+    const channel = createChannel<DurableEvent>();
+
+    const res = yield* call(() =>
+      fetchStream<DurableEvent>({
+        url: opts.url,
+        offset: opts.offset ?? "-1",
+        live: true,
+        onError: (error) => {
+          // Retry on NOT_FOUND — stream may not exist yet
+          if (
+            "code" in error &&
+            (error as { code: string }).code === "NOT_FOUND"
+          ) {
+            return {}; // retry with backoff
+          }
+          // Propagate all other errors
+          return undefined;
+        },
+      }),
+    );
+
+    yield* spawn(function* () {
+      const reader = res.jsonStream().getReader();
+      try {
+        while (true) {
+          const { done, value } = yield* call(() => reader.read());
+          if (done) break;
+          yield* channel.send(value);
+        }
+      } finally {
+        reader.releaseLock();
+        res.cancel();
+      }
+    });
+
+    yield* provide(yield* channel);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -61,66 +119,21 @@ function formatEvent(n: number, event: DurableEvent): string {
 }
 
 // ---------------------------------------------------------------------------
-// Main loop
+// Entry point
 // ---------------------------------------------------------------------------
 
-console.log(`\n  Journal Tailer`);
-console.log(`  ══════════════`);
-console.log(`  Stream: ${streamUrl}`);
-console.log(`  Polling every ${POLL_MS}ms\n`);
+await main(function* () {
+  console.log(`\n  Journal Tailer`);
+  console.log(`  ══════════════`);
+  console.log(`  Stream: ${streamUrl}`);
+  console.log(`  Mode: SSE/live\n`);
 
-let eventCount = 0;
-let lastOffset = "-1";
-let streamReady = false;
+  console.log("  Watching for events...\n");
 
-// Wait for the stream to exist (the server might not have it yet)
-while (!streamReady) {
-  try {
-    const res = await fetchStream({
-      url: streamUrl,
-      offset: "-1",
-      live: false,
-    });
-    await res.json(); // consume body
-    streamReady = true;
-  } catch (error) {
-    if (!isNotFoundError(error)) {
-      throw error;
-    }
-
-    // Stream doesn't exist yet — wait and retry
-    await new Promise((r) => setTimeout(r, POLL_MS));
+  let eventCount = 0;
+  for (const event of yield* each(useDurableStreamTail({ url: streamUrl }))) {
+    eventCount++;
+    console.log(formatEvent(eventCount, event));
+    yield* each.next();
   }
-}
-
-console.log("  Watching for events...\n");
-
-// Poll loop
-while (true) {
-  try {
-    const res = await fetchStream({
-      url: streamUrl,
-      offset: lastOffset,
-      live: false,
-    });
-
-    const events = (await res.json()) as DurableEvent[];
-
-    for (const event of events) {
-      eventCount++;
-      console.log(formatEvent(eventCount, event));
-    }
-
-    if (res.offset) {
-      lastOffset = res.offset;
-    }
-  } catch (error) {
-    if (!isNotFoundError(error)) {
-      throw error;
-    }
-
-    // Stream disappeared — retry on next poll
-  }
-
-  await new Promise((r) => setTimeout(r, POLL_MS));
-}
+});

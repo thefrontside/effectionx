@@ -26,10 +26,10 @@ import {
   useScope,
 } from "effection";
 import type { Operation, Task } from "effection";
-import { DurableCtx, type DurableContext } from "./context.ts";
+import { type DurableContext, DurableCtx } from "./context.ts";
 import { ephemeral } from "./ephemeral.ts";
 import { deserializeError, serializeError } from "./serialize.ts";
-import type { Close, Json, Workflow } from "./types.ts";
+import type { Close, Json, Workflow, WorkflowValue } from "./types.ts";
 
 // ---------------------------------------------------------------------------
 // Internal: wrap a child workflow with DurableContext + Close emission
@@ -50,7 +50,7 @@ import type { Close, Json, Workflow } from "./types.ts";
  * IMPORTANT: This must be called inside a spawn() so it gets its own scope.
  * The caller is responsible for spawn().
  */
-function* runDurableChild<T extends Json | undefined>(
+function* runDurableChild<T extends WorkflowValue>(
   childWorkflow: () => Workflow<T>,
   childId: string,
   parentCtx: DurableContext,
@@ -160,7 +160,7 @@ function* runDurableChild<T extends Json | undefined>(
  * (useScope, spawn) are durable-safe scope setup that doesn't need
  * journaling and re-runs correctly on replay.
  */
-export function durableSpawn<T extends Json | undefined>(
+export function durableSpawn<T extends WorkflowValue>(
   childWorkflow: () => Workflow<T>,
 ): Workflow<Task<T>> {
   return ephemeral(
@@ -196,7 +196,7 @@ export function durableSpawn<T extends Json | undefined>(
  *
  * See spec §7, §11.5.
  */
-export function durableAll<T extends Json | undefined>(
+export function durableAll<T extends WorkflowValue>(
   workflows: (() => Workflow<T>)[],
 ): Workflow<T[]> {
   return ephemeral(
@@ -247,7 +247,7 @@ export function durableAll<T extends Json | undefined>(
  *
  * See spec §10.
  */
-export function durableRace<T extends Json | undefined>(
+export function durableRace<T extends WorkflowValue>(
   workflows: (() => Workflow<T>)[],
 ): Workflow<T> {
   return ephemeral(

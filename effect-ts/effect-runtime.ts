@@ -1,4 +1,4 @@
-import { type Effect, Exit, Layer, ManagedRuntime } from "effect";
+import { type Effect, type Exit, Layer, ManagedRuntime } from "effect";
 import { type Operation, action, resource, until } from "effection";
 
 /**
@@ -160,14 +160,14 @@ export function makeEffectRuntime<R = never>(
     const runExit: EffectRuntime<R>["runExit"] = <A, E>(
       effect: Effect.Effect<A, E, R>,
     ) => {
-      return action<Exit.Exit<A, E>>((resolve, _reject) => {
+      return action<Exit.Exit<A, E>>((resolve, reject) => {
         const { promise, abort, signal } = startManaged((signal) =>
           managedRuntime.runPromiseExit(effect, { signal }),
         );
 
         promise.then(resolve, (error) => {
           if (!signal.aborted) {
-            resolve(Exit.die(error) as Exit.Exit<A, E>);
+            reject(error);
           }
         });
         return abort;

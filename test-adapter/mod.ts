@@ -167,10 +167,12 @@ export function createTestAdapter(
       scope = withResolvers<Result<Scope>>();
 
       let parent: Result<Scope>;
+      let destroyRoot: (() => Future<void>) | undefined = undefined;
       if (adapter.parent) {
         parent = yield* adapter.parent["@@init@@"]();
       } else {
-        let [rootScope] = createScope();
+        let [rootScope, destroyFn] = createScope();
+        destroyRoot = destroyFn;
         parent = Ok(rootScope);
       }
 
@@ -193,7 +195,12 @@ export function createTestAdapter(
         }
       });
 
-      destroy = task.halt;
+      destroy = function* () {
+        yield* task.halt();
+        if (destroyRoot) {
+          yield* destroyRoot();
+        }
+      };
 
       return yield* scope.operation;
     },

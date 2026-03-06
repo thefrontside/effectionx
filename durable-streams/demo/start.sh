@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+#
+# Durable Dinner — tmux demo launcher
+#
+# Starts a 4-pane tmux session:
+#
+#   ┌──────────────────┬──────────────────┐
+#   │  Server           │  Journal Tailer  │  30%
+#   │  (demo:server)    │  (demo:tail)     │
+#   ├──────────────────┬──────────────────┤
+#   │  Cook (focused)   │  Control         │  70%
+#   │  (demo:cook)      │  (kill command)  │
+#   └──────────────────┴──────────────────┘
+#
+# Usage:
+#   ./demo/start.sh [stream-id]   # launch with optional stream ID
+#
+# The cook pane (bottom-left) is focused with the command pre-typed.
+# The control pane (bottom-right) has the kill command pre-typed.
+# Press Enter in each when ready.
+
+set -euo pipefail
+
+SESSION="durable-dinner"
+DIR="$(cd "$(dirname "$0")/.." && pwd)"
+STREAM_ID="${1:-dinner-demo}"
+NODE="node --experimental-strip-types"
+
+# Export so all panes inherit it (cook.ts and tail.ts read from env)
+export DURABLE_STREAM_ID="$STREAM_ID"
+
+# ------------------------------------------------------------------
+# Preflight
+# ------------------------------------------------------------------
+
+if ! command -v tmux &>/dev/null; then
+  echo "Error: tmux is not installed. Install it with: brew install tmux" >&2
+  exit 1
+fi
+
+if ! command -v node &>/dev/null; then
+  echo "Error: node is not installed. See https://nodejs.org" >&2
+  exit 1
+fi
+
+# Kill any leftover session (idempotent)
+tmux kill-session -t "$SESSION" 2>/dev/null || true
+
+# ------------------------------------------------------------------
+# Build the layout
+# ------------------------------------------------------------------
+
+# Pane 0 (top-left): Durable Streams server
+tmux new-session -d -s "$SESSION" -c "$DIR" -x 200 -y 50
+
+# Set stream ID as a tmux environment variable — all new panes/shells
+# in this session inherit it automatically. Avoids inline quoting issues.
+tmux set-environment -t "$SESSION" DURABLE_STREAM_ID "$STREAM_ID"
+
+# Split horizontally — bottom gets 70%, top gets 40%
+tmux split-window -v -t "$SESSION" -c "$DIR" -p 60
+
+# Split the top pane vertically — right side becomes tailer
+tmux split-window -h -t "${SESSION}:0.0" -c "$DIR" -p 50
+
+# Split the bottom pane vertically — right side becomes control
+tmux split-window -h -t "${SESSION}:0.2" -c "$DIR" -p 50
+
+# After all splits, pane indices are:
+#   0 = top-left     (Server)
+#   1 = top-right    (Tailer)
+#   2 = bottom-left  (Cook)
+#   3 = bottom-right (Control)
+
+# ------------------------------------------------------------------
+# Start processes
+# ------------------------------------------------------------------
+
+# Pane 0: Start the server
+tmux send-keys -t "${SESSION}:0.0" "$NODE demo/server.ts" Enter
+
+# Give the server a moment to bind its port
+sleep 2
+
+# Pane 1: Start the journal tailer
+tmux send-keys -t "${SESSION}:0.1" "$NODE demo/tail.ts" Enter
+
+# Pane 2: Pre-type the cook command (presenter hits Enter when ready)
+tmux send-keys -t "${SESSION}:0.2" "$NODE demo/cook.ts"
+
+# Pane 3: Pre-type the kill command
+tmux send-keys -t "${SESSION}:0.3" "pkill -9 -f 'demo/cook.ts'"
+
+# ------------------------------------------------------------------
+# Focus & attach
+# ------------------------------------------------------------------
+
+# Focus the cook pane (bottom-left)
+tmux select-pane -t "${SESSION}:0.2"
+
+# Attach (or switch if already inside tmux)
+if [ -n "${TMUX:-}" ]; then
+  tmux switch-client -t "$SESSION"
+else
+  tmux attach-session -t "$SESSION"
+fi

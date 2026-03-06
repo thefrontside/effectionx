@@ -33,8 +33,8 @@ export class DivergenceError extends Error {
     super(
       message ??
         `Divergence at ${coroutineId}[${position}]: ` +
-        `expected ${expected.type}("${expected.name}"), ` +
-        `got ${actual.type}("${actual.name}")`,
+          `expected ${expected.type}("${expected.name}"), ` +
+          `got ${actual.type}("${actual.name}")`,
     );
     this.coroutineId = coroutineId;
     this.position = position;
@@ -61,7 +61,7 @@ export class EarlyReturnDivergenceError extends Error {
   ) {
     super(
       `Divergence: generator ${coroutineId} returned after ${consumedCount} yields, ` +
-      `but journal has ${totalCount} yield entries`,
+        `but journal has ${totalCount} yield entries`,
     );
     this.coroutineId = coroutineId;
     this.consumedCount = consumedCount;
@@ -80,13 +80,9 @@ export class ContinuePastCloseDivergenceError extends Error {
   coroutineId: CoroutineId;
   yieldCount: number;
 
-  constructor(
-    coroutineId: CoroutineId,
-    yieldCount: number,
-  ) {
+  constructor(coroutineId: CoroutineId, yieldCount: number) {
     super(
-      `Divergence: journal shows ${coroutineId} closed after ${yieldCount} yields, ` +
-      `but generator continues to yield effects`,
+      `Divergence: journal shows ${coroutineId} closed after ${yieldCount} yields, but generator continues to yield effects`,
     );
     this.coroutineId = coroutineId;
     this.yieldCount = yieldCount;
@@ -119,7 +115,10 @@ export class StaleInputError extends Error {
     /** Human-readable description of what changed. */
     message: string,
     /** The Yield event that was detected as stale. */
-    event?: { coroutineId: string; description: { type: string; name: string } },
+    event?: {
+      coroutineId: string;
+      description: { type: string; name: string };
+    },
   ) {
     super(message);
     this.event = event;

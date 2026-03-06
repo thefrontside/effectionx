@@ -139,8 +139,7 @@ function* _durableEachOp<T extends Json>(
   // would clobber the outer iteration's state.
   if (activeState !== null) {
     throw new Error(
-      `durableEach("${name}"): cannot nest durableEach calls in the same ` +
-        `scope. Use a child scope (e.g., via spawn) for inner iterations.`,
+      `durableEach("${name}"): cannot nest durableEach calls in the same scope. Use a child scope (e.g., via spawn) for inner iterations.`,
     );
   }
 
@@ -148,7 +147,9 @@ function* _durableEachOp<T extends Json>(
   // the for...of loop breaks or the scope is cancelled without an
   // active effect. Safe to call alongside effect-level teardown
   // because DurableSource.close() must be idempotent.
-  yield* ensure(() => { source.close?.(); });
+  yield* ensure(() => {
+    source.close?.();
+  });
 
   // Durable fetch of first item — journaled as a Yield event.
   // ensure() is already registered, so cancellation here is safe.
@@ -177,10 +178,7 @@ function* _durableEachOp<T extends Json>(
           // Advance guard: detect missing yield* durableEach.next()
           if (!state.advanced) {
             throw new Error(
-              `durableEach("${name}"): yield* durableEach.next() must be ` +
-                `called before the next iteration. Each loop body must end ` +
-                `with yield* durableEach.next() to checkpoint progress and ` +
-                `fetch the next item.`,
+              `durableEach("${name}"): yield* durableEach.next() must be called before the next iteration. Each loop body must end with yield* durableEach.next() to checkpoint progress and fetch the next item.`,
             );
           }
           state.advanced = false;

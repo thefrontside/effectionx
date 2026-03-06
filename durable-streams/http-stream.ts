@@ -13,13 +13,7 @@
  * The stream is created as an Effection resource via useHttpDurableStream().
  */
 
-import {
-  call,
-  createQueue,
-  resource,
-  spawn,
-  withResolvers,
-} from "effection";
+import { call, createQueue, resource, spawn, withResolvers } from "effection";
 import type { Operation, Queue } from "effection";
 import type { DurableStream } from "./stream.ts";
 import type { DurableEvent } from "./types.ts";
@@ -67,7 +61,7 @@ export interface HttpDurableStreamHandle extends DurableStream {
 interface AppendRequest {
   event: DurableEvent;
   seq: number;
-  resolve: (value: void) => void;
+  resolve: (value: undefined) => void;
   reject: (error: Error) => void;
 }
 
@@ -111,7 +105,10 @@ export function useHttpDurableStream(
     let lastOffset: string | undefined;
 
     // ── Append worker queue ──
-    const queue: Queue<AppendRequest, void> = createQueue<AppendRequest, void>();
+    const queue: Queue<AppendRequest, void> = createQueue<
+      AppendRequest,
+      void
+    >();
 
     // ── Spawn the serial append worker ──
     // Processes one append at a time in FIFO order. Each HTTP POST

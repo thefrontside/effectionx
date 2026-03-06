@@ -131,8 +131,10 @@ export function* useFileContentGuard(): Operation<void> {
       }
 
       // Read the recorded hash from the result value
-      const resultValue = event.result.status === "ok" ? event.result.value : undefined;
-      const storedHash = (resultValue as Record<string, unknown> | undefined)?.contentHash;
+      const resultValue =
+        event.result.status === "ok" ? event.result.value : undefined;
+      const storedHash = (resultValue as Record<string, unknown> | undefined)
+        ?.contentHash;
       if (typeof storedHash !== "string") {
         // No content hash in result — not a file-backed effect
         return next(event);

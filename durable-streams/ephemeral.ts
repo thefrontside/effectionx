@@ -31,7 +31,10 @@ import type {
 } from "./types.ts";
 
 /** Effection void-ok result, used for no-op teardowns. */
-const VOID_OK: EffectionResult<void> = { ok: true, value: undefined as void };
+const VOID_OK: EffectionResult<void> = {
+  ok: true,
+  value: undefined as undefined,
+};
 
 /**
  * Create a DurableEffect that runs an Operation transparently.
@@ -45,9 +48,7 @@ const VOID_OK: EffectionResult<void> = { ok: true, value: undefined as void };
  * The effect is invisible to the durable execution protocol — it exists
  * solely to satisfy the Workflow<T> type constraint.
  */
-function createEphemeralEffect<T>(
-  operation: Operation<T>,
-): DurableEffect<T> {
+function createEphemeralEffect<T>(operation: Operation<T>): DurableEffect<T> {
   return {
     description: "ephemeral",
     effectDescription: { type: "ephemeral", name: "ephemeral" },

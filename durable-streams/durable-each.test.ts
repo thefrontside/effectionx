@@ -24,7 +24,9 @@ import {
 // ---------------------------------------------------------------------------
 
 /** Create a DurableSource from an array of items. */
-function arraySource<T extends Json>(items: T[]): DurableSource<T> & { closed: boolean } {
+function arraySource<T extends Json>(
+  items: T[],
+): DurableSource<T> & { closed: boolean } {
   let index = 0;
   const src = {
     closed: false,
@@ -93,16 +95,28 @@ describe("durableEach", () => {
 
     // Check result values
     if (yieldEvents[0]!.type === "yield") {
-      expect(yieldEvents[0]!.result).toEqual({ status: "ok", value: { value: "a" } });
+      expect(yieldEvents[0]!.result).toEqual({
+        status: "ok",
+        value: { value: "a" },
+      });
     }
     if (yieldEvents[1]!.type === "yield") {
-      expect(yieldEvents[1]!.result).toEqual({ status: "ok", value: { value: "b" } });
+      expect(yieldEvents[1]!.result).toEqual({
+        status: "ok",
+        value: { value: "b" },
+      });
     }
     if (yieldEvents[2]!.type === "yield") {
-      expect(yieldEvents[2]!.result).toEqual({ status: "ok", value: { value: "c" } });
+      expect(yieldEvents[2]!.result).toEqual({
+        status: "ok",
+        value: { value: "c" },
+      });
     }
     if (yieldEvents[3]!.type === "yield") {
-      expect(yieldEvents[3]!.result).toEqual({ status: "ok", value: { done: true } });
+      expect(yieldEvents[3]!.result).toEqual({
+        status: "ok",
+        value: { done: true },
+      });
     }
 
     // Root Close event
@@ -139,7 +153,10 @@ describe("durableEach", () => {
     const yieldEvents = events.filter((e) => e.type === "yield");
     expect(yieldEvents.length).toBe(1);
     if (yieldEvents[0]!.type === "yield") {
-      expect(yieldEvents[0]!.result).toEqual({ status: "ok", value: { done: true } });
+      expect(yieldEvents[0]!.result).toEqual({
+        status: "ok",
+        value: { done: true },
+      });
     }
   });
 
@@ -266,7 +283,10 @@ describe("durableEach", () => {
     yield* durableRun(
       function* () {
         for (const msg of yield* durableEach("queue", source)) {
-          yield* durableCall(`process-${msg}`, tracker.fn(`process-${msg}`, null));
+          yield* durableCall(
+            `process-${msg}`,
+            tracker.fn(`process-${msg}`, null),
+          );
           yield* durableEach.next();
         }
       },
@@ -285,17 +305,26 @@ describe("durableEach", () => {
       expect(nonClose[0]!.description).toEqual({ type: "each", name: "queue" });
     }
     if (nonClose[1]!.type === "yield") {
-      expect(nonClose[1]!.description).toEqual({ type: "call", name: "process-msg1" });
+      expect(nonClose[1]!.description).toEqual({
+        type: "call",
+        name: "process-msg1",
+      });
     }
     if (nonClose[2]!.type === "yield") {
       expect(nonClose[2]!.description).toEqual({ type: "each", name: "queue" });
     }
     if (nonClose[3]!.type === "yield") {
-      expect(nonClose[3]!.description).toEqual({ type: "call", name: "process-msg2" });
+      expect(nonClose[3]!.description).toEqual({
+        type: "call",
+        name: "process-msg2",
+      });
     }
     if (nonClose[4]!.type === "yield") {
       expect(nonClose[4]!.description).toEqual({ type: "each", name: "queue" });
-      expect(nonClose[4]!.result).toEqual({ status: "ok", value: { done: true } });
+      expect(nonClose[4]!.result).toEqual({
+        status: "ok",
+        value: { done: true },
+      });
     }
   });
 
@@ -381,7 +410,9 @@ describe("durableEach", () => {
       throw new Error("expected advance guard error");
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect((e as Error).message).toContain("yield* durableEach.next() must be called");
+      expect((e as Error).message).toContain(
+        "yield* durableEach.next() must be called",
+      );
     }
   });
 
@@ -439,7 +470,10 @@ describe("durableEach", () => {
     const events = stream.snapshot();
     const yieldEvents = events.filter((e) => e.type === "yield");
     if (yieldEvents[0]!.type === "yield") {
-      expect(yieldEvents[0]!.result).toEqual({ status: "ok", value: { value: null } });
+      expect(yieldEvents[0]!.result).toEqual({
+        status: "ok",
+        value: { value: null },
+      });
     }
   });
 });

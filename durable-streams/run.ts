@@ -33,10 +33,7 @@ import type { Close, DurableEvent, Json, Workflow } from "./types.ts";
  *
  * See replay-guard-spec.md §5.5.
  */
-function* runCheckPhase(
-  events: DurableEvent[],
-  scope: Scope,
-): Operation<void> {
+function* runCheckPhase(events: DurableEvent[], scope: Scope): Operation<void> {
   for (const event of events) {
     if (event.type === "yield") {
       yield* ReplayGuard.invoke(scope, "check", [event]);
@@ -73,7 +70,7 @@ export interface DurableRunOptions {
  *   // From inside an Effection generator (inherits scope):
  *   const result = yield* durableRun(workflow, { stream });
  */
-export function* durableRun<T extends Json | void>(
+export function* durableRun<T extends Json | undefined>(
   workflow: () => Workflow<T> | Operation<T>,
   options: DurableRunOptions,
 ): Operation<T> {

@@ -1,5 +1,5 @@
 import { type Effect, type Exit, Layer, ManagedRuntime } from "effect";
-import { type Operation, action, call, resource } from "effection";
+import { type Operation, action, resource, until } from "effection";
 
 /**
  * A runtime for executing Effect programs inside Effection operations.
@@ -103,15 +103,57 @@ export function makeEffectRuntime<R = never>(
       layer ?? Layer.empty,
     ) as ManagedRuntime.ManagedRuntime<R, never>;
 
+    interface PendingExecution {
+      abort: () => void;
+      settled: Promise<void>;
+    }
+
+    const pending = new Set<PendingExecution>();
+
+    function startManaged<T>(runPromise: (signal: AbortSignal) => Promise<T>) {
+      const controller = new AbortController();
+      let done = false;
+
+      const execution = {
+        abort: () => {
+          if (!done) {
+            controller.abort();
+          }
+        },
+        settled: Promise.resolve(),
+      } as PendingExecution;
+
+      const promise = runPromise(controller.signal);
+
+      execution.settled = promise
+        .then(
+          () => undefined,
+          () => undefined,
+        )
+        .finally(() => {
+          done = true;
+          pending.delete(execution);
+        });
+
+      pending.add(execution);
+
+      return { promise, abort: execution.abort, signal: controller.signal };
+    }
+
     const run: EffectRuntime<R>["run"] = <A, E>(
       effect: Effect.Effect<A, E, R>,
     ) => {
       return action<A>((resolve, reject) => {
-        const controller = new AbortController();
-        managedRuntime
-          .runPromise(effect, { signal: controller.signal })
-          .then(resolve, reject);
-        return () => controller.abort();
+        const { promise, abort, signal } = startManaged((signal) =>
+          managedRuntime.runPromise(effect, { signal }),
+        );
+
+        promise.then(resolve, (error) => {
+          if (!signal.aborted) {
+            reject(error);
+          }
+        });
+        return abort;
       });
     };
 
@@ -119,18 +161,29 @@ export function makeEffectRuntime<R = never>(
       effect: Effect.Effect<A, E, R>,
     ) => {
       return action<Exit.Exit<A, E>>((resolve, reject) => {
-        const controller = new AbortController();
-        managedRuntime
-          .runPromiseExit(effect, { signal: controller.signal })
-          .then(resolve, reject);
-        return () => controller.abort();
+        const { promise, abort, signal } = startManaged((signal) =>
+          managedRuntime.runPromiseExit(effect, { signal }),
+        );
+
+        promise.then(resolve, (error) => {
+          if (!signal.aborted) {
+            reject(error);
+          }
+        });
+        return abort;
       });
     };
 
     try {
       yield* provide({ run, runExit });
     } finally {
-      yield* call(() => managedRuntime.dispose());
+      const active = Array.from(pending);
+      for (const execution of active) {
+        execution.abort();
+      }
+
+      yield* until(Promise.all(active.map((execution) => execution.settled)));
+      yield* until(managedRuntime.dispose());
     }
   });
 }

@@ -11,19 +11,19 @@
  */
 
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "expect";
-import { useScope } from "effection";
+import { call, run, useScope } from "effection";
 import type { Operation } from "effection";
+import { expect } from "expect";
 import {
-  Divergence,
-  DivergenceError,
   ContinuePastCloseDivergenceError,
+  Divergence,
+  type DivergenceDecision,
+  DivergenceError,
+  type DurableEvent,
+  InMemoryStream,
+  type Workflow,
   durableCall,
   durableRun,
-  InMemoryStream,
-  type DivergenceDecision,
-  type DurableEvent,
-  type Workflow,
 } from "./mod.ts";
 
 describe("Divergence API", () => {
@@ -68,17 +68,15 @@ describe("Divergence API", () => {
   // ---------------------------------------------------------------------------
 
   it("default strict — continue past close throws ContinuePastCloseDivergenceError", function* () {
-    // Verify the ContinuePastCloseDivergenceError class directly —
-    // constructing the error object is sufficient to validate the
-    // default API behavior since the Divergence API creates the same error.
-    const err = new ContinuePastCloseDivergenceError("root.0", 2);
-    expect(err).toBeInstanceOf(ContinuePastCloseDivergenceError);
-    expect(err.name).toBe("DivergenceError");
-    expect(err.coroutineId).toBe("root.0");
-    expect(err.yieldCount).toBe(2);
-    expect(err.message).toBe(
-      "Divergence: journal shows root.0 closed after 2 yields, but generator continues to yield effects",
-    );
+    const scope = yield* useScope();
+    const decision = Divergence.invoke(scope, "decide", [
+      { kind: "continue-past-close", coroutineId: "root.0", yieldCount: 2 },
+    ]);
+
+    expect(decision.type).toBe("throw");
+    if (decision.type === "throw") {
+      expect(decision.error).toBeInstanceOf(ContinuePastCloseDivergenceError);
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -180,6 +178,26 @@ describe("Divergence API", () => {
       { stream: stream1 },
     );
     expect(result1).toBe("x-live");
+
+    // Run 2: WITHOUT middleware on a fresh scope — should throw DivergenceError.
+    const stream2 = new InMemoryStream(makeEvents());
+    try {
+      yield* call(() =>
+        run(() =>
+          durableRun(
+            function* (): Workflow<string> {
+              return yield* durableCall<string>("stepX", () =>
+                Promise.resolve("x-live"),
+              );
+            },
+            { stream: stream2 },
+          ),
+        ),
+      );
+      throw new Error("expected strict divergence error without middleware");
+    } catch (e) {
+      expect(e).toBeInstanceOf(DivergenceError);
+    }
   });
 
   // ---------------------------------------------------------------------------

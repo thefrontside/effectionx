@@ -103,7 +103,7 @@ function* safeWorkflow(): Workflow<void> {
 }
 ```
 
-This is the key design guarantee: **if it compiles as a `Workflow`, it's durable**. No runtime checks needed, no footguns hiding behind valid-looking code.
+This is the key design guarantee: **if it compiles as a `Workflow`, it's durable** (except values explicitly wrapped with `ephemeral()`, which intentionally opt out of journaling).
 
 Every `Workflow<T>` is structurally compatible with `Operation<T>`, so you can always use a workflow where an operation is expected.
 
@@ -197,7 +197,7 @@ function* durableRun<T extends Json | void>(
 Typical usage from standalone async code:
 
 ```typescript
-import { run } from "@effection/effection";
+import { run } from "effection";
 import { durableRun } from "@effectionx/durable-streams";
 import { useHttpDurableStream } from "@effectionx/durable-streams";
 
@@ -338,8 +338,8 @@ Use `scope.around(ReplayGuard, ...)` to install a guard. The guard receives each
 
 ```typescript
 import { ReplayGuard, type ReplayOutcome } from "@effectionx/durable-streams";
-import { call, useScope } from "@effection/effection";
-import type { Operation } from "@effection/effection";
+import { call, useScope } from "effection";
+import type { Operation } from "effection";
 
 function* useMyGuard(): Operation<void> {
   const scope = yield* useScope();
@@ -401,9 +401,11 @@ For a guard to work, the effect being guarded must store the information needed 
 - **Output fields** (content hash, ETag, version) go in `result.value` alongside the actual content.
 
 ```typescript
+import { readFile } from "node:fs/promises";
+
 function* durableReadFile(path: string): Workflow<string> {
   const { content } = yield* durableCall("readFile", async () => {
-    const content = await Deno.readTextFile(path);
+    const content = await readFile(path, "utf8");
     const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content));
     const contentHash = Array.from(new Uint8Array(hashBuffer))
       .map(b => b.toString(16).padStart(2, "0")).join("");
@@ -476,7 +478,7 @@ import { InMemoryStream } from "@effectionx/durable-streams";
 
 const stream = new InMemoryStream();
 // Pre-populate with events:
-const stream = new InMemoryStream(existingEvents);
+const preloaded = new InMemoryStream(existingEvents);
 // Inspect append count, inject failures:
 stream.appendCount;
 stream.injectFailure = new Error("disk full");

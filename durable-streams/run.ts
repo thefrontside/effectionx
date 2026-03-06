@@ -86,20 +86,6 @@ export function* durableRun<T extends WorkflowValue>(
   const events = yield* stream.readAll();
   const replayIndex = new ReplayIndex(events);
 
-  // If the root coroutine already has a Close event in the journal,
-  // the workflow completed in a previous run. Return the stored result
-  // directly without re-running the workflow.
-  if (replayIndex.hasClose(coroutineId)) {
-    const closeEvent = replayIndex.getClose(coroutineId)!;
-    if (closeEvent.result.status === "ok") {
-      return closeEvent.result.value as T;
-    } else if (closeEvent.result.status === "err") {
-      throw deserializeError(closeEvent.result.error);
-    } else {
-      throw new Error("Workflow was cancelled");
-    }
-  }
-
   // Inherit the caller's scope — middleware (e.g., Divergence, ReplayGuard)
   // is already installed by the caller before yield*-ing into durableRun.
   const scope = yield* useScope();
@@ -118,7 +104,19 @@ export function* durableRun<T extends WorkflowValue>(
   // See replay-guard-spec.md §5.5.
   yield* runCheckPhase(events, scope);
 
-  let closeEvent: Close | undefined;
+  // If the root coroutine already has a Close event in the journal,
+  // the workflow completed in a previous run. Return the stored result
+  // directly without re-running the workflow.
+  if (replayIndex.hasClose(coroutineId)) {
+    const closeEvent = replayIndex.getClose(coroutineId)!;
+    if (closeEvent.result.status === "ok") {
+      return closeEvent.result.value as T;
+    } else if (closeEvent.result.status === "err") {
+      throw deserializeError(closeEvent.result.error);
+    } else {
+      throw new Error("Workflow was cancelled");
+    }
+  }
 
   try {
     // Workflow<T> is structurally assignable to Operation<T>, so
@@ -131,24 +129,27 @@ export function* durableRun<T extends WorkflowValue>(
     // disabled (run-live mode) — the workflow intentionally diverged and
     // the Divergence API already approved it.
     if (!replayIndex.isReplayDisabled(coroutineId)) {
-      const cursor = replayIndex.getCursor(coroutineId);
-      const totalYields = replayIndex.yieldCount(coroutineId);
-      if (cursor < totalYields) {
-        throw new EarlyReturnDivergenceError(coroutineId, cursor, totalYields);
+      const unconsumed = replayIndex.firstUnconsumed();
+      if (unconsumed) {
+        throw new EarlyReturnDivergenceError(
+          unconsumed.coroutineId,
+          unconsumed.cursor,
+          unconsumed.totalYields,
+        );
       }
     }
 
-    // Record Close(ok) — will be appended in finally
-    closeEvent = {
+    const closeEvent: Close = {
       type: "close",
       coroutineId,
       result: { status: "ok", value: result as Json },
     };
 
+    yield* stream.append(closeEvent);
+
     return result;
   } catch (error) {
-    // Record Close(err) — will be appended in finally
-    closeEvent = {
+    const closeEvent: Close = {
       type: "close",
       coroutineId,
       result: {
@@ -159,17 +160,20 @@ export function* durableRun<T extends WorkflowValue>(
       },
     };
 
-    throw error;
-  } finally {
-    // Append Close event — best-effort. If the append itself fails
-    // (e.g., stream is in a fatal state), we swallow the error so it
-    // doesn't mask the original workflow error.
-    if (closeEvent) {
-      try {
-        yield* stream.append(closeEvent!);
-      } catch {
-        // Close event append failed — the original error is more important.
-      }
+    try {
+      yield* stream.append(closeEvent);
+    } catch (appendError) {
+      const appendFailure =
+        appendError instanceof Error
+          ? appendError
+          : new Error(String(appendError));
+      const primary = error instanceof Error ? error : new Error(String(error));
+      throw new AggregateError(
+        [primary, appendFailure],
+        "Workflow failed and Close append also failed",
+      );
     }
+
+    throw error;
   }
 }

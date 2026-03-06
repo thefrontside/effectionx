@@ -21,7 +21,7 @@
  */
 
 import type { Operation } from "effection";
-import { DurableCtx, type DurableContext } from "./context.ts";
+import { type DurableContext, DurableCtx } from "./context.ts";
 import { Divergence } from "./divergence.ts";
 import { StaleInputError } from "./errors.ts";
 import { ReplayGuard } from "./replay-guard.ts";
@@ -208,9 +208,15 @@ export function createDurableEffect<T>(
       if (replay.path === "replayed") return replay.teardown;
 
       // ── LIVE PATH ──
+      let settled = false;
+      let tornDown = false;
+      let teardown: () => void = () => {};
 
       /** Persist a Yield event then resume the generator. */
       function persistAndResolve(result: Result): void {
+        if (settled) return;
+        settled = true;
+
         const event: Yield = {
           type: "yield",
           coroutineId: ctx.coroutineId,
@@ -235,7 +241,6 @@ export function createDurableEffect<T>(
       }
 
       // Guard against synchronous throws from the executor.
-      let teardown: () => void;
       try {
         teardown = execute(
           (result: Result) => persistAndResolve(result),
@@ -257,6 +262,14 @@ export function createDurableEffect<T>(
 
       // Return teardown that Effection calls during scope destruction
       return (exit: Resolve<EffectionResult<void>>) => {
+        if (tornDown) {
+          exit(VOID_OK);
+          return;
+        }
+
+        tornDown = true;
+        settled = true;
+
         try {
           teardown();
           exit(VOID_OK);

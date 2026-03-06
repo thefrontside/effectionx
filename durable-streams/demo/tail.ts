@@ -26,6 +26,12 @@ const POLL_MS = 500;
 
 const streamUrl = `${SERVER_URL}/${STREAM_ID}`;
 
+function isNotFoundError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  const upper = message.toUpperCase();
+  return upper.includes("NOT_FOUND") || upper.includes("404");
+}
+
 // ---------------------------------------------------------------------------
 // Formatting
 // ---------------------------------------------------------------------------
@@ -77,7 +83,11 @@ while (!streamReady) {
     });
     await res.json(); // consume body
     streamReady = true;
-  } catch {
+  } catch (error) {
+    if (!isNotFoundError(error)) {
+      throw error;
+    }
+
     // Stream doesn't exist yet — wait and retry
     await new Promise((r) => setTimeout(r, POLL_MS));
   }
@@ -104,8 +114,12 @@ while (true) {
     if (res.offset) {
       lastOffset = res.offset;
     }
-  } catch {
-    // Transient error — just retry on next poll
+  } catch (error) {
+    if (!isNotFoundError(error)) {
+      throw error;
+    }
+
+    // Stream disappeared — retry on next poll
   }
 
   await new Promise((r) => setTimeout(r, POLL_MS));

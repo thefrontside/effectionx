@@ -33,9 +33,11 @@ describe("ephemeral", () => {
 
     const result = yield* durableRun(
       function* () {
-        const value = yield* ephemeral(function* (): Operation<string> {
-          return "hello from ephemeral";
-        }());
+        const value = yield* ephemeral(
+          (function* (): Operation<string> {
+            return "hello from ephemeral";
+          })(),
+        );
         return value;
       },
       { stream },
@@ -55,9 +57,11 @@ describe("ephemeral", () => {
       function* () {
         // One durable call, one ephemeral, one more durable call
         yield* durableCall("step1", () => Promise.resolve("a"));
-        yield* ephemeral(function* (): Operation<string> {
-          return "ephemeral-value";
-        }());
+        yield* ephemeral(
+          (function* (): Operation<string> {
+            return "ephemeral-value";
+          })(),
+        );
         yield* durableCall("step2", () => Promise.resolve("b"));
         return "done";
       },
@@ -91,9 +95,11 @@ describe("ephemeral", () => {
     yield* durableRun(
       function* () {
         yield* durableCall("step1", () => Promise.resolve("a"));
-        yield* ephemeral(function* (): Operation<void> {
-          ephemeralCallCount++;
-        }());
+        yield* ephemeral(
+          (function* (): Operation<void> {
+            ephemeralCallCount++;
+          })(),
+        );
         yield* durableCall("step2", () => Promise.resolve("b"));
         return "done";
       },
@@ -115,9 +121,11 @@ describe("ephemeral", () => {
     yield* durableRun(
       function* () {
         yield* durableCall("step1", () => Promise.resolve("a"));
-        yield* ephemeral(function* (): Operation<void> {
-          ephemeralCallCount++;
-        }());
+        yield* ephemeral(
+          (function* (): Operation<void> {
+            ephemeralCallCount++;
+          })(),
+        );
         yield* durableCall("step2", () => Promise.resolve("b"));
         return "done";
       },
@@ -138,9 +146,11 @@ describe("ephemeral", () => {
     try {
       yield* durableRun(
         function* () {
-          yield* ephemeral(function* (): Operation<never> {
-            throw new Error("ephemeral boom");
-          }());
+          yield* ephemeral(
+            (function* (): Operation<never> {
+              throw new Error("ephemeral boom");
+            })(),
+          );
           return "unreachable";
         },
         { stream },

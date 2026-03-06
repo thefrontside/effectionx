@@ -276,15 +276,15 @@ describe("deterministic IDs", () => {
       function* () {
         return yield* durableRace([
           function* () {
-            return yield* durableCall("fast", () =>
-              Promise.resolve("winner"),
-            );
+            return yield* durableCall("fast", () => Promise.resolve("winner"));
           },
           function* () {
-            return yield* durableCall("slow", () =>
-              new Promise<string>(() => {
-                /* never */
-              }),
+            return yield* durableCall(
+              "slow",
+              () =>
+                new Promise<string>(() => {
+                  /* never */
+                }),
             );
           },
         ]);

@@ -34,7 +34,11 @@ function closeEvent(
   value?: unknown,
 ): DurableEvent {
   if (status === "ok") {
-    return { type: "close", coroutineId, result: { status: "ok", value: value as undefined } };
+    return {
+      type: "close",
+      coroutineId,
+      result: { status: "ok", value: value as undefined },
+    };
   }
   if (status === "err") {
     return {
@@ -109,9 +113,7 @@ describe("ReplayIndex", () => {
     });
 
     it("yieldCount is 1", function* () {
-      const idx = new ReplayIndex([
-        yieldEvent("root.0", "call", "fetchOrder"),
-      ]);
+      const idx = new ReplayIndex([yieldEvent("root.0", "call", "fetchOrder")]);
       expect(idx.yieldCount("root.0")).toBe(1);
     });
   });
@@ -130,12 +132,21 @@ describe("ReplayIndex", () => {
       expect(idx.yieldCount("root.0")).toBe(2);
 
       // First peek
-      expect(idx.peekYield("root.0")?.description).toEqual({ type: "sleep", name: "sleep" });
+      expect(idx.peekYield("root.0")?.description).toEqual({
+        type: "sleep",
+        name: "sleep",
+      });
       idx.consumeYield("root.0");
 
       // Second peek
-      expect(idx.peekYield("root.0")?.description).toEqual({ type: "call", name: "transform" });
-      expect(idx.peekYield("root.0")?.result).toEqual({ status: "ok", value: "ALPHA" });
+      expect(idx.peekYield("root.0")?.description).toEqual({
+        type: "call",
+        name: "transform",
+      });
+      expect(idx.peekYield("root.0")?.result).toEqual({
+        status: "ok",
+        value: "ALPHA",
+      });
       idx.consumeYield("root.0");
 
       // Exhausted
@@ -150,9 +161,7 @@ describe("ReplayIndex", () => {
 
   describe("close events", () => {
     it("hasClose returns true", function* () {
-      const idx = new ReplayIndex([
-        closeEvent("root.0", "ok", "done"),
-      ]);
+      const idx = new ReplayIndex([closeEvent("root.0", "ok", "done")]);
       expect(idx.hasClose("root.0")).toBe(true);
     });
 
@@ -198,9 +207,7 @@ describe("ReplayIndex", () => {
     });
 
     it("false when yields consumed but no close", function* () {
-      const idx = new ReplayIndex([
-        yieldEvent("root.0", "call", "fetch", 1),
-      ]);
+      const idx = new ReplayIndex([yieldEvent("root.0", "call", "fetch", 1)]);
 
       idx.consumeYield("root.0");
       expect(idx.isFullyReplayed("root.0")).toBe(false); // no close
@@ -257,11 +264,11 @@ describe("ReplayIndex", () => {
     it("partial execution with cancellation", function* () {
       // From spec §10.1: race([op1, op2]) where op1 wins after op2 partially executed
       const idx = new ReplayIndex([
-        yieldEvent("root.0.1", "call", "step1", null),    // op2's first effect
-        yieldEvent("root.0.0", "call", "fetch", "data"),   // op1 completes
-        closeEvent("root.0.0", "ok", "data"),               // op1 done
-        closeEvent("root.0.1", "cancelled"),                 // op2 cancelled
-        closeEvent("root.0", "ok", "data"),                  // race returns op1's result
+        yieldEvent("root.0.1", "call", "step1", null), // op2's first effect
+        yieldEvent("root.0.0", "call", "fetch", "data"), // op1 completes
+        closeEvent("root.0.0", "ok", "data"), // op1 done
+        closeEvent("root.0.1", "cancelled"), // op2 cancelled
+        closeEvent("root.0", "ok", "data"), // race returns op1's result
       ]);
 
       // op1 (root.0.0): one yield, then close(ok)

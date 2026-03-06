@@ -59,7 +59,7 @@ export function* durableCall<T extends Json>(
   // which branch fn() takes.
   return (yield createDurableOperation<T>(
     { type: "call", name },
-    // deno-lint-ignore no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: fn returns Promise<T> | Operation<T>, call() accepts both
     () => call(fn as any) as Operation<T>,
   )) as T;
 }
@@ -83,8 +83,7 @@ export function* durableAction<T extends Json>(
     { type: "action", name },
     (protocolResolve, reject) => {
       return executor(
-        (value: T) =>
-          protocolResolve({ status: "ok", value: value as Json }),
+        (value: T) => protocolResolve({ status: "ok", value: value as Json }),
         reject,
       );
     },

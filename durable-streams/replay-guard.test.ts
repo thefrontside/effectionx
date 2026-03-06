@@ -112,7 +112,7 @@ describe("replay guard", () => {
     const result = yield* durableRun(
       function* (): Workflow<string> {
         return yield* durableCall<string>("stepA", () =>
-          Promise.resolve("should-not-be-called")
+          Promise.resolve("should-not-be-called"),
         );
       },
       { stream },
@@ -140,12 +140,18 @@ describe("replay guard", () => {
         type: "yield",
         coroutineId: "root",
         description: { type: "call", name: "readFile", path: "./test.txt" },
-        result: { status: "ok", value: { content: "file contents", contentHash: "abc123" } },
+        result: {
+          status: "ok",
+          value: { content: "file contents", contentHash: "abc123" },
+        },
       },
       {
         type: "close",
         coroutineId: "root",
-        result: { status: "ok", value: { content: "file contents", contentHash: "abc123" } },
+        result: {
+          status: "ok",
+          value: { content: "file contents", contentHash: "abc123" },
+        },
       },
     ];
     const stream = new InMemoryStream(events);
@@ -162,8 +168,11 @@ describe("replay guard", () => {
       },
       decide([event], next) {
         const filePath = event.description.path;
-        const resultValue = event.result.status === "ok" ? event.result.value : undefined;
-        const recordedHash = (resultValue as Record<string, unknown> | undefined)?.contentHash;
+        const resultValue =
+          event.result.status === "ok" ? event.result.value : undefined;
+        const recordedHash = (
+          resultValue as Record<string, unknown> | undefined
+        )?.contentHash;
         if (typeof filePath === "string" && typeof recordedHash === "string") {
           const currentSHA = cache.get(filePath);
           if (currentSHA && currentSHA !== recordedHash) {
@@ -180,7 +189,10 @@ describe("replay guard", () => {
     const result = yield* durableRun(
       function* (): Workflow<Record<string, string>> {
         return yield* durableCall<Record<string, string>>("readFile", () =>
-          Promise.resolve({ content: "should-not-be-called", contentHash: "abc123" })
+          Promise.resolve({
+            content: "should-not-be-called",
+            contentHash: "abc123",
+          }),
         );
       },
       { stream },
@@ -201,7 +213,10 @@ describe("replay guard", () => {
         type: "yield",
         coroutineId: "root",
         description: { type: "call", name: "readFile", path: "./test.txt" },
-        result: { status: "ok", value: { content: "old contents", contentHash: "abc123" } },
+        result: {
+          status: "ok",
+          value: { content: "old contents", contentHash: "abc123" },
+        },
       },
     ];
     const stream = new InMemoryStream(events);
@@ -217,15 +232,18 @@ describe("replay guard", () => {
       },
       decide([event], next) {
         const filePath = event.description.path;
-        const resultValue = event.result.status === "ok" ? event.result.value : undefined;
-        const recordedHash = (resultValue as Record<string, unknown> | undefined)?.contentHash;
+        const resultValue =
+          event.result.status === "ok" ? event.result.value : undefined;
+        const recordedHash = (
+          resultValue as Record<string, unknown> | undefined
+        )?.contentHash;
         if (typeof filePath === "string" && typeof recordedHash === "string") {
           const currentSHA = cache.get(filePath);
           if (currentSHA && currentSHA !== recordedHash) {
             return {
               outcome: "error",
               error: new StaleInputError(
-                `File changed: ${filePath} (recorded: ${recordedHash}, current: ${currentSHA})`
+                `File changed: ${filePath} (recorded: ${recordedHash}, current: ${currentSHA})`,
               ),
             };
           }
@@ -238,7 +256,10 @@ describe("replay guard", () => {
       yield* durableRun(
         function* (): Workflow<Record<string, string>> {
           return yield* durableCall<Record<string, string>>("readFile", () =>
-            Promise.resolve({ content: "should-not-be-called", contentHash: "abc123" })
+            Promise.resolve({
+              content: "should-not-be-called",
+              contentHash: "abc123",
+            }),
           );
         },
         { stream },
@@ -260,7 +281,12 @@ describe("replay guard", () => {
       {
         type: "yield",
         coroutineId: "root",
-        description: { type: "call", name: "step", checkA: "pass", checkB: "fail" },
+        description: {
+          type: "call",
+          name: "step",
+          checkA: "pass",
+          checkB: "fail",
+        },
         result: { status: "ok", value: "result" },
       },
     ];
@@ -299,7 +325,7 @@ describe("replay guard", () => {
       yield* durableRun(
         function* (): Workflow<string> {
           return yield* durableCall<string>("step", () =>
-            Promise.resolve("should-not-be-called")
+            Promise.resolve("should-not-be-called"),
           );
         },
         { stream },
@@ -364,9 +390,9 @@ describe("replay guard", () => {
     // Replay means no live-call (effect is replayed from journal)
     expect(timeline).toEqual([
       "before-durableRun",
-      "check",             // check phase runs over all Yield events first
+      "check", // check phase runs over all Yield events first
       "workflow-start",
-      "decide",            // decide runs during replay
+      "decide", // decide runs during replay
       "workflow-end",
       "after-durableRun",
     ]);
@@ -414,7 +440,7 @@ describe("replay guard", () => {
         yield* durableRun(
           function* (): Workflow<string> {
             return yield* durableCall<string>("step", () =>
-              Promise.resolve("should-not-be-called")
+              Promise.resolve("should-not-be-called"),
             );
           },
           { stream },
@@ -465,7 +491,7 @@ describe("replay guard", () => {
         function* (): Workflow<string> {
           // Yields stepX but journal has stepA — identity mismatch
           return yield* durableCall<string>("stepX", () =>
-            Promise.resolve("should-not-be-called")
+            Promise.resolve("should-not-be-called"),
           );
         },
         { stream },
@@ -495,7 +521,10 @@ describe("replay guard", () => {
         type: "yield",
         coroutineId: "root",
         description: { type: "call", name: `step${i}`, path: "./shared.txt" },
-        result: { status: "ok", value: { content: `result${i}`, contentHash: "abc123" } },
+        result: {
+          status: "ok",
+          value: { content: `result${i}`, contentHash: "abc123" },
+        },
       });
     }
     // No close event - workflow runs and replays all yields
@@ -527,7 +556,10 @@ describe("replay guard", () => {
       function* (): Workflow<string> {
         for (let i = 0; i < 5; i++) {
           yield* durableCall<Record<string, string>>(`step${i}`, () =>
-            Promise.resolve({ content: "should-not-be-called", contentHash: "abc123" })
+            Promise.resolve({
+              content: "should-not-be-called",
+              contentHash: "abc123",
+            }),
           );
         }
         return "done";
@@ -582,7 +614,7 @@ describe("replay guard", () => {
       yield* durableRun(
         function* (): Workflow<string> {
           return yield* durableCall<string>("step", () =>
-            Promise.resolve("should-not-be-called")
+            Promise.resolve("should-not-be-called"),
           );
         },
         { stream },
@@ -606,12 +638,24 @@ describe("replay guard", () => {
         type: "yield",
         coroutineId: "root",
         description: { type: "call", name: "step", path: "./file.txt" },
-        result: { status: "ok", value: { content: "result", contentHash: "old-hash-that-no-one-checks" } },
+        result: {
+          status: "ok",
+          value: {
+            content: "result",
+            contentHash: "old-hash-that-no-one-checks",
+          },
+        },
       },
       {
         type: "close",
         coroutineId: "root",
-        result: { status: "ok", value: { content: "result", contentHash: "old-hash-that-no-one-checks" } },
+        result: {
+          status: "ok",
+          value: {
+            content: "result",
+            contentHash: "old-hash-that-no-one-checks",
+          },
+        },
       },
     ];
     const stream = new InMemoryStream(events);
@@ -620,7 +664,10 @@ describe("replay guard", () => {
     const result = yield* durableRun(
       function* (): Workflow<Record<string, string>> {
         return yield* durableCall<Record<string, string>>("step", () =>
-          Promise.resolve({ content: "should-not-be-called", contentHash: "abc123" })
+          Promise.resolve({
+            content: "should-not-be-called",
+            contentHash: "abc123",
+          }),
         );
       },
       { stream },
@@ -639,9 +686,8 @@ describe("replay guard", () => {
 
     yield* durableRun(
       function* (): Workflow<Record<string, string>> {
-        return yield* durableCall<Record<string, string>>(
-          "readFile",
-          () => Promise.resolve({
+        return yield* durableCall<Record<string, string>>("readFile", () =>
+          Promise.resolve({
             content: "file contents",
             contentHash: "hash-of-file-contents",
           }),

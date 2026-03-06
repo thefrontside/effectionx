@@ -247,7 +247,9 @@ describe("divergence detection", () => {
     try {
       yield* durableRun(
         function* (): Workflow<string> {
-          return yield* durableCall<string>("fetchUser", () => Promise.resolve("user-data"));
+          return yield* durableCall<string>("fetchUser", () =>
+            Promise.resolve("user-data"),
+          );
         },
         { stream },
       );
@@ -293,7 +295,9 @@ describe("divergence detection", () => {
     try {
       yield* durableRun(
         function* (): Workflow<string> {
-          const a = yield* durableCall<string>("stepA", () => Promise.resolve("alpha"));
+          const a = yield* durableCall<string>("stepA", () =>
+            Promise.resolve("alpha"),
+          );
           // Steps B and C were removed
           return a;
         },
@@ -373,7 +377,9 @@ describe("divergence detection", () => {
       yield* durableRun(
         function* (): Workflow<number> {
           // Journal has action("doSomething"), code has call("doSomething")
-          return yield* durableCall<number>("doSomething", () => Promise.resolve(42));
+          return yield* durableCall<number>("doSomething", () =>
+            Promise.resolve(42),
+          );
         },
         { stream },
       );

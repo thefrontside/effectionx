@@ -46,9 +46,8 @@ describe("Divergence API", () => {
     try {
       yield* durableRun(
         function* (): Workflow<string> {
-          return yield* durableCall<string>(
-            "stepX",
-            () => Promise.resolve("x"),
+          return yield* durableCall<string>("stepX", () =>
+            Promise.resolve("x"),
           );
         },
         { stream },

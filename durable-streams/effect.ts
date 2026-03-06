@@ -38,7 +38,10 @@ import type {
 } from "./types.ts";
 
 /** Effection void-ok result, used for no-op teardowns. */
-const VOID_OK: EffectionResult<void> = { ok: true, value: undefined as void };
+const VOID_OK: EffectionResult<void> = {
+  ok: true,
+  value: undefined as undefined,
+};
 
 /**
  * Executor function signature for live execution (callback-based).
@@ -63,7 +66,10 @@ export type Executor = (
  * should return immediately) or the live path should execute.
  */
 type ReplayResult<T> =
-  | { path: "replayed"; teardown: (resolve: Resolve<EffectionResult<void>>) => void }
+  | {
+      path: "replayed";
+      teardown: (resolve: Resolve<EffectionResult<void>>) => void;
+    }
   | { path: "live" };
 
 /**
@@ -85,6 +91,7 @@ function checkReplay<T>(
   // ── REPLAY PATH ──
   // Use a labeled block so that divergence decisions of type "run-live"
   // can break out to fall through to the live execution path.
+  // biome-ignore lint/suspicious/noConfusingLabels: deliberate labeled block for break-out-of-replay pattern
   replay: {
     if (entry) {
       // §6.2: Validate description match
@@ -94,17 +101,15 @@ function checkReplay<T>(
       ) {
         // Delegate divergence policy to the Divergence API.
         const cursor = ctx.replayIndex.getCursor(ctx.coroutineId);
-        const decision = Divergence.invoke(
-          routine.scope,
-          "decide",
-          [{
+        const decision = Divergence.invoke(routine.scope, "decide", [
+          {
             kind: "description-mismatch",
             coroutineId: ctx.coroutineId,
             cursor,
             expected: entry.description,
             actual: desc,
-          }],
-        );
+          },
+        ]);
 
         if (decision.type === "throw") {
           resolve({ ok: false, error: decision.error });
@@ -124,18 +129,16 @@ function checkReplay<T>(
         description: entry.description,
         result: entry.result,
       };
-      const outcome = ReplayGuard.invoke(
-        routine.scope,
-        "decide",
-        [yieldEvent],
-      );
+      const outcome = ReplayGuard.invoke(routine.scope, "decide", [yieldEvent]);
 
       if (outcome.outcome === "error") {
         ctx.replayIndex.consumeYield(ctx.coroutineId);
-        const error = outcome.error ?? new StaleInputError(
-          `Stale input detected for ${desc.type}("${desc.name}")`,
-          { coroutineId: ctx.coroutineId, description: desc },
-        );
+        const error =
+          outcome.error ??
+          new StaleInputError(
+            `Stale input detected for ${desc.type}("${desc.name}")`,
+            { coroutineId: ctx.coroutineId, description: desc },
+          );
         resolve({ ok: false, error });
         return { path: "replayed", teardown: (exit) => exit(VOID_OK) };
       }
@@ -151,15 +154,13 @@ function checkReplay<T>(
     // No replay entry. Check for continue-past-close divergence (§6.3).
     if (ctx.replayIndex.hasClose(ctx.coroutineId)) {
       const yieldCount = ctx.replayIndex.yieldCount(ctx.coroutineId);
-      const decision = Divergence.invoke(
-        routine.scope,
-        "decide",
-        [{
+      const decision = Divergence.invoke(routine.scope, "decide", [
+        {
           kind: "continue-past-close",
           coroutineId: ctx.coroutineId,
           yieldCount,
-        }],
-      );
+        },
+      ]);
 
       if (decision.type === "throw") {
         resolve({ ok: false, error: decision.error });

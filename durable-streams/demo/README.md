@@ -45,7 +45,7 @@ Press Enter in the cook pane to start.
 4. In the control pane, press Enter to hard-kill:
 
    ```sh
-   pkill -9 -f 'demo/cook.ts'
+   bash -lc 'PGID=$(ps -o pgid= -p $(tmux display-message -p -t "durable-dinner:0.2" "#{pane_pid}") | tr -d " " ); kill -9 -$PGID'
    ```
 
 5. Back in the cook pane, rerun:

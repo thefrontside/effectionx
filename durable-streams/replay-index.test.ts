@@ -8,36 +8,46 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
 import { ReplayIndex } from "./replay-index.ts";
-import type { DurableEvent } from "./types.ts";
+import type { DurableEvent, Json } from "./types.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function yieldEvent(
+function yieldEvent<T extends Json>(
   coroutineId: string,
   type: string,
   name: string,
-  value?: unknown,
+  value?: T,
 ): DurableEvent {
+  const result =
+    value === undefined
+      ? { status: "ok" as const }
+      : { status: "ok" as const, value };
+
   return {
     type: "yield",
     coroutineId,
     description: { type, name },
-    result: { status: "ok", value: value as undefined },
+    result,
   };
 }
 
-function closeEvent(
+function closeEvent<T extends Json>(
   coroutineId: string,
   status: "ok" | "err" | "cancelled" = "ok",
-  value?: unknown,
+  value?: T,
 ): DurableEvent {
   if (status === "ok") {
+    const result =
+      value === undefined
+        ? { status: "ok" as const }
+        : { status: "ok" as const, value };
+
     return {
       type: "close",
       coroutineId,
-      result: { status: "ok", value: value as undefined },
+      result,
     };
   }
   if (status === "err") {
@@ -184,6 +194,13 @@ describe("ReplayIndex", () => {
         status: "err",
         error: { message: "boom" },
       });
+    });
+
+    it("getClose returns undefined when replay is disabled", function* () {
+      const close = closeEvent("root.0", "ok", "done");
+      const idx = new ReplayIndex([close]);
+      idx.disableReplay("root.0");
+      expect(idx.getClose("root.0")).toBeUndefined();
     });
   });
 

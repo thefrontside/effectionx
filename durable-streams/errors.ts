@@ -48,7 +48,7 @@ export class DivergenceError extends Error {
  * still has unconsumed entries for this coroutine. See spec §6.3.
  */
 export class EarlyReturnDivergenceError extends Error {
-  override name = "DivergenceError";
+  override name = "EarlyReturnDivergenceError";
 
   coroutineId: CoroutineId;
   consumedCount: number;
@@ -75,7 +75,7 @@ export class EarlyReturnDivergenceError extends Error {
  * See spec §6.3.
  */
 export class ContinuePastCloseDivergenceError extends Error {
-  override name = "DivergenceError";
+  override name = "ContinuePastCloseDivergenceError";
 
   coroutineId: CoroutineId;
   yieldCount: number;

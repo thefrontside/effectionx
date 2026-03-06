@@ -90,7 +90,44 @@ export class ReplayIndex {
 
   /** Returns the Close event for this coroutine, or undefined. */
   getClose(coroutineId: CoroutineId): Close | undefined {
+    if (this.disabled.has(coroutineId)) return undefined;
     return this.closes.get(coroutineId);
+  }
+
+  /**
+   * Returns true if any non-disabled coroutine still has unconsumed yields.
+   *
+   * This is used by durableRun to detect early-return divergence even when
+   * unconsumed entries belong to child coroutines rather than the root.
+   */
+  hasAnyUnconsumedYields(): boolean {
+    for (const [coroutineId, entries] of this.yields.entries()) {
+      if (this.disabled.has(coroutineId)) continue;
+      const cursor = this.cursors.get(coroutineId) ?? 0;
+      if (cursor < entries.length) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Return the first non-disabled coroutine with unconsumed yields.
+   */
+  firstUnconsumed():
+    | {
+        coroutineId: CoroutineId;
+        cursor: number;
+        totalYields: number;
+      }
+    | undefined {
+    for (const [coroutineId, entries] of this.yields.entries()) {
+      if (this.disabled.has(coroutineId)) continue;
+      if (this.closes.has(coroutineId)) continue;
+      const cursor = this.cursors.get(coroutineId) ?? 0;
+      if (cursor < entries.length) {
+        return { coroutineId, cursor, totalYields: entries.length };
+      }
+    }
+    return undefined;
   }
 
   /**

@@ -13,21 +13,21 @@
  * The stream is created as an Effection resource via useHttpDurableStream().
  */
 
+import {
+  stream,
+  PRODUCER_EPOCH_HEADER,
+  PRODUCER_EXPECTED_SEQ_HEADER,
+  PRODUCER_ID_HEADER,
+  PRODUCER_RECEIVED_SEQ_HEADER,
+  PRODUCER_SEQ_HEADER,
+  STREAM_OFFSET_HEADER,
+  SequenceGapError,
+  StaleEpochError,
+} from "@durable-streams/client";
 import { call, createQueue, resource, spawn, withResolvers } from "effection";
 import type { Operation, Queue } from "effection";
 import type { DurableStream } from "./stream.ts";
 import type { DurableEvent } from "./types.ts";
-import {
-  stream,
-  StaleEpochError,
-  SequenceGapError,
-  PRODUCER_ID_HEADER,
-  PRODUCER_EPOCH_HEADER,
-  PRODUCER_SEQ_HEADER,
-  PRODUCER_EXPECTED_SEQ_HEADER,
-  PRODUCER_RECEIVED_SEQ_HEADER,
-  STREAM_OFFSET_HEADER,
-} from "@durable-streams/client";
 
 /**
  * Configuration for useHttpDurableStream.
@@ -82,7 +82,14 @@ export function useHttpDurableStream(
   opts: HttpDurableStreamOptions,
 ): Operation<HttpDurableStreamHandle> {
   return resource(function* (provide) {
-    const streamUrl = `${opts.baseUrl}/${opts.streamId}`;
+    const baseUrl = new URL(opts.baseUrl);
+    if (!baseUrl.pathname.endsWith("/")) {
+      baseUrl.pathname = `${baseUrl.pathname}/`;
+    }
+    const streamUrl = new URL(
+      encodeURIComponent(opts.streamId),
+      baseUrl,
+    ).toString();
     const producerId = opts.producerId;
     const epoch = opts.epoch;
     const fetchFn = opts.fetch ?? globalThis.fetch.bind(globalThis);

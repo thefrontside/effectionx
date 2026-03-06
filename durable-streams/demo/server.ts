@@ -17,10 +17,16 @@ console.log(`Durable Streams server listening at ${server.url}`);
 console.log("Press Ctrl+C to stop.\n");
 
 // Keep the process alive until interrupted
-process.on("SIGINT", () => {
+process.on("SIGINT", async () => {
   console.log("\nShutting down...");
-  server.stop();
-  process.exit(0);
+  try {
+    await server.stop();
+    process.exit(0);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Failed to stop server cleanly: ${message}`);
+    process.exit(1);
+  }
 });
 
 // Block forever

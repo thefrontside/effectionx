@@ -175,13 +175,6 @@ try {
       epoch: 1,
     });
 
-    const existing = yield* stream.readAll();
-    if (existing.length > 0) {
-      log("🔄", `Found ${existing.length} events in journal — replaying...`);
-    } else {
-      log("✨", "Fresh start — no events in journal");
-    }
-
     return yield* durableRun(cookDinner, { stream });
   });
 
@@ -189,6 +182,7 @@ try {
   console.log(`  ✅ ${result}`);
   console.log();
 } catch (err) {
-  console.error("\n  ❌ Workflow failed:", (err as Error).message);
+  const error = err instanceof Error ? err : new Error(String(err));
+  console.error("\n  ❌ Workflow failed:", error.message);
   process.exit(1);
 }

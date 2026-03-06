@@ -8,6 +8,14 @@
 import type { Operation } from "effection";
 import type { DurableEvent } from "./types.ts";
 
+function cloneEvent(event: DurableEvent): DurableEvent {
+  return structuredClone(event);
+}
+
+function cloneEvents(events: DurableEvent[]): DurableEvent[] {
+  return events.map(cloneEvent);
+}
+
 /**
  * Abstract interface for the append-only durable event stream.
  *
@@ -48,12 +56,12 @@ export class InMemoryStream implements DurableStream {
   onAppend: ((event: DurableEvent) => void) | null = null;
 
   constructor(initialEvents: DurableEvent[] = []) {
-    this.events = [...initialEvents];
+    this.events = cloneEvents(initialEvents);
   }
 
   // deno-lint-ignore require-yield
   *readAll(): Operation<DurableEvent[]> {
-    return [...this.events];
+    return cloneEvents(this.events);
   }
 
   // deno-lint-ignore require-yield
@@ -61,20 +69,22 @@ export class InMemoryStream implements DurableStream {
     if (this.injectFailure) {
       throw this.injectFailure;
     }
-    this.onAppend?.(event);
-    this.events.push(event);
+    const cloned = cloneEvent(event);
+    this.onAppend?.(cloneEvent(cloned));
+    this.events.push(cloned);
     this.appendCount++;
   }
 
   /** Get a snapshot of current events (for test assertions). */
   snapshot(): DurableEvent[] {
-    return [...this.events];
+    return cloneEvents(this.events);
   }
 
   /** Reset the stream (for test setup). */
   reset(events: DurableEvent[] = []): void {
-    this.events = [...events];
+    this.events = cloneEvents(events);
     this.appendCount = 0;
     this.injectFailure = null;
+    this.onAppend = null;
   }
 }

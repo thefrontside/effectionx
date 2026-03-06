@@ -15,8 +15,8 @@
  * See replay-guard-spec.md §6.
  */
 
-import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { call, useScope } from "effection";
 import type { Operation } from "effection";
 import { StaleInputError } from "./errors.ts";
@@ -30,7 +30,11 @@ import { ReplayGuard, type ReplayOutcome } from "./replay-guard.ts";
 async function computeFileHash(filePath: string): Promise<string> {
   const content = await readFile(filePath);
   const hash = createHash("sha256").update(content).digest("hex");
-  return hash;
+  return `sha256:${hash}`;
+}
+
+function normalizeSha256Hash(value: string): string {
+  return value.startsWith("sha256:") ? value : `sha256:${value}`;
 }
 
 /**
@@ -69,7 +73,7 @@ async function computeFileHash(filePath: string): Promise<string> {
  *
  *   // Effects store path in description, hash in result
  *   const { content } = yield* durableCall("resolve", async () => {
- *     const data = await Deno.readTextFile("./input.txt");
+ *     const data = await readFile("./input.txt", "utf8");
  *     return { content: data, contentHash: sha256(data) };
  *   });
  *   // description: { type: "call", name: "resolve", path: "./input.txt" }
@@ -156,13 +160,16 @@ export function* useFileContentGuard(): Operation<void> {
         };
       }
 
-      if (currentSHA !== storedHash) {
+      const normalizedStored = normalizeSha256Hash(storedHash);
+      const normalizedCurrent = normalizeSha256Hash(currentSHA);
+
+      if (normalizedCurrent !== normalizedStored) {
         return {
           outcome: "error",
           error: new StaleInputError(
             `File changed: ${filePath} ` +
-              `(recorded: ${String(storedHash).slice(0, 8)}..., ` +
-              `current: ${currentSHA.slice(0, 8)}...)`,
+              `(recorded: ${normalizedStored.slice(0, 15)}..., ` +
+              `current: ${normalizedCurrent.slice(0, 15)}...)`,
             {
               coroutineId: event.coroutineId,
               description: event.description,

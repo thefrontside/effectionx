@@ -11,13 +11,13 @@ import { expect } from "expect";
 import {
   ContinuePastCloseDivergenceError,
   DivergenceError,
+  type DurableEvent,
+  EarlyReturnDivergenceError,
+  InMemoryStream,
+  type Workflow,
   durableCall,
   durableRun,
   durableSleep,
-  EarlyReturnDivergenceError,
-  InMemoryStream,
-  type DurableEvent,
-  type Workflow,
 } from "./mod.ts";
 
 describe("divergence detection", () => {
@@ -141,7 +141,7 @@ describe("divergence detection", () => {
       throw new Error("expected divergence error");
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect((e as Error).name).toBe("DivergenceError");
+      expect((e as Error).name).toBe("EarlyReturnDivergenceError");
       if (e instanceof EarlyReturnDivergenceError) {
         expect(e.consumedCount).toBe(2);
         expect(e.totalCount).toBe(3);
@@ -306,7 +306,7 @@ describe("divergence detection", () => {
       throw new Error("expected divergence error");
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect((e as Error).name).toBe("DivergenceError");
+      expect((e as Error).name).toBe("EarlyReturnDivergenceError");
       if (e instanceof EarlyReturnDivergenceError) {
         expect(e.consumedCount).toBe(1);
         expect(e.totalCount).toBe(3);
@@ -353,7 +353,7 @@ describe("divergence detection", () => {
   it("ContinuePastCloseDivergenceError can be constructed", function* () {
     // Verify the error class exists and can be constructed.
     const err = new ContinuePastCloseDivergenceError("root.0", 2);
-    expect(err.name).toBe("DivergenceError");
+    expect(err.name).toBe("ContinuePastCloseDivergenceError");
     expect(err.coroutineId).toBe("root.0");
     expect(err.yieldCount).toBe(2);
   });

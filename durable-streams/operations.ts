@@ -104,11 +104,20 @@ export function* versionCheck(
   name: string,
   opts: { minVersion: number; maxVersion: number },
 ): Workflow<number> {
-  return (yield createDurableEffect<number>(
+  const version = (yield createDurableEffect<number>(
     { type: "version_gate", name },
     (resolve) => {
       resolve({ status: "ok", value: opts.maxVersion });
       return () => {};
     },
   )) as number;
+
+  if (version < opts.minVersion || version > opts.maxVersion) {
+    throw new Error(
+      `versionCheck("${name}"): replayed version ${version} is outside ` +
+        `supported range [${opts.minVersion}, ${opts.maxVersion}]`,
+    );
+  }
+
+  return version;
 }

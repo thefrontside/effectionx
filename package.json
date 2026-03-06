@@ -30,6 +30,9 @@
     "peerDependencyRules": {
       "ignoreMissing": [],
       "allowAny": []
+    },
+    "overrides": {
+      "effection": "4.1.0-alpha.7"
     }
   },
   "volta": {

@@ -79,8 +79,8 @@ sleep 2
 # Pane 1: Pre-type the cook command (presenter hits Enter when ready)
 tmux send-keys -t "${SESSION}:0.1" "$NODE demo/cook.ts"
 
-# Pane 2: Pre-type a pane-scoped kill command for the cook pane process group
-tmux send-keys -t "${SESSION}:0.2" "bash -lc 'PGID=\$(ps -o pgid= -p \$(tmux display-message -p -t \"${SESSION}:0.1\" \"#{pane_pid}\") | tr -d \" \" ); kill -9 -\$PGID'"
+# Pane 2: Pre-type a kill command that kills the cook's node process (not the shell)
+tmux send-keys -t "${SESSION}:0.2" "kill -9 \$(pgrep -P \$(tmux display-message -p -t \"${SESSION}:0.1\" '#{pane_pid}'))"
 
 # ------------------------------------------------------------------
 # Focus & attach

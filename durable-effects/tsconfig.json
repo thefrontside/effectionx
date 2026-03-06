@@ -9,6 +9,15 @@
   "references": [
     {
       "path": "../bdd"
+    },
+    {
+      "path": "../fetch"
+    },
+    {
+      "path": "../fs"
+    },
+    {
+      "path": "../process"
     }
   ]
 }

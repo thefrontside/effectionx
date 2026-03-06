@@ -17,7 +17,10 @@
     "effection": "^3 || ^4"
   },
   "dependencies": {
-    "@effectionx/durable-streams": "https://pkg.pr.new/thefrontside/effectionx/@effectionx/durable-streams@179"
+    "@effectionx/durable-streams": "https://pkg.pr.new/thefrontside/effectionx/@effectionx/durable-streams@179",
+    "@effectionx/fetch": "workspace:*",
+    "@effectionx/fs": "workspace:*",
+    "@effectionx/process": "workspace:*"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",

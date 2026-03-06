@@ -6,8 +6,8 @@ import type {
   WithResolvers,
 } from "effection";
 import {
-  createScope,
   Ok,
+  createScope,
   run,
   suspend,
   useScope,
@@ -166,9 +166,15 @@ export function createTestAdapter(
       }
       scope = withResolvers<Result<Scope>>();
 
-      let parent = adapter.parent
-        ? yield* adapter.parent["@@init@@"]()
-        : Ok(createScope()[0]);
+      let parent: Result<Scope>;
+      let destroyRoot: (() => Future<void>) | undefined = undefined;
+      if (adapter.parent) {
+        parent = yield* adapter.parent["@@init@@"]();
+      } else {
+        let [rootScope, destroyFn] = createScope();
+        destroyRoot = destroyFn;
+        parent = Ok(rootScope);
+      }
 
       if (!parent.ok) {
         scope.resolve(parent);
@@ -189,7 +195,12 @@ export function createTestAdapter(
         }
       });
 
-      destroy = task.halt;
+      destroy = function* () {
+        yield* task.halt();
+        if (destroyRoot) {
+          yield* destroyRoot();
+        }
+      };
 
       return yield* scope.operation;
     },

@@ -19,6 +19,9 @@ export type Json =
   | Json[]
   | { [key: string]: Json };
 
+// biome-ignore lint/suspicious/noConfusingVoidType: Workflows may intentionally return no value.
+export type WorkflowValue = Json | void;
+
 /** Serialized error for durable storage. */
 export interface SerializedError {
   message: string;

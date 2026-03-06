@@ -17,11 +17,17 @@ import { useScope } from "effection";
 import type { Operation, Scope } from "effection";
 import { DurableCtx } from "./context.ts";
 import { EarlyReturnDivergenceError } from "./errors.ts";
-import { ReplayIndex } from "./replay-index.ts";
 import { ReplayGuard } from "./replay-guard.ts";
+import { ReplayIndex } from "./replay-index.ts";
 import { deserializeError, serializeError } from "./serialize.ts";
 import type { DurableStream } from "./stream.ts";
-import type { Close, DurableEvent, Json, Workflow } from "./types.ts";
+import type {
+  Close,
+  DurableEvent,
+  Json,
+  Workflow,
+  WorkflowValue,
+} from "./types.ts";
 
 /**
  * Run the ReplayGuard check phase over all Yield events.
@@ -70,7 +76,7 @@ export interface DurableRunOptions {
  *   // From inside an Effection generator (inherits scope):
  *   const result = yield* durableRun(workflow, { stream });
  */
-export function* durableRun<T extends Json | undefined>(
+export function* durableRun<T extends WorkflowValue>(
   workflow: () => Workflow<T> | Operation<T>,
   options: DurableRunOptions,
 ): Operation<T> {

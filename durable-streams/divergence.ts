@@ -20,8 +20,8 @@
  * is safe. See DEC-031.
  */
 
-import { createApi } from "effection/experimental";
 import type { Api } from "effection";
+import { createApi } from "effection/experimental";
 import { ContinuePastCloseDivergenceError, DivergenceError } from "./errors.ts";
 import type { CoroutineId, EffectDescription } from "./types.ts";
 

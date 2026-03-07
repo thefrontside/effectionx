@@ -7,16 +7,16 @@
  */
 
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "expect";
 import type { Operation } from "effection";
+import { expect } from "expect";
 import {
+  type DurableEvent,
+  type DurableSource,
+  InMemoryStream,
+  type Json,
   durableCall,
   durableEach,
   durableRun,
-  InMemoryStream,
-  type DurableEvent,
-  type DurableSource,
-  type Json,
 } from "./mod.ts";
 
 // ---------------------------------------------------------------------------

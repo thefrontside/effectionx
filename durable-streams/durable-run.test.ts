@@ -9,12 +9,12 @@
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
 import {
-  durableCall,
-  durableRun,
-  InMemoryStream,
   type DurableEvent,
+  InMemoryStream,
   type Json,
   type Workflow,
+  durableCall,
+  durableRun,
 } from "./mod.ts";
 
 // ---------------------------------------------------------------------------

@@ -11,18 +11,18 @@
  */
 
 import { describe, it } from "@effectionx/bdd";
+import { run, useScope } from "effection";
 import { expect } from "expect";
-import { useScope, run } from "effection";
 import {
-  durableCall,
-  durableRun,
+  type DurableEvent,
   InMemoryStream,
   ReplayGuard,
-  StaleInputError,
-  type DurableEvent,
   type ReplayOutcome,
+  StaleInputError,
   type Workflow,
   type Yield,
+  durableCall,
+  durableRun,
 } from "./mod.ts";
 
 describe("replay guard", () => {

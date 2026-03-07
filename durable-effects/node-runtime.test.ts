@@ -67,6 +67,35 @@ describe("nodeRuntime", () => {
     });
   });
 
+  describe("stat", () => {
+    it("returns exists and isFile for an existing file", function* () {
+      const result = yield* runtime.stat("durable-effects/package.json");
+      expect(result).toEqual({
+        exists: true,
+        isFile: true,
+        isDirectory: false,
+      });
+    });
+
+    it("returns exists and isDirectory for an existing directory", function* () {
+      const result = yield* runtime.stat("durable-effects");
+      expect(result).toEqual({
+        exists: true,
+        isFile: false,
+        isDirectory: true,
+      });
+    });
+
+    it("returns all false for a missing path", function* () {
+      const result = yield* runtime.stat("nonexistent-path.txt");
+      expect(result).toEqual({
+        exists: false,
+        isFile: false,
+        isDirectory: false,
+      });
+    });
+  });
+
   describe("glob", () => {
     it("finds files matching a pattern", function* () {
       const results = yield* runtime.glob({

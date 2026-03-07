@@ -14,6 +14,7 @@ import { relative, sep } from "node:path";
 import { fetch as effectionFetch } from "@effectionx/fetch";
 import {
   readTextFile as fsReadTextFile,
+  stat as fsStat,
   globToRegExp,
   walk,
 } from "@effectionx/fs";
@@ -60,6 +61,22 @@ export function nodeRuntime(): DurableRuntime {
 
     *readTextFile(path) {
       return yield* fsReadTextFile(path);
+    },
+
+    *stat(path) {
+      try {
+        const s = yield* fsStat(path);
+        return {
+          exists: true,
+          isFile: s.isFile(),
+          isDirectory: s.isDirectory(),
+        };
+      } catch (err: unknown) {
+        if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+          return { exists: false, isFile: false, isDirectory: false };
+        }
+        throw err;
+      }
     },
 
     *glob(options) {

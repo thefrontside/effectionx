@@ -111,6 +111,13 @@ export class ReplayIndex {
 
   /**
    * Return the first non-disabled coroutine with unconsumed yields.
+   *
+   * NOTE: Closed coroutines are skipped because their yields were consumed
+   * by the child's own replay path (via runDurableChild). This means
+   * orphaned children (recorded in the journal but never spawned in the
+   * current run) are not detected here. Orphan detection requires tracking
+   * which coroutine IDs were visited during the current run, which is a
+   * future enhancement.
    */
   firstUnconsumed():
     | {

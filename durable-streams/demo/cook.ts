@@ -6,7 +6,7 @@
  * Connects to the Durable Streams server, runs a multi-dish cooking
  * workflow using durableAll/durableRace with durableCall and durableSleep.
  *
- * Kill this process mid-cook with `pkill -9 -f "demo/cook.ts"`, then restart.
+ * Kill this process mid-cook using the control pane in demo/start.sh, then restart.
  * The journal already has all completed checkpoints — replay produces zero
  * new events, then live execution resumes seamlessly from the next step.
  */

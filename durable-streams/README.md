@@ -61,7 +61,7 @@ interface Yield {
 
 User-facing effects: anything that interacts with the outside world. In practice, anything you express with `durableCall`, `durableSleep`, `durableAction`, `durableEach`, or a custom `createDurableEffect`.
 
-```
+```text
 [0] yield  root    { type: "call",  name: "fetchOrder" }    result: { status: "ok", value: { id: "42", ... } }
 [1] yield  root.0  { type: "call",  name: "checkFraud" }    result: { status: "ok", value: true }
 [2] yield  root.1  { type: "call",  name: "checkInventory" } result: { status: "ok", value: true }
@@ -258,7 +258,7 @@ The `@effectionx/durable-effects` package provides `nodeRuntime()` for productio
 
 Every generator instance running under `durableRun` gets a stable coroutine ID — a dot-delimited path that encodes its position in the scope tree:
 
-```
+```text
 root                    → "root"
   first child of root   → "root.0"
   second child of root  → "root.1"
@@ -505,8 +505,8 @@ interface DurableStream {
 import { InMemoryStream } from "@effectionx/durable-streams";
 
 const stream = new InMemoryStream();
-// Pre-populate with events:
-const preloaded = new InMemoryStream(existingEvents);
+// Or pre-populate with events:
+const prepopulatedStream = new InMemoryStream(existingEvents);
 // Inspect append count, inject failures:
 stream.appendCount;
 stream.injectFailure = new Error("disk full");

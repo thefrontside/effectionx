@@ -149,14 +149,16 @@ export function* durableRun<T extends WorkflowValue>(
 
     return result;
   } catch (error) {
+    // Normalize the error once — use the same Error object for both the
+    // Close event and the rethrow so that live runs and replayed Close
+    // events carry identical error shapes.
+    const primary = error instanceof Error ? error : new Error(String(error));
     const closeEvent: Close = {
       type: "close",
       coroutineId,
       result: {
         status: "err",
-        error: serializeError(
-          error instanceof Error ? error : new Error(String(error)),
-        ),
+        error: serializeError(primary),
       },
     };
 
@@ -167,13 +169,12 @@ export function* durableRun<T extends WorkflowValue>(
         appendError instanceof Error
           ? appendError
           : new Error(String(appendError));
-      const primary = error instanceof Error ? error : new Error(String(error));
       throw new AggregateError(
         [primary, appendFailure],
         "Workflow failed and Close append also failed",
       );
     }
 
-    throw error;
+    throw primary;
   }
 }

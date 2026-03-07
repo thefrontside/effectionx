@@ -57,7 +57,12 @@ function* runDurableChild<T extends WorkflowValue>(
 ): Operation<T> {
   const { replayIndex, stream } = parentCtx;
 
-  // Short-circuit: child already completed in a previous run
+  // Short-circuit: child already completed in a previous run.
+  // NOTE: Replay guard validation is not bypassed here — the check phase
+  // (runCheckPhase in durableRun) already iterated ALL Yield events
+  // (including this child's) before any workflow code runs. Guards have
+  // already had a chance to veto stale data. This fast-path only skips
+  // re-running the child's generator, not the guard validation.
   if (replayIndex.hasClose(childId)) {
     const closeEvent = replayIndex.getClose(childId)!;
     if (closeEvent.result.status === "ok") {

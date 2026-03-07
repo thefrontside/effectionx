@@ -219,6 +219,8 @@ await run(function* () {
 When `durableRun` is called as a generator inside another generator, it shares the parent's scope chain — middleware installed before the `yield*` is visible inside the workflow:
 
 ```typescript
+import { useFileContentGuard } from "@effectionx/durable-effects";
+
 function* supervisedRun(): Operation<void> {
   // Install middleware (see Replay Guards below)
   yield* useFileContentGuard();
@@ -227,6 +229,28 @@ function* supervisedRun(): Operation<void> {
   yield* durableRun(() => buildPipeline(), { stream });
 }
 ```
+
+---
+
+## DurableRuntime
+
+Effects that interact with the operating system (file I/O, subprocess execution, HTTP requests) use a `DurableRuntime` abstraction instead of importing Node-specific or Deno-specific APIs directly. The runtime is installed on the Effection scope as a context value before calling `durableRun`:
+
+```typescript
+import { DurableRuntimeCtx } from "@effectionx/durable-streams";
+import { nodeRuntime } from "@effectionx/durable-effects";
+
+function* main(): Operation<void> {
+  const scope = yield* useScope();
+  scope.set(DurableRuntimeCtx, nodeRuntime());
+
+  yield* durableRun(() => myWorkflow(), { stream });
+}
+```
+
+Effects access the runtime inside their operation callbacks via `scope.expect<DurableRuntime>(DurableRuntimeCtx)`. The interface is fully Operation-native — every I/O method returns `Operation<T>`, not `Promise<T>`, so cancellation flows through Effection's structured concurrency automatically.
+
+The `@effectionx/durable-effects` package provides `nodeRuntime()` for production use and `stubRuntime()` for testing.
 
 ---
 
@@ -427,12 +451,16 @@ function* durableReadFile(path: string): Workflow<string> {
 
 The guard's `check` phase reads `event.description.path` and computes the current hash. The `decide` phase reads `event.result.value.contentHash` and compares. No separate metadata or side-channel is needed.
 
-### The built-in file content guard
+### Pre-built guards in `@effectionx/durable-effects`
 
-`useFileContentGuard` implements exactly this pattern for file-backed effects. Install it and your file-reading workflows will automatically detect stale content:
+The `@effectionx/durable-effects` package provides ready-to-use guards for common staleness scenarios:
+
+- `useFileContentGuard()` — detects when a file's content has changed via hash comparison
+- `useGlobContentGuard()` — detects when a directory scan's results have changed
+- `useCodeFreshnessGuard(lookup)` — detects when eval source or bindings have changed
 
 ```typescript
-import { useFileContentGuard } from "@effectionx/durable-streams";
+import { useFileContentGuard } from "@effectionx/durable-effects";
 
 function* myPipeline(): Operation<void> {
   yield* useFileContentGuard();
@@ -440,17 +468,17 @@ function* myPipeline(): Operation<void> {
 }
 ```
 
-Any effect with a `path` field in its description and a `contentHash` field in its result value will be checked against the current file content. Events without these fields pass through unchanged.
-
 ### Guard composition
 
 Multiple guards compose naturally. Each guard either returns an outcome or calls `next(event)` to pass control to the next guard in the chain:
 
 ```typescript
+import { useFileContentGuard, useGlobContentGuard } from "@effectionx/durable-effects";
+
 function* supervisedPipeline(): Operation<void> {
   yield* useFileContentGuard();      // checks file-backed effects
-  yield* useSchemaVersionGuard();    // checks effects tagged with schema version
-  yield* useEnvVarGuard(["DB_URL"]); // checks effects that depend on env vars
+  yield* useGlobContentGuard();      // checks directory scan results
+  yield* useMyCustomGuard();         // your own guard
 
   yield* durableRun(() => pipeline(), { stream });
 }

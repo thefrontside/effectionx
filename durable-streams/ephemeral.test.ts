@@ -11,16 +11,16 @@
  */
 
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "expect";
 import { useScope } from "effection";
 import type { Operation } from "effection";
+import { expect } from "expect";
 import {
+  type DurableEvent,
+  InMemoryStream,
   durableAll,
   durableCall,
   durableRun,
   ephemeral,
-  InMemoryStream,
-  type DurableEvent,
 } from "./mod.ts";
 
 describe("ephemeral", () => {

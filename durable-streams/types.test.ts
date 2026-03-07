@@ -8,8 +8,8 @@
  */
 
 import { describe, it } from "@effectionx/bdd";
-import { expect } from "expect";
 import type { Operation } from "effection";
+import { expect } from "expect";
 import type {
   DurableEffect,
   EffectionResult,

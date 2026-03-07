@@ -6,7 +6,7 @@
  * coroutineId and childCounter.
  */
 
-import { createContext, type Context } from "effection";
+import { type Context, createContext } from "effection";
 import type { ReplayIndex } from "./replay-index.ts";
 import type { DurableStream } from "./stream.ts";
 import type { CoroutineId } from "./types.ts";

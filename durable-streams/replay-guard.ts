@@ -31,8 +31,8 @@
  * See replay-guard-spec.md for the full design.
  */
 
-import { createApi } from "effection/experimental";
 import type { Api, Operation } from "effection";
+import { createApi } from "effection/experimental";
 import type { Yield } from "./types.ts";
 
 // ---------------------------------------------------------------------------

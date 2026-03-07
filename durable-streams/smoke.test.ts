@@ -4,7 +4,7 @@
 
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
-import { ReplayIndex, InMemoryStream } from "./mod.ts";
+import { InMemoryStream, ReplayIndex } from "./mod.ts";
 import type { DurableEvent } from "./mod.ts";
 
 describe("smoke tests", () => {

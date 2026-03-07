@@ -63,6 +63,7 @@ describe("durable operations", () => {
           name: "compile",
           command: ["tsc"],
           timeout: 300000,
+          throwOnError: true,
         });
         expect(events[0]!.result).toEqual({
           status: "ok",
@@ -425,7 +426,9 @@ describe("durable operations", () => {
           name: "download",
           url: "https://example.com/data",
           method: "POST",
+          // Only safe headers are recorded with values; others are redacted
           headers: { accept: "text/plain" },
+          bodyHash: "len:7",
         });
       }
     });

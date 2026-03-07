@@ -58,8 +58,13 @@ export type {
 export { ReplayGuard } from "./replay-guard.ts";
 export type { ReplayOutcome } from "./replay-guard.ts";
 
-// File content replay guard
-export { useFileContentGuard } from "./file-guard.ts";
+// Runtime abstraction — platform-agnostic I/O for durable effects
+export { DurableRuntimeCtx } from "./runtime.ts";
+export type {
+  DurableRuntime,
+  ResponseHeaders,
+  RuntimeFetchResponse,
+} from "./runtime.ts";
 
 // Context
 export { DurableCtx } from "./context.ts";

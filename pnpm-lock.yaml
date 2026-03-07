@@ -107,15 +107,40 @@ importers:
         specifier: 4.1.0-alpha.7
         version: 4.1.0-alpha.7
 
+  durable-effects:
+    dependencies:
+      '@effectionx/durable-streams':
+        specifier: workspace:*
+        version: link:../durable-streams
+      '@effectionx/fetch':
+        specifier: workspace:*
+        version: link:../fetch
+      '@effectionx/fs':
+        specifier: workspace:*
+        version: link:../fs
+      '@effectionx/process':
+        specifier: workspace:*
+        version: link:../process
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+      effection:
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
+      expect:
+        specifier: ^29
+        version: 29.7.0
+
   durable-streams:
     dependencies:
       '@durable-streams/client':
         specifier: ^0.2.1
-        version: 0.2.1
+        version: 0.2.2
     devDependencies:
       '@durable-streams/server':
         specifier: ^0.2.1
-        version: 0.2.1(@tanstack/db@0.5.30(typescript@5.9.3))
+        version: 0.2.2(@tanstack/db@0.5.31(typescript@5.9.3))
       '@effectionx/bdd':
         specifier: workspace:*
         version: link:../bdd
@@ -482,17 +507,19 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@durable-streams/client@0.2.1':
-    resolution: {integrity: sha512-+mGdK6TuDR9fJPo8jw6DufPfoUv6g+27xoPES76GXQc6y3val9Oe/SK2o2FV9sqqLSE19HEUSxTp0D6CZebfZw==}
+  '@durable-streams/client@0.2.2':
+    resolution: {integrity: sha512-zmr9ErxJP1ORljnog4kclWmEJGoTpGN+Mu8FJLVEgcaR9PqTeyKtadq1l1H+DhrPsfAPeG6BF/mEJs4HyI+Eig==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+
+  '@durable-streams/server@0.2.2':
+    resolution: {integrity: sha512-L0hwZ4uh7KH5JKbta2YQfKJ1cGLBrHefoF0qrsGwXPdwvMaffX6UNPiv9IUvYrVmNsC0u8L1SAzTjlgATvLtAw==}
     engines: {node: '>=18.0.0'}
 
-  '@durable-streams/server@0.2.1':
-    resolution: {integrity: sha512-34Ss6CJIJJk0i8Leo9hhNqfbiAAfthSBWiYb13wYu4Wn72vJHorrCKH5Qr0stzZR7jp+fjdbZEnim4lExxEOjg==}
+  '@durable-streams/state@0.2.2':
+    resolution: {integrity: sha512-dTYNUjtn6sgYoA/dtbBgbdHlKrrjOPaycXQZndruX2oDicZX71Qry760cLYAbRkqwM7dHyDzDk5WTlnIXYOoyA==}
     engines: {node: '>=18.0.0'}
-
-  '@durable-streams/state@0.2.1':
-    resolution: {integrity: sha512-8piCcw/y1Jz6QJn0vOf+yhovFlp3xvRbzWRWtF51ndlorofJi3pOfCXnEINuvSueuNMIJosmKOg0AEvpMKfoCw==}
-    engines: {node: '>=18.0.0'}
+    hasBin: true
     peerDependencies:
       '@tanstack/db': '>=0.5.0'
 
@@ -887,8 +914,8 @@ packages:
     peerDependencies:
       typescript: '>=4.7'
 
-  '@tanstack/db@0.5.30':
-    resolution: {integrity: sha512-kgBbmGrWSrDdKPzl465OEGy2Epyc6HsoI2U/jUrMSHuGgUEtgowpnBCTyPJCGBrHL8+bYgASFV4ULsFn4L6pLg==}
+  '@tanstack/db@0.5.31':
+    resolution: {integrity: sha512-q2gCcFLkQec6AwA8aSDDOEAT7hlyVn67J/kseUoZfEPyiokmx1oBekg27tywirmlSqc3Q5GUi5Vt/mjQ85gQmQ==}
     peerDependencies:
       typescript: '>=4.7'
 
@@ -1520,25 +1547,25 @@ snapshots:
   '@biomejs/cli-win32-x64@1.9.4':
     optional: true
 
-  '@durable-streams/client@0.2.1':
+  '@durable-streams/client@0.2.2':
     dependencies:
       '@microsoft/fetch-event-source': 2.0.1
       fastq: 1.20.1
 
-  '@durable-streams/server@0.2.1(@tanstack/db@0.5.30(typescript@5.9.3))':
+  '@durable-streams/server@0.2.2(@tanstack/db@0.5.31(typescript@5.9.3))':
     dependencies:
-      '@durable-streams/client': 0.2.1
-      '@durable-streams/state': 0.2.1(@tanstack/db@0.5.30(typescript@5.9.3))
+      '@durable-streams/client': 0.2.2
+      '@durable-streams/state': 0.2.2(@tanstack/db@0.5.31(typescript@5.9.3))
       '@neophi/sieve-cache': 1.5.0
       lmdb: 3.5.1
     transitivePeerDependencies:
       - '@tanstack/db'
 
-  '@durable-streams/state@0.2.1(@tanstack/db@0.5.30(typescript@5.9.3))':
+  '@durable-streams/state@0.2.2(@tanstack/db@0.5.31(typescript@5.9.3))':
     dependencies:
-      '@durable-streams/client': 0.2.1
+      '@durable-streams/client': 0.2.2
       '@standard-schema/spec': 1.1.0
-      '@tanstack/db': 0.5.30(typescript@5.9.3)
+      '@tanstack/db': 0.5.31(typescript@5.9.3)
 
   '@esbuild/aix-ppc64@0.27.2':
     optional: true
@@ -1777,7 +1804,7 @@ snapshots:
       sorted-btree: 1.8.1
       typescript: 5.9.3
 
-  '@tanstack/db@0.5.30(typescript@5.9.3)':
+  '@tanstack/db@0.5.31(typescript@5.9.3)':
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@tanstack/db-ivm': 0.1.17(typescript@5.9.3)

@@ -11,4 +11,5 @@ export type {
   DurableRuntime,
   ResponseHeaders,
   RuntimeFetchResponse,
+  StatResult,
 } from "@effectionx/durable-streams";

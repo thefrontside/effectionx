@@ -33,6 +33,9 @@ export function stubRuntime(
     *readTextFile() {
       throw new Error("readTextFile not stubbed");
     },
+    *stat() {
+      throw new Error("stat not stubbed");
+    },
     *glob() {
       throw new Error("glob not stubbed");
     },

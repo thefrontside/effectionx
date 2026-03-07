@@ -64,6 +64,7 @@ export type {
   DurableRuntime,
   ResponseHeaders,
   RuntimeFetchResponse,
+  StatResult,
 } from "./runtime.ts";
 
 // Context

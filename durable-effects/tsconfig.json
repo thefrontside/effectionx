@@ -11,6 +11,9 @@
       "path": "../bdd"
     },
     {
+      "path": "../durable-streams"
+    },
+    {
       "path": "../fetch"
     },
     {

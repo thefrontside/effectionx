@@ -40,31 +40,28 @@ export { computeSHA256 } from "./hash.ts";
 // Durable effects
 // ---------------------------------------------------------------------------
 
+export { durableExec } from "./durable-exec.ts";
+export type { ExecOptions, ExecResult } from "./durable-exec.ts";
+
+export { durableReadFile } from "./durable-read-file.ts";
+export type { ReadFileResult } from "./durable-read-file.ts";
+
+export { durableGlob } from "./durable-glob.ts";
+export type { GlobOptions, GlobMatch, GlobResult } from "./durable-glob.ts";
+
+export { durableFetch } from "./durable-fetch.ts";
+export type { FetchOptions, FetchResult } from "./durable-fetch.ts";
+
+export { durableEval } from "./durable-eval.ts";
+export type { EvalOptions, EvalResult } from "./durable-eval.ts";
+
 export {
-  durableExec,
-  durableReadFile,
-  durableGlob,
-  durableFetch,
-  durableEval,
   durableResolve,
   durableNow,
   durableUUID,
   durableEnv,
-} from "./operations.ts";
-
-export type {
-  ExecOptions,
-  ExecResult,
-  ReadFileResult,
-  GlobOptions,
-  GlobMatch,
-  GlobResult,
-  FetchOptions,
-  FetchResult,
-  EvalOptions,
-  EvalResult,
-  ResolveKind,
-} from "./operations.ts";
+} from "./durable-resolve.ts";
+export type { ResolveKind } from "./durable-resolve.ts";
 
 // ---------------------------------------------------------------------------
 // Replay guards

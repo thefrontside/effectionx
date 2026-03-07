@@ -169,7 +169,12 @@ Use the Node.js test runner (`node --test`). Use `stubRuntime()` to prove non-ex
 - `node-runtime.ts` — `nodeRuntime()` (Node.js-specific implementation)
 - `stub-runtime.ts` — `stubRuntime()` test helper
 - `hash.ts` — `computeSHA256()`
-- `operations.ts` — all effect implementations
+- `durable-exec.ts` — `durableExec()` subprocess execution
+- `durable-read-file.ts` — `durableReadFile()` file read with content hash
+- `durable-glob.ts` — `durableGlob()` directory glob with scan hash
+- `durable-fetch.ts` — `durableFetch()` HTTP request
+- `durable-eval.ts` — `durableEval()` in-process code evaluation
+- `durable-resolve.ts` — `durableResolve()`, `durableNow()`, `durableUUID()`, `durableEnv()`
 - `guards.ts` — all replay guard implementations
 - `canonical-json.ts` — deterministic JSON serialization utility
 - `*.test.ts` — test files at package root (e.g., `operations.test.ts`, `guards.test.ts`, `hash.test.ts`, `node-runtime.test.ts`)

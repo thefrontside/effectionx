@@ -23,18 +23,16 @@ import {
 } from "@effectionx/durable-streams";
 import { useScope } from "effection";
 import { expect } from "expect";
+import { durableEval } from "./durable-eval.ts";
+import { durableGlob } from "./durable-glob.ts";
+import { durableReadFile } from "./durable-read-file.ts";
+import { durableResolve } from "./durable-resolve.ts";
 import {
   useCodeFreshnessGuard,
   useFileContentGuard,
   useGlobContentGuard,
 } from "./guards.ts";
 import { computeSHA256 } from "./hash.ts";
-import {
-  durableEval,
-  durableGlob,
-  durableReadFile,
-  durableResolve,
-} from "./operations.ts";
 import { DurableRuntimeCtx } from "./runtime.ts";
 import { stubRuntime } from "./stub-runtime.ts";
 

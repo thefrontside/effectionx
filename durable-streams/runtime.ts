@@ -39,6 +39,18 @@ export interface RuntimeFetchResponse {
 }
 
 /**
+ * Result of a `stat` call.
+ *
+ * For missing paths `stat` returns `{ exists: false, isFile: false, isDirectory: false }`
+ * instead of throwing — "does this exist?" has "no" as a valid answer.
+ */
+export interface StatResult {
+  exists: boolean;
+  isFile: boolean;
+  isDirectory: boolean;
+}
+
+/**
  * Platform-agnostic runtime for durable effects.
  *
  * Implementations exist for Node.js (`nodeRuntime()` in `@effectionx/durable-effects`)
@@ -55,6 +67,15 @@ export interface DurableRuntime {
 
   /** Read a text file. */
   readTextFile(path: string): Operation<string>;
+
+  /**
+   * Check file/directory existence and type. Never throws for missing paths.
+   *
+   * Returns `{ exists: false, isFile: false, isDirectory: false }` when the
+   * path does not exist. Permission errors and other filesystem errors still
+   * throw — they indicate a real problem, not "file doesn't exist."
+   */
+  stat(path: string): Operation<StatResult>;
 
   /** Expand glob patterns. Returns relative paths with isFile flag. */
   glob(options: {

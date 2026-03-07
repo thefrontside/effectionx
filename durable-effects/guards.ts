@@ -21,6 +21,7 @@ import {
 } from "@effectionx/durable-streams";
 import { useScope } from "effection";
 import type { Operation } from "effection";
+import { canonicalJson } from "./canonical-json.ts";
 import { computeSHA256 } from "./hash.ts";
 import { type DurableRuntime, DurableRuntimeCtx } from "./runtime.ts";
 
@@ -210,7 +211,7 @@ export function* useCodeFreshnessGuard(
           if (cell) {
             const sourceHash = yield* computeSHA256(cell.source);
             const bindingsHash = yield* computeSHA256(
-              JSON.stringify(cell.bindings),
+              canonicalJson(cell.bindings),
             );
             cache.set(cellName, { sourceHash, bindingsHash });
           }

@@ -12,7 +12,7 @@ for use with `@effectionx/durable-streams`.
 ## Installation
 
 ```bash
-npm install @effectionx/durable-effects
+npm install @effectionx/durable-effects @effectionx/durable-streams effection
 ```
 
 ## Usage

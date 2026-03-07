@@ -142,7 +142,7 @@ Mark each step done as you complete it. Commit after every step.
 - [x] **Step 5:** `operations.ts` — All 6 effects (durableResolve, durableReadFile, durableExec, durableFetch, durableGlob, durableEval) + `operations.test.ts`
 - [x] **Step 6:** `guards.ts` — All 3 replay guards + `guards.test.ts`
 - [x] **Step 7:** `mod.ts` — Complete public API barrel exports
-- [x] **Step 8:** Verify build, lint, all tests pass
+- [ ] **Step 8:** Verify build, lint, all tests pass
 - [ ] **Step 9:** Create PR
 
 ---

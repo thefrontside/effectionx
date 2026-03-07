@@ -10,7 +10,7 @@
  * cancellation flows automatically through scope teardown.
  */
 
-import { relative } from "node:path";
+import { relative, sep } from "node:path";
 import { fetch as effectionFetch } from "@effectionx/fetch";
 import {
   readTextFile as fsReadTextFile,
@@ -34,7 +34,10 @@ import type { DurableRuntime, RuntimeFetchResponse } from "./runtime.ts";
 export function nodeRuntime(): DurableRuntime {
   return {
     *exec(options) {
-      const { command, cwd, env, timeout = 300_000 } = options;
+      // timeout is accepted in the interface but not yet supported by
+      // @effectionx/process — tracked for future enhancement. Cancellation
+      // via Effection scope teardown provides the primary timeout mechanism.
+      const { command, cwd, env } = options;
       const [cmd, ...args] = command;
 
       if (!cmd) {
@@ -80,7 +83,8 @@ export function nodeRuntime(): DurableRuntime {
       });
 
       for (const entry of yield* each(stream)) {
-        const relPath = relative(root, entry.path);
+        // Normalize to POSIX separators for consistent matching across platforms
+        const relPath = relative(root, entry.path).split(sep).join("/");
         const matches = includeRegexes.some((re) => re.test(relPath));
         if (matches) {
           results.push({ path: relPath, isFile: entry.isFile });

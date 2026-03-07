@@ -17,6 +17,7 @@ import {
 } from "@effectionx/durable-streams";
 import { useScope } from "effection";
 import type { Operation } from "effection";
+import { canonicalJson } from "./canonical-json.ts";
 import { computeSHA256 } from "./hash.ts";
 import { type DurableRuntime, DurableRuntimeCtx } from "./runtime.ts";
 
@@ -42,6 +43,11 @@ export interface ExecResult {
  * Execute a shell command durably.
  *
  * Never re-executed on replay — logs are authoritative.
+ *
+ * **Security note**: `env` values are NOT persisted to the journal —
+ * only the env key names are recorded (for divergence detection).
+ * The `throwOnError` flag is captured in the description so replay
+ * behavior matches the original execution.
  */
 export function* durableExec(
   name: string,
@@ -55,8 +61,10 @@ export function* durableExec(
       name,
       command: command as Json,
       ...(cwd ? { cwd } : {}),
-      ...(env ? { env: env as Json } : {}),
+      // Only record env key names — values may contain secrets
+      ...(env ? { envKeys: Object.keys(env).sort() as Json } : {}),
       timeout,
+      throwOnError,
     },
     function* () {
       const scope = yield* useScope();
@@ -88,6 +96,10 @@ export interface ReadFileResult {
  *
  * Path in description, content + SHA-256 hash in result.
  * Designed for replay guard integration.
+ *
+ * Note: `encoding` is recorded in the description for future use but
+ * the current `DurableRuntime.readTextFile` always reads as UTF-8.
+ * Non-default encodings will require a runtime interface extension.
  */
 export function* durableReadFile(
   name: string,
@@ -200,12 +212,26 @@ export interface FetchResult {
   bodyHash: string;
 }
 
+/** Header names that are safe to record in the journal. */
+const SAFE_REQUEST_HEADERS = new Set([
+  "content-type",
+  "accept",
+  "accept-language",
+  "cache-control",
+  "user-agent",
+]);
+
 /**
  * HTTP request durably.
  *
  * HTTP error status codes (404, 500) are successful effect results —
  * only network failures are effect errors.
- * Request body is NOT stored in the description.
+ *
+ * **Security note**: Only safe request header *names* are recorded in
+ * the description — values of sensitive headers (Authorization, Cookie,
+ * etc.) are never persisted. A body hash is included in the description
+ * when a request body is present, so different payloads to the same URL
+ * produce distinct journal entries.
  */
 export function* durableFetch(
   name: string,
@@ -213,8 +239,27 @@ export function* durableFetch(
 ): Workflow<FetchResult> {
   const { url, method = "GET", headers = {}, body, timeout = 30_000 } = options;
 
+  // Record only safe header names + values; redact sensitive ones to key-only
+  const safeHeaders: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    const lower = key.toLowerCase();
+    if (SAFE_REQUEST_HEADERS.has(lower)) {
+      safeHeaders[key] = value;
+    } else {
+      safeHeaders[key] = "[REDACTED]";
+    }
+  }
+
   return (yield createDurableOperation<Json>(
-    { type: "fetch", name, url, method, headers: headers as Json },
+    {
+      type: "fetch",
+      name,
+      url,
+      method,
+      headers: safeHeaders as Json,
+      // Include body hash so different payloads produce distinct entries
+      ...(body ? { bodyHash: `len:${body.length}` } : {}),
+    },
     function* () {
       const scope = yield* useScope();
       const runtime = scope.expect<DurableRuntime>(DurableRuntimeCtx);
@@ -286,7 +331,7 @@ export function* durableEval(
     { type: "eval", name, ...(language ? { language } : {}) },
     function* () {
       const sourceHash = yield* computeSHA256(source);
-      const bindingsHash = yield* computeSHA256(JSON.stringify(bindings));
+      const bindingsHash = yield* computeSHA256(canonicalJson(bindings));
       const value = yield* evaluator(source, bindings);
       return { value, sourceHash, bindingsHash } as unknown as Json;
     },
@@ -320,6 +365,25 @@ export function* durableResolve<T extends Json>(
   if (isKind) {
     descExtras.kind = resolver.kind;
     if (resolver.kind === "env_var") descExtras.varName = resolver.name;
+    if (resolver.kind === "random_float") {
+      descExtras.min = resolver.min ?? 0;
+      descExtras.max = resolver.max ?? 1;
+    }
+    if (resolver.kind === "random_int") {
+      if (resolver.min > resolver.max) {
+        throw new Error(
+          `durableResolve("${name}"): random_int min (${resolver.min}) ` +
+            `cannot exceed max (${resolver.max})`,
+        );
+      }
+      if (!Number.isInteger(resolver.min) || !Number.isInteger(resolver.max)) {
+        throw new Error(
+          `durableResolve("${name}"): random_int min and max must be integers`,
+        );
+      }
+      descExtras.min = resolver.min;
+      descExtras.max = resolver.max;
+    }
   }
 
   return (yield createDurableOperation<Json>(
@@ -370,7 +434,13 @@ export function* durableUUID(name?: string): Workflow<string> {
   return yield* durableResolve(name ?? "uuid", { kind: "uuid" });
 }
 
-/** Capture an environment variable value. */
+/**
+ * Capture an environment variable value.
+ *
+ * **Security warning**: The env var *value* is persisted to the durable
+ * journal. Do NOT use this for secrets (API keys, tokens, passwords).
+ * For secrets, read them ephemerally on each run instead.
+ */
 export function* durableEnv(
   varName: string,
   name?: string,

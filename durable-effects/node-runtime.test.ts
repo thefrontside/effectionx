@@ -2,6 +2,8 @@
  * Tests for nodeRuntime() — Node.js DurableRuntime implementation.
  */
 
+import fs from "node:fs";
+import os from "node:os";
 import { describe, it } from "@effectionx/bdd";
 import { expect } from "expect";
 import { nodeRuntime } from "./node-runtime.ts";
@@ -35,12 +37,15 @@ describe("nodeRuntime", () => {
     });
 
     it("supports cwd option", function* () {
+      const cwd = os.tmpdir();
       const result = yield* runtime.exec({
-        command: ["pwd"],
-        cwd: "/tmp",
+        command: ["node", "-e", "console.log(process.cwd())"],
+        cwd,
       });
-      // /tmp may resolve to /private/tmp on macOS
-      expect(result.stdout.trim()).toMatch(/\/tmp$/);
+      // os.tmpdir() may resolve symlinks (e.g., /tmp → /private/tmp on macOS)
+      const actual = result.stdout.trim();
+      const expected = fs.realpathSync(cwd);
+      expect(actual).toBe(expected);
     });
   });
 

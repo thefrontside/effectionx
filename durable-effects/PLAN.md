@@ -134,15 +134,15 @@ durable-effects/                   # NEW package at repo root
 Mark each step done as you complete it. Commit after every step.
 
 - [x] **Step 0:** Create worktree + branch from main
-- [ ] **Step 0.5:** Write PLAN.md, scaffold package, integrate into monorepo, pnpm install
-- [ ] **Step 1:** `runtime.ts` — DurableRuntime interface + DurableRuntimeCtx
-- [ ] **Step 2:** `hash.ts` — computeSHA256 using Web Crypto + `hash.test.ts`
-- [ ] **Step 3:** `stub-runtime.ts` — test stub runtime
-- [ ] **Step 4:** `node-runtime.ts` — nodeRuntime() + `node-runtime.test.ts`
-- [ ] **Step 5:** `operations.ts` — All 6 effects (durableResolve, durableReadFile, durableExec, durableFetch, durableGlob, durableEval) + `operations.test.ts`
-- [ ] **Step 6:** `guards.ts` — All 3 replay guards + `guards.test.ts`
-- [ ] **Step 7:** `mod.ts` — Complete public API barrel exports
-- [ ] **Step 8:** Verify build, lint, all tests pass
+- [x] **Step 0.5:** Write PLAN.md, scaffold package, integrate into monorepo, pnpm install
+- [x] **Step 1:** `runtime.ts` — DurableRuntime interface + DurableRuntimeCtx
+- [x] **Step 2:** `hash.ts` — computeSHA256 using Web Crypto + `hash.test.ts`
+- [x] **Step 3:** `stub-runtime.ts` — test stub runtime
+- [x] **Step 4:** `node-runtime.ts` — nodeRuntime() + `node-runtime.test.ts`
+- [x] **Step 5:** `operations.ts` — All 6 effects (durableResolve, durableReadFile, durableExec, durableFetch, durableGlob, durableEval) + `operations.test.ts`
+- [x] **Step 6:** `guards.ts` — All 3 replay guards + `guards.test.ts`
+- [x] **Step 7:** `mod.ts` — Complete public API barrel exports
+- [x] **Step 8:** Verify build, lint, all tests pass
 - [ ] **Step 9:** Create PR
 
 ---

@@ -77,6 +77,15 @@ interface DurableEachState<T extends Json> {
  * This avoids using Effection context, which doesn't work when both
  * functions are individually wrapped in ephemeral() (each gets its own
  * child scope, making context invisible across them).
+ *
+ * LIMITATION: Only one durableEach iteration can be active at a time across
+ * the entire process. Concurrent durableEach calls (even in separate
+ * durableRun instances) will collide. The nesting guard below throws a
+ * clear error if this happens. For concurrent iterations, use child scopes
+ * via durableSpawn so each finishes its iteration before another starts.
+ *
+ * TODO: Consider migrating to a scope-local mechanism if Effection adds
+ * support for context that spans across ephemeral() boundaries.
  */
 let activeState: DurableEachState<Json> | null = null;
 

@@ -104,6 +104,13 @@ export function* versionCheck(
   name: string,
   opts: { minVersion: number; maxVersion: number },
 ): Workflow<number> {
+  if (opts.minVersion > opts.maxVersion) {
+    throw new Error(
+      `versionCheck("${name}"): minVersion (${opts.minVersion}) ` +
+        `cannot exceed maxVersion (${opts.maxVersion})`,
+    );
+  }
+
   const version = (yield createDurableEffect<number>(
     { type: "version_gate", name },
     (resolve) => {

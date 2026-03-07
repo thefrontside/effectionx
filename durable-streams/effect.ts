@@ -94,7 +94,12 @@ function checkReplay<T>(
   // biome-ignore lint/suspicious/noConfusingLabels: deliberate labeled block for break-out-of-replay pattern
   replay: {
     if (entry) {
-      // §6.2: Validate description match
+      // §6.2: Validate description identity match.
+      // Only type and name are identity fields — extra metadata fields
+      // (path, URL, marker, etc.) are stored for replay guards to inspect
+      // but do not participate in divergence detection.
+      // The current desc is passed to the Divergence API as `actual` so
+      // guards can compare both sides if needed.
       if (
         entry.description.type !== desc.type ||
         entry.description.name !== desc.name

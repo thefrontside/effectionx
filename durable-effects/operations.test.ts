@@ -8,22 +8,17 @@ import {
 } from "@effectionx/durable-streams";
 import { useScope } from "effection";
 import { expect } from "expect";
+import { type EvalResult, durableEval } from "./durable-eval.ts";
+import { type ExecResult, durableExec } from "./durable-exec.ts";
+import { type FetchResult, durableFetch } from "./durable-fetch.ts";
+import { type GlobResult, durableGlob } from "./durable-glob.ts";
+import { type ReadFileResult, durableReadFile } from "./durable-read-file.ts";
 import {
-  type EvalResult,
-  type ExecResult,
-  type FetchResult,
-  type GlobResult,
-  type ReadFileResult,
   durableEnv,
-  durableEval,
-  durableExec,
-  durableFetch,
-  durableGlob,
   durableNow,
-  durableReadFile,
   durableResolve,
   durableUUID,
-} from "./operations.ts";
+} from "./durable-resolve.ts";
 import { DurableRuntimeCtx } from "./runtime.ts";
 import { stubRuntime } from "./stub-runtime.ts";
 

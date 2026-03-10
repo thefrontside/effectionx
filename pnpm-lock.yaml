@@ -83,6 +83,10 @@ importers:
         version: 4.0.0
 
   context-api:
+    dependencies:
+      '@effectionx/middleware':
+        specifier: workspace:*
+        version: link:../middleware
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*

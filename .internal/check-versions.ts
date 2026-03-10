@@ -1,14 +1,10 @@
-import { promises as fsp } from "node:fs";
 import { resolve } from "node:path";
 import process from "node:process";
+import { readTextFile, writeTextFile } from "@effectionx/fs";
 import { x } from "@effectionx/tinyexec";
-import { call, main } from "effection";
+import { main } from "effection";
 import { inc as semverInc } from "semver";
-import {
-  type WorkspacePackage,
-  buildDepGraph,
-  getTransitiveDependents,
-} from "./lib/dep-graph.ts";
+import { buildDepGraph, getTransitiveDependents } from "./lib/dep-graph.ts";
 
 const mode = process.argv[2] ?? "check";
 
@@ -80,11 +76,12 @@ await main(function* () {
       }
 
       const packageJsonPath = resolve(pkg.workspacePath, "package.json");
-      const raw = yield* call(() => fsp.readFile(packageJsonPath, "utf-8"));
+      const raw = yield* readTextFile(packageJsonPath);
       const json = JSON.parse(raw) as Record<string, unknown>;
       json.version = newVersion;
-      yield* call(() =>
-        fsp.writeFile(packageJsonPath, `${JSON.stringify(json, null, 2)}\n`),
+      yield* writeTextFile(
+        packageJsonPath,
+        `${JSON.stringify(json, null, 2)}\n`,
       );
 
       bumped.push({ name, from: pkg.version, to: newVersion });

@@ -1,7 +1,7 @@
-import { promises as fsp } from "node:fs";
 import { resolve } from "node:path";
 import process from "node:process";
-import { type Operation, call } from "effection";
+import { readTextFile } from "@effectionx/fs";
+import type { Operation } from "effection";
 
 export interface WorkspacePackage {
   /** Package name, e.g. "@effectionx/bdd". */
@@ -40,8 +40,8 @@ export interface DepGraph {
 export function* buildDepGraph(): Operation<DepGraph> {
   const rootDir = process.cwd();
 
-  const workspaceYaml = yield* call(() =>
-    fsp.readFile(resolve(rootDir, "pnpm-workspace.yaml"), "utf-8"),
+  const workspaceYaml = yield* readTextFile(
+    resolve(rootDir, "pnpm-workspace.yaml"),
   );
 
   const workspaces: string[] = [];
@@ -60,9 +60,7 @@ export function* buildDepGraph(): Operation<DepGraph> {
 
   for (const workspace of workspaces) {
     const workspacePath = resolve(rootDir, workspace);
-    const raw = yield* call(() =>
-      fsp.readFile(resolve(workspacePath, "package.json"), "utf-8"),
-    );
+    const raw = yield* readTextFile(resolve(workspacePath, "package.json"));
     const json = JSON.parse(raw) as Record<string, unknown>;
 
     allPackages.push({
@@ -85,13 +83,11 @@ export function* buildDepGraph(): Operation<DepGraph> {
 
   const packageNames = new Set(packages.keys());
 
-  // Second pass: resolve published workspace deps and build reverse map.
+  // Resolve published workspace deps and build reverse map.
   const dependents = new Map<string, string[]>();
 
   for (const pkg of packages.values()) {
-    const raw = yield* call(() =>
-      fsp.readFile(resolve(pkg.workspacePath, "package.json"), "utf-8"),
-    );
+    const raw = yield* readTextFile(resolve(pkg.workspacePath, "package.json"));
     const json = JSON.parse(raw) as Record<string, unknown>;
 
     const deps = collectWorkspaceDeps(

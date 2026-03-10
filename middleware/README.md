@@ -1,6 +1,6 @@
 # Middleware
 
-Composable middleware for wrapping a single function
+Type-safe composable middleware for generators and Effection operations
 
 ---
 

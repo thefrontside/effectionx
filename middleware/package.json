@@ -1,6 +1,6 @@
 {
   "name": "@effectionx/middleware",
-  "description": "Composable middleware with min/max priority layering",
+  "description": "Type-safe composable middleware for generators and Effection operations",
   "version": "0.1.0",
   "keywords": ["concurrency", "interop"],
   "type": "module",

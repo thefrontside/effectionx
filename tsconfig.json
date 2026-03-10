@@ -22,6 +22,7 @@
     { "path": "fs" },
     { "path": "fx" },
     { "path": "jsonl-store" },
+    { "path": "middleware" },
     { "path": "node" },
     { "path": "process" },
     { "path": "raf" },

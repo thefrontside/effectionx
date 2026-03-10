@@ -152,6 +152,8 @@ importers:
         specifier: ^4
         version: 4.0.0
 
+  middleware: {}
+
   node:
     devDependencies:
       '@effectionx/bdd':

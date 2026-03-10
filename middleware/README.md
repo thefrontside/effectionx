@@ -73,6 +73,156 @@ The full execution order with max middlewares `[M1, M2]` and min middlewares
 M1 → M2 → m1 → m2 → core
 ```
 
+## When to Use Min vs Max
+
+The two priority levels serve fundamentally different roles:
+
+**`max` (outermost) — wrapping behavior.** This is the most common middleware
+use case. Logging, timing, caching, auth, transactions — behaviors that wrap
+around an operation. `max` middlewares always call `next()` to delegate inward,
+and there are typically multiple of them layered on top of each other.
+
+**`min` (innermost) — providing implementation.** The core function is often a
+stub that throws "not implemented." A `min` middleware supplies the actual
+behavior for your runtime or environment. It typically does **not** call
+`next()` — it *is* the implementation.
+
+This separation lets you define an operation as a contract and defer the
+implementation:
+
+```ts
+import { createMiddlewareStack } from "@effectionx/middleware";
+import type { Operation } from "effection";
+
+// Define the contract — core throws because there's no implementation yet
+const readFile = createMiddlewareStack<[string], Operation<string>>();
+
+// In your Node.js runtime setup, provide the implementation via min:
+readFile.use(function* ([path], _next) {
+  return yield* nodeReadFile(path);
+}, { at: "min" });
+
+// Max middlewares wrap the outside as usual:
+readFile.use(function* ([path], next) {
+  console.log(`reading ${path}`);
+  return yield* next(path);
+});
+
+// Compose with a core that throws if no min is registered
+const read = readFile.compose((path) => {
+  throw new Error(`readFile("${path}") is not implemented`);
+});
+```
+
+In tests, you can swap the implementation by registering a different `min`:
+
+```ts
+readFile.use(function* ([path], _next) {
+  return testFixtures.get(path) ?? "";
+}, { at: "min" });
+```
+
+The `max` middlewares (logging, caching, etc.) continue to work unchanged — they
+don't care which `min` is providing the actual file reading.
+
+## With Effection Operations
+
+The middleware pattern becomes especially powerful when combined with
+[Effection](https://frontside.com/effection) operations. When `TReturn` is an
+`Operation`, each middleware is a generator function whose body **is** the
+execution context for everything inside it.
+
+With plain function middleware, each layer can only transform arguments and
+return values — "args in, result out." But with Effection, a middleware generator
+can `yield*` to set up resources, establish context, or spawn tasks before
+calling `next()`. Everything below it in the stack — every inner middleware and
+the core function — automatically inherits that context without receiving it as a
+parameter.
+
+The running coroutine *is* the context for future execution.
+
+```ts
+import { createMiddlewareStack } from "@effectionx/middleware";
+import type { Middleware } from "@effectionx/middleware";
+import type { Operation } from "effection";
+import { createContext } from "effection";
+
+type Handler = Middleware<[Request], Operation<Response>>;
+
+const DatabaseConnection = createContext<Connection>("database");
+const CurrentUser = createContext<User>("user");
+
+// Middleware 1: establish a database connection for the request
+const withDatabase: Handler = function* (args, next) {
+  const conn = yield* connect(process.env.DATABASE_URL);
+  yield* DatabaseConnection.set(conn);
+  try {
+    return yield* next(...args);
+  } finally {
+    yield* conn.close();
+  }
+};
+
+// Middleware 2: wrap the entire request in a transaction
+const withTransaction: Handler = function* (args, next) {
+  const conn = yield* DatabaseConnection.expect();
+  const tx = yield* conn.begin();
+  try {
+    const response = yield* next(...args);
+    yield* tx.commit();
+    return response;
+  } catch (error) {
+    yield* tx.rollback();
+    throw error;
+  }
+};
+
+// Middleware 3: authenticate and set user context
+const withAuth: Handler = function* ([request], next) {
+  const conn = yield* DatabaseConnection.expect();
+  const user = yield* authenticate(request, conn);
+  yield* CurrentUser.set(user);
+  return yield* next(request);
+};
+```
+
+The core handler uses all of this context — but never receives any of it as
+parameters:
+
+```ts
+function* handleRequest(request: Request): Operation<Response> {
+  const user = yield* CurrentUser.expect();
+  const conn = yield* DatabaseConnection.expect();
+
+  const posts = yield* conn.query(
+    "SELECT * FROM posts WHERE author = ?",
+    [user.id],
+  );
+
+  return Response.json(posts);
+}
+```
+
+Compose it all together:
+
+```ts
+const stack = createMiddlewareStack<[Request], Operation<Response>>();
+
+stack.use(withDatabase);
+stack.use(withTransaction);
+stack.use(withAuth);
+
+const handle = stack.compose(handleRequest);
+```
+
+Each middleware's generator is still **running** while the inner functions
+execute. `withDatabase` holds the connection open, `withTransaction` holds the
+transaction open, and `withAuth` has set the user context. When `handleRequest`
+returns (or throws, or is cancelled), the stack unwinds in reverse:
+`withAuth` → `withTransaction` (commit or rollback) → `withDatabase` (close
+connection). Structured concurrency guarantees that no resources leak, even if
+the request is cancelled mid-flight.
+
 ## API
 
 ### `Middleware<TArgs, TReturn>`

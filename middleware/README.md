@@ -69,7 +69,7 @@ fn("hello");
 The full execution order with max middlewares `[M1, M2]` and min middlewares
 `[m1, m2]` is:
 
-```
+```text
 M1 → M2 → m1 → m2 → core
 ```
 

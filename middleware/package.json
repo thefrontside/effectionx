@@ -2,13 +2,7 @@
   "name": "@effectionx/middleware",
   "description": "Composable middleware with min/max priority layering",
   "version": "0.1.0",
-  "keywords": [
-    "concurrency",
-    "effection",
-    "effectionx",
-    "middleware",
-    "compose"
-  ],
+  "keywords": ["concurrency", "interop"],
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",

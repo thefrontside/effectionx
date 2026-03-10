@@ -1,6 +1,1 @@
-export {
-  type Middleware,
-  type MiddlewareStack,
-  combine,
-  createMiddlewareStack,
-} from "./middleware.ts";
+export { type Middleware, combine } from "./middleware.ts";

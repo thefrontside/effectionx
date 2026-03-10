@@ -20,30 +20,6 @@ export type Middleware<TArgs extends unknown[], TReturn> = (
 ) => TReturn;
 
 /**
- * A stack that manages middleware with min/max priority ordering.
- *
- * - `max` middleware runs outermost (closest to caller, first to execute)
- * - `min` middleware runs innermost (closest to core, last before core)
- * - Within each priority, insertion order is preserved
- *
- * The execution order for a stack with max middlewares [M1, M2] and
- * min middlewares [m1, m2] is: `M1 → M2 → m1 → m2 → core`
- */
-export interface MiddlewareStack<TArgs extends unknown[], TReturn> {
-  /** Register middleware. Defaults to `"max"` (outermost). */
-  use(
-    middleware: Middleware<TArgs, TReturn>,
-    options?: { at: "min" | "max" },
-  ): void;
-
-  /**
-   * Compose all registered middleware around a core function.
-   * Returns a new function each time, reflecting the current stack state.
-   */
-  compose(core: (...args: TArgs) => TReturn): (...args: TArgs) => TReturn;
-}
-
-/**
  * Compose an array of middleware into a single middleware.
  *
  * Middlewares execute left-to-right: the first middleware in the array
@@ -74,52 +50,4 @@ export function combine<TArgs extends unknown[], TReturn>(
     (inner, middleware) => (args, next) =>
       middleware(args, (...args) => inner(args, next)),
   );
-}
-
-/**
- * Create a middleware stack with min/max priority ordering.
- *
- * @example
- * ```ts
- * import { createMiddlewareStack } from "@effectionx/middleware";
- *
- * const stack = createMiddlewareStack<[Request], Response>();
- *
- * // Runs outermost (default)
- * stack.use((args, next) => {
- *   console.log("before");
- *   const result = next(...args);
- *   console.log("after");
- *   return result;
- * });
- *
- * // Runs just before core
- * stack.use((args, next) => {
- *   args[0].headers.set("x-request-id", crypto.randomUUID());
- *   return next(...args);
- * }, { at: "min" });
- *
- * const handler = stack.compose(coreHandler);
- * ```
- */
-export function createMiddlewareStack<
-  TArgs extends unknown[],
-  TReturn,
->(): MiddlewareStack<TArgs, TReturn> {
-  const max: Middleware<TArgs, TReturn>[] = [];
-  const min: Middleware<TArgs, TReturn>[] = [];
-
-  return {
-    use(middleware, options = { at: "max" }) {
-      if (options.at === "min") {
-        min.push(middleware);
-      } else {
-        max.push(middleware);
-      }
-    },
-    compose(core) {
-      const stack = combine([...max, ...min]);
-      return (...args: TArgs) => stack(args, core);
-    },
-  };
 }

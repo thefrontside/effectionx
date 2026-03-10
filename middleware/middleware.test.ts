@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
-import { type Middleware, combine, createMiddlewareStack } from "./mod.ts";
+import { type Middleware, combine } from "./mod.ts";
 
 describe("combine", () => {
   it("passes through with empty middleware array", () => {
@@ -91,175 +91,12 @@ describe("combine", () => {
     const result = stack(["hello"], (s) => s);
     assert.equal(result, "HELLO");
   });
-});
 
-describe("createMiddlewareStack", () => {
-  it("composes middleware around a core function", () => {
-    const stack = createMiddlewareStack<[number, number], number>();
-
-    stack.use((args, next) => next(...args) * 2);
-
-    const fn = stack.compose((a, b) => a + b);
-    assert.equal(fn(3, 4), 14); // (3 + 4) * 2
-  });
-
-  it("defaults to max (outermost) priority", () => {
-    const log: string[] = [];
-    const stack = createMiddlewareStack<[string], string>();
-
-    stack.use((args, next) => {
-      log.push("first");
-      return next(...args);
-    });
-    stack.use((args, next) => {
-      log.push("second");
-      return next(...args);
-    });
-
-    stack.compose((s) => s)("hello");
-    assert.deepEqual(log, ["first", "second"]);
-  });
-
-  it("min middleware runs after max, just before core", () => {
-    const log: string[] = [];
-    const stack = createMiddlewareStack<[], string>();
-
-    stack.use((_args, next) => {
-      log.push("max");
-      return next();
-    });
-
-    stack.use(
-      (_args, next) => {
-        log.push("min");
-        return next();
-      },
-      { at: "min" },
-    );
-
-    stack.compose(() => {
-      log.push("core");
-      return "done";
-    })();
-
-    assert.deepEqual(log, ["max", "min", "core"]);
-  });
-
-  it("preserves insertion order within max", () => {
-    const log: string[] = [];
-    const stack = createMiddlewareStack<[], void>();
-
-    stack.use((_args, next) => {
-      log.push("max-1");
-      return next();
-    });
-    stack.use((_args, next) => {
-      log.push("max-2");
-      return next();
-    });
-    stack.use((_args, next) => {
-      log.push("max-3");
-      return next();
-    });
-
-    stack.compose(() => {
-      log.push("core");
-    })();
-    assert.deepEqual(log, ["max-1", "max-2", "max-3", "core"]);
-  });
-
-  it("preserves insertion order within min", () => {
-    const log: string[] = [];
-    const stack = createMiddlewareStack<[], void>();
-
-    stack.use(
-      (_args, next) => {
-        log.push("min-1");
-        return next();
-      },
-      { at: "min" },
-    );
-    stack.use(
-      (_args, next) => {
-        log.push("min-2");
-        return next();
-      },
-      { at: "min" },
-    );
-    stack.use(
-      (_args, next) => {
-        log.push("min-3");
-        return next();
-      },
-      { at: "min" },
-    );
-
-    stack.compose(() => {
-      log.push("core");
-    })();
-    assert.deepEqual(log, ["min-1", "min-2", "min-3", "core"]);
-  });
-
-  it("full ordering: max then min then core regardless of insertion order", () => {
-    const log: string[] = [];
-    const stack = createMiddlewareStack<[], void>();
-
-    stack.use((_args, next) => {
-      log.push("max-1");
-      return next();
-    });
-    stack.use(
-      (_args, next) => {
-        log.push("min-1");
-        return next();
-      },
-      { at: "min" },
-    );
-    stack.use((_args, next) => {
-      log.push("max-2");
-      return next();
-    });
-    stack.use(
-      (_args, next) => {
-        log.push("min-2");
-        return next();
-      },
-      { at: "min" },
-    );
-
-    stack.compose(() => {
-      log.push("core");
-    })();
-    assert.deepEqual(log, ["max-1", "max-2", "min-1", "min-2", "core"]);
-  });
-
-  it("compose reflects current state of the stack", () => {
-    const log: string[] = [];
-    const stack = createMiddlewareStack<[], string>();
-
-    stack.use((_args, next) => {
-      log.push("first");
-      return next();
-    });
-
-    const fn1 = stack.compose(() => "done");
-    fn1();
-    assert.deepEqual(log, ["first"]);
-
-    log.length = 0;
-    stack.use((_args, next) => {
-      log.push("second");
-      return next();
-    });
-
-    const fn2 = stack.compose(() => "done");
-    fn2();
-    assert.deepEqual(log, ["first", "second"]);
-  });
-
-  it("works with no middleware", () => {
-    const stack = createMiddlewareStack<[number], number>();
-    const fn = stack.compose((n) => n * 2);
-    assert.equal(fn(5), 10);
+  it("wraps a core function when invoked with args and core", () => {
+    const doubler: Middleware<[number, number], number> = (args, next) =>
+      next(...args) * 2;
+    const stack = combine([doubler]);
+    const result = stack([3, 4], (a, b) => a + b);
+    assert.equal(result, 14); // (3 + 4) * 2
   });
 });

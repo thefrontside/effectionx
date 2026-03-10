@@ -1,129 +1,40 @@
 # Middleware
 
-Composable middleware with min/max priority layering for wrapping a single
-function.
+Composable middleware for wrapping a single function
 
 ---
 
 Middleware lets you wrap any function with a chain of interceptors that can
 inspect arguments, transform return values, or short-circuit execution entirely.
-It uses a min/max priority system so you can control which middleware runs
-closest to the caller and which runs closest to the core function.
+The `combine()` function composes an array of middleware into a single
+middleware, executing left-to-right.
 
 ## Quick Start
 
 ```ts
-import { createMiddlewareStack } from "@effectionx/middleware";
+import { combine } from "@effectionx/middleware";
+import type { Middleware } from "@effectionx/middleware";
 
-const stack = createMiddlewareStack<[number, number], number>();
-
-// Log every call (runs outermost by default)
-stack.use((args, next) => {
+const logger: Middleware<[number, number], number> = (args, next) => {
   console.log("adding", args);
   const result = next(...args);
   console.log("result", result);
   return result;
-});
+};
 
-// Double the result (also outermost, runs after logger)
-stack.use((args, next) => next(...args) * 2);
+const doubler: Middleware<[number, number], number> = (args, next) =>
+  next(...args) * 2;
 
-const add = stack.compose((a, b) => a + b);
+const add = combine([logger, doubler]);
 
-add(3, 4);
+add([3, 4], (a, b) => a + b);
 // adding [3, 4]
 // result 14
 // => 14
 ```
 
-## Min/Max Priority
-
-Every middleware is registered at either `"max"` (default) or `"min"` priority:
-
-- **`max`** runs outermost, closest to the caller
-- **`min`** runs innermost, closest to the core function
-
-This gives you explicit control over ordering without worrying about insertion
-sequence across different call sites.
-
-```ts
-const stack = createMiddlewareStack<[string], string>();
-
-stack.use((args, next) => {
-  console.log("max runs first");
-  return next(...args);
-});
-
-stack.use((args, next) => {
-  console.log("min runs just before core");
-  return next(...args);
-}, { at: "min" });
-
-const fn = stack.compose((s) => s.toUpperCase());
-fn("hello");
-// max runs first
-// min runs just before core
-// => "HELLO"
-```
-
-The full execution order with max middlewares `[M1, M2]` and min middlewares
-`[m1, m2]` is:
-
-```text
-M1 → M2 → m1 → m2 → core
-```
-
-## When to Use Min vs Max
-
-The two priority levels serve fundamentally different roles:
-
-**`max` (outermost) — wrapping behavior.** This is the most common middleware
-use case. Logging, timing, caching, auth, transactions — behaviors that wrap
-around an operation. `max` middlewares always call `next()` to delegate inward,
-and there are typically multiple of them layered on top of each other.
-
-**`min` (innermost) — providing implementation.** The core function is often a
-stub that throws "not implemented." A `min` middleware supplies the actual
-behavior for your runtime or environment. It typically does **not** call
-`next()` — it *is* the implementation.
-
-This separation lets you define an operation as a contract and defer the
-implementation:
-
-```ts
-import { createMiddlewareStack } from "@effectionx/middleware";
-import type { Operation } from "effection";
-
-// Define the contract — core throws because there's no implementation yet
-const readFile = createMiddlewareStack<[string], Operation<string>>();
-
-// In your Node.js runtime setup, provide the implementation via min:
-readFile.use(function* ([path], _next) {
-  return yield* nodeReadFile(path);
-}, { at: "min" });
-
-// Max middlewares wrap the outside as usual:
-readFile.use(function* ([path], next) {
-  console.log(`reading ${path}`);
-  return yield* next(path);
-});
-
-// Compose with a core that throws if no min is registered
-const read = readFile.compose((path) => {
-  throw new Error(`readFile("${path}") is not implemented`);
-});
-```
-
-In tests, you can swap the implementation by registering a different `min`:
-
-```ts
-readFile.use(function* ([path], _next) {
-  return testFixtures.get(path) ?? "";
-}, { at: "min" });
-```
-
-The `max` middlewares (logging, caching, etc.) continue to work unchanged — they
-don't care which `min` is providing the actual file reading.
+The composed middleware receives the arguments as a tuple and a core function.
+Execution flows left-to-right through the array: `logger → doubler → core`.
 
 ## With Effection Operations
 
@@ -142,7 +53,7 @@ parameter.
 The running coroutine *is* the context for future execution.
 
 ```ts
-import { createMiddlewareStack } from "@effectionx/middleware";
+import { combine } from "@effectionx/middleware";
 import type { Middleware } from "@effectionx/middleware";
 import type { Operation } from "effection";
 import { createContext } from "effection";
@@ -206,13 +117,11 @@ function* handleRequest(request: Request): Operation<Response> {
 Compose it all together:
 
 ```ts
-const stack = createMiddlewareStack<[Request], Operation<Response>>();
+const handle = combine([withDatabase, withTransaction, withAuth]);
 
-stack.use(withDatabase);
-stack.use(withTransaction);
-stack.use(withAuth);
-
-const handle = stack.compose(handleRequest);
+function* processRequest(request: Request): Operation<Response> {
+  return yield* handle([request], handleRequest);
+}
 ```
 
 Each middleware's generator is still **running** while the inner functions
@@ -261,23 +170,5 @@ const result = composed(["hello"], coreFn);
 // Execution: logger → validator → retry → coreFn
 ```
 
-### `createMiddlewareStack<TArgs, TReturn>()`
-
-Create a middleware stack with min/max priority ordering.
-
-```ts
-import { createMiddlewareStack } from "@effectionx/middleware";
-
-const stack = createMiddlewareStack<[Request], Response>();
-
-stack.use(loggingMiddleware);
-stack.use(authMiddleware, { at: "min" });
-
-const handler = stack.compose(coreHandler);
-```
-
-- **`use(middleware, options?)`** — register middleware. `options.at` defaults to
-  `"max"`.
-- **`compose(core)`** — returns a new function wrapping `core` with all
-  registered middleware. Each call to `compose()` reflects the current state of
-  the stack.
+The returned value is itself a `Middleware`, so it can be nested inside other
+`combine()` calls or passed anywhere a middleware is expected.

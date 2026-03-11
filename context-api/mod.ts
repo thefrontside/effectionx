@@ -40,10 +40,10 @@ type FieldMiddleware = {
 /**
  * Maps each API field to its middleware layers.
  */
-type MiddlewareRegistry<A> = Record<keyof Operations<A>, FieldMiddleware>;
+type MiddlewareRegistry<A> = Record<keyof A, FieldMiddleware>;
 
 export function createApi<A extends {}>(name: string, handler: A): Api<A> {
-  let fields = Object.keys(handler) as (keyof A & string)[];
+  let fields = Object.keys(handler) as (keyof A)[];
 
   let initial = fields.reduce(
     (sum, field) => {
@@ -68,7 +68,7 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
         return Object.assign(api, {
           [field]: function* (...args: any[]) {
             let state = yield* context.expect();
-            let { composed } = state[field as keyof Operations<A>];
+            let { composed } = state[field as keyof A];
             return yield* composed ? composed(args, fn) : fn(...args);
           },
         });
@@ -77,7 +77,7 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
         [field]: {
           *[Symbol.iterator]() {
             let state = yield* context.expect();
-            let { composed } = state[field as keyof Operations<A>];
+            let { composed } = state[field as keyof A];
             return composed
               ? yield* composed([], () => handle)
               : yield* handle as Operation<unknown>;
@@ -99,7 +99,7 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
         let middleware = (middlewares as any)[field] as
           | Middleware<any[], any>
           | undefined;
-        let fieldState = current[field as keyof Operations<A>];
+        let fieldState = current[field as keyof A];
 
         if (middleware) {
           // Clone arrays — never mutate in place (scope isolation)

@@ -1,0 +1,45 @@
+{
+  "name": "@effectionx/durable-effects",
+  "description": "Durable effects and replay guards for Effection workflows",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/mod.js",
+  "types": "./dist/mod.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/mod.d.ts",
+      "development": "./mod.ts",
+      "import": "./dist/mod.js",
+      "default": "./dist/mod.js"
+    }
+  },
+  "peerDependencies": {
+    "effection": "^3 || ^4"
+  },
+  "dependencies": {
+    "@effectionx/durable-streams": "workspace:*",
+    "@effectionx/fetch": "workspace:*",
+    "@effectionx/fs": "workspace:*",
+    "@effectionx/process": "workspace:*"
+  },
+  "license": "MIT",
+  "author": "engineering@frontside.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thefrontside/effectionx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thefrontside/effectionx/issues"
+  },
+  "engines": {
+    "node": ">= 22"
+  },
+  "sideEffects": false,
+  "keywords": ["concurrency", "io", "process"],
+  "files": ["dist", "*.ts", "README.md"],
+  "devDependencies": {
+    "@effectionx/bdd": "workspace:*",
+    "effection": "^4",
+    "expect": "^29"
+  }
+}

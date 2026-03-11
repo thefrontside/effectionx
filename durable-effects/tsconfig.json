@@ -1,0 +1,26 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["**/*.test.ts", "dist"],
+  "references": [
+    {
+      "path": "../bdd"
+    },
+    {
+      "path": "../durable-streams"
+    },
+    {
+      "path": "../fetch"
+    },
+    {
+      "path": "../fs"
+    },
+    {
+      "path": "../process"
+    }
+  ]
+}

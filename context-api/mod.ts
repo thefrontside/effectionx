@@ -28,22 +28,19 @@ export type Operations<T> = {
 };
 
 /**
- * Internal per-field state: two immutable arrays for priority ordering
+ * Per-field middleware layers: two immutable arrays for priority ordering
  * plus a pre-composed middleware function.
  */
-type FieldState = {
-  // biome-ignore lint/suspicious/noExplicitAny: Middleware arrays store heterogeneous field types
+type FieldMiddleware = {
   max: Middleware<any[], any>[];
-  // biome-ignore lint/suspicious/noExplicitAny: Middleware arrays store heterogeneous field types
   min: Middleware<any[], any>[];
-  // biome-ignore lint/suspicious/noExplicitAny: Pre-composed middleware for dynamic dispatch
-  composed: Middleware<any[], any>;
+  composed: Middleware<any[], any> | undefined;
 };
 
 /**
- * The context stores a FieldState for each field in the API.
+ * Maps each API field to its middleware layers.
  */
-type ContextState<A> = Record<keyof Operations<A>, FieldState>;
+type MiddlewareRegistry<A> = Record<keyof Operations<A>, FieldMiddleware>;
 
 export function createApi<A extends {}>(name: string, handler: A): Api<A> {
   let fields = Object.keys(handler) as (keyof A & string)[];
@@ -54,28 +51,25 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
         [field]: {
           max: [],
           min: [],
-          // biome-ignore lint/suspicious/noExplicitAny: Passthrough middleware for initial state
-          composed: (args: any, next: any) => next(...args),
-        } satisfies FieldState,
+          composed: undefined,
+        } satisfies FieldMiddleware,
       });
     },
-    {} as ContextState<A>,
+    {} as MiddlewareRegistry<A>,
   );
 
-  let context = createContext<ContextState<A>>(`$api:${name}`, initial);
+  let context = createContext<MiddlewareRegistry<A>>(`$api:${name}`, initial);
 
   let operations = fields.reduce(
     (api, field) => {
       let handle = handler[field];
       if (typeof handle === "function") {
-        // biome-ignore lint/suspicious/noExplicitAny: Handler is dynamically typed per field
         let fn = handle as (...args: any[]) => any;
         return Object.assign(api, {
-          // biome-ignore lint/suspicious/noExplicitAny: Dynamic field types
           [field]: function* (...args: any[]) {
             let state = yield* context.expect();
             let { composed } = state[field as keyof Operations<A>];
-            return yield* composed(args, fn);
+            return yield* composed ? composed(args, fn) : fn(...args);
           },
         });
       }
@@ -84,7 +78,9 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
           *[Symbol.iterator]() {
             let state = yield* context.expect();
             let { composed } = state[field as keyof Operations<A>];
-            return yield* composed([], () => handle);
+            return composed
+              ? yield* composed([], () => handle)
+              : yield* handle as Operation<unknown>;
           },
         },
       });
@@ -100,10 +96,9 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
 
     let next = fields.reduce(
       (sum, field) => {
-        // biome-ignore lint/suspicious/noExplicitAny: Dynamic middleware types across fields
         let middleware = (middlewares as any)[field] as
-          // biome-ignore lint/suspicious/noExplicitAny: Dynamic middleware types across fields
-          Middleware<any[], any> | undefined;
+          | Middleware<any[], any>
+          | undefined;
         let fieldState = current[field as keyof Operations<A>];
 
         if (middleware) {
@@ -126,7 +121,7 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
 
         return Object.assign(sum, { [field]: fieldState });
       },
-      {} as ContextState<A>,
+      {} as MiddlewareRegistry<A>,
     );
 
     yield* context.set(next);

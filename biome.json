@@ -31,6 +31,18 @@
     "indentStyle": "space",
     "indentWidth": 2
   },
+  "overrides": [
+    {
+      "include": ["context-api/mod.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    }
+  ],
   "files": {
     "ignore": ["**/dist", "**/node_modules", "**/build"]
   }

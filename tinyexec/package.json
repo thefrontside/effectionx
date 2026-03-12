@@ -32,8 +32,5 @@
   "bugs": {
     "url": "https://github.com/thefrontside/effectionx/issues"
   },
-  "engines": {
-    "node": ">= 22"
-  },
   "sideEffects": false
 }

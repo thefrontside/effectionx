@@ -103,4 +103,30 @@ describe("daemon", () => {
       );
     });
   });
+
+  describe("shutting down an effection-based daemon process prematurely", () => {
+    let task: Task<Error>;
+    beforeEach(function* () {
+      let proc = yield* daemon("node", {
+        arguments: ["--experimental-strip-types", "fixtures/forever.ts"],
+        cwd: import.meta.dirname,
+      });
+
+      task = yield* spawn(function* () {
+        try {
+          yield* proc;
+        } catch (e) {
+          return e as Error;
+        }
+        return new Error(`this shouldn't happen`);
+      });
+
+      yield* expectMatch(/suspending/, lines()(proc.stdout));
+    });
+
+    it("still executes process finally block on kill", function* () {
+      yield* spawn(() => expectMatch(/shutting down/, lines()(proc.stdout)));
+      yield* task.halt();
+    });
+  });
 });

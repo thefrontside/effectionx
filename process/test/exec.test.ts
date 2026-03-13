@@ -3,7 +3,7 @@ import { beforeEach, describe, it } from "@effectionx/bdd";
 import { type Task, spawn, withResolvers } from "effection";
 import { expect } from "expect";
 
-import { captureError, fetchText } from "./helpers.ts";
+import { captureError, expectMatch, fetchText } from "./helpers.ts";
 
 import { lines } from "@effectionx/stream-helpers";
 import { type Process, type ProcessResult, exec } from "../mod.ts";
@@ -102,6 +102,7 @@ describe("exec", () => {
         }
         expect(error).toBeInstanceOf(Error);
       });
+
       it("calling expect() throws an exception", function* () {
         let error: unknown;
         let proc = yield* exec("argle", { arguments: ["bargle"] });
@@ -114,7 +115,35 @@ describe("exec", () => {
         expect(error).toBeDefined();
       });
     });
+
+    describe("process can gracefully shut down if killed before completed", () => {
+      it("runs process finally block on kill", function* () {
+        let status: unknown;
+        let proc = yield* exec("node", {
+          // using fixture that suspends so we can kill before it "completes"
+          arguments: ["--experimental-strip-types", "fixtures/forever.ts"],
+          cwd: import.meta.dirname,
+        });
+
+        let task = yield* spawn(function* () {
+          try {
+            status = yield* proc.join();
+          } catch (e) {
+            return e as Error;
+          }
+          return new Error(`this shouldn't happen`);
+        });
+
+        yield* expectMatch(/suspending/, lines()(proc.stdout));
+
+        // kill the process before it finishes and make sure it runs the finally block
+        yield* spawn(() => expectMatch(/shutting down/, lines()(proc.stdout)));
+        yield* task.halt();
+        expect(status).toBeUndefined();
+      });
+    });
   });
+
   describe("successfully", () => {
     let proc: Process;
     let stdoutTask: Task<{ sawData: boolean; matched: boolean }>;

@@ -17,6 +17,16 @@ interface SuiteWithAdapter {
 }
 
 /**
+ * Narrow type assertion for vitest.beforeAll/afterAll that bridges
+ * vitest 3 (1 arg: suite) and vitest 4 (2 args: context, suite).
+ * Replaces `as any` with a specific callable shape.
+ */
+type CompatBeforeAfterAll = (
+  fn: (first: unknown, second?: unknown) => void | Promise<void>,
+  timeout?: number,
+) => void;
+
+/**
  * Create a hook callback compatible with both vitest 3 and vitest 4.
  *
  * Vitest 4 statically parses the callback's source text (via `.toString()`)
@@ -30,8 +40,8 @@ interface SuiteWithAdapter {
  */
 function createHook(
   fn: (suite: SuiteWithAdapter) => void | Promise<void>,
-): (...args: unknown[]) => void | Promise<void> {
-  const hook = (first: unknown, second: unknown) => {
+): (first: unknown, second?: unknown) => void | Promise<void> {
+  const hook = (first: unknown, second?: unknown) => {
     const suite = (second ?? first) as SuiteWithAdapter;
     return fn(suite);
   };
@@ -46,16 +56,14 @@ function describeWithScope(
   factory?: vitest.SuiteFactory,
 ): vitest.SuiteCollector {
   return vitest.describe(name, (...args) => {
-    // biome-ignore lint/suspicious/noExplicitAny: vitest 3/4 bridge
-    (vitest.beforeAll as any)(
+    (vitest.beforeAll as CompatBeforeAfterAll)(
       createHook((suite) => {
         let parent = suite.suite?.adapter;
         suite.adapter = createTestAdapter({ name: String(name), parent });
       }),
     );
 
-    // biome-ignore lint/suspicious/noExplicitAny: vitest 3/4 bridge
-    (vitest.afterAll as any)(
+    (vitest.afterAll as CompatBeforeAfterAll)(
       createHook(async (suite) => {
         await suite.adapter?.destroy();
       }),
@@ -72,16 +80,14 @@ describeWithScope.only = function describeWithScope(
   factory?: vitest.SuiteFactory,
 ): vitest.SuiteCollector {
   return vitest.describe.only(name, (...args) => {
-    // biome-ignore lint/suspicious/noExplicitAny: vitest 3/4 bridge
-    (vitest.beforeAll as any)(
+    (vitest.beforeAll as CompatBeforeAfterAll)(
       createHook((suite) => {
         let parent = suite.suite?.adapter;
         suite.adapter = createTestAdapter({ name: String(name), parent });
       }),
     );
 
-    // biome-ignore lint/suspicious/noExplicitAny: vitest 3/4 bridge
-    (vitest.afterAll as any)(
+    (vitest.afterAll as CompatBeforeAfterAll)(
       createHook(async (suite) => {
         await suite.adapter?.destroy();
       }),
@@ -101,8 +107,7 @@ describeWithScope.runIf = (condition: unknown) =>
 export const describe = <typeof vitest.describe>(<unknown>describeWithScope);
 
 export function beforeAll(op: () => Operation<void>): void {
-  // biome-ignore lint/suspicious/noExplicitAny: vitest 3/4 bridge
-  (vitest.beforeAll as any)(
+  (vitest.beforeAll as CompatBeforeAfterAll)(
     createHook((suite) => {
       if (!suite.adapter) {
         throw new Error("missing test adapter");
@@ -113,8 +118,7 @@ export function beforeAll(op: () => Operation<void>): void {
 }
 
 export function beforeEach(op: () => Operation<void>): void {
-  // biome-ignore lint/suspicious/noExplicitAny: vitest 3/4 bridge
-  (vitest.beforeAll as any)(
+  (vitest.beforeAll as CompatBeforeAfterAll)(
     createHook((suite) => {
       if (!suite.adapter) {
         throw new Error("missing test adapter");

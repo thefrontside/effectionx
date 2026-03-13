@@ -48,6 +48,20 @@ describe("@effectionx/vitest", () => {
     expect(result.stdout).toMatch(/4 passed/);
   });
 
+  it("isolates scopes across multiple test files", function* () {
+    let result = yield* exec(
+      "pnpm vitest run test/fixtures/sample.vitest.ts test/fixtures/nested-scopes.vitest.ts --reporter=verbose",
+      {
+        cwd: import.meta.dirname,
+      },
+    ).join();
+
+    expect(result.code).toEqual(0);
+
+    // 6 from sample + 4 from nested-scopes = 10 total
+    expect(result.stdout).toMatch(/10 passed/);
+  });
+
   it("reports failing tests correctly", function* () {
     let result = yield* exec(
       "pnpm vitest run test/fixtures/failing.vitest.ts --reporter=verbose",

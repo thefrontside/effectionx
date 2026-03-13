@@ -1,7 +1,7 @@
-import { expect } from "expect";
-import { type Operation, scoped } from "effection";
 import { describe, it } from "@effectionx/bdd";
 import { createApi } from "@effectionx/context-api";
+import { type Operation, scoped } from "effection";
+import { expect } from "expect";
 
 describe("context api", () => {
   it("can invoke a handler from anywhere", function* () {
@@ -128,5 +128,204 @@ describe("context api", () => {
     });
 
     expect(yield* math.operations.add(5, 15)).toEqual(150);
+  });
+
+  it("places min middleware closest to the core", function* () {
+    const math = createApi("math", {
+      *add(left: number, right: number): Operation<number> {
+        return left + right;
+      },
+    });
+
+    const log: string[] = [];
+
+    // max middleware wraps outermost
+    yield* math.around({
+      *add(args, next) {
+        log.push("max");
+        return yield* next(...args);
+      },
+    });
+
+    // min middleware runs just before core
+    yield* math.around(
+      {
+        *add(args, next) {
+          log.push("min");
+          return yield* next(...args);
+        },
+      },
+      { at: "min" },
+    );
+
+    expect(yield* math.operations.add(1, 2)).toEqual(3);
+    expect(log).toEqual(["max", "min"]);
+  });
+
+  it("min middleware can provide an implementation that replaces the core", function* () {
+    const math = createApi("math", {
+      *add(_left: number, _right: number): Operation<number> {
+        throw new Error("not implemented");
+      },
+    });
+
+    // Provide the real implementation via min
+    yield* math.around(
+      {
+        *add([left, right], _next) {
+          return left * right; // multiply instead of add
+        },
+      },
+      { at: "min" },
+    );
+
+    // Wrapping middleware at max still works
+    yield* math.around({
+      *add(args, next) {
+        return 1 + (yield* next(...args));
+      },
+    });
+
+    expect(yield* math.operations.add(3, 4)).toEqual(13); // 1 + (3 * 4)
+  });
+
+  it("preserves min/max ordering regardless of insertion order", function* () {
+    const math = createApi("math", {
+      *add(left: number, right: number): Operation<number> {
+        return left + right;
+      },
+    });
+
+    const log: string[] = [];
+
+    // Register in mixed order: max, min, max, min
+    yield* math.around({
+      *add(args, next) {
+        log.push("max-1");
+        return yield* next(...args);
+      },
+    });
+
+    yield* math.around(
+      {
+        *add(args, next) {
+          log.push("min-1");
+          return yield* next(...args);
+        },
+      },
+      { at: "min" },
+    );
+
+    yield* math.around({
+      *add(args, next) {
+        log.push("max-2");
+        return yield* next(...args);
+      },
+    });
+
+    yield* math.around(
+      {
+        *add(args, next) {
+          log.push("min-2");
+          return yield* next(...args);
+        },
+      },
+      { at: "min" },
+    );
+
+    yield* math.operations.add(1, 1);
+    expect(log).toEqual(["max-1", "max-2", "min-1", "min-2"]);
+  });
+
+  it("min/max middleware respects scope isolation", function* () {
+    const math = createApi("math", {
+      *add(left: number, right: number): Operation<number> {
+        return left + right;
+      },
+    });
+
+    const log: string[] = [];
+
+    // Install max middleware in parent scope
+    yield* math.around({
+      *add(args, next) {
+        log.push("parent-max");
+        return yield* next(...args);
+      },
+    });
+
+    // Install min middleware in parent scope
+    yield* math.around(
+      {
+        *add(args, next) {
+          log.push("parent-min");
+          return yield* next(...args);
+        },
+      },
+      { at: "min" },
+    );
+
+    yield* scoped(function* () {
+      // Child scope adds its own max and min middleware
+      yield* math.around({
+        *add(args, next) {
+          log.push("child-max");
+          return yield* next(...args);
+        },
+      });
+      yield* math.around(
+        {
+          *add(args, next) {
+            log.push("child-min");
+            return yield* next(...args);
+          },
+        },
+        { at: "min" },
+      );
+      yield* math.operations.add(1, 1);
+      expect(log).toEqual([
+        "parent-max",
+        "child-max",
+        "parent-min",
+        "child-min",
+      ]);
+    });
+
+    // Parent scope doesn't see child's middleware
+    log.length = 0;
+    yield* math.operations.add(1, 1);
+    expect(log).toEqual(["parent-max", "parent-min"]);
+  });
+
+  it("defaults to max when no option is provided", function* () {
+    const math = createApi("math", {
+      *add(left: number, right: number): Operation<number> {
+        return left + right;
+      },
+    });
+
+    const log: string[] = [];
+
+    // No option — should be max (outermost)
+    yield* math.around({
+      *add(args, next) {
+        log.push("default");
+        return yield* next(...args);
+      },
+    });
+
+    // Explicit min
+    yield* math.around(
+      {
+        *add(args, next) {
+          log.push("min");
+          return yield* next(...args);
+        },
+      },
+      { at: "min" },
+    );
+
+    yield* math.operations.add(1, 1);
+    expect(log).toEqual(["default", "min"]);
   });
 });

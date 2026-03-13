@@ -18,7 +18,7 @@ different contexts. The basic form will just log values to the console.
 ```ts
 import { createApi } from "@effectionx/context-api";
 
-const logging = createApi("logging", {
+export const logging = createApi("logging", {
   *log(...values: unknown[]) {
     console.log(...values);
   },
@@ -69,7 +69,7 @@ closest to the core handler) by passing an options argument:
 import { createApi } from "@effectionx/context-api";
 import type { Operation } from "effection";
 
-const files = createApi("files", {
+export const files = createApi("files", {
   *readFile(path: string): Operation<string> {
     throw new Error(`readFile("${path}") is not implemented`);
   },
@@ -180,18 +180,21 @@ Middleware installed in a child scope does not affect the parent:
 
 ```ts
 import { scoped } from "effection";
+import { log, logging } from "./logging.ts";
 
-yield* scoped(function* () {
-  yield* logging.around({
-    *log([...values], next) {
-      // only active inside this scope
-      return yield* next(...values);
-    },
+function* example() {
+  yield* scoped(function* () {
+    yield* logging.around({
+      *log([...values], next) {
+        // only active inside this scope
+        return yield* next(...values);
+      },
+    });
+    yield* log("intercepted"); // middleware runs
   });
-  yield* log("intercepted"); // middleware runs
-});
 
-yield* log("not intercepted"); // middleware does not run
+  yield* log("not intercepted"); // middleware does not run
+}
 ```
 
 ## API
@@ -203,6 +206,7 @@ operations. Returns an object with `operations` and `around`.
 
 ```ts
 import { createApi } from "@effectionx/context-api";
+import type { Operation } from "effection";
 
 const math = createApi("math", {
   *add(left: number, right: number): Operation<number> {
@@ -211,7 +215,10 @@ const math = createApi("math", {
 });
 
 const { add } = math.operations;
-const result = yield* add(1, 2); // => 3
+
+function* example(): Operation<void> {
+  const result = yield* add(1, 2); // => 3
+}
 ```
 
 ### `around(middlewares, options?)`
@@ -223,23 +230,25 @@ priority:
 - **`{ at: "min" }`** — innermost, closest to the core handler
 
 ```ts
-// Wrapping middleware (max, default)
-yield* math.around({
-  *add(args, next) {
-    console.log("adding", args);
-    return yield* next(...args);
-  },
-});
-
-// Implementation middleware (min)
-yield* math.around(
-  {
-    *add([left, right], _next) {
-      return left * right; // replace the core implementation
+function* example() {
+  // Wrapping middleware (max, default)
+  yield* math.around({
+    *add(args, next) {
+      console.log("adding", args);
+      return yield* next(...args);
     },
-  },
-  { at: "min" },
-);
+  });
+
+  // Implementation middleware (min)
+  yield* math.around(
+    {
+      *add([left, right], _next) {
+        return left * right; // replace the core implementation
+      },
+    },
+    { at: "min" },
+  );
+}
 ```
 
 Each middleware receives the arguments as a tuple and a `next` function to

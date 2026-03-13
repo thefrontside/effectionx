@@ -254,22 +254,47 @@ describe("context api", () => {
       },
     });
 
+    // Install min middleware in parent scope
+    yield* math.around(
+      {
+        *add(args, next) {
+          log.push("parent-min");
+          return yield* next(...args);
+        },
+      },
+      { at: "min" },
+    );
+
     yield* scoped(function* () {
-      // Child scope adds its own max middleware
+      // Child scope adds its own max and min middleware
       yield* math.around({
         *add(args, next) {
           log.push("child-max");
           return yield* next(...args);
         },
       });
+      yield* math.around(
+        {
+          *add(args, next) {
+            log.push("child-min");
+            return yield* next(...args);
+          },
+        },
+        { at: "min" },
+      );
       yield* math.operations.add(1, 1);
-      expect(log).toEqual(["parent-max", "child-max"]);
+      expect(log).toEqual([
+        "parent-max",
+        "child-max",
+        "parent-min",
+        "child-min",
+      ]);
     });
 
     // Parent scope doesn't see child's middleware
     log.length = 0;
     yield* math.operations.add(1, 1);
-    expect(log).toEqual(["parent-max"]);
+    expect(log).toEqual(["parent-max", "parent-min"]);
   });
 
   it("defaults to max when no option is provided", function* () {

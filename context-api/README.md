@@ -46,7 +46,7 @@ the implementation entirely.
 ```ts
 import { logging } from "./logging.ts";
 
-function* initCustomLogging(externalLogger) {
+function* initCustomLogging(externalLogger: { log(...values: unknown[]): void }) {
   yield* logging.around({
     *log([...values], next) {
       externalLogger.log(...values);

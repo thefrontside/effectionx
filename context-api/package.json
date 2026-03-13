@@ -33,6 +33,7 @@
     "node": ">= 22"
   },
   "sideEffects": false,
+  "files": ["dist", "mod.ts"],
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
     "effection": "^4"

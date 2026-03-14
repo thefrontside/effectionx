@@ -10,14 +10,13 @@ import { captureError, expectMatch, fetchText } from "./helpers.ts";
 const SystemRoot = process.env.SystemRoot;
 
 describe("daemon", () => {
-  let task: Task<void>;
-  let proc: Daemon;
-
   describe("controlling from outside", () => {
+    let task: Task<void>;
+    let proc: Daemon;
     beforeEach(function* () {
       const result = withResolvers<Daemon>();
       task = yield* spawn<void>(function* () {
-        let proc = yield* daemon("node", {
+        proc = yield* daemon("node", {
           arguments: [
             "--experimental-strip-types",
             "./fixtures/echo-server.ts",
@@ -35,7 +34,8 @@ describe("daemon", () => {
 
       proc = yield* result.operation;
 
-      yield* expectMatch(/listening/, lines()(proc.stdout));
+      const listening = yield* expectMatch(/listening/, lines()(proc.stdout));
+      expect(listening).toBe(true);
     });
 
     it("starts the given child", function* () {
@@ -89,7 +89,8 @@ describe("daemon", () => {
         return new Error(`this shouldn't happen`);
       });
 
-      yield* expectMatch(/listening/, lines()(proc.stdout));
+      const listening = yield* expectMatch(/listening/, lines()(proc.stdout));
+      expect(listening).toBe(true);
 
       yield* fetchText("http://localhost:29001", {
         method: "POST",
@@ -105,28 +106,36 @@ describe("daemon", () => {
   });
 
   describe("shutting down an effection-based daemon process prematurely", () => {
-    let task: Task<Error>;
+    let task: Task<void>;
+    let proc: Daemon;
     beforeEach(function* () {
-      let proc = yield* daemon("node", {
+      proc = yield* daemon("node", {
         arguments: ["--experimental-strip-types", "fixtures/forever.ts"],
         cwd: import.meta.dirname,
       });
 
+      const suspending = yield* spawn(() =>
+        expectMatch(/suspending/, lines()(proc.stdout)),
+      );
       task = yield* spawn(function* () {
         try {
           yield* proc;
         } catch (e) {
-          return e as Error;
+          console.error("Caught error from daemon process:", e);
         }
-        return new Error(`this shouldn't happen`);
       });
-
-      yield* expectMatch(/suspending/, lines()(proc.stdout));
+      const suspended = yield* suspending;
+      expect(suspended).toBe(true);
     });
 
     it("still executes process finally block on kill", function* () {
-      yield* spawn(() => expectMatch(/shutting down/, lines()(proc.stdout)));
+      const finallyCheck = yield* spawn(() =>
+        expectMatch(/shutting/, lines()(proc.stdout)),
+      );
       yield* task.halt();
+
+      const complated = yield* finallyCheck;
+      expect(complated).toBe(true);
     });
   });
 });

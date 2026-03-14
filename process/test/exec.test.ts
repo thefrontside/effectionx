@@ -125,20 +125,29 @@ describe("exec", () => {
           cwd: import.meta.dirname,
         });
 
+        const suspending = yield* spawn(() =>
+          expectMatch(/suspending/, lines()(proc.stdout)),
+        );
         let task = yield* spawn(function* () {
           try {
             status = yield* proc.join();
           } catch (e) {
             return e as Error;
           }
-          return new Error(`this shouldn't happen`);
         });
 
-        yield* expectMatch(/suspending/, lines()(proc.stdout));
+        const suspended = yield* suspending;
+        expect(suspended).toBe(true);
 
         // kill the process before it finishes and make sure it runs the finally block
-        yield* spawn(() => expectMatch(/shutting down/, lines()(proc.stdout)));
+        const finallyCheck = yield* spawn(() =>
+          expectMatch(/shutting down/, lines()(proc.stdout)),
+        );
         yield* task.halt();
+
+        const complated = yield* finallyCheck;
+        expect(complated).toBe(true);
+
         expect(status).toBeUndefined();
       });
     });

@@ -1,4 +1,4 @@
-import { type Operation, sleep, spawn, type Stream, until } from "effection";
+import { type Operation, race, sleep, type Stream, until } from "effection";
 
 export function* captureError(op: Operation<unknown>): Operation<Error> {
   try {
@@ -57,18 +57,19 @@ export function* expectMatch(pattern: RegExp, stream: Stream<string, unknown>) {
   const subscription = yield* stream;
   let next = yield* subscription.next();
 
-  // racing a sleep otherwise this hangs forever in an `beforeEach`
-  yield* spawn(function* () {
-    yield* sleep(8000);
-    throw new Error(`Timed out waiting for ${pattern} to appear.`);
-  });
-
-  while (!next.done) {
-    if (pattern.test(next.value)) {
-      return true;
-    }
-    next = yield* subscription.next();
-  }
-
-  return false;
+  return yield* race([
+    (function* (): Operation<boolean> {
+      yield* sleep(8000);
+      return false;
+    })(),
+    (function* (): Operation<boolean> {
+      while (!next.done) {
+        if (pattern.test(next.value)) {
+          return true;
+        }
+        next = yield* subscription.next();
+      }
+      return false;
+    })(),
+  ]);
 }

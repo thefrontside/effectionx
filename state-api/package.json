@@ -1,0 +1,42 @@
+{
+  "name": "@effectionx/state-api",
+  "description": "Reactive state container with typed reducers and middleware for Effection",
+  "version": "0.1.0",
+  "keywords": [
+    "effection",
+    "effectionx",
+    "state",
+    "reducer",
+    "middleware",
+    "reactive"
+  ],
+  "type": "module",
+  "main": "./dist/mod.js",
+  "types": "./dist/mod.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/mod.d.ts",
+      "development": "./mod.ts",
+      "import": "./dist/mod.js",
+      "default": "./dist/mod.js"
+    }
+  },
+  "files": ["dist", "mod.ts", "state.ts"],
+  "peerDependencies": {
+    "effection": "^4.1.0-alpha.3"
+  },
+  "devDependencies": {
+    "@effectionx/bdd": "workspace:*",
+    "effection": "4.1.0-alpha.7"
+  },
+  "license": "MIT",
+  "author": "engineering@frontside.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thefrontside/effectionx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thefrontside/effectionx/issues"
+  },
+  "sideEffects": false
+}

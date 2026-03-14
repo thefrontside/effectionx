@@ -7,12 +7,12 @@ import {
   type Operation,
   type Stream,
   all,
-  createApi,
   createSignal,
   resource,
   spawn,
   until,
 } from "effection";
+import { createApi } from "effection/experimental";
 
 /**
  * Convert a path or URL to a file path string

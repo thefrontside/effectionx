@@ -3,6 +3,10 @@
 File system operations for Effection programs. This package wraps Node.js
 `fs/promises` APIs as Effection Operations with structured concurrency support.
 
+> **Note**: Starting with version 0.3.0, this package requires Effection v4.1 or greater
+> for full functionality. The middleware/API features (`fsApi`) require the new
+> `createApi` function introduced in Effection v4.1.
+
 ---
 
 ## Installation
@@ -274,3 +278,66 @@ yield* readTextFile(new URL("file:///etc/config.json"));
 // import.meta.url based paths
 yield* readTextFile(new URL("./data.json", import.meta.url));
 ```
+
+## Middleware Support
+
+### `fsApi`
+
+The file system API object that supports middleware decoration. Use `fsApi.around()`
+to add middleware for logging, mocking, or instrumentation.
+
+```typescript
+import { fsApi, readTextFile } from "@effectionx/fs";
+import { run } from "effection";
+
+// Add logging middleware
+await run(function* () {
+  yield* fsApi.around({
+    *readTextFile(args, next) {
+      let [pathOrUrl] = args;
+      console.log("Reading:", pathOrUrl);
+      return yield* next(...args);
+    },
+  });
+
+  // All readTextFile calls in this scope now log
+  let content = yield* readTextFile("./config.json");
+});
+```
+
+#### Mocking files for testing
+
+```typescript
+import { fsApi, readTextFile } from "@effectionx/fs";
+import { run } from "effection";
+
+await run(function* () {
+  yield* fsApi.around({
+    *readTextFile(args, next) {
+      let [pathOrUrl] = args;
+      if (String(pathOrUrl).includes("config.json")) {
+        // Return mock content
+        return JSON.stringify({ mock: true, env: "test" });
+      }
+      return yield* next(...args);
+    },
+  });
+
+  // This returns mocked content in this scope
+  let config = yield* readTextFile("./config.json");
+});
+```
+
+#### Interceptable operations
+
+The following operations can be intercepted via `fsApi.around()`:
+
+- `stat(pathOrUrl)` - Get file stats
+- `lstat(pathOrUrl)` - Get file stats (no symlink follow)
+- `readTextFile(pathOrUrl)` - Read file as text
+- `writeTextFile(pathOrUrl, content)` - Write text to file
+- `rm(pathOrUrl, options?)` - Remove file or directory
+- `readdir(pathOrUrl)` - Read directory entries
+
+Middleware is scoped - it only applies to the current scope and its children,
+and is automatically cleaned up when the scope exits.

@@ -1,12 +1,7 @@
 import shellwords from "shellwords-ts";
 
-import {
-  type Api,
-  type Operation,
-  createApi,
-  resource,
-  spawn,
-} from "effection";
+import { type Api, type Operation, resource, spawn } from "effection";
+import { createApi } from "effection/experimental";
 import type {
   CreateOSProcess,
   ExecOptions,

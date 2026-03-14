@@ -119,25 +119,28 @@ describe("exec", () => {
     describe("process can gracefully shut down if killed before completed", () => {
       it("runs process finally block on kill", function* () {
         let status: unknown;
-        let proc = yield* exec("node", {
-          // using fixture that suspends so we can kill before it "completes"
-          arguments: ["--experimental-strip-types", "fixtures/forever.ts"],
-          cwd: import.meta.dirname,
-        });
-
-        const suspending = yield* spawn(() =>
-          expectMatch(/suspending/, lines()(proc.stdout)),
-        );
+        let proc: Process;
+        let ready = withResolvers<void>();
         let task = yield* spawn(function* () {
           try {
+            proc = yield* exec("node", {
+              // using fixture that suspends so we can kill before it "completes"
+              arguments: ["--experimental-strip-types", "fixtures/forever.ts"],
+              cwd: import.meta.dirname,
+            });
+            ready.resolve();
             status = yield* proc.join();
           } catch (e) {
             return e as Error;
           }
         });
 
-        const suspended = yield* suspending;
-        expect(suspended).toBe(true);
+        yield* ready.operation;
+        const suspending = yield* expectMatch(
+          /suspending/,
+          lines()(proc.stdout),
+        );
+        expect(suspending).toBe(true);
 
         // kill the process before it finishes and make sure it runs the finally block
         const finallyCheck = yield* spawn(() =>

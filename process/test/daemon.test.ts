@@ -1,6 +1,6 @@
 import process from "node:process";
 import { beforeEach, describe, it } from "@effectionx/bdd";
-import { type Task, spawn, until, withResolvers } from "effection";
+import { type Task, each, sleep, spawn, until, withResolvers } from "effection";
 import { expect } from "expect";
 
 import { lines } from "@effectionx/stream-helpers";
@@ -109,23 +109,23 @@ describe("daemon", () => {
     let task: Task<void>;
     let proc: Daemon;
     beforeEach(function* () {
-      proc = yield* daemon("node", {
-        arguments: ["--experimental-strip-types", "fixtures/forever.ts"],
-        cwd: import.meta.dirname,
-      });
-
-      const suspending = yield* spawn(() =>
-        expectMatch(/suspending/, lines()(proc.stdout)),
-      );
+      const ready = withResolvers<void>();
       task = yield* spawn(function* () {
+        proc = yield* daemon("node", {
+          arguments: ["--experimental-strip-types", "fixtures/forever.ts"],
+          cwd: import.meta.dirname,
+        });
+        ready.resolve();
         try {
           yield* proc;
         } catch (e) {
           console.error("Caught error from daemon process:", e);
         }
       });
-      const suspended = yield* suspending;
-      expect(suspended).toBe(true);
+
+      yield* ready.operation;
+      const suspending = yield* expectMatch(/suspending/, lines()(proc.stdout));
+      expect(suspending).toBe(true);
     });
 
     it("still executes process finally block on kill", function* () {
@@ -133,7 +133,6 @@ describe("daemon", () => {
         expectMatch(/shutting/, lines()(proc.stdout)),
       );
       yield* task.halt();
-
       const complated = yield* finallyCheck;
       expect(complated).toBe(true);
     });

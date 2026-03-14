@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
-    "effection": "https://pkg.pr.new/thefrontside/effection@1116"
+    "effection": "4.1.0-alpha.7"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",

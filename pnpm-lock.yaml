@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  effection: 4.1.0-alpha.7
+
 importers:
 
   .:
@@ -18,8 +21,8 @@ importers:
         specifier: ^7
         version: 7.7.1
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
       expect:
         specifier: ^29
         version: 29.7.0
@@ -51,8 +54,8 @@ importers:
         specifier: workspace:*
         version: link:../tinyexec
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
       generatorics:
         specifier: ^1
         version: 1.1.0
@@ -73,8 +76,8 @@ importers:
         version: link:../test-adapter
     devDependencies:
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   chain:
     devDependencies:
@@ -82,8 +85,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   context-api:
     dependencies:
@@ -95,8 +98,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   converge:
     dependencies:
@@ -108,8 +111,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   effect-ts:
     devDependencies:
@@ -120,8 +123,8 @@ importers:
         specifier: ^3
         version: 3.19.14
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   fetch:
     devDependencies:
@@ -129,8 +132,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   fs:
     devDependencies:
@@ -138,8 +141,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   fx:
     devDependencies:
@@ -147,8 +150,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   jsonl-store:
     devDependencies:
@@ -156,8 +159,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   middleware:
     devDependencies:
@@ -171,8 +174,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   process:
     dependencies:
@@ -205,8 +208,8 @@ importers:
         specifier: ^6
         version: 6.0.6
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   raf:
     devDependencies:
@@ -217,8 +220,8 @@ importers:
         specifier: ^1
         version: 1.2.0
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   scope-eval:
     devDependencies:
@@ -226,8 +229,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   signals:
     dependencies:
@@ -239,8 +242,17 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
+
+  state-api:
+    devDependencies:
+      '@effectionx/bdd':
+        specifier: workspace:*
+        version: link:../bdd
+      effection:
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   stream-helpers:
     dependencies:
@@ -261,8 +273,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   stream-yaml:
     dependencies:
@@ -277,8 +289,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   task-buffer:
     devDependencies:
@@ -292,14 +304,14 @@ importers:
         specifier: ^8
         version: 8.1.5
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   test-adapter:
     devDependencies:
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   timebox:
     devDependencies:
@@ -307,8 +319,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   tinyexec:
     dependencies:
@@ -317,8 +329,8 @@ importers:
         version: 0.3.2
     devDependencies:
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   vitest:
     dependencies:
@@ -333,8 +345,8 @@ importers:
         specifier: ^7
         version: 7.0.6
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
       vitest:
         specifier: ^4
         version: 4.1.0(@types/node@22.19.7)(vite@7.3.1(@types/node@22.19.7)(yaml@2.8.2))
@@ -373,8 +385,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
   websocket:
     devDependencies:
@@ -385,8 +397,8 @@ importers:
         specifier: ^8
         version: 8.18.1
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
       ws:
         specifier: ^8
         version: 8.19.0
@@ -410,8 +422,8 @@ importers:
         specifier: workspace:*
         version: link:../vitest
       effection:
-        specifier: ^4
-        version: 4.0.0
+        specifier: 4.1.0-alpha.7
+        version: 4.1.0-alpha.7
 
 packages:
 
@@ -914,8 +926,8 @@ packages:
   effect@3.19.14:
     resolution: {integrity: sha512-3vwdq0zlvQOxXzXNKRIPKTqZNMyGCdaFUBfMPqpsyzZDre67kgC1EEHDV4EoQTovJ4w5fmJW756f86kkuz7WFA==}
 
-  effection@4.0.0:
-    resolution: {integrity: sha512-eW2yqhyBdey4k8lkp7hpiev2FSHvJvQqvaIebI3EGikHZvfUWvNy7SmkwOnJa6WcsUtSh7VHUwdjHTbV++8M9w==}
+  effection@4.1.0-alpha.7:
+    resolution: {integrity: sha512-ir7qM7vQXOo7eiuNxaD6FgwUetdy3XMB3dwtzUxp9ytiZl6abZUrXwM3vMqKWdMW4cW1KZzJqSEuXofJFscwFw==}
     engines: {node: '>= 16'}
 
   es-module-lexer@2.0.0:
@@ -1654,7 +1666,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
 
-  effection@4.0.0: {}
+  effection@4.1.0-alpha.7: {}
 
   es-module-lexer@2.0.0: {}
 

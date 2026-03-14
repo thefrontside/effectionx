@@ -16,6 +16,7 @@ packages:
   - "raf"
   - "scope-eval"
   - "signals"
+  - "state-api"
   - "stream-helpers"
   - "stream-yaml"
   - "task-buffer"

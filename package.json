@@ -21,7 +21,7 @@
     "@biomejs/biome": "^1",
     "@types/node": "^22",
     "@types/semver": "^7",
-    "effection": "^4",
+    "effection": "4.1.0-alpha.7",
     "expect": "^29",
     "semver": "^7.6.3",
     "vitest": "^4",
@@ -32,6 +32,9 @@
     "peerDependencyRules": {
       "ignoreMissing": [],
       "allowAny": []
+    },
+    "overrides": {
+      "effection": "4.1.0-alpha.7"
     }
   },
   "volta": {

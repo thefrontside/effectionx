@@ -7,7 +7,7 @@
     "build": "pnpm run build:tsc && turbo run build:bundle",
     "build:tsc": "tsc --build",
     "check": "tsc -b --emitDeclarationOnly && tsc -p tsconfig.check.json",
-    "test": "node --env-file=.env --test \"**/*.test.ts\"",
+    "test": "node --env-file=.env --test --test-force-exit \"**/*.test.ts\"",
     "test:matrix": "node --env-file=.env .internal/test-matrix.ts",
     "lint": "biome lint .",
     "fmt": "biome format . --write",

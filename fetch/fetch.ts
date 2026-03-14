@@ -3,10 +3,10 @@ import {
   type Api,
   type Operation,
   type Stream,
-  createApi,
   until,
   useAbortSignal,
 } from "effection";
+import { createApi } from "effection/experimental";
 
 /**
  * Request options for fetch, excluding `signal` since cancellation

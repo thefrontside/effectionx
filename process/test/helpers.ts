@@ -1,4 +1,4 @@
-import { type Operation, type Stream, until } from "effection";
+import { type Operation, race, sleep, type Stream, until } from "effection";
 
 export function* captureError(op: Operation<unknown>): Operation<Error> {
   try {
@@ -54,14 +54,24 @@ export function streamClose<TClose>(
 }
 
 export function* expectMatch(pattern: RegExp, stream: Stream<string, unknown>) {
-  const subscription = yield* stream;
-  let next = yield* subscription.next();
-  while (!next.done) {
-    if (pattern.test(next.value)) {
-      return true;
-    }
-    next = yield* subscription.next();
-  }
-
-  return false;
+  const prevLogs: string[] = [];
+  return yield* race([
+    (function* (): Operation<boolean> {
+      yield* sleep(8000);
+      console.log(`saw logs: ${prevLogs.join("")}`);
+      return false;
+    })(),
+    (function* (): Operation<boolean> {
+      const subscription = yield* stream;
+      let next = yield* subscription.next();
+      while (!next.done) {
+        prevLogs.push(next.value);
+        if (pattern.test(next.value)) {
+          return true;
+        }
+        next = yield* subscription.next();
+      }
+      return false;
+    })(),
+  ]);
 }

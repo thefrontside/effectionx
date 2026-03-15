@@ -152,8 +152,14 @@ export function useState<T>(initial: T, reducers?: any): Operation<any> {
     };
 
     // Add user-defined reducer actions
+    const reserved = new Set(["set", "update", "get", "around"]);
     if (reducers) {
       for (const key of Object.keys(reducers)) {
+        if (reserved.has(key)) {
+          throw new Error(
+            `Reducer name "${key}" is reserved. Built-in operations (set, update, get, around) cannot be overridden.`,
+          );
+        }
         const reducer = reducers[key];
         // biome-ignore lint/suspicious/noExplicitAny: reducer args are open-ended
         core[key] = function* (...args: any[]): Operation<T> {

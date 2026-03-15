@@ -57,7 +57,7 @@ describe("useState", () => {
         }
       });
 
-      // allow subscriber to establish
+      // yield control to let subscriber establish (sleep(0) is policy-compliant)
       yield* sleep(0);
 
       yield* counter.set(1);
@@ -83,6 +83,7 @@ describe("useState", () => {
         }
       });
 
+      // yield control to let subscriber establish (sleep(0) is policy-compliant)
       yield* sleep(0);
 
       yield* counter.update((n) => n + 1);
@@ -128,6 +129,7 @@ describe("useState", () => {
         }
       });
 
+      // yield control to let subscriber establish (sleep(0) is policy-compliant)
       yield* sleep(0);
 
       yield* counter.increment(1);
@@ -168,6 +170,19 @@ describe("useState", () => {
       expect(afterRemove).toEqual([
         { id: 1, text: "write tests", done: false },
       ]);
+    });
+
+    it("rejects reserved reducer names", function* () {
+      for (const name of ["set", "update", "get", "around"]) {
+        let error: Error | undefined;
+        try {
+          yield* useState(0, { [name]: (state: number) => state });
+        } catch (e) {
+          error = e as Error;
+        }
+        expect(error).toBeDefined();
+        expect(error?.message).toContain(`"${name}" is reserved`);
+      }
     });
 
     it("built-in set/update still work alongside reducers", function* () {

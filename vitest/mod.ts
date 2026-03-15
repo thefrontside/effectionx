@@ -6,21 +6,68 @@ import * as vitest from "vitest";
 // biome-ignore lint/complexity/noBannedTypes: vitest.describe accepts Function as name
 type DescribeName = string | Function;
 
+/**
+ * Internal type for a vitest Suite object augmented with an adapter property.
+ * Used to store the TestAdapter on vitest's own per-describe suite objects,
+ * which provides proper per-suite scoping without any module-level state.
+ */
+interface SuiteWithAdapter {
+  adapter?: TestAdapter;
+  suite?: SuiteWithAdapter;
+}
+
+/**
+ * Narrow type assertion for vitest.beforeAll/afterAll that bridges
+ * vitest 3 (1 arg: suite) and vitest 4 (2 args: context, suite).
+ * Replaces `as any` with a specific callable shape.
+ */
+type CompatBeforeAfterAll = (
+  fn: (first: unknown, second?: unknown) => void | Promise<void>,
+  timeout?: number,
+) => void;
+
+/**
+ * Create a hook callback compatible with both vitest 3 and vitest 4.
+ *
+ * Vitest 4 statically parses the callback's source text (via `.toString()`)
+ * and requires the first parameter to use object destructuring syntax.
+ * The suite object moved from the 1st argument (vitest 3) to the 2nd
+ * argument (vitest 4).
+ *
+ * We override `.toString()` to report a destructuring signature that satisfies
+ * vitest 4's parser, while the actual function accepts `(first, second)` and
+ * resolves the suite from whichever position it appears in.
+ */
+function createHook(
+  fn: (suite: SuiteWithAdapter) => void | Promise<void>,
+): (first: unknown, second?: unknown) => void | Promise<void> {
+  const hook = (first: unknown, second?: unknown) => {
+    const suite = (second ?? first) as SuiteWithAdapter;
+    return fn(suite);
+  };
+  // Override toString so vitest 4's fixture argument parser sees a
+  // destructuring pattern and skips fixture injection for this callback.
+  hook.toString = () => "function({}){}";
+  return hook;
+}
+
 function describeWithScope(
   name: DescribeName,
   factory?: vitest.SuiteFactory,
 ): vitest.SuiteCollector {
   return vitest.describe(name, (...args) => {
-    vitest.beforeAll((suite) => {
-      let parent = (suite.suite as unknown as { adapter?: TestAdapter })
-        ?.adapter as TestAdapter | undefined;
-      (suite as unknown as { adapter?: TestAdapter }).adapter =
-        createTestAdapter({ name: String(name), parent });
-    });
+    (vitest.beforeAll as CompatBeforeAfterAll)(
+      createHook((suite) => {
+        let parent = suite.suite?.adapter;
+        suite.adapter = createTestAdapter({ name: String(name), parent });
+      }),
+    );
 
-    vitest.afterAll(async (suite) => {
-      await (suite as unknown as { adapter?: TestAdapter }).adapter?.destroy();
-    });
+    (vitest.afterAll as CompatBeforeAfterAll)(
+      createHook(async (suite) => {
+        await suite.adapter?.destroy();
+      }),
+    );
 
     if (factory && typeof factory === "function") {
       factory(...args);
@@ -33,16 +80,18 @@ describeWithScope.only = function describeWithScope(
   factory?: vitest.SuiteFactory,
 ): vitest.SuiteCollector {
   return vitest.describe.only(name, (...args) => {
-    vitest.beforeAll((suite) => {
-      let parent = (suite.suite as unknown as { adapter?: TestAdapter })
-        ?.adapter as TestAdapter | undefined;
-      (suite as unknown as { adapter?: TestAdapter }).adapter =
-        createTestAdapter({ name: String(name), parent });
-    });
+    (vitest.beforeAll as CompatBeforeAfterAll)(
+      createHook((suite) => {
+        let parent = suite.suite?.adapter;
+        suite.adapter = createTestAdapter({ name: String(name), parent });
+      }),
+    );
 
-    vitest.afterAll(async (suite) => {
-      await (suite as unknown as { adapter?: TestAdapter }).adapter?.destroy();
-    });
+    (vitest.afterAll as CompatBeforeAfterAll)(
+      createHook(async (suite) => {
+        await suite.adapter?.destroy();
+      }),
+    );
 
     if (factory && typeof factory === "function") {
       factory(...args);
@@ -58,15 +107,25 @@ describeWithScope.runIf = (condition: unknown) =>
 export const describe = <typeof vitest.describe>(<unknown>describeWithScope);
 
 export function beforeAll(op: () => Operation<void>): void {
-  vitest.beforeAll((suite) => {
-    (suite as unknown as { adapter: TestAdapter }).adapter.addOnetimeSetup(op);
-  });
+  (vitest.beforeAll as CompatBeforeAfterAll)(
+    createHook((suite) => {
+      if (!suite.adapter) {
+        throw new Error("missing test adapter");
+      }
+      suite.adapter.addOnetimeSetup(op);
+    }),
+  );
 }
 
 export function beforeEach(op: () => Operation<void>): void {
-  vitest.beforeAll((suite) => {
-    (suite as unknown as { adapter: TestAdapter }).adapter.addSetup(op);
-  });
+  (vitest.beforeAll as CompatBeforeAfterAll)(
+    createHook((suite) => {
+      if (!suite.adapter) {
+        throw new Error("missing test adapter");
+      }
+      suite.adapter.addSetup(op);
+    }),
+  );
 }
 
 export function it(

@@ -28,6 +28,40 @@ describe("@effectionx/vitest", () => {
     expect(result.stdout).toMatch(/6 passed/);
   });
 
+  it("correctly scopes adapters across nested describes", function* () {
+    let result = yield* exec(
+      "pnpm vitest run test/fixtures/nested-scopes.vitest.ts --reporter=verbose",
+      {
+        cwd: import.meta.dirname,
+      },
+    ).join();
+
+    expect(result.code).toEqual(0);
+
+    expect(result.stdout).toContain("runs outer beforeEach");
+    expect(result.stdout).toContain("runs both outer and middle beforeEach");
+    expect(result.stdout).toContain("runs all three levels of beforeEach");
+    expect(result.stdout).toContain(
+      "outer scope is not affected by inner beforeEach",
+    );
+
+    expect(result.stdout).toMatch(/4 passed/);
+  });
+
+  it("isolates scopes across multiple test files", function* () {
+    let result = yield* exec(
+      "pnpm vitest run test/fixtures/sample.vitest.ts test/fixtures/nested-scopes.vitest.ts --reporter=verbose",
+      {
+        cwd: import.meta.dirname,
+      },
+    ).join();
+
+    expect(result.code).toEqual(0);
+
+    // 6 from sample + 4 from nested-scopes = 10 total
+    expect(result.stdout).toMatch(/10 passed/);
+  });
+
   it("reports failing tests correctly", function* () {
     let result = yield* exec(
       "pnpm vitest run test/fixtures/failing.vitest.ts --reporter=verbose",

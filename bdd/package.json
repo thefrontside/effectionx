@@ -1,7 +1,7 @@
 {
   "name": "@effectionx/bdd",
   "description": "BDD testing harness with describe/it/beforeEach for Effection operations",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "keywords": ["effection", "effectionx", "testing", "bdd", "describe", "it"],
   "type": "module",
   "main": "./dist/mod.js",
@@ -43,9 +43,6 @@
   },
   "bugs": {
     "url": "https://github.com/thefrontside/effectionx/issues"
-  },
-  "engines": {
-    "node": ">= 22"
   },
   "sideEffects": false
 }

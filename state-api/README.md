@@ -26,30 +26,35 @@ await run(function* () {
 Define named state transitions that are type-safe and interceptable.
 
 ```ts
+import { run } from "effection";
+import { useState } from "@effectionx/state-api";
+
 interface Todo {
   id: number;
   text: string;
   done: boolean;
 }
 
-const todos = yield* useState([] as Todo[], {
-  add: (state, text: string) => [
-    ...state,
-    { id: state.length, text, done: false },
-  ],
-  toggle: (state, id: number) =>
-    state.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
-  remove: (state, id: number) => state.filter((t) => t.id !== id),
+await run(function* () {
+  const todos = yield* useState([] as Todo[], {
+    add: (state, text: string) => [
+      ...state,
+      { id: state.length, text, done: false },
+    ],
+    toggle: (state, id: number) =>
+      state.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
+    remove: (state, id: number) => state.filter((t) => t.id !== id),
+  });
+
+  yield* todos.add("buy milk"); // returns the new state
+  yield* todos.toggle(0);
+  yield* todos.remove(0);
+
+  // built-in operations still available
+  yield* todos.set([]);
+  yield* todos.update((s) => [...s]);
+  const snapshot = yield* todos.get();
 });
-
-yield* todos.add("buy milk"); // returns the new state
-yield* todos.toggle(0);
-yield* todos.remove(0);
-
-// built-in operations still available
-yield* todos.set([]);
-yield* todos.update((s) => [...s]);
-const snapshot = yield* todos.get();
 ```
 
 Each reducer is a function `(state, ...args) => newState`. The `state`
@@ -58,9 +63,11 @@ arguments.
 
 ### Stream subscription
 
-`State<T>` implements `Stream<T, void>`, so you can subscribe to changes:
+`State<T>` implements `Stream<T, void>`, so you can subscribe to changes.
+The following continues from the `todos` example above:
 
 ```ts
+// inside run(function* () { ... })
 yield* spawn(function* () {
   for (const snapshot of yield* each(todos)) {
     console.log("todos changed:", snapshot);
@@ -75,6 +82,8 @@ Every operation (`set`, `update`, `get`, and all reducer actions) can be
 intercepted with middleware via `around()`:
 
 ```ts
+// inside run(function* () { ... })
+
 // log every state change
 yield* todos.around({
   *set([value], next) {

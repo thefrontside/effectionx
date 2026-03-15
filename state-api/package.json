@@ -1,8 +1,15 @@
 {
-  "name": "@effectionx/effect-ts",
-  "description": "Bidirectional interop between Effect-TS and Effection",
-  "version": "0.1.4",
-  "keywords": ["effection", "effectionx", "interop", "effect-ts", "effect"],
+  "name": "@effectionx/state-api",
+  "description": "Reactive state container with typed reducers and middleware for Effection",
+  "version": "0.1.0",
+  "keywords": [
+    "effection",
+    "effectionx",
+    "state",
+    "reducer",
+    "middleware",
+    "reactive"
+  ],
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
@@ -14,14 +21,13 @@
       "default": "./dist/mod.js"
     }
   },
+  "files": ["dist", "mod.ts", "state.ts"],
   "peerDependencies": {
-    "effect": "^3",
-    "effection": "^3 || ^4"
+    "effection": "^4.1.0-alpha.3"
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",
-    "effect": "^3",
-    "effection": "^4"
+    "effection": "4.1.0-alpha.7"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",

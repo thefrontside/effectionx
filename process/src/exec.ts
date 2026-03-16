@@ -7,11 +7,11 @@ import type {
   ExitStatus,
   Process,
   ProcessResult,
-} from "./exec/api.ts";
+} from "./exec/types.ts";
 import { createPosixProcess } from "./exec/posix.ts";
 import { createWin32Process, isWin32 } from "./exec/win32.ts";
 
-export * from "./exec/api.ts";
+export * from "./exec/types.ts";
 export * from "./exec/error.ts";
 
 export interface Exec extends Operation<Process> {

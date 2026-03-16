@@ -59,53 +59,47 @@ type FieldMiddleware = {
  */
 type MiddlewareRegistry<A> = Record<keyof A, FieldMiddleware>;
 
-export function createApi<A extends {}>(name: string, handler: A): Api<A> {
-  let fields = Object.keys(handler) as (keyof A)[];
+export function createApi<A>(name: string, handler: A): Api<A> {
+  let fields = Object.keys(handler as object) as (keyof A)[];
 
-  let initial = fields.reduce(
-    (sum, field) => {
-      return Object.assign(sum, {
-        [field]: {
-          max: [],
-          min: [],
-          composed: undefined,
-        } satisfies FieldMiddleware,
-      });
-    },
-    {} as MiddlewareRegistry<A>,
-  );
+  let initial = fields.reduce((sum, field) => {
+    return Object.assign(sum, {
+      [field]: {
+        max: [],
+        min: [],
+        composed: undefined,
+      } satisfies FieldMiddleware,
+    });
+  }, {} as MiddlewareRegistry<A>);
 
   let context = createContext<MiddlewareRegistry<A>>(`$api:${name}`, initial);
 
-  let operations = fields.reduce(
-    (api, field) => {
-      let handle = handler[field];
-      if (typeof handle === "function") {
-        let fn = handle as (...args: any[]) => any;
-        return Object.assign(api, {
-          [field]: (...args: any[]) => ({
-            *[Symbol.iterator]() {
-              let state = yield* context.expect();
-              let { composed } = state[field as keyof A];
-              let result = composed ? composed(args, fn) : fn(...args);
-              return isOperation(result) ? yield* result : result;
-            },
-          }),
-        });
-      }
+  let operations = fields.reduce((api, field) => {
+    let handle = handler[field];
+    if (typeof handle === "function") {
+      let fn = handle as (...args: any[]) => any;
       return Object.assign(api, {
-        [field]: {
+        [field]: (...args: any[]) => ({
           *[Symbol.iterator]() {
             let state = yield* context.expect();
             let { composed } = state[field as keyof A];
-            let result = composed ? composed([], () => handle) : handle;
+            let result = composed ? composed(args, fn) : fn(...args);
             return isOperation(result) ? yield* result : result;
           },
-        },
+        }),
       });
-    },
-    {} as Operations<A>,
-  );
+    }
+    return Object.assign(api, {
+      [field]: {
+        *[Symbol.iterator]() {
+          let state = yield* context.expect();
+          let { composed } = state[field as keyof A];
+          let result = composed ? composed([], () => handle) : handle;
+          return isOperation(result) ? yield* result : result;
+        },
+      },
+    });
+  }, {} as Operations<A>);
 
   function* around(
     middlewares: Partial<Around<A>>,
@@ -113,35 +107,32 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
   ): Operation<void> {
     let current = yield* context.expect();
 
-    let next = fields.reduce(
-      (sum, field) => {
-        let middleware = (middlewares as any)[field] as
-          | Middleware<any[], any>
-          | undefined;
-        let fieldState = current[field as keyof A];
+    let next = fields.reduce((sum, field) => {
+      let middleware = (middlewares as any)[field] as
+        | Middleware<any[], any>
+        | undefined;
+      let fieldState = current[field as keyof A];
 
-        if (middleware) {
-          // Clone arrays — never mutate in place (scope isolation)
-          let max = [...fieldState.max];
-          let min = [...fieldState.min];
+      if (middleware) {
+        // Clone arrays — never mutate in place (scope isolation)
+        let max = [...fieldState.max];
+        let min = [...fieldState.min];
 
-          if (options.at === "min") {
-            min = [middleware, ...min];
-          } else {
-            max = [...max, middleware];
-          }
-
-          let composed = combine([...max, ...min]);
-
-          return Object.assign(sum, {
-            [field]: { max, min, composed },
-          });
+        if (options.at === "min") {
+          min = [middleware, ...min];
+        } else {
+          max = [...max, middleware];
         }
 
-        return Object.assign(sum, { [field]: fieldState });
-      },
-      {} as MiddlewareRegistry<A>,
-    );
+        let composed = combine([...max, ...min]);
+
+        return Object.assign(sum, {
+          [field]: { max, min, composed },
+        });
+      }
+
+      return Object.assign(sum, { [field]: fieldState });
+    }, {} as MiddlewareRegistry<A>);
 
     yield* context.set(next);
   }

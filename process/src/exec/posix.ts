@@ -7,12 +7,16 @@ import {
   Ok,
   type Result,
   all,
+  createChannel,
   createSignal,
+  each,
   resource,
   spawn,
+  useScope,
   withResolvers,
 } from "effection";
-import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
+import type { CreateOSProcess, ExitStatus, Writable } from "./types.ts";
+import { api } from "../api.ts";
 import { ExecError } from "./error.ts";
 
 type ProcessResultValue = [number?, string?];
@@ -58,6 +62,7 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
     yield* spawn(function* () {
       let next = yield* io.stdout.next();
       while (!next.done) {
+        yield* api.operations.stdout(next.value);
         stdout.send(next.value);
         next = yield* io.stdout.next();
       }
@@ -68,6 +73,7 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
     yield* spawn(function* () {
       let next = yield* io.stderr.next();
       while (!next.done) {
+        yield* api.operations.stdout(next.value);
         stderr.send(next.value);
         next = yield* io.stderr.next();
       }
@@ -108,15 +114,27 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
       return status;
     }
 
+    let middlewares = createChannel<Parameters<typeof api.around>[0]>();
+
+    // TODO convert this to scope.eval
+    // TODO also do the same in win32.ts
     try {
-      yield* provide({
-        pid: pid as number,
-        stdin,
-        stdout,
-        stderr,
-        join,
-        expect,
-      });
+      yield* spawn(() =>
+        provide({
+          pid: pid as number,
+          around: middlewares.send,
+          stdin,
+          stdout,
+          stderr,
+          join,
+          expect,
+        }),
+      );
+
+      for (let middleware of yield* each(middlewares)) {
+        yield* api.around(middleware);
+        yield* each.next();
+      }
     } finally {
       try {
         if (typeof childProcess.pid === "undefined") {

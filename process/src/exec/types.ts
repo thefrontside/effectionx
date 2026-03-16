@@ -1,7 +1,7 @@
 import type { Operation } from "effection";
 import type { OutputStream } from "../helpers.ts";
+import type { Api } from "@effectionx/context-api";
 
-// TODO: import from subscription package once #236 is merged
 export interface Writable<T> {
   send(message: T): void;
 }
@@ -24,6 +24,7 @@ export interface Process extends StdIO {
    * not complete successfully, it will raise an ExecError.
    */
   expect(): Operation<ExitStatus>;
+  around: Api<IOApi>["around"];
 }
 
 export interface ExecOptions {
@@ -57,6 +58,11 @@ export interface StdIO {
   stdout: OutputStream;
   stderr: OutputStream;
   stdin: Writable<string>;
+}
+
+export interface IOApi {
+  stdout(bytes: Uint8Array): Operation<void>;
+  stderr(bytes: Uint8Array): Operation<void>;
 }
 
 export interface ExitStatus {

@@ -1,4 +1,4 @@
-import type { Dirent, Stats } from "node:fs";
+import type { Dirent } from "node:fs";
 export type { Dirent } from "node:fs";
 import * as fsp from "node:fs/promises";
 import * as path from "node:path";
@@ -13,43 +13,7 @@ import {
 } from "effection";
 
 export * from "./api.ts";
-import { FsApi, toPath } from "./api.ts";
-
-/**
- * Get file or directory stats
- *
- * This function supports middleware via {@link FsApi}. Use `FsApi.around()`
- * to add logging, mocking, or other middleware.
- *
- * @example
- * ```ts
- * import { stat } from "@effectionx/fs";
- *
- * const stats = yield* stat("./file.txt");
- * console.log(stats.isFile());
- * ```
- */
-export function stat(pathOrUrl: string | URL): Operation<Stats> {
-  return FsApi.operations.stat(pathOrUrl);
-}
-
-/**
- * Get file or directory stats without following symlinks
- *
- * This function supports middleware via {@link FsApi}. Use `FsApi.around()`
- * to add logging, mocking, or other middleware.
- *
- * @example
- * ```ts
- * import { lstat } from "@effectionx/fs";
- *
- * const stats = yield* lstat("./symlink");
- * console.log(stats.isSymbolicLink());
- * ```
- */
-export function lstat(pathOrUrl: string | URL): Operation<Stats> {
-  return FsApi.operations.lstat(pathOrUrl);
-}
+import { readdirDirents, rm, stat, toPath } from "./api.ts";
 
 /**
  * Check if a file or directory exists
@@ -140,11 +104,11 @@ export function readdir(
   options?: { withFileTypes?: boolean },
 ): Operation<string[]> | Operation<Dirent[]> {
   if (options?.withFileTypes) {
-    return FsApi.operations.readdir(pathOrUrl);
+    return readdirDirents(pathOrUrl);
   }
   return {
     *[Symbol.iterator]() {
-      const entries = yield* FsApi.operations.readdir(pathOrUrl);
+      const entries = yield* readdirDirents(pathOrUrl);
       return entries.map((e) => e.name);
     },
   };
@@ -182,26 +146,6 @@ export function* emptyDir(pathOrUrl: string | URL): Operation<void> {
 }
 
 /**
- * Remove a file or directory
- *
- * This function supports middleware via {@link FsApi}. Use `FsApi.around()`
- * to add logging, mocking, or other middleware.
- *
- * @example
- * ```ts
- * import { rm } from "@effectionx/fs";
- *
- * yield* rm("./temp", { recursive: true });
- * ```
- */
-export function rm(
-  pathOrUrl: string | URL,
-  options?: { recursive?: boolean; force?: boolean },
-): Operation<void> {
-  return FsApi.operations.rm(pathOrUrl, options);
-}
-
-/**
  * Copy a file
  *
  * @example
@@ -216,43 +160,6 @@ export function copyFile(
   dest: string | URL,
 ): Operation<void> {
   return until(fsp.copyFile(toPath(src), toPath(dest)));
-}
-
-/**
- * Read a file as text
- *
- * This function supports middleware via {@link FsApi}. Use `FsApi.around()`
- * to add logging, mocking, or other middleware.
- *
- * @example
- * ```ts
- * import { readTextFile } from "@effectionx/fs";
- *
- * const content = yield* readTextFile("./config.json");
- * ```
- */
-export function readTextFile(pathOrUrl: string | URL): Operation<string> {
-  return FsApi.operations.readTextFile(pathOrUrl);
-}
-
-/**
- * Write text to a file
- *
- * This function supports middleware via {@link FsApi}. Use `FsApi.around()`
- * to add logging, mocking, or other middleware.
- *
- * @example
- * ```ts
- * import { writeTextFile } from "@effectionx/fs";
- *
- * yield* writeTextFile("./output.txt", "Hello, World!");
- * ```
- */
-export function writeTextFile(
-  pathOrUrl: string | URL,
-  content: string,
-): Operation<void> {
-  return FsApi.operations.writeTextFile(pathOrUrl, content);
 }
 
 /**
@@ -339,7 +246,7 @@ export function walk(
     function* walkDir(dir: string, depth: number): Operation<void> {
       if (depth > maxDepth) return;
 
-      const entries = yield* FsApi.operations.readdir(dir);
+      const entries = yield* readdirDirents(dir);
 
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);

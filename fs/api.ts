@@ -114,3 +114,90 @@ export const FsApi: Api<FsApiCore> = createApi("fs", {
     );
   },
 });
+
+/**
+ * Get file or directory stats.
+ *
+ * This function supports middleware via {@link FsApi}. Use `FsApi.around()`
+ * to add logging, mocking, or other middleware.
+ *
+ * @example
+ * ```ts
+ * import { stat } from "@effectionx/fs";
+ *
+ * const stats = yield* stat("./file.txt");
+ * console.log(stats.isFile());
+ * ```
+ */
+export const stat = FsApi.operations.stat;
+
+/**
+ * Get file or directory stats without following symlinks.
+ *
+ * This function supports middleware via {@link FsApi}. Use `FsApi.around()`
+ * to add logging, mocking, or other middleware.
+ *
+ * @example
+ * ```ts
+ * import { lstat } from "@effectionx/fs";
+ *
+ * const stats = yield* lstat("./symlink");
+ * console.log(stats.isSymbolicLink());
+ * ```
+ */
+export const lstat = FsApi.operations.lstat;
+
+/**
+ * Read a file as text.
+ *
+ * This function supports middleware via {@link FsApi}. Use `FsApi.around()`
+ * to add logging, mocking, or other middleware.
+ *
+ * @example
+ * ```ts
+ * import { readTextFile } from "@effectionx/fs";
+ *
+ * const content = yield* readTextFile("./config.json");
+ * ```
+ */
+export const readTextFile = FsApi.operations.readTextFile;
+
+/**
+ * Write text to a file.
+ *
+ * This function supports middleware via {@link FsApi}. Use `FsApi.around()`
+ * to add logging, mocking, or other middleware.
+ *
+ * @example
+ * ```ts
+ * import { writeTextFile } from "@effectionx/fs";
+ *
+ * yield* writeTextFile("./output.txt", "Hello, World!");
+ * ```
+ */
+export const writeTextFile = FsApi.operations.writeTextFile;
+
+/**
+ * Remove a file or directory.
+ *
+ * This function supports middleware via {@link FsApi}. Use `FsApi.around()`
+ * to add logging, mocking, or other middleware.
+ *
+ * @example
+ * ```ts
+ * import { rm } from "@effectionx/fs";
+ *
+ * yield* rm("./temp", { recursive: true });
+ * ```
+ */
+export const rm = FsApi.operations.rm;
+
+/**
+ * Read directory entries as Dirent objects.
+ *
+ * This is the core readdir operation used internally. For the public API
+ * with overloads (returning `string[]` by default or `Dirent[]` with
+ * `{ withFileTypes: true }`), use the `readdir` function from the main
+ * module entry point.
+ */
+export const readdirDirents = FsApi.operations.readdir;

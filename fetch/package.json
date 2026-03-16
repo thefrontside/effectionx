@@ -14,7 +14,7 @@
       "default": "./dist/mod.js"
     }
   },
-  "files": ["dist", "mod.ts", "fetch.ts"],
+  "files": ["dist", "mod.ts", "api.ts", "fetch.ts"],
   "dependencies": {
     "@effectionx/context-api": "workspace:*"
   },

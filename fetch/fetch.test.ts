@@ -18,7 +18,7 @@ import {
   withResolvers,
 } from "effection";
 
-import { type FetchResponse, HttpError, fetch, fetchApi } from "./fetch.ts";
+import { FetchApi, type FetchResponse, HttpError, fetch } from "./mod.ts";
 
 function box<T>(content: () => Operation<T>): Operation<Result<T>> {
   return {
@@ -203,7 +203,7 @@ describe("fetch()", () => {
     it("can intercept requests with logging", function* () {
       let requestedUrls: string[] = [];
 
-      yield* fetchApi.around({
+      yield* FetchApi.around({
         *fetch(args, next) {
           let [input] = args;
           requestedUrls.push(String(input));
@@ -252,7 +252,7 @@ describe("fetch()", () => {
         },
       };
 
-      yield* fetchApi.around({
+      yield* FetchApi.around({
         *fetch(args, next) {
           let [input] = args;
           if (String(input).includes("/mocked")) {
@@ -280,7 +280,7 @@ describe("fetch()", () => {
       let outerCalls: string[] = [];
       let innerCalls: string[] = [];
 
-      yield* fetchApi.around({
+      yield* FetchApi.around({
         *fetch(args, next) {
           outerCalls.push("outer");
           return yield* next(...args);
@@ -292,7 +292,7 @@ describe("fetch()", () => {
 
       // Spawn a child scope with additional middleware
       let task = yield* spawn(function* () {
-        yield* fetchApi.around({
+        yield* FetchApi.around({
           *fetch(args, next) {
             innerCalls.push("inner");
             return yield* next(...args);

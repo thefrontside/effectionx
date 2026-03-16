@@ -156,15 +156,19 @@ export class HttpError extends Error {
  * @example
  * ```ts
  * // Use middleware to mock responses in tests
- * import { FetchApi, fetch, createMockResponse } from "@effectionx/fetch";
+ * import { FetchApi, fetch, createFetchResponse } from "@effectionx/fetch";
  *
  * await run(function*() {
  *   yield* FetchApi.around({
  *     *fetch(args, next) {
  *       let [input] = args;
  *       if (input === "/api/test") {
- *         // Return a mock response
- *         return createMockResponse({ data: "mocked" });
+ *         return createFetchResponse(
+ *           new Response(JSON.stringify({ data: "mocked" }), {
+ *             status: 200,
+ *             headers: { "Content-Type": "application/json" },
+ *           }),
+ *         );
  *       }
  *       return yield* next(...args);
  *     }
@@ -235,27 +239,6 @@ function createFetchOperation(
       return createFetchOperation(input, init, true);
     },
   };
-}
-
-/**
- * Create a FetchResponse from a native Response object.
- *
- * Useful for creating mock responses in middleware for testing.
- *
- * @example
- * ```ts
- * import { createMockResponse } from "@effectionx/fetch";
- *
- * // Create a mock JSON response
- * let mock = createMockResponse({ users: [] });
- * ```
- */
-export function createMockResponse(data: unknown): FetchResponse {
-  let response = new Response(JSON.stringify(data), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
-  return createFetchResponse(response);
 }
 
 export function createFetchResponse(response: Response): FetchResponse {

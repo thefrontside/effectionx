@@ -18,7 +18,7 @@ import {
   withResolvers,
 } from "effection";
 
-import { FetchApi, type FetchResponse, HttpError, fetch } from "./mod.ts";
+import { FetchApi, HttpError, createFetchResponse, fetch } from "./mod.ts";
 
 function box<T>(content: () => Operation<T>): Operation<Result<T>> {
   return {
@@ -218,39 +218,12 @@ describe("fetch()", () => {
     });
 
     it("can mock responses", function* () {
-      // Create a mock response
-      const mockResponse: FetchResponse = {
-        raw: new Response(JSON.stringify({ mocked: true })),
-        bodyUsed: false,
-        ok: true,
-        status: 200,
-        statusText: "OK",
-        headers: new Headers(),
-        url: "mock://test",
-        redirected: false,
-        type: "basic",
-        *json<T>(): Operation<T> {
-          return { mocked: true } as T;
-        },
-        *text(): Operation<string> {
-          return '{"mocked": true}';
-        },
-        *arrayBuffer(): Operation<ArrayBuffer> {
-          return new ArrayBuffer(0);
-        },
-        *blob(): Operation<Blob> {
-          return new Blob();
-        },
-        *formData(): Operation<FormData> {
-          return new FormData();
-        },
-        body() {
-          throw new Error("Not implemented");
-        },
-        *expect() {
-          return this;
-        },
-      };
+      const mockResponse = createFetchResponse(
+        new Response(JSON.stringify({ mocked: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
 
       yield* FetchApi.around({
         *fetch(args, next) {

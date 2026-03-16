@@ -2,10 +2,6 @@
 
 Effection-native fetch with structured concurrency and streaming response support.
 
-> **Note**: Starting with version 0.2.0, this package requires Effection v4.1 or greater
-> for full functionality. The middleware/API features (`fetchApi`) require the new
-> `createApi` function introduced in Effection v4.1.
-
 ---
 
 ## Installation
@@ -170,18 +166,18 @@ Effection wrapper around native `Response` with operation-based body readers.
 - `expect()` - throws `HttpError` for non-2xx responses
 - `raw` - access the underlying native `Response`
 
-### `fetchApi`
+### `FetchApi`
 
-The fetch API object that supports middleware decoration. Use `fetchApi.around()`
+The fetch API object that supports middleware decoration. Use `FetchApi.around()`
 to add middleware for logging, mocking, or instrumentation.
 
 ```ts
-import { fetchApi, fetch } from "@effectionx/fetch";
+import { FetchApi, fetch } from "@effectionx/fetch";
 import { run } from "effection";
 
 // Add logging middleware
 await run(function* () {
-  yield* fetchApi.around({
+  yield* FetchApi.around({
     *fetch(args, next) {
       let [input] = args;
       console.log("Fetching:", input);
@@ -194,19 +190,24 @@ await run(function* () {
 });
 ```
 
-#### Mocking responses for testing
+### Mocking responses for testing
 
 ```ts
-import { fetchApi, fetch, createMockResponse } from "@effectionx/fetch";
+import { FetchApi, fetch, createFetchResponse } from "@effectionx/fetch";
 import { run } from "effection";
 
 await run(function* () {
-  yield* fetchApi.around({
+  yield* FetchApi.around({
     *fetch(args, next) {
       let [input] = args;
       if (String(input).includes("/api/users")) {
         // Return a mock FetchResponse
-        return createMockResponse({ users: [] });
+        return createFetchResponse(
+          new Response(JSON.stringify({ users: [] }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
       }
       return yield* next(...args);
     },

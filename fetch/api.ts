@@ -53,15 +53,19 @@ export interface FetchApiCore {
  * @example
  * ```ts
  * // Mock responses for testing
- * import { FetchApi, fetch, createMockResponse } from "@effectionx/fetch";
+ * import { FetchApi, fetch, createFetchResponse } from "@effectionx/fetch";
  *
  * await run(function*() {
  *   yield* FetchApi.around({
  *     *fetch(args, next) {
  *       let [input] = args;
  *       if (input === "/api/users") {
- *         // Return a mock response
- *         return createMockResponse({ users: [] });
+ *         return createFetchResponse(
+ *           new Response(JSON.stringify({ users: [] }), {
+ *             status: 200,
+ *             headers: { "Content-Type": "application/json" },
+ *           }),
+ *         );
  *       }
  *       return yield* next(...args);
  *     }

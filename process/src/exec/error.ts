@@ -1,4 +1,4 @@
-import type { ExecOptions, ExitStatus } from "./api.ts";
+import type { ExecOptions, ExitStatus } from "./types.ts";
 
 export class ExecError extends Error {
   status: ExitStatus;

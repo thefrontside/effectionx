@@ -14,7 +14,8 @@ import {
   spawn,
   withResolvers,
 } from "effection";
-import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
+import type { CreateOSProcess, ExitStatus, Writable } from "./types.ts";
+import { api } from "../api.ts";
 import { ExecError } from "./error.ts";
 
 type ProcessResultValue = [number?, string?];
@@ -76,6 +77,7 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
     yield* spawn(function* () {
       let next = yield* io.stdout.next();
       while (!next.done) {
+        yield* api.operations.stdout(next.value);
         stdout.send(next.value);
         next = yield* io.stdout.next();
       }
@@ -86,6 +88,7 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
     yield* spawn(function* () {
       let next = yield* io.stderr.next();
       while (!next.done) {
+        yield* api.operations.stderr(next.value);
         stderr.send(next.value);
         next = yield* io.stderr.next();
       }
@@ -139,6 +142,7 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
     try {
       yield* provide({
         pid: pid as number,
+        around: api.around,
         stdin,
         stdout,
         stderr,

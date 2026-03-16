@@ -42,13 +42,8 @@ type FieldMiddleware = {
  */
 type MiddlewareRegistry<A> = Record<keyof A, FieldMiddleware>;
 
-type Handler = Operation<unknown> | ((...args: any[]) => Operation<unknown>);
-
-export function createApi<A extends Record<string, Handler>>(
-  name: string,
-  handler: A,
-): Api<A> {
-  let fields = Object.keys(handler) as (keyof A)[];
+export function createApi<A>(name: string, handler: A): Api<A> {
+  let fields = Object.keys(handler as object) as (keyof A)[];
 
   let initial = fields.reduce(
     (sum, field) => {
@@ -73,7 +68,7 @@ export function createApi<A extends Record<string, Handler>>(
         return Object.assign(api, {
           [field]: function* (...args: any[]) {
             let state = yield* context.expect();
-            let { composed } = state[field as keyof A];
+            let { composed } = state[field];
             return yield* composed ? composed(args, fn) : fn(...args);
           },
         });
@@ -82,10 +77,8 @@ export function createApi<A extends Record<string, Handler>>(
         [field]: {
           *[Symbol.iterator]() {
             let state = yield* context.expect();
-            let { composed } = state[field as keyof A];
-            return composed
-              ? yield* composed([], () => handle)
-              : yield* handle as Operation<unknown>;
+            let { composed } = state[field];
+            return composed;
           },
         },
       });

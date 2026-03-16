@@ -169,6 +169,9 @@ importers:
 
   process:
     dependencies:
+      '@effectionx/context-api':
+        specifier: workspace:*
+        version: link:../context-api
       '@effectionx/node':
         specifier: workspace:*
         version: link:../node

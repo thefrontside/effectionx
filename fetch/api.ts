@@ -1,12 +1,8 @@
 import { type Api, createApi } from "@effectionx/context-api";
 import { type Operation, until, useAbortSignal } from "effection";
 
-import {
-  type FetchInit,
-  type FetchResponse,
-  HttpError,
-  createFetchResponse,
-} from "./fetch.ts";
+import { createFetchResponse } from "./create-fetch-response.ts";
+import { type FetchInit, type FetchResponse, HttpError } from "./fetch.ts";
 
 /**
  * Core interface for the fetch API operations.

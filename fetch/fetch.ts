@@ -1,6 +1,6 @@
 import { stream, type Operation, type Stream, until } from "effection";
 
-import { FetchApi } from "./api.ts";
+import { coreFetch } from "./api.ts";
 
 /**
  * Request options for fetch, excluding `signal` since cancellation
@@ -193,7 +193,7 @@ function createFetchOperation(
 ): FetchOperation {
   // Use the API's fetch operation so middleware can intercept
   function* doFetch(): Operation<FetchResponse> {
-    return yield* FetchApi.operations.fetch(input, init, shouldExpect);
+    return yield* coreFetch(input, init, shouldExpect);
   }
 
   return {

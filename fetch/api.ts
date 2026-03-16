@@ -99,3 +99,11 @@ export const FetchApi: Api<FetchApiCore> = createApi("fetch", {
     return fetchResponse;
   },
 });
+
+/**
+ * Core fetch operation from {@link FetchApi}.
+ *
+ * Used internally by the `fetch()` builder. Prefer the public `fetch()`
+ * function for typical usage.
+ */
+export const coreFetch = FetchApi.operations.fetch;

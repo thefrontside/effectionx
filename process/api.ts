@@ -119,6 +119,8 @@ export const ProcessApi: Api<ProcessApiCore> = createApi("process", {
   },
 });
 
+const { exec: coreExec, daemon: coreDaemon } = ProcessApi.operations;
+
 /**
  * Execute `command` with `options`. You should use this operation for processes
  * that have a finite lifetime and on which you may wish to synchronize on the
@@ -130,7 +132,7 @@ export const ProcessApi: Api<ProcessApiCore> = createApi("process", {
  */
 export function exec(command: string, options: ExecOptions = {}): Exec {
   function* doExec(): Operation<Process> {
-    return yield* ProcessApi.operations.exec(command, options);
+    return yield* coreExec(command, options);
   }
 
   return {
@@ -208,5 +210,5 @@ export function daemon(
   command: string,
   options: ExecOptions = {},
 ): Operation<Daemon> {
-  return ProcessApi.operations.daemon(command, options);
+  return coreDaemon(command, options);
 }

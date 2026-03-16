@@ -311,6 +311,8 @@ export function walk(
     function* walkDir(dir: string, depth: number): Operation<void> {
       if (depth > maxDepth) return;
 
+      // Uses fsp.readdir directly (not FsApi.operations.readdir) because walk()
+      // needs Dirent objects with file type info, while FsApi.readdir returns string[].
       const entries = yield* until(fsp.readdir(dir, { withFileTypes: true }));
 
       for (const entry of entries) {

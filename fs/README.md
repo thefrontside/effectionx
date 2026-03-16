@@ -3,10 +3,6 @@
 File system operations for Effection programs. This package wraps Node.js
 `fs/promises` APIs as Effection Operations with structured concurrency support.
 
-> **Note**: Starting with version 0.3.0, this package requires Effection v4.1 or greater
-> for full functionality. The middleware/API features (`fsApi`) require the new
-> `createApi` function introduced in Effection v4.1.
-
 ---
 
 ## Installation
@@ -281,18 +277,18 @@ yield* readTextFile(new URL("./data.json", import.meta.url));
 
 ## Middleware Support
 
-### `fsApi`
+### `FsApi`
 
-The file system API object that supports middleware decoration. Use `fsApi.around()`
+The file system API object that supports middleware decoration. Use `FsApi.around()`
 to add middleware for logging, mocking, or instrumentation.
 
 ```typescript
-import { fsApi, readTextFile } from "@effectionx/fs";
+import { FsApi, readTextFile } from "@effectionx/fs";
 import { run } from "effection";
 
 // Add logging middleware
 await run(function* () {
-  yield* fsApi.around({
+  yield* FsApi.around({
     *readTextFile(args, next) {
       let [pathOrUrl] = args;
       console.log("Reading:", pathOrUrl);
@@ -305,14 +301,14 @@ await run(function* () {
 });
 ```
 
-#### Mocking files for testing
+### Mocking files for testing
 
 ```typescript
-import { fsApi, readTextFile } from "@effectionx/fs";
+import { FsApi, readTextFile } from "@effectionx/fs";
 import { run } from "effection";
 
 await run(function* () {
-  yield* fsApi.around({
+  yield* FsApi.around({
     *readTextFile(args, next) {
       let [pathOrUrl] = args;
       if (String(pathOrUrl).includes("config.json")) {
@@ -328,9 +324,9 @@ await run(function* () {
 });
 ```
 
-#### Interceptable operations
+### Interceptable operations
 
-The following operations can be intercepted via `fsApi.around()`:
+The following operations can be intercepted via `FsApi.around()`:
 
 - `stat(pathOrUrl)` - Get file stats
 - `lstat(pathOrUrl)` - Get file stats (no symlink follow)

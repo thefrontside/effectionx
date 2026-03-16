@@ -20,7 +20,7 @@
     "@biomejs/biome": "^1",
     "@types/node": "^22",
     "@types/semver": "^7",
-    "effection": "4.1.0-alpha.7",
+    "effection": "^4",
     "expect": "^29",
     "semver": "^7.6.3",
     "turbo": "^2",
@@ -31,9 +31,7 @@
       "ignoreMissing": [],
       "allowAny": []
     },
-    "overrides": {
-      "effection": "4.1.0-alpha.7"
-    }
+    "overrides": {}
   },
   "volta": {
     "node": "22.12.0",

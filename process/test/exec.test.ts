@@ -122,13 +122,17 @@ describe("exec", () => {
         let proc: Process | undefined;
         let ready = withResolvers<void>();
         let task = yield* spawn(function* () {
-          proc = yield* exec("node", {
-            // using fixture that suspends so we can kill before it "completes"
-            arguments: ["--experimental-strip-types", "fixtures/forever.ts"],
-            cwd: import.meta.dirname,
-          });
-          ready.resolve();
-          status = yield* proc.join();
+          try {
+            proc = yield* exec("node", {
+              // using fixture that suspends so we can kill before it "completes"
+              arguments: ["--experimental-strip-types", "fixtures/forever.ts"],
+              cwd: import.meta.dirname,
+            });
+            ready.resolve();
+            status = yield* proc.join();
+          } catch (error: unknown) {
+            ready.reject(error as Error);
+          }
         });
 
         yield* ready.operation;

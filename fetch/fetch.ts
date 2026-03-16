@@ -1,12 +1,11 @@
+import { type Api, createApi } from "@effectionx/context-api";
 import {
   stream,
-  type Api,
   type Operation,
   type Stream,
   until,
   useAbortSignal,
 } from "effection";
-import { createApi } from "effection/experimental";
 
 /**
  * Request options for fetch, excluding `signal` since cancellation

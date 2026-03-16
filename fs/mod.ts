@@ -1,4 +1,5 @@
-import type { Stats } from "node:fs";
+import type { Dirent, Stats } from "node:fs";
+export type { Dirent } from "node:fs";
 import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 import {
@@ -106,7 +107,11 @@ export function* ensureFile(pathOrUrl: string | URL): Operation<void> {
 }
 
 /**
- * Read the contents of a directory
+ * Read the contents of a directory.
+ *
+ * Returns filenames as strings by default. Pass `{ withFileTypes: true }` to
+ * get `Dirent` objects with file type information, mirroring the `fs/promises`
+ * API.
  *
  * This function supports middleware via {@link FsApi}. Use `FsApi.around()`
  * to add logging, mocking, or other middleware.
@@ -115,11 +120,34 @@ export function* ensureFile(pathOrUrl: string | URL): Operation<void> {
  * ```ts
  * import { readdir } from "@effectionx/fs";
  *
- * const entries = yield* readdir("./src");
+ * // Get filenames
+ * const names = yield* readdir("./src");
+ *
+ * // Get Dirent objects with file type info
+ * const entries = yield* readdir("./src", { withFileTypes: true });
+ * for (const entry of entries) {
+ *   if (entry.isFile()) console.log(entry.name);
+ * }
  * ```
  */
-export function readdir(pathOrUrl: string | URL): Operation<string[]> {
-  return FsApi.operations.readdir(pathOrUrl);
+export function readdir(pathOrUrl: string | URL): Operation<string[]>;
+export function readdir(
+  pathOrUrl: string | URL,
+  options: { withFileTypes: true },
+): Operation<Dirent[]>;
+export function readdir(
+  pathOrUrl: string | URL,
+  options?: { withFileTypes?: boolean },
+): Operation<string[]> | Operation<Dirent[]> {
+  if (options?.withFileTypes) {
+    return FsApi.operations.readdir(pathOrUrl);
+  }
+  return {
+    *[Symbol.iterator]() {
+      const entries = yield* FsApi.operations.readdir(pathOrUrl);
+      return entries.map((e) => e.name);
+    },
+  };
 }
 
 /**
@@ -311,9 +339,7 @@ export function walk(
     function* walkDir(dir: string, depth: number): Operation<void> {
       if (depth > maxDepth) return;
 
-      // Uses fsp.readdir directly (not FsApi.operations.readdir) because walk()
-      // needs Dirent objects with file type info, while FsApi.readdir returns string[].
-      const entries = yield* until(fsp.readdir(dir, { withFileTypes: true }));
+      const entries = yield* FsApi.operations.readdir(dir);
 
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);

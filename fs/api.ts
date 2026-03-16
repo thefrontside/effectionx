@@ -1,4 +1,4 @@
-import type { Stats } from "node:fs";
+import type { Dirent, Stats } from "node:fs";
 import * as fsp from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { type Api, createApi } from "@effectionx/context-api";
@@ -40,9 +40,9 @@ export interface FsApiCore {
     options?: { recursive?: boolean; force?: boolean },
   ): Operation<void>;
   /**
-   * Read directory entries.
+   * Read directory entries as Dirent objects.
    */
-  readdir(pathOrUrl: string | URL): Operation<string[]>;
+  readdir(pathOrUrl: string | URL): Operation<Dirent[]>;
 }
 
 /**
@@ -108,7 +108,9 @@ export const FsApi: Api<FsApiCore> = createApi("fs", {
   ): Operation<void> {
     return yield* until(fsp.rm(toPath(pathOrUrl), options));
   },
-  *readdir(pathOrUrl: string | URL): Operation<string[]> {
-    return yield* until(fsp.readdir(toPath(pathOrUrl)));
+  *readdir(pathOrUrl: string | URL): Operation<Dirent[]> {
+    return yield* until(
+      fsp.readdir(toPath(pathOrUrl), { withFileTypes: true }),
+    );
   },
 });

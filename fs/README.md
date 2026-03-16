@@ -135,13 +135,21 @@ yield* ensureDir("./data/cache/images");
 
 ### readdir()
 
-Read the contents of a directory.
+Read the contents of a directory. Returns filenames by default, or `Dirent`
+objects with `{ withFileTypes: true }`, mirroring the `fs/promises` API.
 
 ```typescript
 import { readdir } from "@effectionx/fs";
 
-const entries = yield* readdir("./src");
-console.log(entries); // ["index.ts", "utils.ts", ...]
+// Get filenames as strings
+const names = yield* readdir("./src");
+console.log(names); // ["index.ts", "utils.ts", ...]
+
+// Get Dirent objects with file type info
+const entries = yield* readdir("./src", { withFileTypes: true });
+for (const entry of entries) {
+  if (entry.isFile()) console.log(entry.name);
+}
 ```
 
 ### emptyDir()
@@ -333,7 +341,11 @@ The following operations can be intercepted via `FsApi.around()`:
 - `readTextFile(pathOrUrl)` - Read file as text
 - `writeTextFile(pathOrUrl, content)` - Write text to file
 - `rm(pathOrUrl, options?)` - Remove file or directory
-- `readdir(pathOrUrl)` - Read directory entries
+- `readdir(pathOrUrl)` - Read directory entries (returns `Dirent[]`)
+
+Operations like `readdir()`, `walk()`, and `expandGlob()` all go through the
+middleware layer, so intercepting `readdir` captures directory reads from all of
+them.
 
 Middleware is scoped - it only applies to the current scope and its children,
 and is automatically cleaned up when the scope exits.

@@ -132,9 +132,11 @@ describe("daemon", () => {
       const finallyCheck = yield* spawn(() =>
         expectMatch(/shutting/, lines()(proc.stdout)),
       );
+      // ensure that spawn has kicked off
+      yield* sleep(0);
       yield* task.halt();
-      const complated = yield* finallyCheck;
-      expect(complated).toBe(true);
+      const completed = yield* finallyCheck;
+      expect(completed).toBe(true);
     });
   });
 });

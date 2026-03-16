@@ -1,6 +1,6 @@
 import process from "node:process";
 import { beforeEach, describe, it } from "@effectionx/bdd";
-import { type Task, spawn, withResolvers } from "effection";
+import { type Task, sleep, spawn, withResolvers } from "effection";
 import { expect } from "expect";
 
 import { captureError, expectMatch, fetchText } from "./helpers.ts";
@@ -119,7 +119,7 @@ describe("exec", () => {
     describe("process can gracefully shut down if killed before completed", () => {
       it("runs process finally block on kill", function* () {
         let status: unknown;
-        let proc: Process;
+        let proc: Process | undefined;
         let ready = withResolvers<void>();
         let task = yield* spawn(function* () {
           try {
@@ -138,18 +138,20 @@ describe("exec", () => {
         yield* ready.operation;
         const suspending = yield* expectMatch(
           /suspending/,
-          lines()(proc.stdout),
+          lines()(proc!.stdout),
         );
         expect(suspending).toBe(true);
 
         // kill the process before it finishes and make sure it runs the finally block
         const finallyCheck = yield* spawn(() =>
-          expectMatch(/shutting down/, lines()(proc.stdout)),
+          expectMatch(/shutting down/, lines()(proc!.stdout)),
         );
+        // ensure that spawn has kicked off
+        yield* sleep(0);
         yield* task.halt();
 
-        const complated = yield* finallyCheck;
-        expect(complated).toBe(true);
+        const completed = yield* finallyCheck;
+        expect(completed).toBe(true);
 
         expect(status).toBeUndefined();
       });

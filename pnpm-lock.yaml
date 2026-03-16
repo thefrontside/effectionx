@@ -133,6 +133,10 @@ importers:
         version: 4.1.0-alpha.7
 
   fs:
+    dependencies:
+      '@effectionx/context-api':
+        specifier: workspace:*
+        version: link:../context-api
     devDependencies:
       '@effectionx/bdd':
         specifier: workspace:*

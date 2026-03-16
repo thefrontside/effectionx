@@ -2,8 +2,8 @@ import type { Stats } from "node:fs";
 import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import { type Api, createApi } from "@effectionx/context-api";
 import {
-  type Api,
   type Operation,
   type Stream,
   all,
@@ -12,7 +12,6 @@ import {
   spawn,
   until,
 } from "effection";
-import { createApi } from "effection/experimental";
 
 /**
  * Convert a path or URL to a file path string

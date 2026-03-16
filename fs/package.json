@@ -15,8 +15,11 @@
     }
   },
   "files": ["dist", "mod.ts"],
+  "dependencies": {
+    "@effectionx/context-api": "workspace:*"
+  },
   "peerDependencies": {
-    "effection": "^4.1.0-alpha.3"
+    "effection": "^3 || ^4"
   },
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",

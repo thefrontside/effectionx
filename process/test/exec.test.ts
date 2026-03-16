@@ -6,7 +6,7 @@ import { expect } from "expect";
 import { captureError, fetchText } from "./helpers.ts";
 
 import { lines } from "@effectionx/stream-helpers";
-import { type Process, type ProcessResult, exec, processApi } from "../mod.ts";
+import { type Process, ProcessApi, type ProcessResult, exec } from "../mod.ts";
 
 const SystemRoot = process.env.SystemRoot;
 
@@ -523,11 +523,11 @@ describe("handles env vars", () => {
   // Close the main "handles env vars" describe block
 });
 
-describe("processApi middleware", () => {
+describe("ProcessApi middleware", () => {
   it("can intercept exec calls with logging", function* () {
     let executedCommands: string[] = [];
 
-    yield* processApi.around({
+    yield* ProcessApi.around({
       *exec(args, next) {
         let [cmd] = args;
         executedCommands.push(cmd);
@@ -546,7 +546,7 @@ describe("processApi middleware", () => {
     let outerCalls: string[] = [];
     let innerCalls: string[] = [];
 
-    yield* processApi.around({
+    yield* ProcessApi.around({
       *exec(args, next) {
         outerCalls.push("outer");
         return yield* next(...args);
@@ -558,7 +558,7 @@ describe("processApi middleware", () => {
 
     // Spawn a child scope with additional middleware
     let task = yield* spawn(function* () {
-      yield* processApi.around({
+      yield* ProcessApi.around({
         *exec(args, next) {
           innerCalls.push("inner");
           return yield* next(...args);

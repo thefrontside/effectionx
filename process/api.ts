@@ -8,13 +8,13 @@ import type {
   ExitStatus,
   Process,
   ProcessResult,
-} from "./exec/api.ts";
-import { DaemonExitError } from "./exec/error.ts";
-import { createPosixProcess } from "./exec/posix.ts";
-import { createWin32Process, isWin32 } from "./exec/win32.ts";
+} from "./src/exec/api.ts";
+import { DaemonExitError } from "./src/exec/error.ts";
+import { createPosixProcess } from "./src/exec/posix.ts";
+import { createWin32Process, isWin32 } from "./src/exec/win32.ts";
 
-export * from "./exec/api.ts";
-export * from "./exec/error.ts";
+export * from "./src/exec/api.ts";
+export * from "./src/exec/error.ts";
 
 export interface Exec extends Operation<Process> {
   join(): Operation<ProcessResult>;
@@ -34,7 +34,7 @@ const createOSProcess: CreateOSProcess = (cmd, opts) => {
  * Core interface for the process API operations.
  * Used internally by createApi to enable middleware support.
  */
-interface ProcessApiCore {
+export interface ProcessApiCore {
   /**
    * Execute a command and return the process.
    * This is the core exec operation that middleware can intercept.
@@ -51,16 +51,16 @@ interface ProcessApiCore {
 /**
  * The process API object that supports middleware decoration.
  *
- * Use `processApi.around()` to add middleware for logging, mocking, or instrumentation.
+ * Use `ProcessApi.around()` to add middleware for logging, mocking, or instrumentation.
  *
  * @example
  * ```ts
- * import { processApi, exec } from "@effectionx/process";
+ * import { ProcessApi, exec } from "@effectionx/process";
  * import { run } from "effection";
  *
  * await run(function*() {
  *   // Add logging middleware
- *   yield* processApi.around({
+ *   yield* ProcessApi.around({
  *     *exec(args, next) {
  *       let [cmd, opts] = args;
  *       console.log("Executing:", cmd);
@@ -77,7 +77,7 @@ interface ProcessApiCore {
  * ```ts
  * // Mock daemon processes for testing
  * await run(function*() {
- *   yield* processApi.around({
+ *   yield* ProcessApi.around({
  *     *daemon(args, next) {
  *       let [cmd] = args;
  *       console.log("Starting daemon:", cmd);
@@ -90,7 +90,7 @@ interface ProcessApiCore {
  * });
  * ```
  */
-export const processApi: Api<ProcessApiCore> = createApi("process", {
+export const ProcessApi: Api<ProcessApiCore> = createApi("process", {
   *exec(command: string, options: ExecOptions = {}): Operation<Process> {
     let [cmd, ...args] = options.shell ? [command] : shellwords.split(command);
     let opts = { ...options, arguments: args.concat(options.arguments || []) };
@@ -125,12 +125,12 @@ export const processApi: Api<ProcessApiCore> = createApi("process", {
  * exit status. If you want to start a process like a server that spins up and runs
  * forever, consider using `daemon()`
  *
- * This function supports middleware via {@link processApi}. Use `processApi.around()`
+ * This function supports middleware via {@link ProcessApi}. Use `ProcessApi.around()`
  * to add logging, mocking, or other middleware that will intercept all exec calls.
  */
 export function exec(command: string, options: ExecOptions = {}): Exec {
   function* doExec(): Operation<Process> {
-    return yield* processApi.operations.exec(command, options);
+    return yield* ProcessApi.operations.exec(command, options);
   }
 
   return {
@@ -201,12 +201,12 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
  * Daemon operations are expected to run forever, and if they exit pre-maturely
  * before the operation containing them passes out of scope it raises an error.
  *
- * This function supports middleware via {@link processApi}. Use `processApi.around()`
+ * This function supports middleware via {@link ProcessApi}. Use `ProcessApi.around()`
  * to add logging, mocking, or other middleware that will intercept all daemon calls.
  */
 export function daemon(
   command: string,
   options: ExecOptions = {},
 ): Operation<Daemon> {
-  return processApi.operations.daemon(command, options);
+  return ProcessApi.operations.daemon(command, options);
 }

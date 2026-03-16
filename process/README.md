@@ -3,10 +3,6 @@
 Execute and manage system processes with structured concurrency. A library for
 spawning and controlling child processes in Effection programs.
 
-> **Note**: Starting with version 0.8.0, this package requires Effection v4.1 or greater
-> for full functionality. The middleware/API features (`processApi`) require the new
-> `createApi` function introduced in Effection v4.1.
-
 ---
 
 This package provides two main functions: `exec()` for running processes with a
@@ -203,19 +199,19 @@ interface Process {
   expect(): Operation<ExitStatus>;
 }
 
-### `processApi`
+### `ProcessApi`
 
-The process API object that supports middleware decoration. Use `processApi.around()`
+The process API object that supports middleware decoration. Use `ProcessApi.around()`
 to add middleware for logging, mocking, or instrumentation. The API exposes two
 interceptable operations: `exec` and `daemon`.
 
 ```typescript
-import { processApi, exec } from "@effectionx/process";
+import { ProcessApi, exec } from "@effectionx/process";
 import { run } from "effection";
 
 // Add logging middleware for exec calls
 await run(function* () {
-  yield* processApi.around({
+  yield* ProcessApi.around({
     *exec(args, next) {
       let [command, options] = args;
       console.log("Executing:", command, options?.arguments);
@@ -228,14 +224,14 @@ await run(function* () {
 });
 ```
 
-#### Intercepting daemon calls
+### Intercepting daemon calls
 
 ```typescript
-import { processApi, daemon } from "@effectionx/process";
+import { ProcessApi, daemon } from "@effectionx/process";
 import { run } from "effection";
 
 await run(function* () {
-  yield* processApi.around({
+  yield* ProcessApi.around({
     *daemon(args, next) {
       let [command] = args;
       console.log("Starting daemon:", command);
@@ -248,16 +244,16 @@ await run(function* () {
 });
 ```
 
-#### Capturing process executions for testing
+### Capturing process executions for testing
 
 ```typescript
-import { processApi, exec } from "@effectionx/process";
+import { ProcessApi, exec } from "@effectionx/process";
 import { run } from "effection";
 
 await run(function* () {
   let executed: string[] = [];
 
-  yield* processApi.around({
+  yield* ProcessApi.around({
     *exec(args, next) {
       executed.push(args[0]);
       return yield* next(...args);

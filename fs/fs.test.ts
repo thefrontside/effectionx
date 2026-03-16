@@ -6,11 +6,11 @@ import { each, run, until } from "effection";
 import { expect } from "expect";
 
 import {
+  FsApi,
   emptyDir,
   ensureDir,
   ensureFile,
   exists,
-  fsApi,
   globToRegExp,
   readTextFile,
   rm,
@@ -203,11 +203,11 @@ describe("@effectionx/fs", () => {
     });
   });
 
-  describe("fsApi middleware", () => {
+  describe("FsApi middleware", () => {
     it("can intercept file reads with logging", function* () {
       const logged: string[] = [];
 
-      yield* fsApi.around({
+      yield* FsApi.around({
         *readTextFile(args, next) {
           logged.push(`read:${args[0]}`);
           return yield* next(...args);
@@ -233,7 +233,7 @@ describe("@effectionx/fs", () => {
 
       // First scope with middleware
       yield* run(function* () {
-        yield* fsApi.around({
+        yield* FsApi.around({
           *readTextFile(args, next) {
             logged.push("inner");
             return yield* next(...args);
@@ -252,7 +252,7 @@ describe("@effectionx/fs", () => {
     });
 
     it("can mock file contents for testing", function* () {
-      yield* fsApi.around({
+      yield* FsApi.around({
         *readTextFile(args, next) {
           const [pathOrUrl] = args;
           if (String(pathOrUrl).includes("mocked.json")) {

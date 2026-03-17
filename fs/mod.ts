@@ -1,53 +1,19 @@
+import type { Dirent } from "node:fs";
+export type { Dirent } from "node:fs";
 import * as fsp from "node:fs/promises";
-import type { Stats } from "node:fs";
 import * as path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
+  type Operation,
+  type Stream,
   all,
+  createSignal,
   resource,
   spawn,
   until,
-  type Operation,
-  type Stream,
-  createSignal,
 } from "effection";
 
-/**
- * Convert a path or URL to a file path string
- */
-export function toPath(pathOrUrl: string | URL): string {
-  return pathOrUrl instanceof URL ? fileURLToPath(pathOrUrl) : pathOrUrl;
-}
-
-/**
- * Get file or directory stats
- *
- * @example
- * ```ts
- * import { stat } from "@effectionx/fs";
- *
- * const stats = yield* stat("./file.txt");
- * console.log(stats.isFile());
- * ```
- */
-export function stat(pathOrUrl: string | URL): Operation<Stats> {
-  return until(fsp.stat(toPath(pathOrUrl)));
-}
-
-/**
- * Get file or directory stats without following symlinks
- *
- * @example
- * ```ts
- * import { lstat } from "@effectionx/fs";
- *
- * const stats = yield* lstat("./symlink");
- * console.log(stats.isSymbolicLink());
- * ```
- */
-export function lstat(pathOrUrl: string | URL): Operation<Stats> {
-  return until(fsp.lstat(toPath(pathOrUrl)));
-}
+export * from "./api.ts";
+import { readdirDirents, rm, stat, toPath } from "./api.ts";
 
 /**
  * Check if a file or directory exists
@@ -105,17 +71,47 @@ export function* ensureFile(pathOrUrl: string | URL): Operation<void> {
 }
 
 /**
- * Read the contents of a directory
+ * Read the contents of a directory.
+ *
+ * Returns filenames as strings by default. Pass `{ withFileTypes: true }` to
+ * get `Dirent` objects with file type information, mirroring the `fs/promises`
+ * API.
+ *
+ * This function supports middleware via {@link FsApi}. Use `FsApi.around()`
+ * to add logging, mocking, or other middleware.
  *
  * @example
  * ```ts
  * import { readdir } from "@effectionx/fs";
  *
- * const entries = yield* readdir("./src");
+ * // Get filenames
+ * const names = yield* readdir("./src");
+ *
+ * // Get Dirent objects with file type info
+ * const entries = yield* readdir("./src", { withFileTypes: true });
+ * for (const entry of entries) {
+ *   if (entry.isFile()) console.log(entry.name);
+ * }
  * ```
  */
-export function readdir(pathOrUrl: string | URL): Operation<string[]> {
-  return until(fsp.readdir(toPath(pathOrUrl)));
+export function readdir(pathOrUrl: string | URL): Operation<string[]>;
+export function readdir(
+  pathOrUrl: string | URL,
+  options: { withFileTypes: true },
+): Operation<Dirent[]>;
+export function readdir(
+  pathOrUrl: string | URL,
+  options?: { withFileTypes?: boolean },
+): Operation<string[]> | Operation<Dirent[]> {
+  if (options?.withFileTypes) {
+    return readdirDirents(pathOrUrl);
+  }
+  return {
+    *[Symbol.iterator]() {
+      const entries = yield* readdirDirents(pathOrUrl);
+      return entries.map((e) => e.name);
+    },
+  };
 }
 
 /**
@@ -150,23 +146,6 @@ export function* emptyDir(pathOrUrl: string | URL): Operation<void> {
 }
 
 /**
- * Remove a file or directory
- *
- * @example
- * ```ts
- * import { rm } from "@effectionx/fs";
- *
- * yield* rm("./temp", { recursive: true });
- * ```
- */
-export function rm(
-  pathOrUrl: string | URL,
-  options?: { recursive?: boolean; force?: boolean },
-): Operation<void> {
-  return until(fsp.rm(toPath(pathOrUrl), options));
-}
-
-/**
  * Copy a file
  *
  * @example
@@ -181,37 +160,6 @@ export function copyFile(
   dest: string | URL,
 ): Operation<void> {
   return until(fsp.copyFile(toPath(src), toPath(dest)));
-}
-
-/**
- * Read a file as text
- *
- * @example
- * ```ts
- * import { readTextFile } from "@effectionx/fs";
- *
- * const content = yield* readTextFile("./config.json");
- * ```
- */
-export function readTextFile(pathOrUrl: string | URL): Operation<string> {
-  return until(fsp.readFile(toPath(pathOrUrl), "utf-8"));
-}
-
-/**
- * Write text to a file
- *
- * @example
- * ```ts
- * import { writeTextFile } from "@effectionx/fs";
- *
- * yield* writeTextFile("./output.txt", "Hello, World!");
- * ```
- */
-export function writeTextFile(
-  pathOrUrl: string | URL,
-  content: string,
-): Operation<void> {
-  return until(fsp.writeFile(toPath(pathOrUrl), content));
 }
 
 /**
@@ -298,7 +246,7 @@ export function walk(
     function* walkDir(dir: string, depth: number): Operation<void> {
       if (depth > maxDepth) return;
 
-      const entries = yield* until(fsp.readdir(dir, { withFileTypes: true }));
+      const entries = yield* readdirDirents(dir);
 
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);

@@ -1,6 +1,6 @@
 import process from "node:process";
 import { beforeEach, describe, it } from "@effectionx/bdd";
-import { type Task, each, sleep, spawn, until, withResolvers } from "effection";
+import { type Task, sleep, spawn, until, withResolvers } from "effection";
 import { expect } from "expect";
 
 import { lines } from "@effectionx/stream-helpers";
@@ -111,15 +111,16 @@ describe("daemon", () => {
     beforeEach(function* () {
       const ready = withResolvers<void>();
       task = yield* spawn(function* () {
-        proc = yield* daemon("node", {
-          arguments: ["--experimental-strip-types", "fixtures/forever.ts"],
-          cwd: import.meta.dirname,
-        });
-        ready.resolve();
         try {
+          proc = yield* daemon("node", {
+            arguments: ["--experimental-strip-types", "fixtures/forever.ts"],
+            cwd: import.meta.dirname,
+          });
+          ready.resolve();
           yield* proc;
         } catch (e) {
-          console.error("Caught error from daemon process:", e);
+          // ignore the error from the process exiting
+          //  we just want to check that the finally block runs
         }
       });
 

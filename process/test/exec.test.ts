@@ -1,9 +1,9 @@
 import process from "node:process";
 import { beforeEach, describe, it } from "@effectionx/bdd";
-import { type Task, spawn, withResolvers } from "effection";
+import { type Task, sleep, spawn, withResolvers } from "effection";
 import { expect } from "expect";
 
-import { captureError, fetchText } from "./helpers.ts";
+import { captureError, expectMatch, fetchText } from "./helpers.ts";
 
 import { lines } from "@effectionx/stream-helpers";
 import { type Process, type ProcessResult, exec } from "../mod.ts";
@@ -102,6 +102,7 @@ describe("exec", () => {
         }
         expect(error).toBeInstanceOf(Error);
       });
+
       it("calling expect() throws an exception", function* () {
         let error: unknown;
         let proc = yield* exec("argle", { arguments: ["bargle"] });
@@ -114,7 +115,49 @@ describe("exec", () => {
         expect(error).toBeDefined();
       });
     });
+
+    describe("process can gracefully shut down if killed before completed", () => {
+      it("runs process finally block on kill", function* () {
+        let status: unknown;
+        let proc: Process | undefined;
+        let ready = withResolvers<void>();
+        let task = yield* spawn(function* () {
+          try {
+            proc = yield* exec("node", {
+              // using fixture that suspends so we can kill before it "completes"
+              arguments: ["--experimental-strip-types", "fixtures/forever.ts"],
+              cwd: import.meta.dirname,
+            });
+            ready.resolve();
+            status = yield* proc.join();
+          } catch (error: unknown) {
+            ready.reject(error as Error);
+          }
+        });
+
+        yield* ready.operation;
+        const suspending = yield* expectMatch(
+          /suspending/,
+          lines()(proc!.stdout),
+        );
+        expect(suspending).toBe(true);
+
+        // kill the process before it finishes and make sure it runs the finally block
+        const finallyCheck = yield* spawn(() =>
+          expectMatch(/shutting down/, lines()(proc!.stdout)),
+        );
+        // ensure that spawn has kicked off
+        yield* sleep(0);
+        yield* task.halt();
+
+        const completed = yield* finallyCheck;
+        expect(completed).toBe(true);
+
+        expect(status).toBeUndefined();
+      });
+    });
   });
+
   describe("successfully", () => {
     let proc: Process;
     let stdoutTask: Task<{ sawData: boolean; matched: boolean }>;

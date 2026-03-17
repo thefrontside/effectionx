@@ -198,4 +198,74 @@ interface Process {
   // Wait for successful completion (throws on non-zero exit)
   expect(): Operation<ExitStatus>;
 }
+
+### `ProcessApi`
+
+The process API object that supports middleware decoration. Use `ProcessApi.around()`
+to add middleware for logging, mocking, or instrumentation. The API exposes two
+interceptable operations: `exec` and `daemon`.
+
+```typescript
+import { ProcessApi, exec } from "@effectionx/process";
+import { run } from "effection";
+
+// Add logging middleware for exec calls
+await run(function* () {
+  yield* ProcessApi.around({
+    *exec(args, next) {
+      let [command, options] = args;
+      console.log("Executing:", command, options?.arguments);
+      return yield* next(...args);
+    },
+  });
+
+  // All exec calls in this scope now log
+  yield* exec("echo hello").expect();
+});
 ```
+
+### Intercepting daemon calls
+
+```typescript
+import { ProcessApi, daemon } from "@effectionx/process";
+import { run } from "effection";
+
+await run(function* () {
+  yield* ProcessApi.around({
+    *daemon(args, next) {
+      let [command] = args;
+      console.log("Starting daemon:", command);
+      return yield* next(...args);
+    },
+  });
+
+  // All daemon calls in this scope now log
+  let server = yield* daemon("node server.js");
+});
+```
+
+### Capturing process executions for testing
+
+```typescript
+import { ProcessApi, exec } from "@effectionx/process";
+import { run } from "effection";
+
+await run(function* () {
+  let executed: string[] = [];
+
+  yield* ProcessApi.around({
+    *exec(args, next) {
+      executed.push(args[0]);
+      return yield* next(...args);
+    },
+  });
+
+  yield* exec("git status").expect();
+  yield* exec("npm install").expect();
+
+  console.log(executed); // ["git", "npm"]
+});
+```
+
+Middleware is scoped - it only applies to the current scope and its children,
+and is automatically cleaned up when the scope exits.

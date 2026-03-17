@@ -11,6 +11,9 @@
       "path": "../bdd"
     },
     {
+      "path": "../context-api"
+    },
+    {
       "path": "../node"
     },
     {

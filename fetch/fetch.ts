@@ -1,10 +1,6 @@
-import {
-  stream,
-  type Operation,
-  type Stream,
-  until,
-  useAbortSignal,
-} from "effection";
+import type { Operation, Stream } from "effection";
+
+import { coreFetch } from "./api.ts";
 
 /**
  * Request options for fetch, excluding `signal` since cancellation
@@ -131,6 +127,9 @@ export class HttpError extends Error {
  * Cancellation is automatically handled via the current Effection scope.
  * When the scope exits, the request is aborted.
  *
+ * This function supports middleware via {@link FetchApi}. Use `FetchApi.around()`
+ * to add logging, mocking, or other middleware that will intercept all fetch calls.
+ *
  * @param input - The URL or Request object
  * @param init - Optional request configuration (same as RequestInit, but without signal)
  * @returns A chainable {@link FetchOperation}
@@ -153,6 +152,32 @@ export class HttpError extends Error {
  *   yield* each.next();
  * }
  * ```
+ *
+ * @example
+ * ```ts
+ * // Use middleware to mock responses in tests
+ * import { FetchApi, fetch, createFetchResponse } from "@effectionx/fetch";
+ *
+ * await run(function*() {
+ *   yield* FetchApi.around({
+ *     *fetch(args, next) {
+ *       let [input] = args;
+ *       if (input === "/api/test") {
+ *         return createFetchResponse(
+ *           new Response(JSON.stringify({ data: "mocked" }), {
+ *             status: 200,
+ *             headers: { "Content-Type": "application/json" },
+ *           }),
+ *         );
+ *       }
+ *       return yield* next(...args);
+ *     }
+ *   });
+ *
+ *   // This call uses the mock
+ *   let data = yield* fetch("/api/test").json();
+ * });
+ * ```
  */
 export function fetch(
   input: RequestInfo | URL,
@@ -166,22 +191,9 @@ function createFetchOperation(
   init: FetchInit | undefined,
   shouldExpect: boolean,
 ): FetchOperation {
+  // Use the API's fetch operation so middleware can intercept
   function* doFetch(): Operation<FetchResponse> {
-    let signal = yield* useAbortSignal();
-
-    let response = yield* until(globalThis.fetch(input, { ...init, signal }));
-    let fetchResponse = createFetchResponse(response);
-
-    if (shouldExpect && !response.ok) {
-      throw new HttpError(
-        response.status,
-        response.statusText,
-        response.url,
-        fetchResponse,
-      );
-    }
-
-    return fetchResponse;
+    return yield* coreFetch(input, init, shouldExpect);
   }
 
   return {
@@ -227,74 +239,4 @@ function createFetchOperation(
       return createFetchOperation(input, init, true);
     },
   };
-}
-
-function createFetchResponse(response: Response): FetchResponse {
-  let self: FetchResponse = {
-    get ok() {
-      return response.ok;
-    },
-    get status() {
-      return response.status;
-    },
-    get statusText() {
-      return response.statusText;
-    },
-    get headers() {
-      return response.headers;
-    },
-    get url() {
-      return response.url;
-    },
-    get redirected() {
-      return response.redirected;
-    },
-    get type() {
-      return response.type;
-    },
-    get bodyUsed() {
-      return response.bodyUsed;
-    },
-    get raw() {
-      return response;
-    },
-    *json<T = unknown>(parse?: (value: unknown) => T): Operation<T> {
-      let value: unknown = yield* until(response.json());
-      return parse ? parse(value) : (value as T);
-    },
-    *text(): Operation<string> {
-      return yield* until(response.text());
-    },
-    *arrayBuffer(): Operation<ArrayBuffer> {
-      return yield* until(response.arrayBuffer());
-    },
-    *blob(): Operation<Blob> {
-      return yield* until(response.blob());
-    },
-    *formData(): Operation<FormData> {
-      return yield* until(response.formData());
-    },
-    body(): Stream<Uint8Array, void> {
-      if (!response.body) {
-        throw new Error("Response has no body");
-      }
-
-      return stream(
-        response.body as unknown as AsyncIterable<Uint8Array, void>,
-      );
-    },
-    *expect(): Operation<FetchResponse> {
-      if (!response.ok) {
-        throw new HttpError(
-          response.status,
-          response.statusText,
-          response.url,
-          self,
-        );
-      }
-      return self;
-    },
-  };
-
-  return self;
 }

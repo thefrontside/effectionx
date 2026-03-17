@@ -14,10 +14,11 @@ import {
   call,
   each,
   ensure,
+  spawn,
   withResolvers,
 } from "effection";
 
-import { HttpError, fetch } from "./fetch.ts";
+import { FetchApi, HttpError, createFetchResponse, fetch } from "./mod.ts";
 
 function box<T>(content: () => Operation<T>): Operation<Result<T>> {
   return {
@@ -195,6 +196,92 @@ describe("fetch()", () => {
         .json<{ id: number; title: string }>();
 
       expect(data).toEqual({ id: 1, title: "do things" });
+    });
+  });
+
+  describe("middleware API", () => {
+    it("can intercept requests with logging", function* () {
+      let requestedUrls: string[] = [];
+
+      yield* FetchApi.around({
+        *fetch(args, next) {
+          let [input] = args;
+          requestedUrls.push(String(input));
+          return yield* next(...args);
+        },
+      });
+
+      yield* fetch(`${url}/json`).json();
+      yield* fetch(`${url}/text`).text();
+
+      expect(requestedUrls).toEqual([`${url}/json`, `${url}/text`]);
+    });
+
+    it("can mock responses", function* () {
+      const mockResponse = createFetchResponse(
+        new Response(JSON.stringify({ mocked: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+
+      yield* FetchApi.around({
+        *fetch(args, next) {
+          let [input] = args;
+          if (String(input).includes("/mocked")) {
+            return mockResponse;
+          }
+          return yield* next(...args);
+        },
+      });
+
+      // This should be mocked
+      let mockedData = yield* fetch(`${url}/mocked`).json<{
+        mocked: boolean;
+      }>();
+      expect(mockedData).toEqual({ mocked: true });
+
+      // This should still hit the real server
+      let realData = yield* fetch(`${url}/json`).json<{
+        id: number;
+        title: string;
+      }>();
+      expect(realData).toEqual({ id: 1, title: "do things" });
+    });
+
+    it("middleware is scoped and does not leak", function* () {
+      let outerCalls: string[] = [];
+      let innerCalls: string[] = [];
+
+      yield* FetchApi.around({
+        *fetch(args, next) {
+          outerCalls.push("outer");
+          return yield* next(...args);
+        },
+      });
+
+      // Make a request in outer scope
+      yield* fetch(`${url}/json`).json();
+
+      // Spawn a child scope with additional middleware
+      let task = yield* spawn(function* () {
+        yield* FetchApi.around({
+          *fetch(args, next) {
+            innerCalls.push("inner");
+            return yield* next(...args);
+          },
+        });
+
+        // Make request in inner scope - should hit both middlewares
+        yield* fetch(`${url}/json`).json();
+      });
+
+      yield* task;
+
+      // Outer scope should only have outer middleware call
+      expect(outerCalls).toEqual(["outer", "outer"]);
+      // Inner scope should have one call
+      expect(innerCalls).toEqual(["inner"]);
     });
   });
 });

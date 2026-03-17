@@ -165,3 +165,58 @@ Effection wrapper around native `Response` with operation-based body readers.
 - `body(): Stream<Uint8Array, void>`
 - `expect()` - throws `HttpError` for non-2xx responses
 - `raw` - access the underlying native `Response`
+
+### `FetchApi`
+
+The fetch API object that supports middleware decoration. Use `FetchApi.around()`
+to add middleware for logging, mocking, or instrumentation.
+
+```ts
+import { FetchApi, fetch } from "@effectionx/fetch";
+import { run } from "effection";
+
+// Add logging middleware
+await run(function* () {
+  yield* FetchApi.around({
+    *fetch(args, next) {
+      let [input] = args;
+      console.log("Fetching:", input);
+      return yield* next(...args);
+    },
+  });
+
+  // All fetch calls in this scope now log
+  let data = yield* fetch("/api/users").json();
+});
+```
+
+### Mocking responses for testing
+
+```ts
+import { FetchApi, fetch, createFetchResponse } from "@effectionx/fetch";
+import { run } from "effection";
+
+await run(function* () {
+  yield* FetchApi.around({
+    *fetch(args, next) {
+      let [input] = args;
+      if (String(input).includes("/api/users")) {
+        // Return a mock FetchResponse
+        return createFetchResponse(
+          new Response(JSON.stringify({ users: [] }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
+      }
+      return yield* next(...args);
+    },
+  });
+
+  // This returns mocked data in this scope
+  let users = yield* fetch("/api/users").json();
+});
+```
+
+Middleware is scoped - it only applies to the current scope and its children,
+and is automatically cleaned up when the scope exits.

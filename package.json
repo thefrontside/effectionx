@@ -30,7 +30,8 @@
     "peerDependencyRules": {
       "ignoreMissing": [],
       "allowAny": []
-    }
+    },
+    "overrides": {}
   },
   "volta": {
     "node": "22.12.0",

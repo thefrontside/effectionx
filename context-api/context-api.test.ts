@@ -328,4 +328,109 @@ describe("context api", () => {
     yield* math.operations.add(1, 1);
     expect(log).toEqual(["default", "min"]);
   });
+
+  it("invokes synchronous functions as operations", function* () {
+    let api = createApi("test", {
+      five: () => 5,
+    });
+
+    expect(yield* api.operations.five()).toEqual(5);
+  });
+
+  it("invokes constants as operations", function* () {
+    let api = createApi("test", {
+      five: 5,
+    });
+
+    expect(yield* api.operations.five).toEqual(5);
+  });
+
+  it("invokes synchronous functions with arguments", function* () {
+    let api = createApi("math", {
+      add: (a: number, b: number) => a + b,
+    });
+
+    expect(yield* api.operations.add(3, 4)).toEqual(7);
+  });
+
+  it("can have sync middleware on sync functions", function* () {
+    let api = createApi("test", {
+      five: () => 5 as number,
+    });
+
+    yield* api.around({
+      five: (args, next) => next(...args) * 2,
+    });
+
+    expect(yield* api.operations.five()).toEqual(10);
+  });
+
+  it("can have sync middleware on constants", function* () {
+    let api = createApi("test", {
+      five: 5,
+    });
+
+    yield* api.around({
+      five: (args, next) => next(...args) * 2,
+    });
+
+    expect(yield* api.operations.five).toEqual(10);
+  });
+
+  it("supports mixed handler types with middleware", function* () {
+    let api = createApi("test", {
+      constFive: 5,
+      *operationFnFive(): Operation<number> {
+        return 5;
+      },
+      operationFive: {
+        *[Symbol.iterator]() {
+          return 5;
+        },
+      } as Operation<number>,
+      syncFive: () => 5 as number,
+    });
+
+    yield* api.around({
+      constFive: (args, next) => next(...args) * 2,
+      *operationFnFive(args, next) {
+        return (yield* next(...args)) * 2;
+      },
+      *operationFive(args, next) {
+        return (yield* next(...args)) * 2;
+      },
+      syncFive: (args, next) => next(...args) * 2,
+    });
+
+    expect(yield* api.operations.constFive).toEqual(10);
+    expect(yield* api.operations.operationFnFive()).toEqual(10);
+    expect(yield* api.operations.operationFive).toEqual(10);
+    expect(yield* api.operations.syncFive()).toEqual(10);
+  });
+
+  it("does not mistake native iterables for operations", function* () {
+    let api = createApi("test", {
+      greeting: "hello",
+      items: () => [1, 2, 3],
+    });
+
+    expect(yield* api.operations.greeting).toEqual("hello");
+    expect(yield* api.operations.items()).toEqual([1, 2, 3]);
+  });
+
+  it("sync middleware respects scope isolation", function* () {
+    let api = createApi("test", {
+      value: () => 1 as number,
+    });
+
+    yield* scoped(function* () {
+      yield* api.around({
+        value: (args, next) => next(...args) * 10,
+      });
+      expect(yield* api.operations.value()).toEqual(10);
+    });
+
+    // Parent scope is unaffected
+    expect(yield* api.operations.value()).toEqual(1);
+  });
 });

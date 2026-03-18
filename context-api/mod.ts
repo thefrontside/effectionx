@@ -3,10 +3,14 @@ import { type Operation, createContext } from "effection";
 
 export type { Middleware };
 
+/**
+ * The shape of middlewares that can surround a particular {@link Api}.
+ *
+ * Members that are functions get middleware matching their signature.
+ * Members that are values get middleware wrapping a no-arg accessor.
+ */
 export type Around<A> = {
-  [K in keyof Operations<A>]: A[K] extends (
-    ...args: infer TArgs
-  ) => infer TReturn
+  [K in keyof A]: A[K] extends (...args: infer TArgs) => infer TReturn
     ? Middleware<TArgs, TReturn>
     : Middleware<[], A[K]>;
 };
@@ -19,12 +23,25 @@ export interface Api<A> {
   ) => Operation<void>;
 }
 
-export type Operations<T> = {
-  [K in keyof T]: T[K] extends (...args: infer TArgs) => infer TReturn
-    ? (...args: TArgs) => TReturn
-    : T[K] extends Operation<infer TReturn>
-      ? Operation<TReturn>
-      : never;
+/**
+ * Maps each member of an API core to its lifted Operation form.
+ *
+ * - `Operation<T>` → pass-through as `Operation<T>`
+ * - `(...args) => Operation<T>` → pass-through
+ * - `(...args) => T` (sync) → lifted to `(...args) => Operation<T>`
+ * - `T` (constant) → lifted to `Operation<T>`
+ *
+ * The `Operation<unknown>` check comes first to prevent Operations
+ * (which have `[Symbol.iterator]`) from being misclassified as functions.
+ */
+export type Operations<A> = {
+  [K in keyof A]: A[K] extends Operation<unknown>
+    ? A[K]
+    : A[K] extends (...args: infer TArgs) => infer TReturn
+      ? TReturn extends Operation<unknown>
+        ? A[K]
+        : (...args: TArgs) => Operation<TReturn>
+      : Operation<A[K]>;
 };
 
 /**
@@ -42,12 +59,7 @@ type FieldMiddleware = {
  */
 type MiddlewareRegistry<A> = Record<keyof A, FieldMiddleware>;
 
-type Handler = Operation<unknown> | ((...args: any[]) => Operation<unknown>);
-
-export function createApi<A extends Record<string, Handler>>(
-  name: string,
-  handler: A,
-): Api<A> {
+export function createApi<A extends {}>(name: string, handler: A): Api<A> {
   let fields = Object.keys(handler) as (keyof A)[];
 
   let initial = fields.reduce(
@@ -71,11 +83,14 @@ export function createApi<A extends Record<string, Handler>>(
       if (typeof handle === "function") {
         let fn = handle as (...args: any[]) => any;
         return Object.assign(api, {
-          [field]: function* (...args: any[]) {
-            let state = yield* context.expect();
-            let { composed } = state[field as keyof A];
-            return yield* composed ? composed(args, fn) : fn(...args);
-          },
+          [field]: (...args: any[]) => ({
+            *[Symbol.iterator]() {
+              let state = yield* context.expect();
+              let { composed } = state[field as keyof A];
+              let result = composed ? composed(args, fn) : fn(...args);
+              return isOperation(result) ? yield* result : result;
+            },
+          }),
         });
       }
       return Object.assign(api, {
@@ -83,9 +98,8 @@ export function createApi<A extends Record<string, Handler>>(
           *[Symbol.iterator]() {
             let state = yield* context.expect();
             let { composed } = state[field as keyof A];
-            return composed
-              ? yield* composed([], () => handle)
-              : yield* handle as Operation<unknown>;
+            let result = composed ? composed([], () => handle) : handle;
+            return isOperation(result) ? yield* result : result;
           },
         },
       });
@@ -133,4 +147,27 @@ export function createApi<A extends Record<string, Handler>>(
   }
 
   return { operations, around };
+}
+
+/**
+ * Check if a value is an Effection Operation at runtime.
+ *
+ * Excludes native iterables (strings, arrays, Maps, Sets) which have
+ * `[Symbol.iterator]` but are not Operations.
+ */
+function isOperation<T>(target: Operation<T> | T): target is Operation<T> {
+  return (
+    target != null &&
+    !isNativeIterable(target) &&
+    typeof (target as Operation<T>)[Symbol.iterator] === "function"
+  );
+}
+
+function isNativeIterable(target: unknown): boolean {
+  return (
+    typeof target === "string" ||
+    Array.isArray(target) ||
+    target instanceof Map ||
+    target instanceof Set
+  );
 }

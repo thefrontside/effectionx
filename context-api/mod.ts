@@ -126,7 +126,7 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
           let min = [...fieldState.min];
 
           if (options.at === "min") {
-            min = [...min, middleware];
+            min = [middleware, ...min];
           } else {
             max = [...max, middleware];
           }

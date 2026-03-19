@@ -234,7 +234,8 @@ describe("context api", () => {
     );
 
     yield* math.operations.add(1, 1);
-    expect(log).toEqual(["max-1", "max-2", "min-1", "min-2"]);
+    // Most recently installed min middleware gets interception priority
+    expect(log).toEqual(["max-1", "max-2", "min-2", "min-1"]);
   });
 
   it("min/max middleware respects scope isolation", function* () {
@@ -283,11 +284,12 @@ describe("context api", () => {
         { at: "min" },
       );
       yield* math.operations.add(1, 1);
+      // Child scope's min middleware runs before parent's (innermost wins)
       expect(log).toEqual([
         "parent-max",
         "child-max",
-        "parent-min",
         "child-min",
+        "parent-min",
       ]);
     });
 
@@ -432,5 +434,82 @@ describe("context api", () => {
 
     // Parent scope is unaffected
     expect(yield* api.operations.value()).toEqual(1);
+  });
+
+  it("inner scope min middleware wraps closer to handler than outer", function* () {
+    const api = createApi("test.nested", {
+      *greet(name: string): Operation<string> {
+        return `hello ${name}`;
+      },
+    });
+
+    const result = yield* scoped(function* () {
+      // Outer scope installs min middleware
+      yield* api.around(
+        {
+          *greet([name], next) {
+            return `outer(${yield* next(name)})`;
+          },
+        },
+        { at: "min" },
+      );
+
+      return yield* scoped(function* () {
+        // Inner scope installs min middleware
+        yield* api.around(
+          {
+            *greet([name], next) {
+              return `inner(${yield* next(name)})`;
+            },
+          },
+          { at: "min" },
+        );
+
+        return yield* api.operations.greet("world");
+      });
+    });
+
+    // Inner scope's min middleware intercepts first (innermost wins):
+    // inner runs outermost, outer wraps the handler
+    // Result: inner(outer(hello world))
+    expect(result).toEqual("inner(outer(hello world))");
+  });
+
+  it("inner scope min middleware intercepts before delegating to outer", function* () {
+    const api = createApi("test.intercept", {
+      *handle(value: string): Operation<string> {
+        return `default:${value}`;
+      },
+    });
+
+    const result = yield* scoped(function* () {
+      // Outer: passes through to next unless value is "outer-only"
+      yield* api.around(
+        {
+          *handle([value], next) {
+            if (value === "outer-only") return "caught-by-outer";
+            return yield* next(value);
+          },
+        },
+        { at: "min" },
+      );
+
+      return yield* scoped(function* () {
+        // Inner: intercepts everything, never calls next
+        yield* api.around(
+          {
+            *handle([value], _next) {
+              return `caught-by-inner:${value}`;
+            },
+          },
+          { at: "min" },
+        );
+
+        return yield* api.operations.handle("test");
+      });
+    });
+
+    // Inner intercepts first (innermost wins), never calls next
+    expect(result).toEqual("caught-by-inner:test");
   });
 });

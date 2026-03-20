@@ -420,6 +420,16 @@ describe("context api", () => {
     expect(yield* api.operations.items()).toEqual([1, 2, 3]);
   });
 
+  it("does not mistake TypedArrays for operations", function* () {
+    let api = createApi("test", {
+      bytes: () => new Uint8Array([1, 2, 3]),
+    });
+
+    let result = yield* api.operations.bytes();
+    expect(result).toBeInstanceOf(Uint8Array);
+    expect(Array.from(result)).toEqual([1, 2, 3]);
+  });
+
   it("sync middleware respects scope isolation", function* () {
     let api = createApi("test", {
       value: () => 1 as number,

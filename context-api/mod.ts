@@ -59,7 +59,22 @@ type FieldMiddleware = {
  */
 type MiddlewareRegistry<A> = Record<keyof A, FieldMiddleware>;
 
-export function createApi<A extends {}>(name: string, handler: A): Api<A> {
+/**
+ * Rejects PromiseLike members at the type level — async functions and
+ * Promise values bypass scope ownership and violate structured concurrency.
+ */
+type NoPromises<A> = {
+  [K in keyof A]: A[K] extends PromiseLike<any>
+    ? never
+    : A[K] extends (...args: any[]) => PromiseLike<any>
+      ? never
+      : A[K];
+};
+
+export function createApi<A extends Record<string, unknown>>(
+  name: string,
+  handler: A & NoPromises<A>,
+): Api<A> {
   let fields = Object.keys(handler) as (keyof A)[];
 
   let initial = fields.reduce(
@@ -168,6 +183,7 @@ function isNativeIterable(target: unknown): boolean {
     typeof target === "string" ||
     Array.isArray(target) ||
     target instanceof Map ||
-    target instanceof Set
+    target instanceof Set ||
+    ArrayBuffer.isView(target)
   );
 }

@@ -234,7 +234,8 @@ describe("context api", () => {
     );
 
     yield* math.operations.add(1, 1);
-    expect(log).toEqual(["max-1", "max-2", "min-1", "min-2"]);
+    // Most recently installed min middleware gets interception priority
+    expect(log).toEqual(["max-1", "max-2", "min-2", "min-1"]);
   });
 
   it("min/max middleware respects scope isolation", function* () {
@@ -283,11 +284,12 @@ describe("context api", () => {
         { at: "min" },
       );
       yield* math.operations.add(1, 1);
+      // Child scope's min middleware runs before parent's (innermost wins)
       expect(log).toEqual([
         "parent-max",
         "child-max",
-        "parent-min",
         "child-min",
+        "parent-min",
       ]);
     });
 
@@ -327,5 +329,187 @@ describe("context api", () => {
 
     yield* math.operations.add(1, 1);
     expect(log).toEqual(["default", "min"]);
+  });
+
+  it("invokes synchronous functions as operations", function* () {
+    let api = createApi("test", {
+      five: () => 5,
+    });
+
+    expect(yield* api.operations.five()).toEqual(5);
+  });
+
+  it("invokes constants as operations", function* () {
+    let api = createApi("test", {
+      five: 5,
+    });
+
+    expect(yield* api.operations.five).toEqual(5);
+  });
+
+  it("invokes synchronous functions with arguments", function* () {
+    let api = createApi("math", {
+      add: (a: number, b: number) => a + b,
+    });
+
+    expect(yield* api.operations.add(3, 4)).toEqual(7);
+  });
+
+  it("can have sync middleware on sync functions", function* () {
+    let api = createApi("test", {
+      five: () => 5 as number,
+    });
+
+    yield* api.around({
+      five: (args, next) => next(...args) * 2,
+    });
+
+    expect(yield* api.operations.five()).toEqual(10);
+  });
+
+  it("can have sync middleware on constants", function* () {
+    let api = createApi("test", {
+      five: 5,
+    });
+
+    yield* api.around({
+      five: (args, next) => next(...args) * 2,
+    });
+
+    expect(yield* api.operations.five).toEqual(10);
+  });
+
+  it("supports mixed handler types with middleware", function* () {
+    let api = createApi("test", {
+      constFive: 5,
+      *operationFnFive(): Operation<number> {
+        return 5;
+      },
+      operationFive: {
+        *[Symbol.iterator]() {
+          return 5;
+        },
+      } as Operation<number>,
+      syncFive: () => 5 as number,
+    });
+
+    yield* api.around({
+      constFive: (args, next) => next(...args) * 2,
+      *operationFnFive(args, next) {
+        return (yield* next(...args)) * 2;
+      },
+      *operationFive(args, next) {
+        return (yield* next(...args)) * 2;
+      },
+      syncFive: (args, next) => next(...args) * 2,
+    });
+
+    expect(yield* api.operations.constFive).toEqual(10);
+    expect(yield* api.operations.operationFnFive()).toEqual(10);
+    expect(yield* api.operations.operationFive).toEqual(10);
+    expect(yield* api.operations.syncFive()).toEqual(10);
+  });
+
+  it("does not mistake native iterables for operations", function* () {
+    let api = createApi("test", {
+      greeting: "hello",
+      items: () => [1, 2, 3],
+    });
+
+    expect(yield* api.operations.greeting).toEqual("hello");
+    expect(yield* api.operations.items()).toEqual([1, 2, 3]);
+  });
+
+  it("sync middleware respects scope isolation", function* () {
+    let api = createApi("test", {
+      value: () => 1 as number,
+    });
+
+    yield* scoped(function* () {
+      yield* api.around({
+        value: (args, next) => next(...args) * 10,
+      });
+      expect(yield* api.operations.value()).toEqual(10);
+    });
+
+    // Parent scope is unaffected
+    expect(yield* api.operations.value()).toEqual(1);
+  });
+
+  it("inner scope min middleware wraps closer to handler than outer", function* () {
+    const api = createApi("test.nested", {
+      *greet(name: string): Operation<string> {
+        return `hello ${name}`;
+      },
+    });
+
+    const result = yield* scoped(function* () {
+      // Outer scope installs min middleware
+      yield* api.around(
+        {
+          *greet([name], next) {
+            return `outer(${yield* next(name)})`;
+          },
+        },
+        { at: "min" },
+      );
+
+      return yield* scoped(function* () {
+        // Inner scope installs min middleware
+        yield* api.around(
+          {
+            *greet([name], next) {
+              return `inner(${yield* next(name)})`;
+            },
+          },
+          { at: "min" },
+        );
+
+        return yield* api.operations.greet("world");
+      });
+    });
+
+    // Inner scope's min middleware intercepts first (innermost wins):
+    // inner runs outermost, outer wraps the handler
+    // Result: inner(outer(hello world))
+    expect(result).toEqual("inner(outer(hello world))");
+  });
+
+  it("inner scope min middleware intercepts before delegating to outer", function* () {
+    const api = createApi("test.intercept", {
+      *handle(value: string): Operation<string> {
+        return `default:${value}`;
+      },
+    });
+
+    const result = yield* scoped(function* () {
+      // Outer: passes through to next unless value is "outer-only"
+      yield* api.around(
+        {
+          *handle([value], next) {
+            if (value === "outer-only") return "caught-by-outer";
+            return yield* next(value);
+          },
+        },
+        { at: "min" },
+      );
+
+      return yield* scoped(function* () {
+        // Inner: intercepts everything, never calls next
+        yield* api.around(
+          {
+            *handle([value], _next) {
+              return `caught-by-inner:${value}`;
+            },
+          },
+          { at: "min" },
+        );
+
+        return yield* api.operations.handle("test");
+      });
+    });
+
+    // Inner intercepts first (innermost wins), never calls next
+    expect(result).toEqual("caught-by-inner:test");
   });
 });

@@ -16,6 +16,7 @@ import {
 } from "effection";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
+import { suppressStdinEPIPE } from "./stdin.ts";
 
 type ProcessResultValue = [number?, string?];
 
@@ -127,13 +128,7 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
       return status;
     }
 
-    childProcess.stdin.on("error", (err: Error & { code?: string }) => {
-      if (err.code === "EPIPE") {
-        return; // benign: child exited before write completed
-      }
-      // Route non-EPIPE errors through the package's normal error path
-      processResult.resolve(Err(err));
-    });
+    yield* spawn(() => suppressStdinEPIPE(childProcess.stdin, processResult));
 
     try {
       yield* provide({

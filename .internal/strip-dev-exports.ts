@@ -22,14 +22,14 @@ await main(function* () {
         value !== null &&
         "development" in value
       ) {
-        delete (value as Record<string, unknown>).development;
+        (value as Record<string, unknown>).development = undefined;
         modified = true;
       }
     }
 
     if (modified) {
       yield* call(() =>
-        fsp.writeFile(pkgPath, JSON.stringify(json, null, 2) + "\n"),
+        fsp.writeFile(pkgPath, `${JSON.stringify(json, null, 2)}\n`),
       );
       stripped++;
       console.log(

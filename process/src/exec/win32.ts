@@ -127,14 +127,11 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
       return status;
     }
 
-    // Suppress EPIPE errors on stdin - these occur on Windows when the child
-    // process exits before we finish writing to it. This is expected during
-    // cleanup when we're killing the process.
-    childProcess.stdin.on("error", (err: Error & { code?: string }) => {
-      if (err.code !== "EPIPE") {
-        throw err;
-      }
-    });
+    const stdinErrorHandler = (err: Error & { code?: string }) => {
+      if (err.code === "EPIPE") return;
+      processResult.resolve(Err(err));
+    };
+    childProcess.stdin.on("error", stdinErrorHandler);
 
     try {
       yield* provide({
@@ -210,6 +207,7 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
       } catch (_e) {
         // do nothing, process is probably already dead
       }
+      childProcess.stdin.off("error", stdinErrorHandler);
     }
   });
 };

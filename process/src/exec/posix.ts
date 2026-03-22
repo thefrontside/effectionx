@@ -81,6 +81,12 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
       },
     };
 
+    const stdinErrorHandler = (err: Error & { code?: string }) => {
+      if (err.code === "EPIPE") return;
+      processResult.resolve(Err(err));
+    };
+    childProcess.stdin.on("error", stdinErrorHandler);
+
     yield* spawn(function* trapError() {
       let [error] = yield* once<[Error]>(childProcess, "error");
       processResult.resolve(Err(error));
@@ -128,6 +134,7 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
       } catch (_e) {
         // do nothing, process is probably already dead
       }
+      childProcess.stdin.off("error", stdinErrorHandler);
     }
   });
 };

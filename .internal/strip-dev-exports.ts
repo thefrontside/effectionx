@@ -1,56 +1,42 @@
+import { call, main } from "effection";
 import { promises as fsp } from "node:fs";
 import { resolve } from "node:path";
+import { readPackages } from "./lib/read-packages.ts";
 
-const rootDir = process.cwd();
+await main(function* () {
+  const packages = yield* readPackages();
 
-// Read pnpm-workspace.yaml to find all workspaces
-const workspaceYaml = await fsp.readFile(
-  resolve(rootDir, "pnpm-workspace.yaml"),
-  "utf-8",
-);
+  let stripped = 0;
 
-const workspaces: string[] = [];
-for (const line of workspaceYaml.split("\n")) {
-  const trimmed = line.trim();
-  if (trimmed.startsWith("-")) {
-    const value = trimmed.replace(/^-\s*/, "").replace(/^["']|["']$/g, "");
-    if (value) {
-      workspaces.push(value);
+  for (const pkg of packages) {
+    const pkgPath = resolve(pkg.workspacePath, "package.json");
+    const content = yield* call(() => fsp.readFile(pkgPath, "utf-8"));
+
+    const json = JSON.parse(content);
+    if (!json.exports) continue;
+
+    let modified = false;
+    for (const value of Object.values(json.exports)) {
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        "development" in value
+      ) {
+        delete (value as Record<string, unknown>).development;
+        modified = true;
+      }
     }
-  }
-}
 
-let stripped = 0;
-
-for (const workspace of workspaces) {
-  const pkgPath = resolve(rootDir, workspace, "package.json");
-  let content: string;
-  try {
-    content = await fsp.readFile(pkgPath, "utf-8");
-  } catch {
-    continue;
-  }
-
-  const pkg = JSON.parse(content);
-  if (!pkg.exports) continue;
-
-  let modified = false;
-  for (const value of Object.values(pkg.exports)) {
-    if (
-      typeof value === "object" &&
-      value !== null &&
-      "development" in value
-    ) {
-      delete (value as Record<string, unknown>).development;
-      modified = true;
+    if (modified) {
+      yield* call(() =>
+        fsp.writeFile(pkgPath, JSON.stringify(json, null, 2) + "\n"),
+      );
+      stripped++;
+      console.log(
+        `Stripped development exports from ${pkg.workspace}/package.json`,
+      );
     }
   }
 
-  if (modified) {
-    await fsp.writeFile(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
-    stripped++;
-    console.log(`Stripped development exports from ${workspace}/package.json`);
-  }
-}
-
-console.log(`Done: stripped ${stripped} package(s)`);
+  console.log(`Done: stripped ${stripped} package(s)`);
+});

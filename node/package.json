@@ -1,7 +1,7 @@
 {
   "name": "@effectionx/node",
   "description": "Node.js stream and event emitter adapters for Effection",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "keywords": ["effection", "effectionx", "io", "node", "streams", "events"],
   "type": "module",
   "main": "./dist/mod.js",

@@ -1,7 +1,7 @@
 {
   "name": "@effectionx/middleware",
   "description": "Type-safe composable middleware for generators and Effection operations",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "keywords": ["concurrency", "interop"],
   "type": "module",
   "main": "./dist/mod.js",

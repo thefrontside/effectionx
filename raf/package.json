@@ -1,7 +1,7 @@
 {
   "name": "@effectionx/raf",
   "description": "Stream of requestAnimationFrame updates for Effection",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "keywords": [
     "effection",
     "effectionx",

@@ -63,6 +63,9 @@ jobs:
 
       - run: pnpm build
 
+      - name: Strip development export condition
+        run: node --experimental-strip-types .internal/strip-dev-exports.ts
+
       - name: Check token for first publish
         if: matrix.firstPublish == true
         run: |

@@ -1,7 +1,7 @@
 {
   "name": "@effectionx/context-api",
   "description": "Algebraic effects pattern for context-dependent operations with middleware",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "keywords": ["concurrency", "interop"],
   "type": "module",
   "main": "./dist/mod.js",

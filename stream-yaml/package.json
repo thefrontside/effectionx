@@ -1,7 +1,7 @@
 {
   "name": "@effectionx/stream-yaml",
   "description": "Parse streams of strings as YAML documents",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "keywords": ["effection", "effectionx", "streams", "yaml", "parser"],
   "type": "module",
   "main": "./dist/mod.js",

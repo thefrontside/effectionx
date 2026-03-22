@@ -81,6 +81,14 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
       },
     };
 
+    childProcess.stdin.on("error", (err: Error & { code?: string }) => {
+      if (err.code === "EPIPE") {
+        return; // benign: child exited before write completed
+      }
+      // Route non-EPIPE errors through the package's normal error path
+      processResult.resolve(Err(err));
+    });
+
     yield* spawn(function* trapError() {
       let [error] = yield* once<[Error]>(childProcess, "error");
       processResult.resolve(Err(error));

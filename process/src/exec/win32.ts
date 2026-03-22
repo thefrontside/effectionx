@@ -16,7 +16,6 @@ import {
 } from "effection";
 import type { CreateOSProcess, ExitStatus, Writable } from "./api.ts";
 import { ExecError } from "./error.ts";
-import { suppressStdinEPIPE } from "./stdin.ts";
 
 type ProcessResultValue = [number?, string?];
 
@@ -128,7 +127,11 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
       return status;
     }
 
-    yield* spawn(() => suppressStdinEPIPE(childProcess.stdin, processResult));
+    const stdinErrorHandler = (err: Error & { code?: string }) => {
+      if (err.code === "EPIPE") return;
+      processResult.resolve(Err(err));
+    };
+    childProcess.stdin.on("error", stdinErrorHandler);
 
     try {
       yield* provide({
@@ -204,6 +207,7 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
       } catch (_e) {
         // do nothing, process is probably already dead
       }
+      childProcess.stdin.off("error", stdinErrorHandler);
     }
   });
 };

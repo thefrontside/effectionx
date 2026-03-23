@@ -128,7 +128,12 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
     }
 
     const stdinErrorHandler = (err: Error & { code?: string }) => {
-      if (err.code === "EPIPE") return;
+      if (err.code === "EPIPE") {
+        console.warn(
+          `stdin EPIPE: child process (pid: ${childProcess.pid}) already exited. Writes to stdin are being discarded.`,
+        );
+        return;
+      }
       processResult.resolve(Err(err));
     };
     childProcess.stdin.on("error", stdinErrorHandler);

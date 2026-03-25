@@ -21,6 +21,7 @@ This is the **single source of truth** for all policies in this repository.
 | [Stateless Stream Operations](./stateless-streams.md)    | Recommended | Use `*[Symbol.iterator]` pattern for reusable stream operations       |
 | [Version Bump](./version-bump.md)                        | Recommended | PRs changing package code must include a semantic version bump        |
 | [Package.json Metadata](./package-json-metadata.md)      | Strict      | Every published package must include a description field              |
+| [No Agent Marketing](./no-agent-marketing.md)            | Strict      | No AI tool promotional material in commits, PRs, issues, or comments |
 
 ### Experimental Policies (cowboyd Review Patterns)
 

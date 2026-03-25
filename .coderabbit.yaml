@@ -51,6 +51,10 @@ reviews:
           - For `**/package.json`, enforce `.policies/package-json-metadata.md` (non-empty `description` with required format).
           - For package source changes, enforce `.policies/version-bump.md`.
 
+          Enforce `.policies/no-agent-marketing.md` (Strict): reject any commit message,
+          PR title, or PR description containing AI tool promotional material such as
+          "Co-Authored-By" trailers referencing AI agents or "Generated with..." footers.
+
           Experimental policies (advisory feedback):
           - Type-Driven Design, Structured Concurrency, Minimal APIs
           - Deterministic Tests, Documentation, Backwards Compatibility

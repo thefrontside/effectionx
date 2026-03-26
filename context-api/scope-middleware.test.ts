@@ -481,6 +481,267 @@ describe("scope middleware", () => {
       expect(log).toEqual(["a:enter", "b:enter", "b:exit", "a:exit"]);
     });
 
+    it("child extension remains live with later parent max middleware", function* () {
+      const api = createApi("spawn.child-extends-parent", {
+        *value(): Operation<string> {
+          return "core";
+        },
+      });
+
+      const log: string[] = [];
+      const childReady = withResolvers<void>();
+      const parentUpdated = withResolvers<void>();
+
+      yield* api.around({
+        *value(args, next) {
+          log.push("max-a:enter");
+          const result = yield* next(...args);
+          log.push("max-a:exit");
+          return result;
+        },
+      });
+
+      const task = yield* spawn(function* () {
+        yield* api.around({
+          *value(args, next) {
+            log.push("max-b:enter");
+            const result = yield* next(...args);
+            log.push("max-b:exit");
+            return result;
+          },
+        });
+
+        childReady.resolve();
+        yield* parentUpdated.operation;
+        return yield* api.operations.value();
+      });
+
+      yield* childReady.operation;
+
+      // Parent adds a second max AFTER child has already extended locally.
+      yield* api.around({
+        *value(args, next) {
+          log.push("max-c:enter");
+          const result = yield* next(...args);
+          log.push("max-c:exit");
+          return result;
+        },
+      });
+
+      parentUpdated.resolve();
+
+      const childResult = yield* task;
+      expect(childResult).toEqual("core");
+      expect(log).toEqual([
+        "max-a:enter",
+        "max-c:enter",
+        "max-b:enter",
+        "max-b:exit",
+        "max-c:exit",
+        "max-a:exit",
+      ]);
+
+      log.length = 0;
+      expect(yield* api.operations.value()).toEqual("core");
+      expect(log).toEqual([
+        "max-a:enter",
+        "max-c:enter",
+        "max-c:exit",
+        "max-a:exit",
+      ]);
+    });
+
+    it("child extension remains live with later parent min middleware", function* () {
+      const api = createApi("spawn.child-extends-parent-min", {
+        *value(): Operation<string> {
+          return "core";
+        },
+      });
+
+      const log: string[] = [];
+      const childReady = withResolvers<void>();
+      const parentUpdated = withResolvers<void>();
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("min-a:enter");
+            const result = yield* next(...args);
+            log.push("min-a:exit");
+            return result;
+          },
+        },
+        { at: "min" },
+      );
+
+      const task = yield* spawn(function* () {
+        yield* api.around(
+          {
+            *value(args, next) {
+              log.push("min-b:enter");
+              const result = yield* next(...args);
+              log.push("min-b:exit");
+              return result;
+            },
+          },
+          { at: "min" },
+        );
+
+        childReady.resolve();
+        yield* parentUpdated.operation;
+        return yield* api.operations.value();
+      });
+
+      yield* childReady.operation;
+
+      // Parent adds a second min AFTER child has already extended locally.
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("min-c:enter");
+            const result = yield* next(...args);
+            log.push("min-c:exit");
+            return result;
+          },
+        },
+        { at: "min" },
+      );
+
+      parentUpdated.resolve();
+
+      const childResult = yield* task;
+      expect(childResult).toEqual("core");
+      expect(log).toEqual([
+        "min-b:enter",
+        "min-c:enter",
+        "min-a:enter",
+        "min-a:exit",
+        "min-c:exit",
+        "min-b:exit",
+      ]);
+
+      log.length = 0;
+      expect(yield* api.operations.value()).toEqual("core");
+      expect(log).toEqual([
+        "min-c:enter",
+        "min-a:enter",
+        "min-a:exit",
+        "min-c:exit",
+      ]);
+    });
+
+    it("child extension remains live with later parent mixed max and min middleware", function* () {
+      const api = createApi("spawn.child-extends-parent-mixed", {
+        *value(): Operation<string> {
+          return "core";
+        },
+      });
+
+      const log: string[] = [];
+      const childReady = withResolvers<void>();
+      const parentUpdated = withResolvers<void>();
+
+      yield* api.around({
+        *value(args, next) {
+          log.push("max-a:enter");
+          const result = yield* next(...args);
+          log.push("max-a:exit");
+          return result;
+        },
+      });
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("min-a:enter");
+            const result = yield* next(...args);
+            log.push("min-a:exit");
+            return result;
+          },
+        },
+        { at: "min" },
+      );
+
+      const task = yield* spawn(function* () {
+        yield* api.around({
+          *value(args, next) {
+            log.push("max-b:enter");
+            const result = yield* next(...args);
+            log.push("max-b:exit");
+            return result;
+          },
+        });
+        yield* api.around(
+          {
+            *value(args, next) {
+              log.push("min-b:enter");
+              const result = yield* next(...args);
+              log.push("min-b:exit");
+              return result;
+            },
+          },
+          { at: "min" },
+        );
+
+        childReady.resolve();
+        yield* parentUpdated.operation;
+        return yield* api.operations.value();
+      });
+
+      yield* childReady.operation;
+
+      yield* api.around({
+        *value(args, next) {
+          log.push("max-c:enter");
+          const result = yield* next(...args);
+          log.push("max-c:exit");
+          return result;
+        },
+      });
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("min-c:enter");
+            const result = yield* next(...args);
+            log.push("min-c:exit");
+            return result;
+          },
+        },
+        { at: "min" },
+      );
+
+      parentUpdated.resolve();
+
+      const childResult = yield* task;
+      expect(childResult).toEqual("core");
+      expect(log).toEqual([
+        "max-a:enter",
+        "max-c:enter",
+        "max-b:enter",
+        "min-b:enter",
+        "min-c:enter",
+        "min-a:enter",
+        "min-a:exit",
+        "min-c:exit",
+        "min-b:exit",
+        "max-b:exit",
+        "max-c:exit",
+        "max-a:exit",
+      ]);
+
+      log.length = 0;
+      expect(yield* api.operations.value()).toEqual("core");
+      expect(log).toEqual([
+        "max-a:enter",
+        "max-c:enter",
+        "min-c:enter",
+        "min-a:enter",
+        "min-a:exit",
+        "min-c:exit",
+        "max-c:exit",
+        "max-a:exit",
+      ]);
+    });
+
     it("grandchild inherits accumulated middleware through spawned tasks", function* () {
       const api = createApi("spawn.grandchild", {
         *value(): Operation<string> {

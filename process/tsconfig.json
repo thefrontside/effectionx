@@ -8,6 +8,9 @@
   "exclude": ["**/*.test.ts", "test/**", "dist"],
   "references": [
     {
+      "path": "../scope-eval"
+    },
+    {
       "path": "../bdd"
     },
     {

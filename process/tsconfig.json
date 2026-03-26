@@ -11,6 +11,9 @@
       "path": "../scope-eval"
     },
     {
+      "path": "../context-api"
+    },
+    {
       "path": "../bdd"
     },
     {

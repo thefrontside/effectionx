@@ -21,9 +21,6 @@
       "default": "./dist/mod.js"
     }
   },
-  "scripts": {
-    "test": "node --env-file=../.env --test \"**/exec.test.ts\""
-  },
   "peerDependencies": {
     "effection": "^3 || ^4"
   },

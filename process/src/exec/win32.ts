@@ -5,18 +5,27 @@ import { fromReadable } from "@effectionx/node/stream";
 import { spawn as spawnProcess } from "cross-spawn";
 import { ctrlc } from "ctrlc-windows";
 import {
+  type Operation,
+  type Result,
+  type Yielded,
   Err,
   Ok,
-  type Result,
   all,
   createSignal,
-  resource,
+  ensure,
   spawn,
   withResolvers,
 } from "effection";
-import type { CreateOSProcess, ExitStatus, Writable } from "./types.ts";
-import { api } from "../api.ts";
+import type {
+  CreateOSProcess,
+  ExecOptions,
+  ExitStatus,
+  Process,
+  Writable,
+} from "./types.ts";
+import { stdioApi } from "../api.ts";
 import { ExecError } from "./error.ts";
+import { unbox, useEvalScope } from "@effectionx/scope-eval";
 
 type ProcessResultValue = [number?, string?];
 
@@ -33,10 +42,13 @@ function* killTree(pid: number) {
   }
 }
 
-export const createWin32Process: CreateOSProcess = (command, options) => {
-  return resource(function* (provide) {
-    let processResult = withResolvers<Result<ProcessResultValue>>();
-
+export function* createWin32Process(
+  command: string,
+  options: ExecOptions,
+): Operation<Process> {
+  let processResult = withResolvers<Result<ProcessResultValue>>();
+  const evalScope = yield* useEvalScope();
+  const result = yield* evalScope.eval(function* () {
     // Windows-specific process spawning with different options than POSIX
     let childProcess = spawnProcess(command, options.arguments || [], {
       // We lose exit information and events if this is detached in windows
@@ -77,7 +89,7 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
     yield* spawn(function* () {
       let next = yield* io.stdout.next();
       while (!next.done) {
-        yield* api.operations.stdout(next.value);
+        yield* stdioApi.operations.stdout(next.value);
         stdout.send(next.value);
         next = yield* io.stdout.next();
       }
@@ -88,7 +100,7 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
     yield* spawn(function* () {
       let next = yield* io.stderr.next();
       while (!next.done) {
-        yield* api.operations.stderr(next.value);
+        yield* stdioApi.operations.stderr(next.value);
         stderr.send(next.value);
         next = yield* io.stderr.next();
       }
@@ -109,7 +121,6 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
 
     yield* spawn(function* () {
       let value = yield* once<ProcessResultValue>(childProcess, "close");
-      yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
       processResult.resolve(Ok(value));
     });
 
@@ -139,83 +150,48 @@ export const createWin32Process: CreateOSProcess = (command, options) => {
       }
     });
 
-    try {
-      yield* provide({
-        pid: pid as number,
-        around: api.around,
-        stdin,
-        stdout,
-        stderr,
-        join,
-        expect,
-      });
-    } finally {
-      try {
-        // Only try to kill the process if it hasn't exited yet
-        if (
-          childProcess.exitCode === null &&
-          childProcess.signalCode === null
-        ) {
-          if (typeof childProcess.pid === "undefined") {
-            // biome-ignore lint/correctness/noUnsafeFinally: Intentional error for missing PID
-            throw new Error("no pid for childProcess");
-          }
-
-          let stdinStream = childProcess.stdin;
-
-          // Try graceful shutdown with ctrlc
-          try {
-            ctrlc(childProcess.pid);
-            if (stdinStream.writable) {
-              try {
-                // Terminate batch process (Y/N)
-                stdinStream.write("Y\n");
-              } catch (_err) {
-                // not much we can do here
-              }
-            }
-          } catch (_err) {
-            // ctrlc might fail
-          }
-
-          // Close stdin to allow process to exit cleanly
-          try {
-            stdinStream.end();
-          } catch (_err) {
-            // stdin might already be closed
-          }
-
-          // If process still hasn't exited, escalate
-          if (
-            childProcess.exitCode === null &&
-            childProcess.signalCode === null
-          ) {
-            // Try regular kill first
-            try {
-              childProcess.kill();
-            } catch (_err) {
-              // process might already be dead
-            }
-
-            // If still alive after kill, force-kill entire process tree
-            // This is necessary for bash on Windows where ctrlc doesn't work
-            // and child.kill() only kills the shell, leaving grandchildren alive
-            if (
-              childProcess.exitCode === null &&
-              childProcess.signalCode === null
-            ) {
-              yield* killTree(childProcess.pid);
-            }
-          }
-
-          // Wait for streams to finish
-          yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
+    yield* ensure(function* () {
+      // If no pid is available, we have no way to kill the process,
+      //  so we skip and presume it is cleaned up.
+      if (pid) {
+        try {
+          ctrlc(pid);
+        } catch (_) {
+          // if it throws, the process probably doesn't exist anymore
+          //  as it does a process.kill(0) check which will throw if the process is not found
         }
-      } catch (_e) {
-        // do nothing, process is probably already dead
+
+        let stdin = childProcess.stdin;
+        if (stdin.writable) {
+          try {
+            //Terminate batch process (Y/N)
+            stdin.write("Y\n");
+          } catch (_err) {
+            /* not much we can do here */
+          }
+        }
+        stdin.end();
       }
-    }
+      yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
+
+      if (pid && !childProcess.exitCode) {
+        // If the process is still around after we've waited for stdout and stderr to close,
+        // then force kill the tree.
+        yield* killTree(pid);
+      }
+    });
+
+    return {
+      pid: pid as number,
+      around: stdioApi.around,
+      stdin,
+      stdout,
+      stderr,
+      join,
+      expect,
+    } satisfies Yielded<ReturnType<CreateOSProcess>>;
   });
-};
+  return unbox(result);
+}
 
 export const isWin32 = (): boolean => platform() === "win32";

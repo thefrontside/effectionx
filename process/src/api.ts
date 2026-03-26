@@ -1,11 +1,11 @@
 import { createApi } from "@effectionx/context-api";
 import type { IOApi } from "../mod.ts";
 
-export const api = createApi<IOApi>("process:io", {
-  *stdout([bytes]) {
-    process.stdout.write(bytes);
+export const stdioApi = createApi<IOApi>("process:io", {
+  *stdout(b) {
+    process.stdout.write(b);
   },
-  *stderr([bytes]) {
-    process.stderr.write(bytes);
+  *stderr(b) {
+    process.stderr.write(b);
   },
 });

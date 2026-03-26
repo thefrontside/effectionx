@@ -1,30 +1,39 @@
 import { spawn as spawnProcess } from "node:child_process";
 import process from "node:process";
-import { once } from "@effectionx/node/events";
-import { fromReadable } from "@effectionx/node/stream";
 import {
+  type Result,
+  type Operation,
+  type Yielded,
   Err,
   Ok,
-  type Result,
   all,
-  createChannel,
   createSignal,
-  each,
-  resource,
+  ensure,
   spawn,
-  useScope,
   withResolvers,
 } from "effection";
-import type { CreateOSProcess, ExitStatus, Writable } from "./types.ts";
-import { api } from "../api.ts";
+import { unbox, useEvalScope } from "@effectionx/scope-eval";
+import { once } from "@effectionx/node/events";
+import { fromReadable } from "@effectionx/node/stream";
+import type {
+  CreateOSProcess,
+  ExecOptions,
+  ExitStatus,
+  Process,
+  Writable,
+} from "./types.ts";
+import { stdioApi } from "../api.ts";
 import { ExecError } from "./error.ts";
 
 type ProcessResultValue = [number?, string?];
 
-export const createPosixProcess: CreateOSProcess = (command, options) => {
-  return resource(function* (provide) {
-    let processResult = withResolvers<Result<ProcessResultValue>>();
-
+export function* createPosixProcess(
+  command: string,
+  options: ExecOptions,
+): Operation<Process> {
+  let processResult = withResolvers<Result<ProcessResultValue>>();
+  const evalScope = yield* useEvalScope();
+  const result = yield* evalScope.eval(function* () {
     // Killing all child processes started by this command is surprisingly
     // tricky. If a process spawns another processes and we kill the parent,
     // then the child process is NOT automatically killed. Instead we're using
@@ -62,7 +71,7 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
     yield* spawn(function* () {
       let next = yield* io.stdout.next();
       while (!next.done) {
-        yield* api.operations.stdout(next.value);
+        yield* stdioApi.operations.stdout(next.value);
         stdout.send(next.value);
         next = yield* io.stdout.next();
       }
@@ -73,7 +82,7 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
     yield* spawn(function* () {
       let next = yield* io.stderr.next();
       while (!next.done) {
-        yield* api.operations.stdout(next.value);
+        yield* stdioApi.operations.stdout(next.value);
         stderr.send(next.value);
         next = yield* io.stderr.next();
       }
@@ -114,31 +123,9 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
       return status;
     }
 
-    let middlewares = createChannel<Parameters<typeof api.around>[0]>();
-
-    // TODO convert this to scope.eval
-    // TODO also do the same in win32.ts
-    try {
-      yield* spawn(() =>
-        provide({
-          pid: pid as number,
-          around: middlewares.send,
-          stdin,
-          stdout,
-          stderr,
-          join,
-          expect,
-        }),
-      );
-
-      for (let middleware of yield* each(middlewares)) {
-        yield* api.around(middleware);
-        yield* each.next();
-      }
-    } finally {
+    yield* ensure(function* () {
       try {
         if (typeof childProcess.pid === "undefined") {
-          // biome-ignore lint/correctness/noUnsafeFinally: Intentional error for missing PID
           throw new Error("no pid for childProcess");
         }
         process.kill(-childProcess.pid, "SIGTERM");
@@ -146,6 +133,20 @@ export const createPosixProcess: CreateOSProcess = (command, options) => {
       } catch (_e) {
         // do nothing, process is probably already dead
       }
-    }
+    });
+
+    return {
+      pid: pid as number,
+      *around(...args: Parameters<typeof stdioApi.around>) {
+        const result = yield* evalScope.eval(() => stdioApi.around(...args));
+        return unbox(result);
+      },
+      stdin,
+      stdout,
+      stderr,
+      join,
+      expect,
+    } satisfies Yielded<ReturnType<CreateOSProcess>>;
   });
-};
+  return unbox(result);
+}

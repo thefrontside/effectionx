@@ -7,7 +7,7 @@ import { captureError, expectMatch, fetchText } from "./helpers.ts";
 
 import { lines } from "@effectionx/stream-helpers";
 import { type Process, type ProcessResult, exec } from "../mod.ts";
-import { api } from "../src/api.ts";
+import { stdioApi } from "../src/api.ts";
 
 const SystemRoot = process.env.SystemRoot;
 
@@ -36,7 +36,7 @@ const isBash = () => {
 
 describe("exec", () => {
   beforeEach(function* () {
-    yield* api.around(
+    yield* stdioApi.around(
       {
         *stdout() {},
         *stderr() {},
@@ -76,7 +76,6 @@ describe("exec", () => {
   });
 
   describe(".expect", () => {
-    expect.assertions(1);
     it("runs successfully to completion", function* () {
       let result: ProcessResult = yield* exec(
         "node './fixtures/hello-world.js'",
@@ -307,7 +306,7 @@ describe("exec", () => {
   describe("io api", () => {
     it("allows redirecting stdio to array", function* () {
       let output: string[] = [];
-      yield* api.around({
+      yield* stdioApi.around({
         *stdout([bytes]) {
           output.push(bytes.toString());
         },

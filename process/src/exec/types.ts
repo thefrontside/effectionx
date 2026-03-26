@@ -68,7 +68,6 @@ export interface IOApi {
 export interface ExitStatus {
   /**
    * exit code
-   * //TODO: is this pertinent on Windows? Do we need an 'OK' flag
    */
   code?: number;
 

@@ -319,7 +319,9 @@ describe("exec", () => {
         cwd: import.meta.dirname,
       });
       yield* proc.expect();
-      expect(output.toString()).toEqual("hello\nworld\nboom\n");
+      const combined = Buffer.concat(output.map((chunk) => Buffer.from(chunk)));
+      const actual = combined.toString("utf8").replace(/\r\n/g, "\n");
+      expect(actual).toEqual("hello\nworld\nboom\n");
     });
 
     it("allows redirecting stdio inline", function* () {
@@ -337,7 +339,10 @@ describe("exec", () => {
         },
       });
       yield* proc.expect();
-      expect(output.toString()).toEqual("hello\nworld\nboom\n");
+
+      const combined = Buffer.concat(output.map((chunk) => Buffer.from(chunk)));
+      const actual = combined.toString("utf8").replace(/\r\n/g, "\n");
+      expect(actual).toEqual("hello\nworld\nboom\n");
     });
   });
 

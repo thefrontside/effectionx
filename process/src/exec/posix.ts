@@ -82,7 +82,7 @@ export function* createPosixProcess(
     yield* spawn(function* () {
       let next = yield* io.stderr.next();
       while (!next.done) {
-        yield* stdioApi.operations.stdout(next.value);
+        yield* stdioApi.operations.stderr(next.value);
         stderr.send(next.value);
         next = yield* io.stderr.next();
       }

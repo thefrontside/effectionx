@@ -132,26 +132,34 @@ function collectMiddleware<A extends {}>(
   let key = contextName(context);
   let window = contextWindow(scope);
 
-  return reducePrototypeChain(window, (sum, current) => {
-    if (!Object.prototype.hasOwnProperty.call(current, key)) {
+  return reducePrototypeChain(
+    window,
+    (sum, current) => {
+      if (!Object.prototype.hasOwnProperty.call(current, key)) {
+        return sum;
+      }
+
+      let state = current[key] as ScopeMiddleware<A>;
+
+      let max = state.max.flatMap((around) => {
+        let middleware = (around as any)[field] as
+          | Middleware<any[], any>
+          | undefined;
+        return middleware ? [middleware] : [];
+      });
+      let min = state.min.flatMap((around) => {
+        let middleware = (around as any)[field] as
+          | Middleware<any[], any>
+          | undefined;
+        return middleware ? [middleware] : [];
+      });
+
+      sum.max.unshift(...max);
+      sum.min.push(...min);
       return sum;
-    }
-
-    let state = current[key] as ScopeMiddleware<A>;
-
-    let max = state.max.flatMap((around) => {
-      let middleware = (around as any)[field] as Middleware<any[], any> | undefined;
-      return middleware ? [middleware] : [];
-    });
-    let min = state.min.flatMap((around) => {
-      let middleware = (around as any)[field] as Middleware<any[], any> | undefined;
-      return middleware ? [middleware] : [];
-    });
-
-    sum.max.unshift(...max);
-    sum.min.push(...min);
-    return sum;
-  }, { max: [], min: [] } as MiddlewareStack);
+    },
+    { max: [], min: [] } as MiddlewareStack,
+  );
 }
 
 function reducePrototypeChain<T>(

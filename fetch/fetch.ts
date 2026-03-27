@@ -1,4 +1,4 @@
-import { type Operation, type Stream } from "effection";
+import type { Operation, Stream } from "effection";
 
 import { coreFetch } from "./api.ts";
 

@@ -19,7 +19,7 @@
     "effection": "^3 || ^4"
   },
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*",
+    "@effectionx/vitest": "workspace:*",
     "effect": "^3",
     "effection": "^4"
   },

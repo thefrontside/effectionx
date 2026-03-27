@@ -2,7 +2,7 @@ import * as fsp from "node:fs/promises";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { beforeEach, describe, it } from "@effectionx/bdd";
+import { beforeEach, describe, it } from "@effectionx/vitest";
 import { each, until } from "effection";
 import { expect } from "expect";
 

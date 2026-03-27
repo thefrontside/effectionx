@@ -1,6 +1,6 @@
 import FakeTimers from "@sinonjs/fake-timers";
 import { sleep, spawn, type Task, until } from "effection";
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { expect } from "expect";
 import { useTaskBuffer } from "./task-buffer.ts";
 

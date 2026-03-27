@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { expect } from "expect";
 import { each, spawn } from "effection";
 import { createSetSignal } from "./set.ts";

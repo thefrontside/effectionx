@@ -36,7 +36,7 @@
     "shellwords-ts": "^3.0.1"
   },
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*",
+    "@effectionx/vitest": "workspace:*",
     "@effectionx/stream-helpers": "workspace:*",
     "@types/cross-spawn": "^6",
     "effection": "^4"

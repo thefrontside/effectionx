@@ -28,7 +28,7 @@
   },
   "sideEffects": false,
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*",
+    "@effectionx/vitest": "workspace:*",
     "effection": "^4"
   }
 }

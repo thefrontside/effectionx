@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { timebox } from "@effectionx/timebox";
 import { once, race, sleep, spawn, suspend, withResolvers } from "effection";
 import { expect } from "expect";

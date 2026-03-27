@@ -1,5 +1,5 @@
 import process from "node:process";
-import { beforeEach, describe, it } from "@effectionx/bdd";
+import { beforeEach, describe, it } from "@effectionx/vitest";
 import { type Task, sleep, spawn, until, withResolvers } from "effection";
 import { expect } from "expect";
 

@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { spawn, withResolvers } from "effection";
 import { expect } from "expect";
 

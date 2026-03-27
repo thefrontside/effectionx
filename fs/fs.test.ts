@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from "@effectionx/bdd";
+import { describe, it, beforeEach } from "@effectionx/vitest";
 import { expect } from "expect";
 import { each, until } from "effection";
 import * as path from "node:path";

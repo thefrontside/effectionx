@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { createChannel, spawn } from "effection";
 import { expect } from "expect";
 

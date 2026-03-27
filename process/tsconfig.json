@@ -21,6 +21,9 @@
     },
     {
       "path": "../stream-helpers"
+    },
+    {
+      "path": "../vitest"
     }
   ]
 }

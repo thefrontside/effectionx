@@ -18,7 +18,7 @@
     "effection": "^3 || ^4"
   },
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*",
+    "@effectionx/vitest": "workspace:*",
     "effection": "^4"
   },
   "license": "MIT",

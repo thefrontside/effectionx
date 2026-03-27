@@ -1,6 +1,6 @@
 // import { expect } from "expect";
 // import { createSignal, each, spawn } from "effection";
-// import { describe, it } from "@effectionx/bdd";
+// import { describe, it } from "@effectionx/vitest";
 
 // import { createOutputStream } from "../src/output-stream.ts";
 // import { Buffer } from "node:buffer";

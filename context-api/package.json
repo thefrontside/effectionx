@@ -32,7 +32,7 @@
   "sideEffects": false,
   "files": ["dist", "mod.ts"],
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*",
+    "@effectionx/vitest": "workspace:*",
     "effection": "^4"
   }
 }

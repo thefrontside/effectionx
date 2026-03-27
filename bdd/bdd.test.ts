@@ -1,12 +1,11 @@
-import { describe, it } from "@effectionx/bdd";
-import { sleep } from "effection";
+import { describe, it } from "vitest";
 
 describe("@effectionx/bdd", () => {
-  it("should run basic test", function* () {
+  it("should run basic test", () => {
     // passes
   });
 
-  it("should support Effection operations", function* () {
-    yield* sleep(1);
+  it("should support async operations", async () => {
+    await new Promise((resolve) => setTimeout(resolve, 1));
   });
 });

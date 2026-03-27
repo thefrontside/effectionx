@@ -1,7 +1,7 @@
 import * as path from "node:path";
-import * as fsp from "node:fs/promises";
+import type { Stats } from "node:fs";
 import { describe, it } from "@effectionx/bdd";
-import { scoped, until } from "effection";
+import { scoped } from "effection";
 import { expect } from "expect";
 
 import {
@@ -42,13 +42,22 @@ describe("FsApi middleware", () => {
   it("can mock stat to return fake stats", function* () {
     yield* FsApi.around({
       *stat(_args, _next) {
-        return { isFile: () => true, size: 42 } as any;
+        return {
+          isFile: () => true,
+          isDirectory: () => false,
+          isBlockDevice: () => false,
+          isCharacterDevice: () => false,
+          isSymbolicLink: () => false,
+          isFIFO: () => false,
+          isSocket: () => false,
+          size: 42,
+        } as Stats;
       },
     });
 
     let stats = yield* stat("/nonexistent/file");
     expect(stats.isFile()).toBe(true);
-    expect((stats as any).size).toBe(42);
+    expect(stats.size).toBe(42);
   });
 
   it("middleware is scoped and does not leak", function* () {

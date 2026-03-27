@@ -305,13 +305,13 @@ describe("exec", () => {
 
   describe("io api", () => {
     it("allows redirecting stdio to array", function* () {
-      let output: string[] = [];
+      let output: Uint8Array[] = [];
       yield* stdioApi.around({
         *stdout([bytes]) {
-          output.push(bytes.toString().trim());
+          output.push(bytes);
         },
         *stderr([bytes]) {
-          output.push(bytes.toString().trim());
+          output.push(bytes);
         },
       });
 
@@ -319,25 +319,25 @@ describe("exec", () => {
         cwd: import.meta.dirname,
       });
       yield* proc.expect();
-      expect(output).toEqual(["hello", "world", "boom"]);
+      expect(output.toString()).toEqual("hello\nworld\nboom\n");
     });
 
     it("allows redirecting stdio inline", function* () {
-      let output: string[] = [];
+      let output: Uint8Array[] = [];
 
       let proc = yield* exec("node './fixtures/hello-world.js'", {
         cwd: import.meta.dirname,
       });
       yield* proc.around({
         *stdout([bytes]) {
-          output.push(bytes.toString().trim());
+          output.push(bytes);
         },
         *stderr([bytes]) {
-          output.push(bytes.toString().trim());
+          output.push(bytes);
         },
       });
       yield* proc.expect();
-      expect(output).toEqual(["hello", "world", "boom"]);
+      expect(output.toString()).toEqual("hello\nworld\nboom\n");
     });
   });
 

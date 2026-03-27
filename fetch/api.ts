@@ -4,7 +4,7 @@ import { type Operation, until, useAbortSignal } from "effection";
 import { createFetchResponse } from "./create-fetch-response.ts";
 import { type FetchInit, type FetchResponse, HttpError } from "./fetch.ts";
 
-export interface FetchHandler {
+export interface Fetch {
   fetch(
     input: RequestInfo | URL,
     init: FetchInit | undefined,
@@ -12,7 +12,7 @@ export interface FetchHandler {
   ): Operation<FetchResponse>;
 }
 
-export const FetchApi: Api<FetchHandler> = createApi("fetch", {
+export const FetchApi: Api<Fetch> = createApi("fetch", {
   *fetch(
     input: RequestInfo | URL,
     init: FetchInit | undefined,

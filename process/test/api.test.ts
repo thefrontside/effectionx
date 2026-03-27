@@ -77,11 +77,23 @@ describe("ProcessApi middleware", () => {
         // Return a fake process without spawning anything
         return {
           pid: 42,
-          stdout: { *[Symbol.iterator]() { return { done: true, value: void 0 }; } },
-          stderr: { *[Symbol.iterator]() { return { done: true, value: void 0 }; } },
+          stdout: {
+            *[Symbol.iterator]() {
+              return { done: true, value: void 0 };
+            },
+          },
+          stderr: {
+            *[Symbol.iterator]() {
+              return { done: true, value: void 0 };
+            },
+          },
           stdin: { send() {} },
-          *join() { return { code: 0 }; },
-          *expect() { return { code: 0 }; },
+          *join() {
+            return { code: 0 };
+          },
+          *expect() {
+            return { code: 0 };
+          },
         };
       },
     });

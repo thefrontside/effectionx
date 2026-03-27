@@ -4,9 +4,18 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["**/*.ts"],
-  "exclude": ["**/*.test.ts", "test/**", "dist"],
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "test/**",
+    "dist"
+  ],
   "references": [
+    {
+      "path": "../context-api"
+    },
     {
       "path": "../context-api"
     },

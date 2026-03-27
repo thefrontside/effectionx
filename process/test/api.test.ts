@@ -2,7 +2,7 @@ import { describe, it } from "@effectionx/bdd";
 import { scoped } from "effection";
 import { expect } from "expect";
 
-import { ProcessApi, exec } from "../mod.ts";
+import { type Process, ProcessApi, exec } from "../mod.ts";
 
 describe("ProcessApi middleware", () => {
   it("can intercept process creation with logging", function* () {
@@ -75,26 +75,7 @@ describe("ProcessApi middleware", () => {
     yield* ProcessApi.around({
       *exec(_args, _next) {
         // Return a fake process without spawning anything
-        return {
-          pid: 42,
-          stdout: {
-            *[Symbol.iterator]() {
-              return { done: true, value: void 0 };
-            },
-          },
-          stderr: {
-            *[Symbol.iterator]() {
-              return { done: true, value: void 0 };
-            },
-          },
-          stdin: { send() {} },
-          *join() {
-            return { code: 0 };
-          },
-          *expect() {
-            return { code: 0 };
-          },
-        };
+        return { pid: 42 } as Process;
       },
     });
 

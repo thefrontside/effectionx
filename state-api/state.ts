@@ -1,11 +1,5 @@
-import {
-  type Api,
-  type Operation,
-  type Stream,
-  createSignal,
-  resource,
-} from "effection";
-import { createApi } from "effection/experimental";
+import { type Operation, type Stream, createSignal, resource } from "effection";
+import { type Api, createApi } from "@effectionx/context-api";
 
 /**
  * A map of reducer functions: `(state, ...args) => newState`

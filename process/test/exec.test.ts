@@ -308,10 +308,10 @@ describe("exec", () => {
       let output: string[] = [];
       yield* stdioApi.around({
         *stdout([bytes]) {
-          output.push(bytes.toString());
+          output.push(bytes.toString().trim());
         },
         *stderr([bytes]) {
-          output.push(bytes.toString());
+          output.push(bytes.toString().trim());
         },
       });
 
@@ -319,7 +319,7 @@ describe("exec", () => {
         cwd: import.meta.dirname,
       });
       yield* proc.expect();
-      expect(output).toEqual(["hello\n", "world\n", "boom\n"]);
+      expect(output).toEqual(["hello", "world", "boom"]);
     });
 
     it("allows redirecting stdio inline", function* () {

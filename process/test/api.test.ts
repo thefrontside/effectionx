@@ -1,5 +1,5 @@
 import { describe, it } from "@effectionx/bdd";
-import { type Operation, scoped, spawn } from "effection";
+import { scoped } from "effection";
 import { expect } from "expect";
 
 import { ProcessApi, exec } from "../mod.ts";
@@ -73,7 +73,7 @@ describe("ProcessApi middleware", () => {
 
   it("can mock process creation", function* () {
     yield* ProcessApi.around({
-      *exec(_args, _next): Operation<any> {
+      *exec(_args, _next) {
         // Return a fake process without spawning anything
         return {
           pid: 42,

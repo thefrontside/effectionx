@@ -9,7 +9,10 @@ export interface FsHandler {
   lstat(path: string): Operation<Stats>;
   readdir(path: string): Operation<string[]>;
   readdirDirents(path: string): Operation<Dirent[]>;
-  rm(path: string, options?: { recursive?: boolean; force?: boolean }): Operation<void>;
+  rm(
+    path: string,
+    options?: { recursive?: boolean; force?: boolean },
+  ): Operation<void>;
   copyFile(src: string, dest: string): Operation<void>;
   readTextFile(path: string): Operation<string>;
   writeTextFile(path: string, content: string): Operation<void>;

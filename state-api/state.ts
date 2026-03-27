@@ -7,7 +7,9 @@ import { type Api, createApi } from "@effectionx/context-api";
  * Each reducer takes the current state as the first argument,
  * followed by any additional arguments, and returns the new state.
  */
-// biome-ignore lint/suspicious/noExplicitAny: reducer args must be open-ended
+// `any[]` is intentional here so concrete reducer args (e.g. `number`, `string`)
+// are assignable under strict function parameter variance.
+// biome-ignore lint/suspicious/noExplicitAny: see rationale above
 export type ReducerMap<T> = Record<string, (state: T, ...args: any[]) => T>;
 
 /**
@@ -60,23 +62,6 @@ export type State<T, R extends ReducerMap<T> = Record<never, never>> = Stream<
 };
 
 /**
- * Create a reactive state container.
- *
- * @param initial - The initial state value
- * @returns An `Operation` that yields a `State<T>` container
- *
- * @example Basic usage
- * ```ts
- * const counter = yield* useState(0);
- *
- * yield* counter.set(42);
- * yield* counter.update(n => n + 1);
- * const value = yield* counter.get();
- * ```
- */
-export function useState<T>(initial: T): Operation<State<T>>;
-
-/**
  * Create a reactive state container with typed reducer actions.
  *
  * @param initial - The initial state value
@@ -84,7 +69,8 @@ export function useState<T>(initial: T): Operation<State<T>>;
  *   Each reducer takes `(state, ...args)` and returns a new state.
  *   The `state` parameter is injected automatically — callers
  *   only pass the remaining arguments.
- * @returns An `Operation` that yields a `State<T, R>` container
+ * @returns An `Operation` that yields a `State<T, R>` container.
+ *   If `reducers` are omitted, `R` defaults to `Record<never, never>`.
  *
  * @example With reducers
  * ```ts
@@ -115,73 +101,93 @@ export function useState<T>(initial: T): Operation<State<T>>;
  * });
  * ```
  */
+type EmptyReducers = Record<never, never>;
+type ReducerHandlers<T, R extends ReducerMap<T>> = {
+  [K in keyof R]: (...args: ActionArgs<R[K]>) => Operation<T>;
+};
+
+export function useState<T>(initial: T): Operation<State<T, EmptyReducers>>;
 export function useState<T, R extends ReducerMap<T>>(
   initial: T,
   reducers: R,
 ): Operation<State<T, R>>;
-
-// biome-ignore lint/suspicious/noExplicitAny: overload implementation
-export function useState<T>(initial: T, reducers?: any): Operation<any> {
+export function useState<T, R extends ReducerMap<T>>(
+  initial: T,
+  reducers?: R,
+): Operation<State<T, EmptyReducers> | State<T, R>> {
   return resource(function* (provide) {
     const signal = createSignal<T, void>();
     const ref = { current: initial };
 
-    // Build the core handler object for createApi.
-    // Built-in operations: set, update, get
-    // biome-ignore lint/suspicious/noExplicitAny: dynamic handler construction
-    const core: Record<string, (...args: any[]) => Operation<T>> = {
-      *set(value: T): Operation<T> {
-        ref.current = value;
-        signal.send(value);
-        return ref.current;
-      },
-      *update(updater: (value: T) => T): Operation<T> {
-        ref.current = updater(ref.current);
-        signal.send(ref.current);
-        return ref.current;
-      },
-      *get(): Operation<T> {
-        return ref.current;
-      },
-    };
-
-    // Add user-defined reducer actions
-    const reserved = new Set(["set", "update", "get", "around"]);
-    if (reducers) {
-      for (const key of Object.keys(reducers)) {
+    function createState<RLocal extends ReducerMap<T>>(
+      stateReducers: RLocal,
+    ): State<T, RLocal> {
+      // Add user-defined reducer actions
+      const reserved = new Set(["set", "update", "get", "around"]);
+      for (let key of Object.keys(stateReducers)) {
         if (reserved.has(key)) {
           throw new Error(
             `Reducer name "${key}" is reserved. Built-in operations (set, update, get, around) cannot be overridden.`,
           );
         }
-        const reducer = reducers[key];
-        // biome-ignore lint/suspicious/noExplicitAny: reducer args are open-ended
-        core[key] = function* (...args: any[]): Operation<T> {
-          ref.current = reducer(ref.current, ...args);
+      }
+
+      const core: CoreHandlers<T, RLocal> = {
+        *set(value: T): Operation<T> {
+          ref.current = value;
+          signal.send(value);
+          return ref.current;
+        },
+        *update(updater: (value: T) => T): Operation<T> {
+          ref.current = updater(ref.current);
           signal.send(ref.current);
           return ref.current;
-        };
-      }
+        },
+        *get(): Operation<T> {
+          return ref.current;
+        },
+        ...createReducerHandlers(stateReducers, ref, signal),
+      };
+
+      const api = createApi("state", core);
+
+      // Build the flattened State object
+      return {
+        // Stream interface
+        [Symbol.iterator]: signal[Symbol.iterator],
+        // Middleware
+        around: api.around,
+        // Spread all operations (set, update, valueOf, + reducers)
+        ...api.operations,
+      } as State<T, RLocal>;
     }
 
-    // biome-ignore lint/suspicious/noExplicitAny: dynamic core object
-    const api = createApi("state", core as any);
-
-    // Build the flattened State object
-    const state = {
-      // Stream interface
-      [Symbol.iterator]: signal[Symbol.iterator],
-      // Middleware
-      around: api.around,
-      // Spread all operations (set, update, valueOf, + reducers)
-      ...api.operations,
-      // biome-ignore lint/suspicious/noExplicitAny: cast to match overload return type
-    } as any;
-
     try {
+      const state = reducers
+        ? createState(reducers)
+        : createState({} as EmptyReducers);
       yield* provide(state);
     } finally {
       signal.close();
     }
   });
+}
+
+function createReducerHandlers<T, R extends ReducerMap<T>>(
+  reducers: R,
+  ref: { current: T },
+  signal: ReturnType<typeof createSignal<T, void>>,
+): ReducerHandlers<T, R> {
+  let handlers = {} as ReducerHandlers<T, R>;
+
+  for (let key of Object.keys(reducers) as Array<keyof R>) {
+    let reducer = reducers[key];
+    handlers[key] = function* (...args: ActionArgs<R[typeof key]>) {
+      ref.current = reducer(ref.current, ...args);
+      signal.send(ref.current);
+      return ref.current;
+    } as ReducerHandlers<T, R>[typeof key];
+  }
+
+  return handlers;
 }

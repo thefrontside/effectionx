@@ -4,7 +4,7 @@ import { type Api, createApi } from "@effectionx/context-api";
 import type { Operation } from "effection";
 import { until } from "effection";
 
-export interface FsHandler {
+export interface Fs {
   stat(path: string): Operation<Stats>;
   lstat(path: string): Operation<Stats>;
   readdir(path: string): Operation<string[]>;
@@ -18,7 +18,7 @@ export interface FsHandler {
   writeTextFile(path: string, content: string): Operation<void>;
 }
 
-export const FsApi: Api<FsHandler> = createApi("fs", {
+export const FsApi: Api<Fs> = createApi("fs", {
   stat(path: string) {
     return until(fsp.stat(path));
   },

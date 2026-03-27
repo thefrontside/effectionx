@@ -22,9 +22,9 @@ export const ProcessApi: Api<ProcessHandler> = createApi("process", {
   },
 
   *daemon(command: string, options: ExecOptions): Operation<Daemon> {
-    let process = yield* ProcessApi.operations.exec(command, options);
-
     return yield* resource(function* (provide) {
+      let process = yield* ProcessApi.operations.exec(command, options);
+
       yield* provide({
         *[Symbol.iterator]() {
           let status = yield* process.join();

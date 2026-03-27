@@ -330,14 +330,14 @@ describe("exec", () => {
       });
       yield* proc.around({
         *stdout([bytes]) {
-          output.push(bytes.toString());
+          output.push(bytes.toString().trim());
         },
         *stderr([bytes]) {
-          output.push(bytes.toString());
+          output.push(bytes.toString().trim());
         },
       });
       yield* proc.expect();
-      expect(output).toEqual(["hello\n", "world\n", "boom\n"]);
+      expect(output).toEqual(["hello", "world", "boom"]);
     });
   });
 

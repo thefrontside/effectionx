@@ -7,7 +7,7 @@ import { captureError, expectMatch, fetchText } from "./helpers.ts";
 
 import { lines } from "@effectionx/stream-helpers";
 import { type Process, type ProcessResult, exec } from "../mod.ts";
-import { stdioApi } from "../src/api.ts";
+import { Stdio } from "../src/api.ts";
 
 const SystemRoot = process.env.SystemRoot;
 
@@ -36,7 +36,7 @@ const isBash = () => {
 
 describe("exec", () => {
   beforeEach(function* () {
-    yield* stdioApi.around(
+    yield* Stdio.around(
       {
         *stdout() {},
         *stderr() {},
@@ -306,7 +306,7 @@ describe("exec", () => {
   describe("io api", () => {
     it("allows redirecting stdio to array", function* () {
       let output: Uint8Array[] = [];
-      yield* stdioApi.around({
+      yield* Stdio.around({
         *stdout([bytes]) {
           output.push(bytes);
         },

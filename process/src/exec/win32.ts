@@ -23,7 +23,7 @@ import type {
   Process,
   Writable,
 } from "./types.ts";
-import { stdioApi } from "../api.ts";
+import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
 
@@ -89,7 +89,7 @@ export function* createWin32Process(
     yield* spawn(function* () {
       let next = yield* io.stdout.next();
       while (!next.done) {
-        yield* stdioApi.operations.stdout(next.value);
+        yield* Stdio.operations.stdout(next.value);
         stdout.send(next.value);
         next = yield* io.stdout.next();
       }
@@ -100,7 +100,7 @@ export function* createWin32Process(
     yield* spawn(function* () {
       let next = yield* io.stderr.next();
       while (!next.done) {
-        yield* stdioApi.operations.stderr(next.value);
+        yield* Stdio.operations.stderr(next.value);
         stderr.send(next.value);
         next = yield* io.stderr.next();
       }
@@ -183,7 +183,7 @@ export function* createWin32Process(
 
     return {
       pid: pid as number,
-      around: stdioApi.around,
+      around: Stdio.around,
       stdin,
       stdout,
       stderr,

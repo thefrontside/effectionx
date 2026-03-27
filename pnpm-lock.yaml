@@ -133,6 +133,10 @@ importers:
         version: 4.0.0
 
   fs:
+    dependencies:
+      '@effectionx/context-api':
+        specifier: workspace:*
+        version: link:../context-api
     devDependencies:
       '@effectionx/vitest':
         specifier: workspace:*

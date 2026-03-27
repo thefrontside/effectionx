@@ -12,6 +12,10 @@ import {
   createSignal,
 } from "effection";
 
+export * from "./api.ts";
+
+import { FsApi } from "./api.ts";
+
 /**
  * Convert a path or URL to a file path string
  */
@@ -31,7 +35,7 @@ export function toPath(pathOrUrl: string | URL): string {
  * ```
  */
 export function stat(pathOrUrl: string | URL): Operation<Stats> {
-  return until(fsp.stat(toPath(pathOrUrl)));
+  return FsApi.operations.stat(toPath(pathOrUrl));
 }
 
 /**
@@ -46,7 +50,7 @@ export function stat(pathOrUrl: string | URL): Operation<Stats> {
  * ```
  */
 export function lstat(pathOrUrl: string | URL): Operation<Stats> {
-  return until(fsp.lstat(toPath(pathOrUrl)));
+  return FsApi.operations.lstat(toPath(pathOrUrl));
 }
 
 /**
@@ -100,7 +104,7 @@ export function* ensureFile(pathOrUrl: string | URL): Operation<void> {
     yield* until(fsp.access(filePath));
   } catch {
     yield* until(fsp.mkdir(path.dirname(filePath), { recursive: true }));
-    yield* until(fsp.writeFile(filePath, ""));
+    yield* FsApi.operations.writeTextFile(filePath, "");
   }
 }
 
@@ -115,7 +119,7 @@ export function* ensureFile(pathOrUrl: string | URL): Operation<void> {
  * ```
  */
 export function readdir(pathOrUrl: string | URL): Operation<string[]> {
-  return until(fsp.readdir(toPath(pathOrUrl)));
+  return FsApi.operations.readdir(toPath(pathOrUrl));
 }
 
 /**
@@ -163,7 +167,7 @@ export function rm(
   pathOrUrl: string | URL,
   options?: { recursive?: boolean; force?: boolean },
 ): Operation<void> {
-  return until(fsp.rm(toPath(pathOrUrl), options));
+  return FsApi.operations.rm(toPath(pathOrUrl), options);
 }
 
 /**
@@ -180,7 +184,7 @@ export function copyFile(
   src: string | URL,
   dest: string | URL,
 ): Operation<void> {
-  return until(fsp.copyFile(toPath(src), toPath(dest)));
+  return FsApi.operations.copyFile(toPath(src), toPath(dest));
 }
 
 /**
@@ -194,7 +198,7 @@ export function copyFile(
  * ```
  */
 export function readTextFile(pathOrUrl: string | URL): Operation<string> {
-  return until(fsp.readFile(toPath(pathOrUrl), "utf-8"));
+  return FsApi.operations.readTextFile(toPath(pathOrUrl));
 }
 
 /**
@@ -211,7 +215,7 @@ export function writeTextFile(
   pathOrUrl: string | URL,
   content: string,
 ): Operation<void> {
-  return until(fsp.writeFile(toPath(pathOrUrl), content));
+  return FsApi.operations.writeTextFile(toPath(pathOrUrl), content);
 }
 
 /**
@@ -298,7 +302,7 @@ export function walk(
     function* walkDir(dir: string, depth: number): Operation<void> {
       if (depth > maxDepth) return;
 
-      const entries = yield* until(fsp.readdir(dir, { withFileTypes: true }));
+      const entries = yield* FsApi.operations.readdirDirents(dir);
 
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);

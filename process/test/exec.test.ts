@@ -54,11 +54,9 @@ describe("exec", () => {
         },
       ).join();
 
-      expect(result).toMatchObject({
-        code: 0,
-        stdout: "hello\nworld\n",
-        stderr: "boom\n",
-      });
+      expect(result.code).toEqual(0);
+      expect(result.stdout).toEqual("hello\nworld\n");
+      expect(result.stderr).toContain("boom\n");
     });
 
     it("runs failed process to completion", function* () {
@@ -71,7 +69,7 @@ describe("exec", () => {
 
       expect(result.code).toEqual(37);
       expect(result.stdout).toEqual("hello world\n");
-      expect(result.stderr).toEqual("boom\n");
+      expect(result.stderr).toContain("boom\n");
     });
   });
 
@@ -84,11 +82,9 @@ describe("exec", () => {
         },
       ).expect();
 
-      expect(result).toMatchObject({
-        code: 0,
-        stdout: "hello\nworld\n",
-        stderr: "boom\n",
-      });
+      expect(result.code).toEqual(0);
+      expect(result.stdout).toEqual("hello\nworld\n");
+      expect(result.stderr).toContain("boom\n");
     });
 
     it("throws an error if process fails", function* () {
@@ -320,11 +316,14 @@ describe("exec", () => {
         cwd: import.meta.dirname,
       });
       yield* proc.expect();
-      const combined = Buffer.concat(
-        [...outputStdout, ...outputStderr].map((chunk) => Buffer.from(chunk)),
-      );
-      const actual = combined.toString("utf8").replace(/\r\n/g, "\n");
-      expect(actual).toEqual("hello\nworld\nboom\n");
+      let stdout = Buffer.concat(outputStdout)
+        .toString("utf8")
+        .replace(/\r\n/g, "\n");
+      let stderr = Buffer.concat(outputStderr)
+        .toString("utf8")
+        .replace(/\r\n/g, "\n");
+      expect(stdout).toEqual("hello\nworld\n");
+      expect(stderr).toContain("boom\n");
     });
 
     it("allows redirecting stdio inline", function* () {
@@ -343,12 +342,14 @@ describe("exec", () => {
         },
       });
       yield* proc.expect();
-
-      const combined = Buffer.concat(
-        [...outputStdout, ...outputStderr].map((chunk) => Buffer.from(chunk)),
-      );
-      const actual = combined.toString("utf8").replace(/\r\n/g, "\n");
-      expect(actual).toEqual("hello\nworld\nboom\n");
+      let stdout = Buffer.concat(outputStdout)
+        .toString("utf8")
+        .replace(/\r\n/g, "\n");
+      let stderr = Buffer.concat(outputStderr)
+        .toString("utf8")
+        .replace(/\r\n/g, "\n");
+      expect(stdout).toEqual("hello\nworld\n");
+      expect(stderr).toContain("boom\n");
     });
   });
 

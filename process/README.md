@@ -71,7 +71,7 @@ await main(function* () {
   let process = yield* exec("npm install");
 
   yield* process.around({
-    *stdout() {
+    *stdout(line) {
       // it does this by default
       process.stdout.write(line);
     },

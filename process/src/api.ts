@@ -2,10 +2,10 @@ import { createApi } from "@effectionx/context-api";
 import type { StdioApi } from "../mod.ts";
 
 export const Stdio = createApi<StdioApi>("process:io", {
-  *stdout(b) {
-    process.stdout.write(b);
+  *stdout(line) {
+    process.stdout.write(line);
   },
-  *stderr(b) {
-    process.stderr.write(b);
+  *stderr(line) {
+    process.stderr.write(line);
   },
 });

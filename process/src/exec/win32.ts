@@ -174,8 +174,9 @@ export function* createWin32Process(
       }
       yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
 
-      if (pid && !childProcess.exitCode) {
-        // If the process is still around after we've waited for stdout and stderr to close,
+      if (pid && childProcess.exitCode === null) {
+        // If the process is still around after we've waited
+        // for stdout and stderr to close,
         // then force kill the tree.
         yield* killTree(pid);
       }

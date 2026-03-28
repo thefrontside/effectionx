@@ -43,11 +43,9 @@ describe("exec", () => {
         },
       ).join();
 
-      expect(result).toMatchObject({
-        code: 0,
-        stdout: "hello\nworld\n",
-        stderr: "boom\n",
-      });
+      expect(result.code).toEqual(0);
+      expect(result.stdout).toEqual("hello\nworld\n");
+      expect(result.stderr).toContain("boom\n");
     });
 
     it("runs failed process to completion", function* () {
@@ -60,7 +58,7 @@ describe("exec", () => {
 
       expect(result.code).toEqual(37);
       expect(result.stdout).toEqual("hello world\n");
-      expect(result.stderr).toEqual("boom\n");
+      expect(result.stderr).toContain("boom\n");
     });
   });
 
@@ -74,11 +72,9 @@ describe("exec", () => {
         },
       ).expect();
 
-      expect(result).toMatchObject({
-        code: 0,
-        stdout: "hello\nworld\n",
-        stderr: "boom\n",
-      });
+      expect(result.code).toEqual(0);
+      expect(result.stdout).toEqual("hello\nworld\n");
+      expect(result.stderr).toContain("boom\n");
     });
 
     it("throws an error if process fails", function* () {

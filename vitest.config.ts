@@ -5,6 +5,7 @@ export default defineConfig({
     target: "es2022",
   },
   test: {
+    hookTimeout: 30000,
     include: ["**/*.test.ts"],
     exclude: [
       "**/dist/**",

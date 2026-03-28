@@ -326,6 +326,12 @@ importers:
         specifier: workspace:*
         version: link:../test-adapter
     devDependencies:
+      '@types/cross-spawn':
+        specifier: ^6
+        version: 6.0.6
+      cross-spawn:
+        specifier: ^7
+        version: 7.0.6
       effection:
         specifier: ^4
         version: 4.0.0

@@ -1,21 +1,25 @@
 import { describe, it } from "@effectionx/vitest";
+import spawn from "cross-spawn";
 import { expect } from "expect";
-import { spawnSync } from "node:child_process";
 
 function runVitest(args: string[]): {
   code: number | null;
   stdout: string;
   stderr: string;
 } {
-  const result = spawnSync("pnpm", ["vitest", "run", ...args], {
+  const result = spawn.sync("pnpm", ["vitest", "run", ...args], {
     cwd: import.meta.dirname,
     encoding: "utf8",
   });
 
+  const stderr = [result.error?.message ?? "", result.stderr ?? ""]
+    .filter(Boolean)
+    .join("\n");
+
   return {
     code: result.status,
     stdout: result.stdout ?? "",
-    stderr: result.stderr ?? "",
+    stderr,
   };
 }
 

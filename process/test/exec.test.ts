@@ -7,7 +7,7 @@ import { captureError, expectMatch, fetchText } from "./helpers.ts";
 
 import { lines } from "@effectionx/stream-helpers";
 import { type Process, type ProcessResult, exec } from "../mod.ts";
-import { stdioApi } from "../src/api.ts";
+import { Stdio } from "../src/api.ts";
 
 const SystemRoot = process.env.SystemRoot;
 
@@ -36,7 +36,7 @@ const isBash = () => {
 
 describe("exec", () => {
   beforeEach(function* () {
-    yield* stdioApi.around(
+    yield* Stdio.around(
       {
         *stdout() {},
         *stderr() {},
@@ -301,14 +301,14 @@ describe("exec", () => {
 
   describe("io api", () => {
     it("allows redirecting stdio to array", function* () {
-      let stdoutChunks: string[] = [];
-      let stderrChunks: string[] = [];
-      yield* stdioApi.around({
+      let outputStdout: Uint8Array[] = [];
+      let outputStderr: Uint8Array[] = [];
+      yield* Stdio.around({
         *stdout([bytes]) {
-          stdoutChunks.push(bytes.toString());
+          outputStdout.push(bytes);
         },
         *stderr([bytes]) {
-          stderrChunks.push(bytes.toString());
+          outputStderr.push(bytes);
         },
       });
 
@@ -316,28 +316,40 @@ describe("exec", () => {
         cwd: import.meta.dirname,
       });
       yield* proc.expect();
-      expect(stdoutChunks.join("")).toEqual("hello\nworld\n");
-      expect(stderrChunks.join("")).toContain("boom\n");
+      let stdout = Buffer.concat(outputStdout)
+        .toString("utf8")
+        .replace(/\r\n/g, "\n");
+      let stderr = Buffer.concat(outputStderr)
+        .toString("utf8")
+        .replace(/\r\n/g, "\n");
+      expect(stdout).toEqual("hello\nworld\n");
+      expect(stderr).toContain("boom\n");
     });
 
     it("allows redirecting stdio inline", function* () {
-      let stdoutChunks: string[] = [];
-      let stderrChunks: string[] = [];
+      let outputStdout: Uint8Array[] = [];
+      let outputStderr: Uint8Array[] = [];
 
       let proc = yield* exec("node './fixtures/hello-world.js'", {
         cwd: import.meta.dirname,
       });
       yield* proc.around({
         *stdout([bytes]) {
-          stdoutChunks.push(bytes.toString());
+          outputStdout.push(bytes);
         },
         *stderr([bytes]) {
-          stderrChunks.push(bytes.toString());
+          outputStderr.push(bytes);
         },
       });
       yield* proc.expect();
-      expect(stdoutChunks.join("")).toEqual("hello\nworld\n");
-      expect(stderrChunks.join("")).toContain("boom\n");
+      let stdout = Buffer.concat(outputStdout)
+        .toString("utf8")
+        .replace(/\r\n/g, "\n");
+      let stderr = Buffer.concat(outputStderr)
+        .toString("utf8")
+        .replace(/\r\n/g, "\n");
+      expect(stdout).toEqual("hello\nworld\n");
+      expect(stderr).toContain("boom\n");
     });
   });
 

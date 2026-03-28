@@ -24,7 +24,7 @@ export interface Process extends StdIO {
    * not complete successfully, it will raise an ExecError.
    */
   expect(): Operation<ExitStatus>;
-  around: Api<IOApi>["around"];
+  around: Api<StdioApi>["around"];
 }
 
 export interface ExecOptions {
@@ -60,7 +60,7 @@ export interface StdIO {
   stdin: Writable<string>;
 }
 
-export interface IOApi {
+export interface StdioApi {
   stdout(bytes: Uint8Array): Operation<void>;
   stderr(bytes: Uint8Array): Operation<void>;
 }

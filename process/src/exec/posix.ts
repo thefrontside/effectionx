@@ -22,7 +22,7 @@ import type {
   Process,
   Writable,
 } from "./types.ts";
-import { stdioApi } from "../api.ts";
+import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
 
 type ProcessResultValue = [number?, string?];
@@ -71,7 +71,7 @@ export function* createPosixProcess(
     yield* spawn(function* () {
       let next = yield* io.stdout.next();
       while (!next.done) {
-        yield* stdioApi.operations.stdout(next.value);
+        yield* Stdio.operations.stdout(next.value);
         stdout.send(next.value);
         next = yield* io.stdout.next();
       }
@@ -82,7 +82,7 @@ export function* createPosixProcess(
     yield* spawn(function* () {
       let next = yield* io.stderr.next();
       while (!next.done) {
-        yield* stdioApi.operations.stderr(next.value);
+        yield* Stdio.operations.stderr(next.value);
         stderr.send(next.value);
         next = yield* io.stderr.next();
       }
@@ -137,8 +137,8 @@ export function* createPosixProcess(
 
     return {
       pid: pid as number,
-      *around(...args: Parameters<typeof stdioApi.around>) {
-        const result = yield* evalScope.eval(() => stdioApi.around(...args));
+      *around(...args: Parameters<typeof Stdio.around>) {
+        const result = yield* evalScope.eval(() => Stdio.around(...args));
         return unbox(result);
       },
       stdin,

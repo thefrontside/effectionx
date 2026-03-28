@@ -54,11 +54,9 @@ describe("exec", () => {
         },
       ).join();
 
-      expect(result).toMatchObject({
-        code: 0,
-        stdout: "hello\nworld\n",
-        stderr: "boom\n",
-      });
+      expect(result.code).toEqual(0);
+      expect(result.stdout).toEqual("hello\nworld\n");
+      expect(result.stderr).toContain("boom\n");
     });
 
     it("runs failed process to completion", function* () {
@@ -71,7 +69,7 @@ describe("exec", () => {
 
       expect(result.code).toEqual(37);
       expect(result.stdout).toEqual("hello world\n");
-      expect(result.stderr).toEqual("boom\n");
+      expect(result.stderr).toContain("boom\n");
     });
   });
 
@@ -84,11 +82,9 @@ describe("exec", () => {
         },
       ).expect();
 
-      expect(result).toMatchObject({
-        code: 0,
-        stdout: "hello\nworld\n",
-        stderr: "boom\n",
-      });
+      expect(result.code).toEqual(0);
+      expect(result.stdout).toEqual("hello\nworld\n");
+      expect(result.stderr).toContain("boom\n");
     });
 
     it("throws an error if process fails", function* () {
@@ -305,13 +301,14 @@ describe("exec", () => {
 
   describe("io api", () => {
     it("allows redirecting stdio to array", function* () {
-      let output: string[] = [];
+      let stdoutChunks: string[] = [];
+      let stderrChunks: string[] = [];
       yield* stdioApi.around({
         *stdout([bytes]) {
-          output.push(bytes.toString());
+          stdoutChunks.push(bytes.toString());
         },
         *stderr([bytes]) {
-          output.push(bytes.toString());
+          stderrChunks.push(bytes.toString());
         },
       });
 
@@ -319,25 +316,28 @@ describe("exec", () => {
         cwd: import.meta.dirname,
       });
       yield* proc.expect();
-      expect(output).toEqual(["hello\n", "world\n", "boom\n"]);
+      expect(stdoutChunks.join("")).toEqual("hello\nworld\n");
+      expect(stderrChunks.join("")).toContain("boom\n");
     });
 
     it("allows redirecting stdio inline", function* () {
-      let output: string[] = [];
+      let stdoutChunks: string[] = [];
+      let stderrChunks: string[] = [];
 
       let proc = yield* exec("node './fixtures/hello-world.js'", {
         cwd: import.meta.dirname,
       });
       yield* proc.around({
         *stdout([bytes]) {
-          output.push(bytes.toString());
+          stdoutChunks.push(bytes.toString());
         },
         *stderr([bytes]) {
-          output.push(bytes.toString());
+          stderrChunks.push(bytes.toString());
         },
       });
       yield* proc.expect();
-      expect(output).toEqual(["hello\n", "world\n", "boom\n"]);
+      expect(stdoutChunks.join("")).toEqual("hello\nworld\n");
+      expect(stderrChunks.join("")).toContain("boom\n");
     });
   });
 

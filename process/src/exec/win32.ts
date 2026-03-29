@@ -184,7 +184,10 @@ export function* createWin32Process(
 
     return {
       pid: pid as number,
-      around: Stdio.around,
+      *around(...args: Parameters<typeof Stdio.around>) {
+        const result = yield* evalScope.eval(() => Stdio.around(...args));
+        return unbox(result);
+      },
       stdin,
       stdout,
       stderr,

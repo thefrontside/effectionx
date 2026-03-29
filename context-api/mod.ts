@@ -1,5 +1,5 @@
 import { type Middleware, combine } from "@effectionx/middleware";
-import { type Operation, createContext } from "effection";
+import { type Operation, type Scope, createContext, useScope } from "effection";
 
 export type { Middleware };
 
@@ -44,38 +44,22 @@ export type Operations<A> = {
       : Operation<A[K]>;
 };
 
-/**
- * Per-field middleware layers: two immutable arrays for priority ordering
- * plus a pre-composed middleware function.
- */
-type FieldMiddleware = {
-  max: Middleware<any[], any>[];
-  min: Middleware<any[], any>[];
-  composed: Middleware<any[], any> | undefined;
+type ScopeMiddleware<A> = {
+  max: Partial<Around<A>>[];
+  min: Partial<Around<A>>[];
 };
 
-/**
- * Maps each API field to its middleware layers.
- */
-type MiddlewareRegistry<A> = Record<keyof A, FieldMiddleware>;
+type MiddlewareStack = {
+  max: Middleware<any[], any>[];
+  min: Middleware<any[], any>[];
+};
 
 export function createApi<A extends {}>(name: string, handler: A): Api<A> {
   let fields = Object.keys(handler) as (keyof A)[];
-
-  let initial = fields.reduce(
-    (sum, field) => {
-      return Object.assign(sum, {
-        [field]: {
-          max: [],
-          min: [],
-          composed: undefined,
-        } satisfies FieldMiddleware,
-      });
-    },
-    {} as MiddlewareRegistry<A>,
-  );
-
-  let context = createContext<MiddlewareRegistry<A>>(`$api:${name}`, initial);
+  let context = createContext<ScopeMiddleware<A>>(`$api:${name}`, {
+    max: [],
+    min: [],
+  });
 
   let operations = fields.reduce(
     (api, field) => {
@@ -85,9 +69,10 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
         return Object.assign(api, {
           [field]: (...args: any[]) => ({
             *[Symbol.iterator]() {
-              let state = yield* context.expect();
-              let { composed } = state[field as keyof A];
-              let result = composed ? composed(args, fn) : fn(...args);
+              let scope = yield* useScope();
+              let { max, min } = collectMiddleware(scope, context, field);
+              let stack = combine([...max, ...min]);
+              let result = stack(args, fn);
               return isOperation(result) ? yield* result : result;
             },
           }),
@@ -96,9 +81,10 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
       return Object.assign(api, {
         [field]: {
           *[Symbol.iterator]() {
-            let state = yield* context.expect();
-            let { composed } = state[field as keyof A];
-            let result = composed ? composed([], () => handle) : handle;
+            let scope = yield* useScope();
+            let { max, min } = collectMiddleware(scope, context, field);
+            let stack = combine([...max, ...min]);
+            let result = stack([], () => handle);
             return isOperation(result) ? yield* result : result;
           },
         },
@@ -111,42 +97,109 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
     middlewares: Partial<Around<A>>,
     options: { at: "min" | "max" } = { at: "max" },
   ): Operation<void> {
-    let current = yield* context.expect();
+    let hasAny = fields.some((field) => Boolean((middlewares as any)[field]));
+    if (!hasAny) {
+      return;
+    }
 
-    let next = fields.reduce(
-      (sum, field) => {
-        let middleware = (middlewares as any)[field] as
-          | Middleware<any[], any>
-          | undefined;
-        let fieldState = current[field as keyof A];
+    let scope = yield* useScope();
+    let current = scope.hasOwn(context)
+      ? scope.expect(context)
+      : { max: [], min: [] };
 
-        if (middleware) {
-          // Clone arrays — never mutate in place (scope isolation)
-          let max = [...fieldState.max];
-          let min = [...fieldState.min];
+    let next: ScopeMiddleware<A> = {
+      max: [...current.max],
+      min: [...current.min],
+    };
 
-          if (options.at === "min") {
-            min = [middleware, ...min];
-          } else {
-            max = [...max, middleware];
-          }
+    if (options.at === "min") {
+      next.min = [middlewares, ...next.min];
+    } else {
+      next.max.push(middlewares);
+    }
 
-          let composed = combine([...max, ...min]);
-
-          return Object.assign(sum, {
-            [field]: { max, min, composed },
-          });
-        }
-
-        return Object.assign(sum, { [field]: fieldState });
-      },
-      {} as MiddlewareRegistry<A>,
-    );
-
-    yield* context.set(next);
+    scope.set(context, next);
   }
 
   return { operations, around };
+}
+
+function collectMiddleware<A extends {}>(
+  scope: Scope,
+  context: { name?: string; key?: string },
+  field: keyof A,
+): MiddlewareStack {
+  let key = contextName(context);
+  let window = contextWindow(scope);
+
+  return reducePrototypeChain(
+    window,
+    (sum, current) => {
+      if (!Object.prototype.hasOwnProperty.call(current, key)) {
+        return sum;
+      }
+
+      let state = current[key] as ScopeMiddleware<A>;
+
+      let max = state.max.flatMap((around) => {
+        let middleware = (around as any)[field] as
+          | Middleware<any[], any>
+          | undefined;
+        return middleware ? [middleware] : [];
+      });
+      let min = state.min.flatMap((around) => {
+        let middleware = (around as any)[field] as
+          | Middleware<any[], any>
+          | undefined;
+        return middleware ? [middleware] : [];
+      });
+
+      sum.max.unshift(...max);
+      sum.min.push(...min);
+      return sum;
+    },
+    { max: [], min: [] } as MiddlewareStack,
+  );
+}
+
+function reducePrototypeChain<T>(
+  start: Record<string, unknown>,
+  reducer: (sum: T, current: Record<string, unknown>) => T,
+  initial: T,
+): T {
+  let sum = initial;
+  let current: Record<string, unknown> | null = start;
+  while (current) {
+    sum = reducer(sum, current);
+    current = Object.getPrototypeOf(current);
+  }
+  return sum;
+}
+
+function contextName(context: { name?: string; key?: string }): string {
+  return context.name ?? context.key ?? "";
+}
+
+function contextWindow(scope: Scope): Record<string, unknown> {
+  let maybe = scope as Scope & {
+    contexts?: unknown;
+    frame?: { context?: unknown };
+  };
+
+  if (isRecord(maybe.contexts)) {
+    return maybe.contexts;
+  }
+  if (isRecord(maybe.frame?.context)) {
+    return maybe.frame.context;
+  }
+
+  throw new Error(
+    "Unsupported Effection scope internals: expected scope.contexts (v4) or scope.frame.context (v3)",
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 /**

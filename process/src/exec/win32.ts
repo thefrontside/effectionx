@@ -121,6 +121,10 @@ export function* createWin32Process(
 
     yield* spawn(function* () {
       let value = yield* once<ProcessResultValue>(childProcess, "close");
+      // out of band with the finally block below compared to posix as
+      // win32 is more sensitive to graceful shutdown timing that it is
+      // worth waiting for stdout and stderr to close before resolving the process result
+      yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
       processResult.resolve(Ok(value));
     });
 
@@ -172,7 +176,6 @@ export function* createWin32Process(
         }
         stdin.end();
       }
-      yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
 
       if (pid && childProcess.exitCode === null) {
         // If the process is still around after we've waited
@@ -184,7 +187,9 @@ export function* createWin32Process(
 
     return {
       pid: pid as number,
-      *around(...args: Parameters<typeof Stdio.around>) {
+      *around(
+        ...args: Parameters<typeof Stdio.around>
+      ): ReturnType<typeof Stdio.around> {
         const result = yield* evalScope.eval(() => Stdio.around(...args));
         return unbox(result);
       },

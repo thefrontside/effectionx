@@ -137,7 +137,9 @@ export function* createPosixProcess(
 
     return {
       pid: pid as number,
-      *around(...args: Parameters<typeof Stdio.around>) {
+      *around(
+        ...args: Parameters<typeof Stdio.around>
+      ): ReturnType<typeof Stdio.around> {
         const result = yield* evalScope.eval(() => Stdio.around(...args));
         return unbox(result);
       },

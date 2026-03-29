@@ -177,6 +177,10 @@ export function* createWin32Process(
         stdin.end();
       }
 
+      // depending on how we shutdown, this may already be closed and
+      // will pass immediately over the operations
+      yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
+
       if (pid && childProcess.exitCode === null) {
         // If the process is still around after we've waited
         // for stdout and stderr to close,

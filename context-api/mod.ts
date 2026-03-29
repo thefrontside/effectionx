@@ -60,7 +60,7 @@ type FieldMiddleware = {
 type MiddlewareRegistry<A> = Record<keyof A, FieldMiddleware>;
 
 export function createApi<A extends {}>(name: string, handler: A): Api<A> {
-  let fields = Object.keys(handler as object) as (keyof A)[];
+  let fields = Object.keys(handler) as (keyof A)[];
 
   let initial = fields.reduce(
     (sum, field) => {

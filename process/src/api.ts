@@ -1,5 +1,5 @@
 import { createApi } from "@effectionx/context-api";
-import type { StdioApi } from "../mod.ts";
+import type { StdioApi } from "./exec/types.ts";
 
 /**
  * Context API used to observe or customize process stdio handling.

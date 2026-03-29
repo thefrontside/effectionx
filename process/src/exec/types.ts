@@ -49,7 +49,7 @@ export interface Process extends StdIO {
    *       const [bytes] = line;
    *       chunks.push(bytes);
    *       // optionally continue with next middleware
-   *       return yield* next(args);
+   *       return yield* next(line);
    *     },
    *   });
    *

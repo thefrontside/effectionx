@@ -561,3 +561,27 @@ describe("handles env vars", () => {
 
   // Close the main "handles env vars" describe block
 });
+
+describe("stdin EPIPE handling", () => {
+  it("does not crash when writing to stdin after child exits", function* () {
+    let proc = yield* exec("node './fixtures/read-one-line.js'", {
+      cwd: import.meta.dirname,
+    });
+
+    // First write succeeds — child reads this line and exits
+    proc.stdin.send("hello\n");
+
+    // Wait for child to exit cleanly
+    let status = yield* proc.join();
+    expect(status.code).toEqual(0);
+
+    // Explicitly write to stdin after child has exited.
+    // Without the EPIPE handler, this would surface as an uncaught exception.
+    proc.stdin.send("this should not crash\n");
+
+    // If we reach here, the EPIPE was handled gracefully.
+    // The test completing is the assertion — an uncaught EPIPE would
+    // have crashed the test runner before this point.
+    expect(true).toBe(true);
+  });
+});

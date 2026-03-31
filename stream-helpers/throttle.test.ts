@@ -207,6 +207,43 @@ describe("throttle", () => {
     expect(second).toEqual({ done: false, value: 3 });
   });
 
+  it("enforces spacing when consumer drains a backlog", function* () {
+    const delay = 60;
+    const source = createChannel<number, never>();
+    const stream = throttle<number>(delay)(source);
+    const subscription = yield* stream;
+
+    // Produce two complete windows worth of values while the consumer
+    // is idle: window 1 → leading 1, trailing 3; window 2 → leading 4,
+    // trailing 6.
+    yield* spawn(function* () {
+      yield* sleep(0);
+      for (let i = 1; i <= 6; i++) {
+        yield* source.send(i);
+      }
+    });
+
+    // Wait long enough for the pump to have buffered both windows.
+    yield* sleep(delay * 3);
+
+    // Now drain rapidly and record emission timestamps.
+    const emissions: Emission<number>[] = [];
+    const r1 = yield* subscription.next();
+    emissions.push({ value: (r1 as { value: number }).value, time: performance.now() });
+
+    const r2 = yield* subscription.next();
+    emissions.push({ value: (r2 as { value: number }).value, time: performance.now() });
+
+    // Verify values are the leading+trailing from the windows
+    expect(emissions[0].value).toBe(1);
+    expect(emissions[1].value).toBe(6);
+
+    // The gap between the two emissions must respect delayMS even
+    // though both values were already buffered.
+    const gap = emissions[1].time - emissions[0].time;
+    expect(gap).toBeGreaterThanOrEqual(delay * 0.8);
+  });
+
   it("passes through values spaced beyond the delay", function* () {
     const delay = 20;
     const faucet = yield* useFaucet<number>({ open: true });

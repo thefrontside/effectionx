@@ -1,6 +1,16 @@
 import { timebox } from "@effectionx/timebox";
 import { createArraySignal } from "@effectionx/signals";
-import { type Stream, spawn } from "effection";
+import { type Operation, type Stream, sleep, spawn } from "effection";
+
+/**
+ * A tagged output item.  `flush` marks values that should bypass
+ * consumer-side delay enforcement (stream-completion trailing and the
+ * done sentinel).
+ */
+interface OutputItem<A, TClose> {
+  result: IteratorResult<A, TClose>;
+  flush: boolean;
+}
 
 /**
  * Throttles a stream to emit at most one value per `delayMS` milliseconds.
@@ -11,7 +21,9 @@ import { type Stream, spawn } from "effection";
  *   and only the latest is buffered.
  * - After the window expires, the buffered value is emitted (trailing edge),
  *   which opens a new window.
- * - Two emissions are never closer together than `delayMS`.
+ * - Two emissions are never closer together than `delayMS`, both at the
+ *   pump side (window timing) and at the consumer side (delay gate in
+ *   `next()`), so a slow consumer cannot drain a backlog instantly.
  *
  * Stream-completion exception: if the upstream closes during an open window,
  * the trailing value (if any) is emitted promptly without waiting for the
@@ -26,7 +38,7 @@ export function throttle<A>(
   return <TClose>(stream: Stream<A, TClose>): Stream<A, TClose> => ({
     *[Symbol.iterator]() {
       const subscription = yield* stream;
-      const output = yield* createArraySignal<IteratorResult<A, TClose>>([]);
+      const output = yield* createArraySignal<OutputItem<A, TClose>>([]);
 
       // ── pump ──────────────────────────────────────────────────────
       // A persistent background task that owns all upstream reads.
@@ -40,10 +52,13 @@ export function throttle<A>(
           // ── leading edge ────────────────────────────────────────
           const first = yield* subscription.next();
           if (first.done) {
-            output.push(first);
+            output.push({ result: first, flush: true });
             return;
           }
-          output.push({ done: false as const, value: first.value });
+          output.push({
+            result: { done: false as const, value: first.value },
+            flush: false,
+          });
 
           // ── absorption window ───────────────────────────────────
           let trailing: A | undefined;
@@ -63,9 +78,12 @@ export function throttle<A>(
             if (tb.value.done) {
               // Stream closed during window — flush trailing, then done
               if (hasTrailing) {
-                output.push({ done: false as const, value: trailing as A });
+                output.push({
+                  result: { done: false as const, value: trailing as A },
+                  flush: true,
+                });
               }
-              output.push(tb.value);
+              output.push({ result: tb.value, flush: true });
               return;
             }
 
@@ -75,15 +93,37 @@ export function throttle<A>(
 
           // ── trailing edge ───────────────────────────────────────
           if (hasTrailing) {
-            output.push({ done: false as const, value: trailing as A });
+            output.push({
+              result: { done: false as const, value: trailing as A },
+              flush: false,
+            });
           }
         }
       });
 
-      // ── subscription ─────────────────────────────────────────────
+      // ── consumer-side delay gate ───────────────────────────────
+      let lastEmitTime: number | undefined;
+
       return {
-        *next() {
-          return yield* output.shift();
+        *next(): Operation<IteratorResult<A, TClose>> {
+          const { result, flush } = yield* output.shift();
+
+          // Enforce minimum spacing between non-flush emissions.
+          // The first emission (lastEmitTime undefined) passes through
+          // immediately.  Flush items (stream-completion trailing and
+          // done) bypass the gate so close is not artificially delayed.
+          if (!result.done && !flush && lastEmitTime !== undefined) {
+            const wait = delayMS - (performance.now() - lastEmitTime);
+            if (wait > 0) {
+              yield* sleep(wait);
+            }
+          }
+
+          if (!result.done) {
+            lastEmitTime = performance.now();
+          }
+
+          return result;
         },
       };
     },

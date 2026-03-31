@@ -1,5 +1,6 @@
 import { describe, it } from "@effectionx/bdd";
 import { createArraySignal, is } from "@effectionx/signals";
+import { timebox } from "@effectionx/timebox";
 import { expect } from "expect";
 import { createChannel, sleep, spawn } from "effection";
 
@@ -80,29 +81,26 @@ describe("throttle", () => {
 
   it("does not emit trailing before the remaining delay elapses", function* () {
     const delay = 100;
-    const faucet = yield* useFaucet<number>({ open: true });
-    const stream = throttle<number>(delay)(faucet);
-    const emissions = yield* createArraySignal<Emission<number>>([]);
+    const source = createChannel<number, never>();
+    const stream = throttle<number>(delay)(source);
+    const subscription = yield* stream;
 
-    yield* spawn(() =>
-      forEach(function* (value) {
-        emissions.push({ value, time: performance.now() });
-      }, stream),
-    );
+    yield* spawn(function* () {
+      yield* sleep(0);
+      yield* source.send(1);
+      yield* source.send(2);
+    });
 
-    yield* sleep(0);
+    const first = yield* subscription.next();
+    expect((first as { value: number }).value).toBe(1);
 
-    yield* faucet.pour([1, 2]);
+    // Must NOT resolve within the first half of the window.
+    const mid = yield* timebox(delay * 0.4, () => subscription.next());
+    expect(mid.timeout).toBe(true);
 
-    // Checkpoint inside the window: only the leading value should exist.
-    // sleep() here creates a timing scenario, not waiting for a result.
-    yield* sleep(delay * 0.4);
-    expect(emissions.valueOf()).toHaveLength(1);
-    expect(emissions.valueOf()[0].value).toBe(1);
-
-    // Now wait for trailing to actually arrive
-    yield* is(emissions, (e) => e.length >= 2);
-    expect(emissions.valueOf()[1].value).toBe(2);
+    // After the full window, trailing is available.
+    const second = yield* subscription.next();
+    expect((second as { value: number }).value).toBe(2);
   });
 
   it("emits at most once per delay window", function* () {
@@ -119,10 +117,11 @@ describe("throttle", () => {
 
     yield* sleep(0);
 
-    // Two rapid bursts separated by a gap longer than the delay
+    // Two rapid bursts — the pump blocks on its next leading pull
+    // after the first burst's trailing, so the second pour triggers
+    // a fresh window.
     yield* faucet.pour([1, 2, 3]);
     yield* is(emissions, (e) => e.length >= 2);
-    yield* sleep(delay + 20);
     yield* faucet.pour([10, 20, 30]);
     yield* is(emissions, (e) => e.some((v) => v.value === 30));
 
@@ -180,13 +179,11 @@ describe("throttle", () => {
     expect(third).toEqual({ done: true, value: 42 });
   });
 
-  it("yields the latest window value when consumer is slower than the window", function* () {
+  it("buffers the latest window value, not the oldest", function* () {
     const source = createChannel<number, never>();
     const stream = throttle<number>(100)(source);
     const subscription = yield* stream;
 
-    // Pump three values in a spawned task so they queue up while the
-    // consumer is idle.
     yield* spawn(function* () {
       yield* sleep(0);
       yield* source.send(1);
@@ -198,11 +195,8 @@ describe("throttle", () => {
     const first = yield* subscription.next();
     expect(first).toEqual({ done: false, value: 1 });
 
-    // Wait well beyond delayMS so the window has long expired.
-    yield* sleep(500);
-
-    // Must be the latest value the absorber saw during the window, not
-    // the oldest queued one.
+    // The pump absorbs 2 and 3 during its window.  output.shift()
+    // blocks until the pump pushes the trailing value.
     const second = yield* subscription.next();
     expect(second).toEqual({ done: false, value: 3 });
   });
@@ -213,9 +207,6 @@ describe("throttle", () => {
     const stream = throttle<number>(delay)(source);
     const subscription = yield* stream;
 
-    // Produce two complete windows worth of values while the consumer
-    // is idle: window 1 → leading 1, trailing 3; window 2 → leading 4,
-    // trailing 6.
     yield* spawn(function* () {
       yield* sleep(0);
       for (let i = 1; i <= 6; i++) {
@@ -223,16 +214,21 @@ describe("throttle", () => {
       }
     });
 
-    // Wait long enough for the pump to have buffered both windows.
-    yield* sleep(delay * 3);
-
-    // Now drain rapidly and record emission timestamps.
+    // Drain rapidly and record emission timestamps.  output.shift()
+    // blocks until the pump pushes each item, and the delay gate
+    // enforces spacing between consecutive emissions.
     const emissions: Emission<number>[] = [];
     const r1 = yield* subscription.next();
-    emissions.push({ value: (r1 as { value: number }).value, time: performance.now() });
+    emissions.push({
+      value: (r1 as { value: number }).value,
+      time: performance.now(),
+    });
 
     const r2 = yield* subscription.next();
-    emissions.push({ value: (r2 as { value: number }).value, time: performance.now() });
+    emissions.push({
+      value: (r2 as { value: number }).value,
+      time: performance.now(),
+    });
 
     // Verify values are the leading+trailing from the windows
     expect(emissions[0].value).toBe(1);

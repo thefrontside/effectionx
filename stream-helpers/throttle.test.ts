@@ -180,6 +180,33 @@ describe("throttle", () => {
     expect(third).toEqual({ done: true, value: 42 });
   });
 
+  it("yields the latest window value when consumer is slower than the window", function* () {
+    const source = createChannel<number, never>();
+    const stream = throttle<number>(100)(source);
+    const subscription = yield* stream;
+
+    // Pump three values in a spawned task so they queue up while the
+    // consumer is idle.
+    yield* spawn(function* () {
+      yield* sleep(0);
+      yield* source.send(1);
+      yield* source.send(2);
+      yield* source.send(3);
+    });
+
+    // Leading value — returned immediately.
+    const first = yield* subscription.next();
+    expect(first).toEqual({ done: false, value: 1 });
+
+    // Wait well beyond delayMS so the window has long expired.
+    yield* sleep(500);
+
+    // Must be the latest value the absorber saw during the window, not
+    // the oldest queued one.
+    const second = yield* subscription.next();
+    expect(second).toEqual({ done: false, value: 3 });
+  });
+
   it("passes through values spaced beyond the delay", function* () {
     const delay = 20;
     const faucet = yield* useFaucet<number>({ open: true });

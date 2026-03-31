@@ -1,13 +1,14 @@
 import { timebox } from "@effectionx/timebox";
-import { type Operation, type Stream, type Task, spawn } from "effection";
+import { createArraySignal } from "@effectionx/signals";
+import { type Stream, spawn } from "effection";
 
 /**
  * Throttles a stream to emit at most one value per `delayMS` milliseconds.
  *
  * Uses leading+trailing semantics:
  * - The first upstream value is emitted immediately (leading edge).
- * - While the throttle window is open, upstream values are consumed and only
- *   the latest is buffered.
+ * - While the throttle window is open, upstream values are consumed eagerly
+ *   and only the latest is buffered.
  * - After the window expires, the buffered value is emitted (trailing edge),
  *   which opens a new window.
  * - Two emissions are never closer together than `delayMS`.
@@ -25,87 +26,64 @@ export function throttle<A>(
   return <TClose>(stream: Stream<A, TClose>): Stream<A, TClose> => ({
     *[Symbol.iterator]() {
       const subscription = yield* stream;
+      const output = yield* createArraySignal<IteratorResult<A, TClose>>([]);
 
-      // ── shared state ──────────────────────────────────────────────
-      let lastPull: Task<IteratorResult<A, TClose>> | undefined;
-      let windowDeadline: number | undefined;
-      let pendingTrailing: A | undefined;
-      let hasTrailing = false;
-      let doneResult: IteratorResult<A, TClose> | undefined;
-
-      // ── helpers ───────────────────────────────────────────────────
-
-      /** Consume upstream values until the window deadline expires. */
-      function* absorbUntilDeadline(): Operation<void> {
-        while (windowDeadline !== undefined) {
-          const remaining = windowDeadline - performance.now();
-          if (remaining <= 0) break;
-
-          if (!lastPull) {
-            lastPull = yield* spawn(() => subscription.next());
+      // ── pump ──────────────────────────────────────────────────────
+      // A persistent background task that owns all upstream reads.
+      // It alternates between two phases:
+      //   1. Pull the next upstream value and push it (leading edge).
+      //   2. Open a window for delayMS: consume upstream, keep only
+      //      the latest, then push it when the window expires
+      //      (trailing edge).
+      yield* spawn(function* () {
+        while (true) {
+          // ── leading edge ────────────────────────────────────────
+          const first = yield* subscription.next();
+          if (first.done) {
+            output.push(first);
+            return;
           }
-          const tb = yield* timebox(remaining, () => lastPull!);
+          output.push({ done: false as const, value: first.value });
 
-          if (tb.timeout) {
-            // lastPull survives for the next pull
-            break;
+          // ── absorption window ───────────────────────────────────
+          let trailing: A | undefined;
+          let hasTrailing = false;
+          const windowStart = performance.now();
+
+          while (true) {
+            const remaining = delayMS - (performance.now() - windowStart);
+            if (remaining <= 0) break;
+
+            const tb = yield* timebox(remaining, () => subscription.next());
+
+            if (tb.timeout) {
+              break;
+            }
+
+            if (tb.value.done) {
+              // Stream closed during window — flush trailing, then done
+              if (hasTrailing) {
+                output.push({ done: false as const, value: trailing as A });
+              }
+              output.push(tb.value);
+              return;
+            }
+
+            trailing = tb.value.value;
+            hasTrailing = true;
           }
 
-          const upstream = tb.value;
-          lastPull = undefined;
-
-          if (upstream.done) {
-            doneResult = upstream;
-            break;
+          // ── trailing edge ───────────────────────────────────────
+          if (hasTrailing) {
+            output.push({ done: false as const, value: trailing as A });
           }
-
-          pendingTrailing = upstream.value;
-          hasTrailing = true;
         }
-        windowDeadline = undefined;
-      }
+      });
 
       // ── subscription ─────────────────────────────────────────────
       return {
-        *next(): Operation<IteratorResult<A, TClose>> {
-          // ── drain active window ───────────────────────────────────
-          if (windowDeadline !== undefined) {
-            yield* absorbUntilDeadline();
-          }
-
-          // ── emit buffered trailing value ──────────────────────────
-          if (hasTrailing) {
-            const value = pendingTrailing as A;
-            hasTrailing = false;
-            pendingTrailing = undefined;
-
-            if (!doneResult) {
-              windowDeadline = performance.now() + delayMS;
-            }
-
-            return { done: false as const, value };
-          }
-
-          // ── propagate stream close ────────────────────────────────
-          if (doneResult) {
-            return doneResult;
-          }
-
-          // ── pull next upstream value (leading edge) ───────────────
-          const result = lastPull
-            ? yield* lastPull
-            : yield* subscription.next();
-          lastPull = undefined;
-
-          if (result.done) {
-            return result;
-          }
-
-          // Record the window deadline. Absorption is deferred to the
-          // next next() call so this value returns immediately.
-          windowDeadline = performance.now() + delayMS;
-
-          return { done: false as const, value: result.value };
+        *next() {
+          return yield* output.shift();
         },
       };
     },

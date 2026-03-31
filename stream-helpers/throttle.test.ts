@@ -42,7 +42,7 @@ describe("throttle", () => {
   });
 
   it("emits the final value before stream closes", function* () {
-    const source = createChannel<number, never>();
+    const source = createChannel<number, void>();
     const stream = throttle<number>(200)(source);
     const results = yield* createArraySignal<number>([]);
 

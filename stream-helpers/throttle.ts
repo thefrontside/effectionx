@@ -1,15 +1,23 @@
 import { timebox } from "@effectionx/timebox";
-import { type Stream, type Task, spawn } from "effection";
+import { type Operation, type Stream, type Task, spawn } from "effection";
 
 /**
  * Throttles a stream to emit at most one value per `delayMS` milliseconds.
  *
- * Uses leading+trailing semantics: the first value is emitted immediately,
- * intermediate values during the throttle window are dropped, and the most
- * recent value is always emitted after the window expires. This ensures the
- * final state is never lost when a burst of events ends mid-window.
+ * Uses leading+trailing semantics:
+ * - The first upstream value is emitted immediately (leading edge).
+ * - While the throttle window is open, upstream values are consumed and only
+ *   the latest is buffered.
+ * - After the window expires, the buffered value is emitted (trailing edge),
+ *   which opens a new window.
+ * - Two emissions are never closer together than `delayMS`.
  *
- * @param delayMS - The minimum time between emissions in milliseconds
+ * Stream-completion exception: if the upstream closes during an open window,
+ * the trailing value (if any) is emitted promptly without waiting for the
+ * remaining delay, and `done` follows on the next pull.  This avoids adding
+ * artificial latency before propagating the close signal.
+ *
+ * @param delayMS - minimum milliseconds between emissions
  */
 export function throttle<A>(
   delayMS: number,
@@ -17,27 +25,73 @@ export function throttle<A>(
   return <TClose>(stream: Stream<A, TClose>): Stream<A, TClose> => ({
     *[Symbol.iterator]() {
       const subscription = yield* stream;
+
+      // ── shared state ──────────────────────────────────────────────
       let lastPull: Task<IteratorResult<A, TClose>> | undefined;
+      let windowDeadline: number | undefined;
       let pendingTrailing: A | undefined;
       let hasTrailing = false;
       let doneResult: IteratorResult<A, TClose> | undefined;
 
+      // ── helpers ───────────────────────────────────────────────────
+
+      /** Consume upstream values until the window deadline expires. */
+      function* absorbUntilDeadline(): Operation<void> {
+        while (windowDeadline !== undefined) {
+          const remaining = windowDeadline - performance.now();
+          if (remaining <= 0) break;
+
+          if (!lastPull) {
+            lastPull = yield* spawn(() => subscription.next());
+          }
+          const tb = yield* timebox(remaining, () => lastPull!);
+
+          if (tb.timeout) {
+            // lastPull survives for the next pull
+            break;
+          }
+
+          const upstream = tb.value;
+          lastPull = undefined;
+
+          if (upstream.done) {
+            doneResult = upstream;
+            break;
+          }
+
+          pendingTrailing = upstream.value;
+          hasTrailing = true;
+        }
+        windowDeadline = undefined;
+      }
+
+      // ── subscription ─────────────────────────────────────────────
       return {
-        *next() {
-          // Emit stashed trailing value from previous window
+        *next(): Operation<IteratorResult<A, TClose>> {
+          // ── drain active window ───────────────────────────────────
+          if (windowDeadline !== undefined) {
+            yield* absorbUntilDeadline();
+          }
+
+          // ── emit buffered trailing value ──────────────────────────
           if (hasTrailing) {
             const value = pendingTrailing as A;
             hasTrailing = false;
             pendingTrailing = undefined;
+
+            if (!doneResult) {
+              windowDeadline = performance.now() + delayMS;
+            }
+
             return { done: false as const, value };
           }
 
-          // Stream already ended
+          // ── propagate stream close ────────────────────────────────
           if (doneResult) {
             return doneResult;
           }
 
-          // Pull the next upstream value
+          // ── pull next upstream value (leading edge) ───────────────
           const result = lastPull
             ? yield* lastPull
             : yield* subscription.next();
@@ -47,38 +101,11 @@ export function throttle<A>(
             return result;
           }
 
-          const valueToEmit = result.value;
+          // Record the window deadline. Absorption is deferred to the
+          // next next() call so this value returns immediately.
+          windowDeadline = performance.now() + delayMS;
 
-          // Throttle window: absorb upstream values for delayMS
-          const windowStart = performance.now();
-
-          while (true) {
-            const remaining = delayMS - (performance.now() - windowStart);
-            if (remaining <= 0) break;
-
-            lastPull = yield* spawn(() => subscription.next());
-            const tb = yield* timebox(remaining, () => lastPull!);
-
-            if (tb.timeout) {
-              // Timer expired, lastPull survives for next call
-              break;
-            }
-
-            const upstream = tb.value;
-            lastPull = undefined;
-
-            if (upstream.done) {
-              doneResult = upstream;
-              break;
-            }
-
-            // Overwrite trailing — only the latest matters
-            pendingTrailing = upstream.value;
-            hasTrailing = true;
-          }
-
-          // Emit the leading-edge value
-          return { done: false as const, value: valueToEmit };
+          return { done: false as const, value: result.value };
         },
       };
     },

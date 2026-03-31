@@ -14,3 +14,4 @@ export * from "./last.ts";
 export * from "./take.ts";
 export * from "./take-while.ts";
 export * from "./take-until.ts";
+export * from "./throttle.ts";

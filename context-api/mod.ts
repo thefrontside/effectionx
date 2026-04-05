@@ -15,6 +15,15 @@ export type Around<A> = {
     : Middleware<[], A[K]>;
 };
 
+/**
+ * The middleware type for a single operation slot in an {@link Api}.
+ *
+ * Use this to type helper functions that accept or return middleware
+ * for a specific key of an API without reconstructing the mapping
+ * from {@link Around} by hand.
+ */
+export type MiddlewareSlot<A, K extends keyof A> = Around<A>[K];
+
 export interface Api<A> {
   operations: Operations<A>;
   around: (

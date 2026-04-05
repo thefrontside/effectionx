@@ -1,7 +1,7 @@
 import { describe, it } from "@effectionx/bdd";
 import { createArraySignal, is } from "@effectionx/signals";
-import { expect } from "expect";
 import { createChannel, sleep, spawn } from "effection";
+import { expect } from "expect";
 
 import { batch } from "./batch.ts";
 import { forEach } from "./for-each.ts";
@@ -47,17 +47,13 @@ describe("batch", () => {
 
     let last = performance.now();
 
-    yield* spawn(() =>
-      forEach<readonly number[], void>(function* (batch) {
-        const now = performance.now();
-        windows.push(now - last);
-        last = now;
+    yield* forEach<readonly number[], void>(function* (batch) {
+      const now = performance.now();
+      windows.push(now - last);
+      last = now;
 
-        batches.push(batch);
-      }, stream),
-    );
-
-    yield* sleep(0);
+      batches.push(batch);
+    }, stream);
 
     yield* faucet.pour(function* (send) {
       for (let i = 1; i <= 10; i++) {
@@ -83,13 +79,9 @@ describe("batch", () => {
 
     const batches = yield* createArraySignal<readonly number[]>([]);
 
-    yield* spawn(() =>
-      forEach<readonly number[], void>(function* (batch) {
-        batches.push(batch);
-      }, stream),
-    );
-
-    yield* sleep(0);
+    yield* forEach<readonly number[], void>(function* (batch) {
+      batches.push(batch);
+    }, stream);
 
     yield* faucet.pour([1, 2, 3, 4, 5, 6]);
 

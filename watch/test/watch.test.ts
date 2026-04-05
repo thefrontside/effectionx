@@ -4,7 +4,6 @@ import { forEach } from "@effectionx/stream-helpers";
 import { expect } from "expect";
 
 import process from "node:process";
-import { spawn } from "effection";
 import { watch } from "../watch.ts";
 import { inspector, useFixture } from "./helpers.ts";
 
@@ -94,11 +93,9 @@ describe("watch", () => {
 
     let first = yield* processes.expectNext();
 
-    yield* spawn(function* () {
-      yield* forEach(function* (line) {
-        output.push(`${line}`.trim());
-      }, first.process.stdout);
-    });
+    yield* forEach(function* (line) {
+      output.push(`${line}`.trim());
+    }, first.process.stdout);
 
     yield* is(output, (array) => array.includes("started"));
 

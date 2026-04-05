@@ -10,7 +10,7 @@ describe("takeWhile", () => {
   it("should yield values while predicate is true", function* () {
     const values: number[] = [];
 
-    const closeValue = yield* forEach(
+    const closeValue = yield* yield* forEach(
       function* (value) {
         values.push(value);
       },
@@ -32,7 +32,7 @@ describe("takeWhile", () => {
       })(),
     );
 
-    const closeValue = yield* forEach(
+    const closeValue = yield* yield* forEach(
       function* (value) {
         values.push(value);
       },
@@ -46,7 +46,7 @@ describe("takeWhile", () => {
   it("should not include the failing value", function* () {
     const values: number[] = [];
 
-    const closeValue = yield* forEach(
+    const closeValue = yield* yield* forEach(
       function* (value) {
         values.push(value);
       },
@@ -60,7 +60,7 @@ describe("takeWhile", () => {
   it("should stop immediately if first value fails predicate", function* () {
     const values: number[] = [];
 
-    const closeValue = yield* forEach(
+    const closeValue = yield* yield* forEach(
       function* (value) {
         values.push(value);
       },
@@ -79,7 +79,7 @@ describe("takeWhile", () => {
       takeWhile((x) => x < 4),
     );
 
-    const closeValue = yield* forEach(function* (value) {
+    const closeValue = yield* yield* forEach(function* (value) {
       values.push(value);
     }, stream);
 

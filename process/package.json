@@ -3,12 +3,7 @@
   "description": "Spawn and manage child processes with structured concurrency",
   "version": "0.7.4",
   "keywords": [
-    "effection",
-    "effectionx",
-    "process",
-    "spawn",
-    "exec",
-    "child-process"
+    "process"
   ],
   "type": "module",
   "main": "./dist/mod.js",

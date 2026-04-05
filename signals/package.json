@@ -3,12 +3,7 @@
   "description": "Reactive signals and computed values for Effection operations",
   "version": "0.5.3",
   "keywords": [
-    "effection",
-    "effectionx",
-    "reactivity",
-    "signals",
-    "computed",
-    "state"
+    "reactivity"
   ],
   "type": "module",
   "main": "./dist/mod.js",

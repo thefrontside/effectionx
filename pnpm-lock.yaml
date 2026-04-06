@@ -169,9 +169,15 @@ importers:
 
   process:
     dependencies:
+      '@effectionx/context-api':
+        specifier: workspace:*
+        version: link:../context-api
       '@effectionx/node':
         specifier: workspace:*
         version: link:../node
+      '@effectionx/scope-eval':
+        specifier: workspace:*
+        version: link:../scope-eval
       cross-spawn:
         specifier: ^7
         version: 7.0.6

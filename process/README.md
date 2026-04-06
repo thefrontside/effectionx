@@ -48,10 +48,37 @@ await main(function* () {
 
   // Stream stdout in real-time
   yield* spawn(function* () {
-    for (let chunk of yield* each(yield* process.stdout)) {
+    for (let chunk of yield* each(process.stdout)) {
       console.log(chunk);
       yield* each.next();
     }
+  });
+
+  // Wait for the process to complete
+  yield* process.expect();
+});
+```
+
+### Handling Process Output With Middleware
+
+By default, we log the output, but you can remove or add additional handling of output lines per `stdout` and `stderr`.
+
+```typescript
+import { each, main, spawn } from "effection";
+import { exec } from "@effectionx/process";
+
+await main(function* () {
+  let process = yield* exec("npm install");
+
+  yield* process.around({
+    *stdout(line) {
+      // it does this by default
+      process.stdout.write(line);
+    },
+    *stderr(line) {
+      // it does this by default
+      process.stderr.write(line);
+    },
   });
 
   // Wait for the process to complete

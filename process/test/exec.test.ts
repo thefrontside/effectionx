@@ -7,6 +7,7 @@ import { captureError, expectMatch, fetchText } from "./helpers.ts";
 
 import { lines } from "@effectionx/stream-helpers";
 import { type Process, type ProcessResult, exec } from "../mod.ts";
+import { Stdio } from "../src/api.ts";
 
 const SystemRoot = process.env.SystemRoot;
 
@@ -34,6 +35,16 @@ const isBash = () => {
 };
 
 describe("exec", () => {
+  beforeEach(function* () {
+    yield* Stdio.around(
+      {
+        *stdout() {},
+        *stderr() {},
+      },
+      { at: "min" },
+    );
+  });
+
   describe(".join", () => {
     it("runs successfully to completion", function* () {
       let result: ProcessResult = yield* exec(
@@ -63,7 +74,6 @@ describe("exec", () => {
   });
 
   describe(".expect", () => {
-    expect.assertions(1);
     it("runs successfully to completion", function* () {
       let result: ProcessResult = yield* exec(
         "node './fixtures/hello-world.js'",
@@ -288,72 +298,99 @@ describe("exec", () => {
       });
     });
   });
-});
 
-// running shell scripts in windows is not well supported, our windows
-// process stuff sets shell to `false` and so you probably shouldn't do this
-// in windows at all.
-if (process.platform !== "win32") {
-  describe("when the `shell` option is true", () => {
-    it("lets the shell do all of the shellword parsing", function* () {
-      let proc = exec('echo "first" | echo "second"', {
-        shell: true,
+  describe("io api", () => {
+    it("allows redirecting stdio to array", function* () {
+      let outputStdout: Uint8Array[] = [];
+      let outputStderr: Uint8Array[] = [];
+      yield* Stdio.around({
+        *stdout([bytes]) {
+          outputStdout.push(bytes);
+        },
+        *stderr([bytes]) {
+          outputStderr.push(bytes);
+        },
+      });
+
+      let proc = yield* exec("node './fixtures/hello-world.js'", {
+        cwd: import.meta.dirname,
+      });
+      yield* proc.expect();
+      let stdout = Buffer.concat(outputStdout)
+        .toString("utf8")
+        .replace(/\r\n/g, "\n");
+      let stderr = Buffer.concat(outputStderr)
+        .toString("utf8")
+        .replace(/\r\n/g, "\n");
+      expect(stdout).toEqual("hello\nworld\n");
+      expect(stderr).toContain("boom\n");
+    });
+
+    it("allows redirecting stdio inline", function* () {
+      let outputStdout: Uint8Array[] = [];
+      let outputStderr: Uint8Array[] = [];
+
+      let proc = yield* exec("node './fixtures/hello-world.js'", {
+        cwd: import.meta.dirname,
+      });
+      yield* proc.around({
+        *stdout([bytes]) {
+          outputStdout.push(bytes);
+        },
+        *stderr([bytes]) {
+          outputStderr.push(bytes);
+        },
+      });
+      yield* proc.expect();
+      let stdout = Buffer.concat(outputStdout)
+        .toString("utf8")
+        .replace(/\r\n/g, "\n");
+      let stderr = Buffer.concat(outputStderr)
+        .toString("utf8")
+        .replace(/\r\n/g, "\n");
+      expect(stdout).toEqual("hello\nworld\n");
+      expect(stderr).toContain("boom\n");
+    });
+  });
+
+  // running shell scripts in windows is not well supported, our windows
+  // process stuff sets shell to `false` and so you probably shouldn't do this
+  // in windows at all.
+  if (process.platform !== "win32") {
+    describe("when the `shell` option is true", () => {
+      it("lets the shell do all of the shellword parsing", function* () {
+        let proc = exec('echo "first" | echo "second"', {
+          shell: true,
+        });
+        let { stdout }: ProcessResult = yield* proc.expect();
+
+        expect(stdout).toEqual("second\n");
+      });
+    });
+  }
+
+  describe("when the `shell` option is `false`", () => {
+    it("correctly receives literal arguments when shell: false", function* () {
+      // Arguments are passed literally as parsed by shellwords-ts
+      let proc = exec("node ./fixtures/dump-args.js first | echo second", {
+        shell: false,
+        cwd: import.meta.dirname,
       });
       let { stdout }: ProcessResult = yield* proc.expect();
 
-      expect(stdout).toEqual("second\n");
+      // Node's console.log uses a single LF (\n) line ending.
+      const expected = `${JSON.stringify({
+        args: ["first", "|", "echo", "second"], // Arguments received by Node
+        envVar: undefined,
+      })}\n`;
+
+      expect(stdout).toEqual(expected);
     });
-  });
-}
 
-describe("when the `shell` option is `false`", () => {
-  it("correctly receives literal arguments when shell: false", function* () {
-    // Arguments are passed literally as parsed by shellwords-ts
-    let proc = exec("node ./fixtures/dump-args.js first | echo second", {
-      shell: false,
-      cwd: import.meta.dirname,
-    });
-    let { stdout }: ProcessResult = yield* proc.expect();
-
-    // Node's console.log uses a single LF (\n) line ending.
-    const expected = `${JSON.stringify({
-      args: ["first", "|", "echo", "second"], // Arguments received by Node
-      envVar: undefined,
-    })}\n`;
-
-    expect(stdout).toEqual(expected);
-  });
-
-  it("verifies environment variable handling and literal argument passing", function* () {
-    // Execute the custom script with the literal argument
-    let proc = exec("node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL", {
-      shell: false, // Ensures the argument is passed literally
-      env: {
-        EFFECTION_TEST_ENV_VAL: "boop",
-        PATH: process.env.PATH as string,
-      },
-      cwd: import.meta.dirname,
-    });
-    let { stdout, code }: ProcessResult = yield* proc.expect();
-
-    // The argument is passed literally, and the env var is available in the child process's env.
-    const expected = `${JSON.stringify({
-      args: ["$EFFECTION_TEST_ENV_VAL"], // Argument is passed literally
-      envVar: "boop", // Env variable is read from process.env
-    })}\n`;
-
-    expect(stdout).toEqual(expected);
-    expect(code).toBe(0);
-  });
-});
-
-describe("handles env vars", () => {
-  describe("when the `shell` option is `bash`", () => {
-    let shell = "bash";
-
-    it("can pass in an environment variable", function* () {
+    it("verifies environment variable handling and literal argument passing", function* () {
+      // Execute the custom script with the literal argument
       let proc = exec("node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL", {
-        shell,
+        shell: false, // Ensures the argument is passed literally
         env: {
           EFFECTION_TEST_ENV_VAL: "boop",
           PATH: process.env.PATH as string,
@@ -362,32 +399,10 @@ describe("handles env vars", () => {
       });
       let { stdout, code }: ProcessResult = yield* proc.expect();
 
+      // The argument is passed literally, and the env var is available in the child process's env.
       const expected = `${JSON.stringify({
-        args: ["boop"],
-        envVar: "boop",
-      })}\n`;
-
-      expect(stdout).toEqual(expected);
-      expect(code).toBe(0);
-    });
-
-    it("can pass in an environment variable with curly brace syntax", function* () {
-      let proc = exec(
-        "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
-        {
-          shell,
-          env: {
-            EFFECTION_TEST_ENV_VAL: "boop",
-            PATH: process.env.PATH as string,
-          },
-          cwd: import.meta.dirname,
-        },
-      );
-      let { stdout, code }: ProcessResult = yield* proc.expect();
-
-      const expected = `${JSON.stringify({
-        args: ["boop"],
-        envVar: "boop",
+        args: ["$EFFECTION_TEST_ENV_VAL"], // Argument is passed literally
+        envVar: "boop", // Env variable is read from process.env
       })}\n`;
 
       expect(stdout).toEqual(expected);
@@ -395,121 +410,9 @@ describe("handles env vars", () => {
     });
   });
 
-  describe("when the `shell` option is `true`", () => {
-    let shell = true;
-
-    it("can pass in an environment variable", function* () {
-      let proc = exec("node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL", {
-        shell,
-        env: {
-          EFFECTION_TEST_ENV_VAL: "boop",
-          PATH: process.env.PATH as string,
-        },
-        cwd: import.meta.dirname,
-      });
-      let { stdout, code }: ProcessResult = yield* proc.expect();
-
-      // this fails on windows, this shell option doesn't work on windows
-      // due to it generally running through cmd.exe which can't handle this syntax
-      let expected =
-        process.platform !== "win32"
-          ? `${JSON.stringify({ args: ["boop"], envVar: "boop" })}\n`
-          : // note the additional \r that is added
-            `${JSON.stringify({
-              args: ["$EFFECTION_TEST_ENV_VAL"],
-              envVar: "boop",
-            })}\n`;
-
-      expect(stdout).toEqual(expected);
-      expect(code).toBe(0);
-    });
-
-    it("can pass in an environment variable with curly brace syntax", function* () {
-      let proc = exec(
-        "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
-        {
-          shell,
-          env: {
-            EFFECTION_TEST_ENV_VAL: "boop",
-            PATH: process.env.PATH as string,
-          },
-          cwd: import.meta.dirname,
-        },
-      );
-      let { stdout, code }: ProcessResult = yield* proc.expect();
-
-      // this fails on windows, this shell option doesn't work on windows
-      // due to it generally running through cmd.exe which can't handle this syntax
-      let expected =
-        process.platform !== "win32"
-          ? `${JSON.stringify({ args: ["boop"], envVar: "boop" })}\n`
-          : // note the additional \r that is added
-            `${JSON.stringify({
-              args: ["${EFFECTION_TEST_ENV_VAL}"],
-              envVar: "boop",
-            })}\n`;
-
-      expect(stdout).toEqual(expected);
-      expect(code).toBe(0);
-    });
-  });
-
-  describe("when the `shell` option is `false`", () => {
-    let shell = false;
-
-    it("can pass in an environment variable", function* () {
-      let proc = exec("node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL", {
-        shell,
-        env: {
-          EFFECTION_TEST_ENV_VAL: "boop",
-          PATH: process.env.PATH as string,
-        },
-        cwd: import.meta.dirname,
-      });
-      let { stdout, code }: ProcessResult = yield* proc.expect();
-
-      const expected = `${JSON.stringify({
-        args: ["$EFFECTION_TEST_ENV_VAL"],
-        envVar: "boop",
-      })}\n`;
-
-      expect(stdout).toEqual(expected);
-      expect(code).toBe(0);
-    });
-
-    it("can pass in an environment variable with curly brace syntax", function* () {
-      let proc = exec(
-        "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
-        {
-          shell,
-          env: {
-            EFFECTION_TEST_ENV_VAL: "boop",
-            PATH: process.env.PATH as string,
-          },
-          cwd: import.meta.dirname,
-        },
-      );
-      let { stdout, code }: ProcessResult = yield* proc.expect();
-
-      // Platform behavior differences with shell: false:
-      // - PowerShell/CMD: Preserves quotes around arguments and keeps curly braces: "${EFFECTION_TEST_ENV_VAL}" + CRLF
-      // - Bash (Windows): Normalizes ${VAR} to $VAR during argument processing: $EFFECTION_TEST_ENV_VAL + LF
-      // - Bash (Unix): Keeps curly braces intact: ${EFFECTION_TEST_ENV_VAL} + LF
-      // Note: Shellwords parsing preserves braces on all platforms, but bash execution normalizes them
-      const expected = `${JSON.stringify({
-        args: ["${EFFECTION_TEST_ENV_VAL}"],
-        envVar: "boop",
-      })}\n`;
-
-      expect(stdout).toEqual(expected);
-      expect(code).toBe(0);
-    });
-  });
-
-  if (process.platform === "win32" && isBash()) {
-    describe("when the `shell` option is `process.env.shell` (Windows bash only)", () => {
-      let shell = process.env.shell;
-      // This tests Git Bash on Windows where process.env.shell is set to bash.exe
+  describe("handles env vars", () => {
+    describe("when the `shell` option is `bash`", () => {
+      let shell = "bash";
 
       it("can pass in an environment variable", function* () {
         let proc = exec(
@@ -525,11 +428,11 @@ describe("handles env vars", () => {
         );
         let { stdout, code }: ProcessResult = yield* proc.expect();
 
-        // Windows bash should resolve environment variables
         const expected = `${JSON.stringify({
           args: ["boop"],
           envVar: "boop",
         })}\n`;
+
         expect(stdout).toEqual(expected);
         expect(code).toBe(0);
       });
@@ -548,16 +451,184 @@ describe("handles env vars", () => {
         );
         let { stdout, code }: ProcessResult = yield* proc.expect();
 
-        // Windows bash should resolve environment variables with curly brace syntax
         const expected = `${JSON.stringify({
           args: ["boop"],
           envVar: "boop",
         })}\n`;
+
         expect(stdout).toEqual(expected);
         expect(code).toBe(0);
       });
     });
-  }
 
-  // Close the main "handles env vars" describe block
+    describe("when the `shell` option is `true`", () => {
+      let shell = true;
+
+      it("can pass in an environment variable", function* () {
+        let proc = exec(
+          "node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
+          {
+            shell,
+            env: {
+              EFFECTION_TEST_ENV_VAL: "boop",
+              PATH: process.env.PATH as string,
+            },
+            cwd: import.meta.dirname,
+          },
+        );
+        let { stdout, code }: ProcessResult = yield* proc.expect();
+
+        // this fails on windows, this shell option doesn't work on windows
+        // due to it generally running through cmd.exe which can't handle this syntax
+        let expected =
+          process.platform !== "win32"
+            ? `${JSON.stringify({ args: ["boop"], envVar: "boop" })}\n`
+            : // note the additional \r that is added
+              `${JSON.stringify({
+                args: ["$EFFECTION_TEST_ENV_VAL"],
+                envVar: "boop",
+              })}\n`;
+
+        expect(stdout).toEqual(expected);
+        expect(code).toBe(0);
+      });
+
+      it("can pass in an environment variable with curly brace syntax", function* () {
+        let proc = exec(
+          "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
+          {
+            shell,
+            env: {
+              EFFECTION_TEST_ENV_VAL: "boop",
+              PATH: process.env.PATH as string,
+            },
+            cwd: import.meta.dirname,
+          },
+        );
+        let { stdout, code }: ProcessResult = yield* proc.expect();
+
+        // this fails on windows, this shell option doesn't work on windows
+        // due to it generally running through cmd.exe which can't handle this syntax
+        let expected =
+          process.platform !== "win32"
+            ? `${JSON.stringify({ args: ["boop"], envVar: "boop" })}\n`
+            : // note the additional \r that is added
+              `${JSON.stringify({
+                args: ["${EFFECTION_TEST_ENV_VAL}"],
+                envVar: "boop",
+              })}\n`;
+
+        expect(stdout).toEqual(expected);
+        expect(code).toBe(0);
+      });
+    });
+
+    describe("when the `shell` option is `false`", () => {
+      let shell = false;
+
+      it("can pass in an environment variable", function* () {
+        let proc = exec(
+          "node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
+          {
+            shell,
+            env: {
+              EFFECTION_TEST_ENV_VAL: "boop",
+              PATH: process.env.PATH as string,
+            },
+            cwd: import.meta.dirname,
+          },
+        );
+        let { stdout, code }: ProcessResult = yield* proc.expect();
+
+        const expected = `${JSON.stringify({
+          args: ["$EFFECTION_TEST_ENV_VAL"],
+          envVar: "boop",
+        })}\n`;
+
+        expect(stdout).toEqual(expected);
+        expect(code).toBe(0);
+      });
+
+      it("can pass in an environment variable with curly brace syntax", function* () {
+        let proc = exec(
+          "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
+          {
+            shell,
+            env: {
+              EFFECTION_TEST_ENV_VAL: "boop",
+              PATH: process.env.PATH as string,
+            },
+            cwd: import.meta.dirname,
+          },
+        );
+        let { stdout, code }: ProcessResult = yield* proc.expect();
+
+        // Platform behavior differences with shell: false:
+        // - PowerShell/CMD: Preserves quotes around arguments and keeps curly braces: "${EFFECTION_TEST_ENV_VAL}" + CRLF
+        // - Bash (Windows): Normalizes ${VAR} to $VAR during argument processing: $EFFECTION_TEST_ENV_VAL + LF
+        // - Bash (Unix): Keeps curly braces intact: ${EFFECTION_TEST_ENV_VAL} + LF
+        // Note: Shellwords parsing preserves braces on all platforms, but bash execution normalizes them
+        const expected = `${JSON.stringify({
+          args: ["${EFFECTION_TEST_ENV_VAL}"],
+          envVar: "boop",
+        })}\n`;
+
+        expect(stdout).toEqual(expected);
+        expect(code).toBe(0);
+      });
+    });
+
+    if (process.platform === "win32" && isBash()) {
+      describe("when the `shell` option is `process.env.shell` (Windows bash only)", () => {
+        let shell = process.env.shell;
+        // This tests Git Bash on Windows where process.env.shell is set to bash.exe
+
+        it("can pass in an environment variable", function* () {
+          let proc = exec(
+            "node ./fixtures/dump-args.js $EFFECTION_TEST_ENV_VAL",
+            {
+              shell,
+              env: {
+                EFFECTION_TEST_ENV_VAL: "boop",
+                PATH: process.env.PATH as string,
+              },
+              cwd: import.meta.dirname,
+            },
+          );
+          let { stdout, code }: ProcessResult = yield* proc.expect();
+
+          // Windows bash should resolve environment variables
+          const expected = `${JSON.stringify({
+            args: ["boop"],
+            envVar: "boop",
+          })}\n`;
+          expect(stdout).toEqual(expected);
+          expect(code).toBe(0);
+        });
+
+        it("can pass in an environment variable with curly brace syntax", function* () {
+          let proc = exec(
+            "node ./fixtures/dump-args.js ${EFFECTION_TEST_ENV_VAL}",
+            {
+              shell,
+              env: {
+                EFFECTION_TEST_ENV_VAL: "boop",
+                PATH: process.env.PATH as string,
+              },
+              cwd: import.meta.dirname,
+            },
+          );
+          let { stdout, code }: ProcessResult = yield* proc.expect();
+
+          // Windows bash should resolve environment variables with curly brace syntax
+          const expected = `${JSON.stringify({
+            args: ["boop"],
+            envVar: "boop",
+          })}\n`;
+          expect(stdout).toEqual(expected);
+          expect(code).toBe(0);
+        });
+      });
+    }
+  });
 });

@@ -13,7 +13,6 @@ import {
   all,
   createSignal,
   ensure,
-  lift,
   spawn,
   withResolvers,
 } from "effection";
@@ -24,7 +23,7 @@ import type {
   Process,
   Writable,
 } from "./types.ts";
-import { Stdio, stdout, stderr } from "../api.ts";
+import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
 
@@ -84,28 +83,28 @@ export function* createWin32Process(
       stderrDone: withResolvers<void>(),
     };
 
-    const stdoutCollector = createSignal<Uint8Array, void>();
-    const stderrCollector = createSignal<Uint8Array, void>();
+    const stdout = createSignal<Uint8Array, void>();
+    const stderr = createSignal<Uint8Array, void>();
 
     yield* spawn(function* () {
       let next = yield* io.stdout.next();
       while (!next.done) {
-        yield* stdout(next.value);
-        yield* lift(stdoutCollector.send)(next.value);
+        yield* Stdio.operations.stdout(next.value);
+        stdout.send(next.value);
         next = yield* io.stdout.next();
       }
-      stdoutCollector.close();
+      stdout.close();
       io.stdoutDone.resolve();
     });
 
     yield* spawn(function* () {
       let next = yield* io.stderr.next();
       while (!next.done) {
-        yield* stderr(next.value);
-        yield* lift(stderrCollector.send)(next.value);
+        yield* Stdio.operations.stderr(next.value);
+        stderr.send(next.value);
         next = yield* io.stderr.next();
       }
-      stderrCollector.close();
+      stderr.close();
       io.stderrDone.resolve();
     });
 
@@ -199,8 +198,8 @@ export function* createWin32Process(
         return unbox(result);
       },
       stdin,
-      stdout: stdoutCollector,
-      stderr: stderrCollector,
+      stdout,
+      stderr,
       join,
       expect,
     } satisfies Yielded<ReturnType<CreateOSProcess>>;

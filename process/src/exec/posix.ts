@@ -11,7 +11,6 @@ import {
   ensure,
   spawn,
   withResolvers,
-  lift,
 } from "effection";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
 import { once } from "@effectionx/node/events";
@@ -23,7 +22,7 @@ import type {
   Process,
   Writable,
 } from "./types.ts";
-import { Stdio, stdout, stderr } from "../api.ts";
+import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
 
 type ProcessResultValue = [number?, string?];
@@ -66,28 +65,28 @@ export function* createPosixProcess(
       stderrDone: withResolvers<void>(),
     };
 
-    let stdoutCollector = createSignal<Uint8Array, void>();
-    let stderrCollector = createSignal<Uint8Array, void>();
+    let stdout = createSignal<Uint8Array, void>();
+    let stderr = createSignal<Uint8Array, void>();
 
     yield* spawn(function* () {
       let next = yield* io.stdout.next();
       while (!next.done) {
-        yield* stdout(next.value);
-        yield* lift(stdoutCollector.send)(next.value);
+        yield* Stdio.operations.stdout(next.value);
+        stdout.send(next.value);
         next = yield* io.stdout.next();
       }
-      stdoutCollector.close();
+      stdout.close();
       io.stdoutDone.resolve();
     });
 
     yield* spawn(function* () {
       let next = yield* io.stderr.next();
       while (!next.done) {
-        yield* stderr(next.value);
-        yield* lift(stderrCollector.send)(next.value);
+        yield* Stdio.operations.stderr(next.value);
+        stderr.send(next.value);
         next = yield* io.stderr.next();
       }
-      stderrCollector.close();
+      stderr.close();
       io.stderrDone.resolve();
     });
 
@@ -145,8 +144,8 @@ export function* createPosixProcess(
         return unbox(result);
       },
       stdin,
-      stdout: stdoutCollector,
-      stderr: stderrCollector,
+      stdout,
+      stderr,
       join,
       expect,
     } satisfies Yielded<ReturnType<CreateOSProcess>>;

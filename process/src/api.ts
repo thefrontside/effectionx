@@ -46,5 +46,3 @@ export const Stdio = createApi<StdioApi>("process:io", {
     process.stderr.write(line);
   },
 });
-
-export const { stdout, stderr } = Stdio.operations;

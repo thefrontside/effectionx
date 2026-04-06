@@ -2,14 +2,7 @@
   "name": "@effectionx/chain",
   "description": "Promise-like chaining with then/catch/finally for Effection operations",
   "version": "0.2.3",
-  "keywords": [
-    "effection",
-    "effectionx",
-    "interop",
-    "promise",
-    "then",
-    "chain"
-  ],
+  "keywords": ["interop"],
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",

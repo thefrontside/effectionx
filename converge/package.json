@@ -2,14 +2,7 @@
   "name": "@effectionx/converge",
   "description": "Poll and wait for conditions to be met with automatic retry and timeout",
   "version": "0.1.4",
-  "keywords": [
-    "effection",
-    "effectionx",
-    "testing",
-    "concurrency",
-    "polling",
-    "retry"
-  ],
+  "keywords": ["testing", "concurrency"],
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",

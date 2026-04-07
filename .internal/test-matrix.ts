@@ -71,12 +71,13 @@ const fetchPackageVersions = function* (
   if (cached) {
     return cached;
   }
-  console.log(`  Fetching ${packageName} versions from npm...`);
+
   const { stdout } = yield* runCommand(
     `npm view ${packageName} versions --json`,
   );
   const versions = JSON.parse(stdout) as string[];
   versionCache.set(packageName, versions);
+
   return versions;
 };
 
@@ -129,6 +130,7 @@ const getWorkspacePackages = function* (): Operation<PackageInfo[]> {
 
     if (pkg.peerDependencies) {
       for (const [depName, range] of Object.entries(pkg.peerDependencies)) {
+        groupStart(`Fetching ${depName} versions from npm...`);
         const allVersions = yield* fetchPackageVersions(depName);
         const { min, max } = resolveVersionPair(allVersions, range);
 
@@ -137,6 +139,7 @@ const getWorkspacePackages = function* (): Operation<PackageInfo[]> {
 
         peerDeps.push({ name: depName, range, versions });
         console.log(`    ${pkg.name} -> ${depName}: ${versions.join(", ")}`);
+        groupEnd();
       }
     }
 
@@ -350,15 +353,11 @@ await main(function* () {
   console.log("Peer Dependency Matrix Test Runner");
   console.log("===================================\n");
 
-  groupStart("Resolve packages and peer dependencies");
   console.log("Resolving packages and peer dependencies...");
   const packages = yield* getWorkspacePackages();
-  groupEnd();
 
-  groupStart("Generate test matrix");
   console.log("Generating test matrix...");
   const matrix = generateMatrix(packages);
-  groupEnd();
 
   if (matrix.length === 0) {
     console.log("No packages with peer dependencies found.");
@@ -427,8 +426,8 @@ await main(function* () {
   // Set exit code if any failures
   const hasFailures = results.some((r) => r.failures.length > 0);
   if (hasFailures) {
+    process.exitCode = 1;
     console.log("\n\x1b[31mMatrix tests failed!\x1b[0m");
-    process.exit(1);
   } else {
     console.log("\n\x1b[32mAll matrix tests passed!\x1b[0m");
   }

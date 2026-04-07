@@ -61,7 +61,11 @@ type VitestJsonReport = {
 
 const rootDir = process.cwd();
 const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
-const vitestReportPath = path.join(rootDir, ".internal", "vitest-matrix-report.json");
+const vitestReportPath = path.join(
+  rootDir,
+  ".internal",
+  "vitest-matrix-report.json",
+);
 
 function groupStart(title: string): void {
   if (isGitHubActions) {
@@ -255,12 +259,13 @@ function* runTestsWithVitest(
     "--env-file=.env",
     "./node_modules/vitest/vitest.mjs",
     "run",
+    `--reporter=default`,
     `--reporter=json`,
     `--outputFile=${vitestReportPath}`,
     ...testPatterns,
   ];
   if (verbose) {
-    arguments_.splice(5, 0, "--reporter=verbose");
+    arguments_.splice(6, 0, "--reporter=verbose");
   }
 
   if (fs.existsSync(vitestReportPath)) {
@@ -326,9 +331,7 @@ function* runTestsWithVitest(
 
   const passed = report?.numPassedTests ?? 0;
   const failed = report?.numFailedTests ?? failures.length;
-  const skipped =
-    (report?.numPendingTests ?? 0) +
-    (report?.numTodoTests ?? 0);
+  const skipped = (report?.numPendingTests ?? 0) + (report?.numTodoTests ?? 0);
   const total = report?.numTotalTests ?? passed + failed + skipped;
 
   return {
@@ -358,7 +361,15 @@ function printSummaryTable(results: MatrixResult[]): void {
   console.log(`${"=".repeat(70)}\n`);
 
   // Dynamic header based on which deps are being tested
-  const cols = [...keys, "Packages", "Passed", "Failed", "Skipped", "Rate", "Status"];
+  const cols = [
+    ...keys,
+    "Packages",
+    "Passed",
+    "Failed",
+    "Skipped",
+    "Rate",
+    "Status",
+  ];
   const widths = cols.map((c) => Math.max(c.length + 2, 12));
 
   const header = cols.map((c, i) => c.padEnd(widths[i])).join("");
@@ -372,9 +383,10 @@ function printSummaryTable(results: MatrixResult[]): void {
         : "\x1b[31mFAIL\x1b[0m";
 
     const attempted = result.passed + result.failed;
-    const rate = attempted === 0
-      ? "-"
-      : `${Math.round((result.passed / attempted) * 100)}%`;
+    const rate =
+      attempted === 0
+        ? "-"
+        : `${Math.round((result.passed / attempted) * 100)}%`;
 
     const values = [
       ...keys.map((k) => result.overrides[k] ?? "-"),

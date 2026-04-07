@@ -8,5 +8,9 @@ export default defineConfig({
     hookTimeout: 30000,
     include: ["**/*.test.ts"],
     exclude: ["**/dist/**", "**/node_modules/**", "**/bdd/**"],
+    reporters:
+      process.env.GITHUB_ACTIONS === "true"
+        ? ["default", "github-actions"]
+        : ["default"],
   },
 });

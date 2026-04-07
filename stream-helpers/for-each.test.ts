@@ -1,5 +1,5 @@
-import { createChannel, sleep, spawn } from "effection";
 import { describe, it } from "@effectionx/bdd";
+import { createChannel, sleep, spawn } from "effection";
 import { expect } from "expect";
 
 import { forEach } from "./for-each.ts";
@@ -19,7 +19,7 @@ describe("forEach", () => {
       yield* stream.close();
     });
 
-    yield* forEach(function* (item: number) {
+    yield* yield* forEach(function* (item: number) {
       processedItems.push(item);
     }, stream);
 
@@ -36,7 +36,7 @@ describe("forEach", () => {
       yield* stream.close(42); // Close with value 42
     });
 
-    const closeValue = yield* forEach(function* () {}, stream);
+    const closeValue = yield* yield* forEach(function* () {}, stream);
     expect(closeValue).toBe(42);
   });
 });

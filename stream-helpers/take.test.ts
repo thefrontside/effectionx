@@ -10,7 +10,7 @@ describe("take", () => {
   it("should take first n values and close with the nth value", function* () {
     const values: number[] = [];
 
-    const closeValue = yield* forEach(
+    const closeValue = yield* yield* forEach(
       function* (value) {
         values.push(value);
       },
@@ -32,7 +32,7 @@ describe("take", () => {
       })(),
     );
 
-    const closeValue = yield* forEach(function* (value) {
+    const closeValue = yield* yield* forEach(function* (value) {
       values.push(value);
     }, take<number>(5)(stream));
 
@@ -43,7 +43,7 @@ describe("take", () => {
   it("should work with n=1", function* () {
     const values: number[] = [];
 
-    const closeValue = yield* forEach(
+    const closeValue = yield* yield* forEach(
       function* (value) {
         values.push(value);
       },
@@ -57,7 +57,7 @@ describe("take", () => {
   it("should work with n=0", function* () {
     const values: number[] = [];
 
-    const closeValue = yield* forEach(
+    const closeValue = yield* yield* forEach(
       function* (value) {
         values.push(value);
       },
@@ -73,7 +73,7 @@ describe("take", () => {
 
     const stream = pipe(streamOf([1, 2, 3, 4, 5]), take(2));
 
-    const closeValue = yield* forEach(function* (value) {
+    const closeValue = yield* yield* forEach(function* (value) {
       values.push(value);
     }, stream);
 

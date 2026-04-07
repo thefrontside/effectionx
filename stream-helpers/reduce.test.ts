@@ -1,5 +1,5 @@
-import { createChannel, type Operation, sleep, spawn } from "effection";
 import { describe, it } from "@effectionx/bdd";
+import type { Operation } from "effection";
 import { expect } from "expect";
 
 import { forEach } from "./for-each.ts";
@@ -17,7 +17,7 @@ describe("reduce", () => {
     }, 0);
 
     let sequence: number[] = [];
-    yield* forEach(function* (item) {
+    yield* yield* forEach(function* (item) {
       sequence.push(item);
     }, sum(stream));
 
@@ -44,7 +44,7 @@ describe("reduce", () => {
       {} as Record<string, string>,
     );
 
-    const closeValue = yield* forEach(function* () {}, merge(stream));
+    const closeValue = yield* yield* forEach(function* () {}, merge(stream));
     expect(closeValue).toBe(42);
   });
 
@@ -58,7 +58,7 @@ describe("reduce", () => {
     }, 0);
 
     let sequence: number[] = [];
-    yield* forEach(function* (item) {
+    yield* yield* forEach(function* (item) {
       sequence.push(item);
     }, sum(stream));
 

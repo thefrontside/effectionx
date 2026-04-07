@@ -10,7 +10,7 @@ describe("takeUntil", () => {
   it("should yield values until predicate is true, then close with matching value", function* () {
     const values: { status: string }[] = [];
 
-    const closeValue = yield* forEach(
+    const closeValue = yield* yield* forEach(
       function* (value) {
         values.push(value);
       },
@@ -39,7 +39,7 @@ describe("takeUntil", () => {
       })(),
     );
 
-    const closeValue = yield* forEach(
+    const closeValue = yield* yield* forEach(
       function* (value) {
         values.push(value);
       },
@@ -53,7 +53,7 @@ describe("takeUntil", () => {
   it("should close immediately with first value if it matches predicate", function* () {
     const values: { status: string }[] = [];
 
-    const closeValue = yield* forEach(
+    const closeValue = yield* yield* forEach(
       function* (value) {
         values.push(value);
       },
@@ -75,7 +75,7 @@ describe("takeUntil", () => {
 
     const progressStatuses: string[] = [];
 
-    const result = yield* forEach(
+    const result = yield* yield* forEach(
       function* (progress) {
         progressStatuses.push(progress.status);
       },
@@ -103,7 +103,7 @@ describe("takeUntil", () => {
       takeUntil((x) => x === 4),
     );
 
-    const closeValue = yield* forEach(function* (value) {
+    const closeValue = yield* yield* forEach(function* (value) {
       values.push(value);
     }, stream);
 

@@ -330,9 +330,9 @@ function* runTestsWithVitest(
   }
 
   const passed = report?.numPassedTests ?? 0;
-  const failed = report?.numFailedTests ?? failures.length;
+  const failed = Math.max(report?.numFailedTests ?? 0, failures.length);
   const skipped = (report?.numPendingTests ?? 0) + (report?.numTodoTests ?? 0);
-  const total = report?.numTotalTests ?? passed + failed + skipped;
+  const total = Math.max(report?.numTotalTests ?? 0, passed + failed + skipped);
 
   return {
     overrides,
@@ -378,7 +378,7 @@ function printSummaryTable(results: MatrixResult[]): void {
 
   for (const result of results) {
     const status =
-      result.failures.length === 0
+      result.failed === 0
         ? "\x1b[32mPASS\x1b[0m"
         : "\x1b[31mFAIL\x1b[0m";
 
@@ -392,7 +392,7 @@ function printSummaryTable(results: MatrixResult[]): void {
       ...keys.map((k) => result.overrides[k] ?? "-"),
       String(result.packages.length),
       String(result.passed),
-      String(result.failures.length),
+      String(result.failed),
       String(result.skipped),
       rate,
       status,
@@ -476,9 +476,9 @@ await main(function* () {
     results.push(result);
 
     const status =
-      result.failures.length === 0
+      result.failed === 0
         ? "\x1b[32mPASS\x1b[0m"
-        : `\x1b[31mFAIL (${result.failures.length} failures)\x1b[0m`;
+        : `\x1b[31mFAIL (${result.failed} failures)\x1b[0m`;
     console.log(`\nCompleted: ${status}`);
     groupEnd();
   }
@@ -503,7 +503,7 @@ await main(function* () {
   printFailureDetails(results);
 
   // Set exit code if any failures
-  const hasFailures = results.some((r) => r.failures.length > 0);
+  const hasFailures = results.some((r) => r.failed > 0);
   if (hasFailures) {
     process.exitCode = 1;
     console.log("\n\x1b[31mMatrix tests failed!\x1b[0m");

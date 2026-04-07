@@ -59,7 +59,7 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Run tests
+      - name: Run tests bdd
         run: pnpm test:node
 
       - name: Run tests
@@ -91,7 +91,7 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Run tests
+      - name: Run tests bdd
         run: pnpm test:node
 
       - name: Run tests

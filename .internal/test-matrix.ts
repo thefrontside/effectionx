@@ -128,8 +128,8 @@ const getWorkspacePackages = function* (): Operation<PackageInfo[]> {
     const peerDeps: PeerDepVersions[] = [];
 
     if (pkg.peerDependencies) {
+      groupStart(`Fetching ${pkg.name} peer dep versions from npm...`);
       for (const [depName, range] of Object.entries(pkg.peerDependencies)) {
-        groupStart(`Fetching ${depName} versions from npm...`);
         const allVersions = yield* fetchPackageVersions(depName);
         const { min, max } = resolveVersionPair(allVersions, range);
 
@@ -138,8 +138,8 @@ const getWorkspacePackages = function* (): Operation<PackageInfo[]> {
 
         peerDeps.push({ name: depName, range, versions });
         console.log(`    ${pkg.name} -> ${depName}: ${versions.join(", ")}`);
-        groupEnd();
       }
+      groupEnd();
     }
 
     packages.push({ name: pkg.name, dir, peerDeps });
@@ -294,7 +294,7 @@ function printSummaryTable(results: MatrixResult[]): void {
   console.log(`${"=".repeat(70)}\n`);
 
   // Dynamic header based on which deps are being tested
-  const cols = [...keys, "Packages", "Passed", "Failed", "Status"];
+  const cols = [...keys, "Packages", "Failed", "Status"];
   const widths = cols.map((c) => Math.max(c.length + 2, 12));
 
   const header = cols.map((c, i) => c.padEnd(widths[i])).join("");
@@ -414,11 +414,9 @@ await main(function* () {
   yield* runCommand("pnpm install --no-frozen-lockfile");
   groupEnd();
 
-  groupStart("Matrix summary");
   // Print summary
   printSummaryTable(results);
   printFailureDetails(results);
-  groupEnd();
 
   // Set exit code if any failures
   const hasFailures = results.some((r) => r.failures.length > 0);

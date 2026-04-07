@@ -8,16 +8,13 @@
   "exclude": ["**/*.test.ts", "test/**", "dist"],
   "references": [
     {
-      "path": "../scope-eval"
-    },
-    {
       "path": "../context-api"
     },
     {
-      "path": "../bdd"
+      "path": "../node"
     },
     {
-      "path": "../node"
+      "path": "../scope-eval"
     },
     {
       "path": "../stream-helpers"

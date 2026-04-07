@@ -204,11 +204,24 @@ export function createTestAdapter(
       if (!adapterTask) {
         return Promise.resolve() as Future<void>;
       }
-      return adapterTask.halt().then(() => {
-        if (destroyRoot) {
-          return destroyRoot();
-        }
-      }) as Future<void>;
+      return adapterTask
+        .halt()
+        .catch((error) => {
+          if (error instanceof Error && error.message === "halted") {
+            return undefined;
+          }
+          throw error;
+        })
+        .then(() => {
+          if (destroyRoot) {
+            return destroyRoot().catch((error) => {
+              if (error instanceof Error && error.message === "halted") {
+                return undefined;
+              }
+              throw error;
+            });
+          }
+        }) as Future<void>;
     },
   };
 

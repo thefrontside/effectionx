@@ -7,6 +7,6 @@ export default defineConfig({
   test: {
     hookTimeout: 30000,
     include: ["**/*.test.ts"],
-    exclude: ["**/dist/**", "**/node_modules/**"],
+    exclude: ["**/dist/**", "**/node_modules/**", "**/bdd/**"],
   },
 });

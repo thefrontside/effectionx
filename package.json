@@ -8,7 +8,7 @@
     "build:tsc": "tsc --build",
     "check": "tsc -b --emitDeclarationOnly && tsc -p tsconfig.check.json",
     "test": "node --env-file=.env ./node_modules/vitest/vitest.mjs run",
-    "test:node": "node --env-file=.env --test \"**/*.test.ts\"",
+    "test:node": "node --env-file=.env --test \"bdd/*.test.ts\"",
     "test:matrix": "node --env-file=.env .internal/test-matrix.ts",
     "lint": "biome lint .",
     "fmt": "biome format . --write",

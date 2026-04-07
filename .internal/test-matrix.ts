@@ -33,11 +33,35 @@ type MatrixResult = {
   overrides: Record<string, string>;
   packages: string[];
   failures: { name: string; error?: string }[];
+  passed: number;
+  failed: number;
+  skipped: number;
+  total: number;
   exitCode: number;
+};
+
+type VitestAssertionResult = {
+  fullName: string;
+  status: "passed" | "failed" | "pending" | "skipped" | "todo";
+  failureMessages: string[];
+};
+
+type VitestFileResult = {
+  assertionResults: VitestAssertionResult[];
+};
+
+type VitestJsonReport = {
+  numTotalTests: number;
+  numPassedTests: number;
+  numFailedTests: number;
+  numPendingTests: number;
+  numTodoTests: number;
+  testResults: VitestFileResult[];
 };
 
 const rootDir = process.cwd();
 const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
+const vitestReportPath = path.join(rootDir, ".internal", "vitest-matrix-report.json");
 
 function groupStart(title: string): void {
   if (isGitHubActions) {
@@ -231,10 +255,16 @@ function* runTestsWithVitest(
     "--env-file=.env",
     "./node_modules/vitest/vitest.mjs",
     "run",
+    `--reporter=json`,
+    `--outputFile=${vitestReportPath}`,
     ...testPatterns,
   ];
   if (verbose) {
-    arguments_.splice(3, 0, "--reporter=verbose");
+    arguments_.splice(5, 0, "--reporter=verbose");
+  }
+
+  if (fs.existsSync(vitestReportPath)) {
+    fs.unlinkSync(vitestReportPath);
   }
 
   // Run vitest through node with .env loaded so matrix runs use the same
@@ -256,6 +286,27 @@ function* runTestsWithVitest(
     }
   }
 
+  let report: VitestJsonReport | null = null;
+  if (fs.existsSync(vitestReportPath)) {
+    report = JSON.parse(
+      yield* readTextFile(vitestReportPath),
+    ) as VitestJsonReport;
+    fs.unlinkSync(vitestReportPath);
+  }
+
+  if (report) {
+    for (const file of report.testResults) {
+      for (const assertion of file.assertionResults) {
+        if (assertion.status === "failed") {
+          failures.push({
+            name: assertion.fullName,
+            error: assertion.failureMessages[0],
+          });
+        }
+      }
+    }
+  }
+
   if (exitCode !== 0) {
     const diagnostic = [stderr, stdout]
       .filter(Boolean)
@@ -263,18 +314,31 @@ function* runTestsWithVitest(
       .trim()
       .slice(0, 1600);
 
-    failures.push({
-      name: "vitest run failed",
-      error: diagnostic
-        ? `vitest exited with code ${exitCode}\n${diagnostic}`
-        : `vitest exited with code ${exitCode}`,
-    });
+    if (failures.length === 0) {
+      failures.push({
+        name: "vitest run failed",
+        error: diagnostic
+          ? `vitest exited with code ${exitCode}\n${diagnostic}`
+          : `vitest exited with code ${exitCode}`,
+      });
+    }
   }
+
+  const passed = report?.numPassedTests ?? 0;
+  const failed = report?.numFailedTests ?? failures.length;
+  const skipped =
+    (report?.numPendingTests ?? 0) +
+    (report?.numTodoTests ?? 0);
+  const total = report?.numTotalTests ?? passed + failed + skipped;
 
   return {
     overrides,
     packages,
     failures,
+    passed,
+    failed,
+    skipped,
+    total,
     exitCode,
   };
 }
@@ -294,7 +358,7 @@ function printSummaryTable(results: MatrixResult[]): void {
   console.log(`${"=".repeat(70)}\n`);
 
   // Dynamic header based on which deps are being tested
-  const cols = [...keys, "Packages", "Failed", "Status"];
+  const cols = [...keys, "Packages", "Passed", "Failed", "Skipped", "Rate", "Status"];
   const widths = cols.map((c) => Math.max(c.length + 2, 12));
 
   const header = cols.map((c, i) => c.padEnd(widths[i])).join("");
@@ -307,10 +371,18 @@ function printSummaryTable(results: MatrixResult[]): void {
         ? "\x1b[32mPASS\x1b[0m"
         : "\x1b[31mFAIL\x1b[0m";
 
+    const attempted = result.passed + result.failed;
+    const rate = attempted === 0
+      ? "-"
+      : `${Math.round((result.passed / attempted) * 100)}%`;
+
     const values = [
       ...keys.map((k) => result.overrides[k] ?? "-"),
       String(result.packages.length),
+      String(result.passed),
       String(result.failures.length),
+      String(result.skipped),
+      rate,
       status,
     ];
 

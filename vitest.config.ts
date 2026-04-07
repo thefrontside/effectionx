@@ -7,10 +7,6 @@ export default defineConfig({
   test: {
     hookTimeout: 30000,
     include: ["**/*.test.ts"],
-    exclude: [
-      "**/dist/**",
-      "**/node_modules/**",
-      "process/test/output-stream.test.ts",
-    ],
+    exclude: ["**/dist/**", "**/node_modules/**"],
   },
 });

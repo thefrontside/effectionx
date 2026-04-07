@@ -33,7 +33,6 @@ type MatrixResult = {
   overrides: Record<string, string>;
   packages: string[];
   failures: { name: string; error?: string }[];
-  passed: number;
   exitCode: number;
 };
 
@@ -276,7 +275,6 @@ function* runTestsWithVitest(
     overrides,
     packages,
     failures,
-    passed: exitCode === 0 ? 1 : 0,
     exitCode,
   };
 }
@@ -312,7 +310,6 @@ function printSummaryTable(results: MatrixResult[]): void {
     const values = [
       ...keys.map((k) => result.overrides[k] ?? "-"),
       String(result.packages.length),
-      String(result.passed),
       String(result.failures.length),
       status,
     ];
@@ -398,7 +395,7 @@ await main(function* () {
       result.failures.length === 0
         ? "\x1b[32mPASS\x1b[0m"
         : `\x1b[31mFAIL (${result.failures.length} failures)\x1b[0m`;
-    console.log(`\nCompleted: ${result.passed} passed, ${status}`);
+    console.log(`\nCompleted: ${status}`);
     groupEnd();
   }
 

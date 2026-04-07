@@ -259,6 +259,8 @@ function* runTestsWithVitest(
     "--env-file=.env",
     "./node_modules/vitest/vitest.mjs",
     "run",
+    "--config",
+    "vitest.config.ts",
     `--reporter=default`,
     `--reporter=json`,
     `--outputFile=${vitestReportPath}`,
@@ -332,7 +334,7 @@ function* runTestsWithVitest(
   const passed = report?.numPassedTests ?? 0;
   const failed = Math.max(report?.numFailedTests ?? 0, failures.length);
   const skipped = (report?.numPendingTests ?? 0) + (report?.numTodoTests ?? 0);
-  const total = Math.max(report?.numTotalTests ?? 0, passed + failed + skipped);
+  const total = report?.numTotalTests ?? passed + failed + skipped;
 
   return {
     overrides,
@@ -378,9 +380,7 @@ function printSummaryTable(results: MatrixResult[]): void {
 
   for (const result of results) {
     const status =
-      result.failed === 0
-        ? "\x1b[32mPASS\x1b[0m"
-        : "\x1b[31mFAIL\x1b[0m";
+      result.failed === 0 ? "\x1b[32mPASS\x1b[0m" : "\x1b[31mFAIL\x1b[0m";
 
     const attempted = result.passed + result.failed;
     const rate =

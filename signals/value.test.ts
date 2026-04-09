@@ -8,25 +8,25 @@ import {
 } from "effection";
 import { describe, it } from "@effectionx/vitest";
 import { expect } from "expect";
-import { createBooleanSignal } from "./boolean.ts";
+import { createValueSignal } from "./value.ts";
 
-describe("boolean", () => {
+describe("value", () => {
   it("takes an initial value", function* () {
-    const boolean = yield* createBooleanSignal(true);
+    const signal = yield* createValueSignal(true);
 
-    expect(boolean.valueOf()).toEqual(true);
+    expect(signal.valueOf()).toEqual(true);
   });
   describe("set", () => {
     it("allows to set a new value", function* () {
-      const boolean = yield* createBooleanSignal(true);
+      const signal = yield* createValueSignal(true);
 
-      boolean.set(false);
+      signal.set(false);
 
-      expect(boolean.valueOf()).toEqual(false);
+      expect(signal.valueOf()).toEqual(false);
     });
     it("does not send a value to the stream when the set value is the same as the current value", function* () {
       expect.assertions(2);
-      const boolean = yield* createBooleanSignal(true);
+      const signal = yield* createValueSignal(true);
 
       const { resolve, operation } = withResolvers<void>();
 
@@ -34,14 +34,14 @@ describe("boolean", () => {
       const subscription = yield* updates;
 
       yield* spawn(function* () {
-        for (const update of yield* each(boolean)) {
+        for (const update of yield* each(signal)) {
           yield* updates.send(update);
           yield* each.next();
         }
       });
 
       yield* spawn(function* () {
-        boolean.set(true);
+        signal.set(true);
 
         let next = yield* race([
           subscription.next(),
@@ -53,7 +53,7 @@ describe("boolean", () => {
 
         expect(next).toEqual("sleep won; update not received");
 
-        boolean.set(false);
+        signal.set(false);
 
         next = yield* subscription.next();
 
@@ -66,11 +66,11 @@ describe("boolean", () => {
   });
   describe("update", () => {
     it("updates the value of the signal", function* () {
-      const boolean = yield* createBooleanSignal(true);
+      const signal = yield* createValueSignal(true);
 
-      boolean.update((boolean) => !boolean);
+      signal.update((value) => !value);
 
-      expect(boolean.valueOf()).toEqual(false);
+      expect(signal.valueOf()).toEqual(false);
     });
   });
 });

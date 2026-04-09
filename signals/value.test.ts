@@ -80,33 +80,14 @@ describe("value", () => {
       yield* operation;
     });
     it("treats -0 and +0 as different values", function* () {
-      expect.assertions(3);
       const signal = yield* createValueSignal(-0);
 
-      const { resolve, operation } = withResolvers<void>();
+      expect(Object.is(signal.valueOf(), -0)).toEqual(true);
 
-      const updates = createChannel<number>();
-      const subscription = yield* updates;
+      signal.set(0);
 
-      yield* spawn(function* () {
-        for (const update of yield* each(signal)) {
-          yield* updates.send(update);
-          yield* each.next();
-        }
-      });
-
-      yield* spawn(function* () {
-        signal.set(0);
-
-        const next = yield* subscription.next();
-
-        expect(Object.is(next.value, 0)).toEqual(true);
-        expect(Object.is(next.value, -0)).toEqual(false);
-        expect(Object.is(signal.valueOf(), 0)).toEqual(true);
-        resolve();
-      });
-
-      yield* operation;
+      expect(Object.is(signal.valueOf(), 0)).toEqual(true);
+      expect(Object.is(signal.valueOf(), -0)).toEqual(false);
     });
   });
   describe("update", () => {

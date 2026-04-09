@@ -482,14 +482,18 @@ describe("worker", () => {
 
       // First subscriber gets the initial state
       const sub1 = yield* worker;
-      expect((yield* sub1.next()).value.type).toEqual("new");
+      const first = yield* sub1.next();
+      expect(first.done).toEqual(false);
+      if (!first.done) expect(first.value.type).toEqual("new");
 
       // Transition — sub1 does NOT pull this
       worker.complete("done");
 
       // Late subscriber gets latest, not initial
       const sub2 = yield* worker;
-      expect((yield* sub2.next()).value.type).toEqual("complete");
+      const second = yield* sub2.next();
+      expect(second.done).toEqual(false);
+      if (!second.done) expect(second.value.type).toEqual("complete");
     });
   });
 });

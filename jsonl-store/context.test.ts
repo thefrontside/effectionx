@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { useStore } from "./mod.ts";
 import { expect } from "expect";
 

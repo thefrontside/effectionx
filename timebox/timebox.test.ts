@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { expect } from "expect";
 import { timebox } from "./mod.ts";
 import { type Operation, sleep, suspend } from "effection";

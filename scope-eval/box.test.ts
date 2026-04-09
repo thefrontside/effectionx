@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { Err, Ok } from "effection";
 import { expect } from "expect";
 import { box, unbox } from "./mod.ts";

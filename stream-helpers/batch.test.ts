@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { createArraySignal, is } from "@effectionx/signals";
 import { expect } from "expect";
 import { createChannel, sleep, spawn } from "effection";

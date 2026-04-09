@@ -3,6 +3,7 @@ import type {
   Operation,
   Result,
   Scope,
+  Task,
   WithResolvers,
 } from "effection";
 import {
@@ -113,7 +114,8 @@ export function createTestAdapter(
   const { parent, name = anonymousNames.next().value } = options;
 
   let scope: WithResolvers<Result<Scope>> | undefined = undefined;
-  let destroy: () => Operation<void> = function* () {};
+  let adapterTask: Task<void> | undefined = undefined;
+  let destroyRoot: (() => Future<void>) | undefined = undefined;
 
   const adapter: TestAdapter = {
     parent,
@@ -167,7 +169,6 @@ export function createTestAdapter(
       scope = withResolvers<Result<Scope>>();
 
       let parent: Result<Scope>;
-      let destroyRoot: (() => Future<void>) | undefined = undefined;
       if (adapter.parent) {
         parent = yield* adapter.parent["@@init@@"]();
       } else {
@@ -195,16 +196,33 @@ export function createTestAdapter(
         }
       });
 
-      destroy = function* () {
-        yield* task.halt();
-        if (destroyRoot) {
-          yield* destroyRoot();
-        }
-      };
+      adapterTask = task;
 
       return yield* scope.operation;
     },
-    destroy: () => run(destroy),
+    destroy() {
+      if (!adapterTask) {
+        return Promise.resolve() as Future<void>;
+      }
+      return adapterTask
+        .halt()
+        .catch((error) => {
+          if (error instanceof Error && error.message === "halted") {
+            return undefined;
+          }
+          throw error;
+        })
+        .then(() => {
+          if (destroyRoot) {
+            return destroyRoot().catch((error) => {
+              if (error instanceof Error && error.message === "halted") {
+                return undefined;
+              }
+              throw error;
+            });
+          }
+        }) as Future<void>;
+    },
   };
 
   return adapter;

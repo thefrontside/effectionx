@@ -8,10 +8,10 @@
   "exclude": ["**/*.test.ts", "dist"],
   "references": [
     {
-      "path": "../bdd"
+      "path": "../middleware"
     },
     {
-      "path": "../middleware"
+      "path": "../vitest"
     }
   ]
 }

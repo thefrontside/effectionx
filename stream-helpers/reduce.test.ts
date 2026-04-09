@@ -1,5 +1,5 @@
 import { createChannel, type Operation, sleep, spawn } from "effection";
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { expect } from "expect";
 
 import { forEach } from "./for-each.ts";

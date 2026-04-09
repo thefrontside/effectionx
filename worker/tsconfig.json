@@ -8,9 +8,6 @@
   "exclude": ["**/*.test.ts", "test-assets/**", "dist"],
   "references": [
     {
-      "path": "../bdd"
-    },
-    {
       "path": "../converge"
     },
     {
@@ -18,6 +15,9 @@
     },
     {
       "path": "../timebox"
+    },
+    {
+      "path": "../vitest"
     }
   ]
 }

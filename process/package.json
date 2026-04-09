@@ -1,15 +1,8 @@
 {
   "name": "@effectionx/process",
   "description": "Spawn and manage child processes with structured concurrency",
-  "version": "0.7.4",
-  "keywords": [
-    "effection",
-    "effectionx",
-    "process",
-    "spawn",
-    "exec",
-    "child-process"
-  ],
+  "version": "0.8.0",
+  "keywords": ["process"],
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
@@ -35,13 +28,15 @@
   },
   "sideEffects": false,
   "dependencies": {
+    "@effectionx/context-api": "workspace:*",
     "@effectionx/node": "workspace:*",
+    "@effectionx/scope-eval": "workspace:*",
     "cross-spawn": "^7",
     "ctrlc-windows": "^2",
     "shellwords-ts": "^3.0.1"
   },
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*",
+    "@effectionx/vitest": "workspace:*",
     "@effectionx/stream-helpers": "workspace:*",
     "@types/cross-spawn": "^6",
     "effection": "^4"

@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { createContext } from "effection";
 import { expect } from "expect";
 import { unbox, useEvalScope } from "./mod.ts";

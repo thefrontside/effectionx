@@ -8,12 +8,6 @@
   "exclude": ["**/*.test.ts", "dist"],
   "references": [
     {
-      "path": "../bdd"
-    },
-    {
-      "path": "../process"
-    },
-    {
       "path": "../test-adapter"
     }
   ]

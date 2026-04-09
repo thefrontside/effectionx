@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { Err, Ok, each, sleep, spawn, until } from "effection";
 import { expect } from "expect";
 

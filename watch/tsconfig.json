@@ -9,9 +9,6 @@
   "exclude": ["**/*.test.ts", "test/**", "dist"],
   "references": [
     {
-      "path": "../bdd"
-    },
-    {
       "path": "../fs"
     },
     {
@@ -22,6 +19,9 @@
     },
     {
       "path": "../stream-helpers"
+    },
+    {
+      "path": "../vitest"
     }
   ]
 }

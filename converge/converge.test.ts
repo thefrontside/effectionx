@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { sleep, spawn } from "effection";
 import { expect } from "expect";
 

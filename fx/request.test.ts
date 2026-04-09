@@ -1,4 +1,4 @@
-import { beforeEach, describe, it } from "@effectionx/bdd";
+import { beforeEach, describe, it } from "@effectionx/vitest";
 import { expect } from "expect";
 
 import {

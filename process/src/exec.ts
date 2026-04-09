@@ -7,15 +7,22 @@ import type {
   ExitStatus,
   Process,
   ProcessResult,
-} from "./exec/api.ts";
+} from "./exec/types.ts";
 import { createPosixProcess } from "./exec/posix.ts";
 import { createWin32Process, isWin32 } from "./exec/win32.ts";
 
-export * from "./exec/api.ts";
+export * from "./exec/types.ts";
 export * from "./exec/error.ts";
 
 export interface Exec extends Operation<Process> {
+  /**
+   * Wait for process completion and return exit status plus captured output.
+   */
   join(): Operation<ProcessResult>;
+
+  /**
+   * Like `join()`, but throws if the process exits unsuccessfully.
+   */
   expect(): Operation<ProcessResult>;
 }
 
@@ -31,6 +38,21 @@ const createProcess: CreateOSProcess = (cmd, opts) => {
  * that have a finite lifetime and on which you may wish to synchronize on the
  * exit status. If you want to start a process like a server that spins up and runs
  * forever, consider using `daemon()`
+ *
+ * @example
+ * ```ts
+ * import { main } from "effection";
+ * import { exec } from "@effectionx/process";
+ *
+ * await main(function* () {
+ *   let process = yield* exec("node ./fixtures/hello-world.js", {
+ *     cwd: import.meta.dirname,
+ *   })
+ *   let result = yield* process.expect();
+ *
+ *   console.log(result.code); // 0
+ * });
+ * ```
  */
 export function exec(command: string, options: ExecOptions = {}): Exec {
   let [cmd, ...args] = options.shell ? [command] : shellwords.split(command);

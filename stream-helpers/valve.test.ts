@@ -1,8 +1,8 @@
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { createArraySignal, is } from "@effectionx/signals";
 import { expect } from "expect";
-import { mock } from "node:test";
 import { each, sleep, spawn } from "effection";
+import { vi } from "vitest";
 
 import { valve } from "./valve.ts";
 import { useFaucet } from "./test-helpers/faucet.ts";
@@ -14,12 +14,12 @@ describe("valve", () => {
     const closeFn = function* () {
       faucet.close();
     };
-    const close = mock.fn(closeFn);
+    const close = vi.fn(closeFn);
 
     const openFn = function* () {
       faucet.open();
     };
-    const open = mock.fn(openFn);
+    const open = vi.fn(openFn);
 
     const stream = valve({
       closeAt: 5,
@@ -46,7 +46,7 @@ describe("valve", () => {
 
     expect(values.valueOf()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
-    expect(close.mock.callCount()).toBe(1);
-    expect(open.mock.callCount()).toBe(1);
+    expect(close.mock.calls.length).toBe(1);
+    expect(open.mock.calls.length).toBe(1);
   });
 });

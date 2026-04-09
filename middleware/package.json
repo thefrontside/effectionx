@@ -24,5 +24,8 @@
   "bugs": {
     "url": "https://github.com/thefrontside/effectionx/issues"
   },
+  "devDependencies": {
+    "@effectionx/vitest": "workspace:*"
+  },
   "sideEffects": false
 }

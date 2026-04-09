@@ -2,14 +2,7 @@
   "name": "@effectionx/raf",
   "description": "Stream of requestAnimationFrame updates for Effection",
   "version": "0.2.3",
-  "keywords": [
-    "effection",
-    "effectionx",
-    "platform",
-    "browser",
-    "animation",
-    "raf"
-  ],
+  "keywords": ["platform", "streams"],
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
@@ -35,7 +28,7 @@
   },
   "sideEffects": false,
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*",
+    "@effectionx/vitest": "workspace:*",
     "@essentials/raf": "^1",
     "effection": "^4"
   }

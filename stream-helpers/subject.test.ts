@@ -4,7 +4,7 @@ import {
   type Stream,
   type Subscription,
 } from "effection";
-import { beforeEach, describe, it } from "@effectionx/bdd";
+import { beforeEach, describe, it } from "@effectionx/vitest";
 import { expect } from "expect";
 
 import { createSubject } from "./subject.ts";

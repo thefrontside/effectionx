@@ -1,7 +1,7 @@
 import { access, mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { beforeEach, describe, it } from "@effectionx/bdd";
+import { beforeEach, describe, it } from "@effectionx/vitest";
 import { when } from "@effectionx/converge";
 import {
   all,

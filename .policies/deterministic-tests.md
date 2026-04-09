@@ -23,7 +23,7 @@ This document defines the experimental policy for writing stable, non-flaky test
 ### Compliant: Lifecycle invariant assertion
 
 ```typescript
-import { describe, it, expect } from "@effectionx/bdd";
+import { describe, it, expect } from "@effectionx/vitest";
 import { spawn, suspend, resource } from "effection";
 
 it("runs cleanup on halt", function* () {
@@ -48,7 +48,7 @@ it("runs cleanup on halt", function* () {
 ### Compliant: Using withResolvers for callback synchronization
 
 ```typescript
-import { describe, it, expect } from "@effectionx/bdd";
+import { describe, it, expect } from "@effectionx/vitest";
 import { spawn, withResolvers } from "effection";
 
 it("notifies on connection", function* () {

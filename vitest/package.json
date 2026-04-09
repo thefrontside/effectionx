@@ -2,7 +2,7 @@
   "name": "@effectionx/vitest",
   "description": "Vitest adapter for writing tests as Effection generator functions",
   "version": "0.3.1",
-  "keywords": ["effection", "effectionx", "testing", "vitest"],
+  "keywords": ["testing"],
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
@@ -22,8 +22,8 @@
     "@effectionx/test-adapter": "workspace:*"
   },
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*",
-    "@effectionx/process": "workspace:*",
+    "@types/cross-spawn": "^6",
+    "cross-spawn": "^7",
     "effection": "^4",
     "vitest": "^4"
   },

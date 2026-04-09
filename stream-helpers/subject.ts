@@ -38,13 +38,12 @@ import {
 export function createSubject<T>(
   initial?: T,
 ): <TClose>(stream: Stream<T, TClose>) => Operation<Stream<T, TClose>> {
-  let current: IteratorResult<T> | undefined =
-    typeof initial !== "undefined"
-      ? { done: false, value: initial }
-      : undefined;
-
   return <TClose>(stream: Stream<T, TClose>) =>
     resource<Stream<T, TClose>>(function* (provide) {
+      let current: IteratorResult<T> | undefined =
+        typeof initial !== "undefined"
+          ? { done: false, value: initial }
+          : undefined;
       const relay = createSignal<T, TClose>();
       let closed = false;
 

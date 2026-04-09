@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { MessagePort, parentPort } from "node:worker_threads";
 import { createValueSignal, type ValueSignal } from "@effectionx/signals";
+import { createSubject } from "@effectionx/stream-helpers";
 import {
   Err,
   Ok,
@@ -291,10 +292,10 @@ interface WorkerStateSignal extends ValueSignal<WorkerState> {
 
 export function createWorkerStatesSignal(): Operation<WorkerStateSignal> {
   return resource(function* (provide) {
-    const signal = yield* createValueSignal<WorkerState>(
-      { type: "new" },
-      { emitCurrentOnSubscribe: true },
-    );
+    const signal = yield* createValueSignal<WorkerState>({ type: "new" });
+    const replayStream = yield* createSubject<WorkerState>({
+      type: "new",
+    })(signal);
 
     const interrupt: WorkerStateSignal["interrupt"] = () => {
       let next: Interrupted = {
@@ -307,7 +308,7 @@ export function createWorkerStatesSignal(): Operation<WorkerStateSignal> {
 
     try {
       yield* provide({
-        [Symbol.iterator]: signal[Symbol.iterator],
+        [Symbol.iterator]: replayStream[Symbol.iterator],
         get state() {
           return signal.valueOf().type;
         },

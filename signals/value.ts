@@ -12,20 +12,13 @@ export interface CreateValueSignalOptions<T> {
    * Defaults to `Object.is`.
    */
   equals?: (current: T, next: T) => boolean;
-
-  /**
-   * Replays the current value to subscribers when they attach.
-   *
-   * This is disabled by default.
-   */
-  emitCurrentOnSubscribe?: boolean;
 }
 
 /**
  * Creates a value-backed signal with configurable equality semantics.
  *
  * @param initial - Initial signal value.
- * @param options - Equality and subscription behavior overrides.
+ * @param options - Equality overrides.
  * @returns A value signal resource.
  */
 export function createValueSignal<T>(
@@ -50,13 +43,7 @@ export function createValueSignal<T>(
 
     try {
       yield* provide({
-        [Symbol.iterator]: options.emitCurrentOnSubscribe
-          ? function* () {
-              const subscription = yield* signal;
-              signal.send(ref.current);
-              return subscription;
-            }
-          : signal[Symbol.iterator],
+        [Symbol.iterator]: signal[Symbol.iterator],
         set,
         update(updater) {
           return set(updater(ref.current));

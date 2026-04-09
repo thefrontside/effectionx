@@ -275,9 +275,9 @@ importers:
         specifier: workspace:*
         version: link:../context-api
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.2

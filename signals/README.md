@@ -35,40 +35,10 @@ If you need a method that we didn't implement but it's available in the
 promitive type, please create a PR. If you need something else, use the `update`
 method.
 
-### Value Signal
-
-`createValueSignal()` is the shared base used by the other signal types in this
-package. It gives you a simple register-like signal for any value with the same
-`set`, `update`, and `valueOf` interface as the specialized signals.
-
-Plain value signals treat values as unchanged using `Object.is()`. That means
-setting `NaN` to `NaN` will not emit, while `-0` and `+0` are treated as
-distinct values.
-
-```ts
-import { each, run, spawn } from "effection";
-import { createValueSignal } from "@effectionx/signals";
-
-await run(function* () {
-  const status = yield* createValueSignal("idle");
-
-  yield* spawn(function* () {
-    for (const update of yield* each(status)) {
-      console.log(update);
-      yield* each.next();
-    }
-  });
-
-  status.set("running");
-  status.update((value) => `${value}!`);
-});
-```
-
 ### Boolean Signal
 
-The Boolean Signal is a `ValueSignal<boolean>` built on top of
-`createValueSignal()`. You can set the value which will cause the new value to
-be sent to the stream.
+The Boolean Signal provides a stream for a boolean value. You can set the value
+which will cause the new value to be sent to the stream.
 
 ```ts
 import { each, run, spawn } from "effection";
@@ -98,8 +68,6 @@ For an example of Boolean Signal in action, checkout the
 The Array Signal provides a stream for the value of the array. The value is
 considered immutable - you shouldn't modify the value that comes through the
 stream, instead invoke methods on the signal to cause a new value to be sent.
-Array signals use the shared value-signal base, but compare arrays
-structurally, so setting an equal array does not emit a duplicate update.
 
 ```ts
 import { each, run, spawn } from "effection";
@@ -124,11 +92,6 @@ For an example of Array Signl, checkout the
 and
 [batch](https://github.com/thefrontside/effectionx/blob/main/stream-helpers/batch.ts)
 stream helpers.
-
-### Set Signal
-
-The Set Signal also uses the shared value-signal base while preserving
-structural equality for immutable sets.
 
 ## Helpers
 

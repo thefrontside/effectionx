@@ -1,19 +1,38 @@
-import type { Operation } from "effection";
+import { createSignal, type Operation, resource } from "effection";
 
-import { createValueSignal } from "./value.ts";
 import type { ValueSignal } from "./types.ts";
 
-/**
- * A value signal specialized for boolean state.
- */
 export interface BooleanSignal extends ValueSignal<boolean> {}
 
-/**
- * Creates a boolean signal backed by the shared value-signal implementation.
- *
- * @param initial - Initial boolean value.
- * @returns A boolean signal resource.
- */
 export function createBooleanSignal(initial = false): Operation<BooleanSignal> {
-  return createValueSignal(initial);
+  return resource(function* (provide) {
+    const signal = createSignal<boolean, void>();
+
+    const ref = { current: initial };
+
+    function set(value: boolean) {
+      if (value !== ref.current) {
+        ref.current = value;
+
+        signal.send(ref.current);
+      }
+
+      return ref.current;
+    }
+
+    try {
+      yield* provide({
+        [Symbol.iterator]: signal[Symbol.iterator],
+        set,
+        update(updater) {
+          return set(updater(ref.current));
+        },
+        valueOf() {
+          return ref.current;
+        },
+      });
+    } finally {
+      signal.close();
+    }
+  });
 }

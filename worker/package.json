@@ -33,7 +33,7 @@
     "web-worker": "^1"
   },
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*",
+    "@effectionx/vitest": "workspace:*",
     "@effectionx/converge": "workspace:*",
     "effection": "^4"
   }

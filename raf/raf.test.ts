@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import {
   caf as cancelAnimationFrame,
   raf as requestAnimationFrame,

@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import {
   type Operation,
   type Subscription,

@@ -43,7 +43,7 @@
     "@effectionx/fs": "workspace:*"
   },
   "devDependencies": {
-    "@effectionx/bdd": "workspace:*",
+    "@effectionx/vitest": "workspace:*",
     "@effectionx/signals": "workspace:*",
     "@effectionx/stream-helpers": "workspace:*",
     "effection": "^4"

@@ -6,7 +6,7 @@ import {
   spawn,
   withResolvers,
 } from "effection";
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { expect } from "expect";
 import { createValueSignal } from "./value.ts";
 

@@ -32,6 +32,9 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.3
+      vitest:
+        specifier: ^4
+        version: 4.1.0(@types/node@22.19.7)(vite@7.3.1(@types/node@22.19.7)(yaml@2.8.2))
 
   .internal:
     dependencies:
@@ -75,9 +78,9 @@ importers:
 
   chain:
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
@@ -88,9 +91,9 @@ importers:
         specifier: workspace:*
         version: link:../middleware
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
@@ -101,18 +104,18 @@ importers:
         specifier: workspace:*
         version: link:../timebox
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
 
   effect-ts:
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effect:
         specifier: ^3
         version: 3.19.14
@@ -122,47 +125,51 @@ importers:
 
   fetch:
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
 
   fs:
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
 
   fx:
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
 
   jsonl-store:
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
 
-  middleware: {}
+  middleware:
+    devDependencies:
+      '@effectionx/vitest':
+        specifier: workspace:*
+        version: link:../vitest
 
   node:
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
@@ -188,12 +195,12 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1
     devDependencies:
-      '@effectionx/bdd':
-        specifier: workspace:*
-        version: link:../bdd
       '@effectionx/stream-helpers':
         specifier: workspace:*
         version: link:../stream-helpers
+      '@effectionx/vitest':
+        specifier: workspace:*
+        version: link:../vitest
       '@types/cross-spawn':
         specifier: ^6
         version: 6.0.6
@@ -203,9 +210,9 @@ importers:
 
   raf:
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       '@essentials/raf':
         specifier: ^1
         version: 1.2.0
@@ -215,9 +222,9 @@ importers:
 
   scope-eval:
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
@@ -228,9 +235,9 @@ importers:
         specifier: ^5
         version: 5.1.4
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
@@ -250,9 +257,9 @@ importers:
         specifier: ^2
         version: 2.33.4
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
@@ -263,21 +270,21 @@ importers:
         specifier: ^2
         version: 2.8.2
     devDependencies:
-      '@effectionx/bdd':
-        specifier: workspace:*
-        version: link:../bdd
       '@effectionx/stream-helpers':
         specifier: workspace:*
         version: link:../stream-helpers
+      '@effectionx/vitest':
+        specifier: workspace:*
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
 
   task-buffer:
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       '@sinonjs/fake-timers':
         specifier: ^14
         version: 14.0.0
@@ -296,9 +303,9 @@ importers:
 
   timebox:
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
@@ -319,12 +326,12 @@ importers:
         specifier: workspace:*
         version: link:../test-adapter
     devDependencies:
-      '@effectionx/bdd':
-        specifier: workspace:*
-        version: link:../bdd
-      '@effectionx/process':
-        specifier: workspace:*
-        version: link:../process
+      '@types/cross-spawn':
+        specifier: ^6
+        version: 6.0.6
+      cross-spawn:
+        specifier: ^7
+        version: 7.0.6
       effection:
         specifier: ^4
         version: 4.0.0
@@ -356,24 +363,24 @@ importers:
         specifier: ^0
         version: 0.1.8
     devDependencies:
-      '@effectionx/bdd':
-        specifier: workspace:*
-        version: link:../bdd
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals
       '@effectionx/stream-helpers':
         specifier: workspace:*
         version: link:../stream-helpers
+      '@effectionx/vitest':
+        specifier: workspace:*
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0
 
   websocket:
     devDependencies:
-      '@effectionx/bdd':
+      '@effectionx/vitest':
         specifier: workspace:*
-        version: link:../bdd
+        version: link:../vitest
       '@types/ws':
         specifier: ^8
         version: 8.18.1
@@ -396,12 +403,12 @@ importers:
         specifier: ^1
         version: 1.5.0
     devDependencies:
-      '@effectionx/bdd':
-        specifier: workspace:*
-        version: link:../bdd
       '@effectionx/converge':
         specifier: workspace:*
         version: link:../converge
+      '@effectionx/vitest':
+        specifier: workspace:*
+        version: link:../vitest
       effection:
         specifier: ^4
         version: 4.0.0

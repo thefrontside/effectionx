@@ -3,39 +3,13 @@ import path from "node:path";
 import process from "node:process";
 import { readTextFile } from "@effectionx/fs";
 import { exec } from "@effectionx/process";
-import { lines } from "@effectionx/stream-helpers";
-import { type Operation, type Stream, each, main, spawn } from "effection";
+import { type Operation, main } from "effection";
 import G from "generatorics";
 import semver from "semver";
 
 // Parse CLI args for verbose mode
 const verbose =
   process.argv.includes("-v") || process.argv.includes("--verbose");
-
-import { type TapTestResult, parseTapResults } from "./tap-parser.ts";
-
-/**
- * Stream helper that logs each line as it passes through.
- * Used in verbose mode to see raw TAP output.
- */
-function logLines<TClose>(
-  stream: Stream<string, TClose>,
-): Stream<string, TClose> {
-  return {
-    *[Symbol.iterator]() {
-      const sub = yield* stream;
-      return {
-        *next() {
-          const result = yield* sub.next();
-          if (!result.done) {
-            console.log(result.value);
-          }
-          return result;
-        },
-      };
-    },
-  };
-}
 
 // Types for peer dependency version resolution
 type PeerDepVersions = {
@@ -58,12 +32,54 @@ type MatrixEntry = {
 type MatrixResult = {
   overrides: Record<string, string>;
   packages: string[];
-  failures: TapTestResult[];
+  failures: { name: string; error?: string }[];
   passed: number;
+  failed: number;
+  skipped: number;
+  total: number;
   exitCode: number;
 };
 
+type VitestAssertionResult = {
+  fullName: string;
+  status: "passed" | "failed" | "pending" | "skipped" | "todo";
+  failureMessages: string[];
+};
+
+type VitestFileResult = {
+  assertionResults: VitestAssertionResult[];
+};
+
+type VitestJsonReport = {
+  numTotalTests: number;
+  numPassedTests: number;
+  numFailedTests: number;
+  numPendingTests: number;
+  numTodoTests: number;
+  testResults: VitestFileResult[];
+};
+
 const rootDir = process.cwd();
+const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
+const vitestReportPath = path.join(
+  rootDir,
+  ".internal",
+  "vitest-matrix-report.json",
+);
+
+function groupStart(title: string): void {
+  if (isGitHubActions) {
+    console.log(`::group::${title.replace(/\r?\n/g, " ")}`);
+  } else {
+    console.log(`\n>>> ${title}`);
+  }
+}
+
+function groupEnd(): void {
+  if (isGitHubActions) {
+    console.log("::endgroup::");
+  }
+}
 
 const runCommand = (command: string) => exec(command).expect();
 
@@ -82,12 +98,13 @@ const fetchPackageVersions = function* (
   if (cached) {
     return cached;
   }
-  console.log(`  Fetching ${packageName} versions from npm...`);
+
   const { stdout } = yield* runCommand(
     `npm view ${packageName} versions --json`,
   );
   const versions = JSON.parse(stdout) as string[];
   versionCache.set(packageName, versions);
+
   return versions;
 };
 
@@ -139,6 +156,7 @@ const getWorkspacePackages = function* (): Operation<PackageInfo[]> {
     const peerDeps: PeerDepVersions[] = [];
 
     if (pkg.peerDependencies) {
+      groupStart(`Fetching ${pkg.name} peer dep versions from npm...`);
       for (const [depName, range] of Object.entries(pkg.peerDependencies)) {
         const allVersions = yield* fetchPackageVersions(depName);
         const { min, max } = resolveVersionPair(allVersions, range);
@@ -149,6 +167,7 @@ const getWorkspacePackages = function* (): Operation<PackageInfo[]> {
         peerDeps.push({ name: depName, range, versions });
         console.log(`    ${pkg.name} -> ${depName}: ${versions.join(", ")}`);
       }
+      groupEnd();
     }
 
     packages.push({ name: pkg.name, dir, peerDeps });
@@ -221,74 +240,111 @@ const generateMatrix = (packages: PackageInfo[]): MatrixEntry[] => {
   });
 };
 
-function* runTestsWithTap(
+function* runTestsWithVitest(
   overrides: Record<string, string>,
   packages: string[],
 ): Operation<MatrixResult> {
-  const failures: TapTestResult[] = [];
-  let passed = 0;
+  const failures: { name: string; error?: string }[] = [];
 
-  // Build glob patterns for test files from package names
-  // Package names are like @effectionx/fx -> fx/**/*.test.ts
+  // Build package path filters from package names.
+  // We intentionally pass directories (e.g. "fx") rather than glob strings
+  // like "fx/**/*.test.ts" because this command is executed without a shell,
+  // so globs are not expanded before reaching Vitest.
   const testPatterns = packages.map((pkg) => {
     const shortName = pkg.replace("@effectionx/", "");
-    return `${shortName}/**/*.test.ts`;
+    return shortName;
   });
 
-  // Build command with TAP reporter
-  const baseNodeOptions = process.env.NODE_OPTIONS ?? "";
-  const tapNodeOptions = `${baseNodeOptions} --test-reporter=tap`.trim();
+  const arguments_ = [
+    "--env-file=.env",
+    "./node_modules/vitest/vitest.mjs",
+    "run",
+    "--config",
+    "vitest.config.ts",
+    `--reporter=default`,
+    `--reporter=json`,
+    `--outputFile=${vitestReportPath}`,
+    ...testPatterns,
+  ];
+  if (verbose) {
+    arguments_.splice(6, 0, "--reporter=verbose");
+  }
 
-  // Pass arguments separately to avoid shell: true which doesn't work on Windows
-  const proc = yield* exec("node", {
-    arguments: ["--test", ...testPatterns],
+  if (fs.existsSync(vitestReportPath)) {
+    fs.unlinkSync(vitestReportPath);
+  }
+
+  // Run vitest through node with .env loaded so matrix runs use the same
+  // runtime conditions as the root `pnpm test` command.
+  const { code, stdout, stderr } = yield* exec("node", {
+    arguments: arguments_,
     env: {
       ...process.env,
-      NODE_OPTIONS: tapNodeOptions,
-    },
-  });
+    } as Record<string, string>,
+  }).join();
+  const exitCode = code ?? 1;
 
-  // Process stdout in real-time
-  yield* spawn(function* () {
-    const lineStream = lines()(proc.stdout);
-    // In verbose mode, log each line as it passes through
-    const loggedStream = verbose ? logLines(lineStream) : lineStream;
-    const tapStream = parseTapResults()(loggedStream);
+  if (verbose && (stdout || stderr)) {
+    if (stdout) {
+      console.log(stdout);
+    }
+    if (stderr) {
+      console.error(stderr);
+    }
+  }
 
-    for (const result of yield* each(tapStream)) {
-      // Skip suites, only count actual tests
-      // Tests either have type: 'test' or no type field (but not type: 'suite')
-      const isTest = result.metadata?.type !== "suite";
+  let report: VitestJsonReport | null = null;
+  if (fs.existsSync(vitestReportPath)) {
+    report = JSON.parse(
+      yield* readTextFile(vitestReportPath),
+    ) as VitestJsonReport;
+    fs.unlinkSync(vitestReportPath);
+  }
 
-      if (isTest) {
-        if (result.status === "not ok") {
-          // Skip suite-level failures (they just aggregate subtest failures)
-          if (result.metadata?.failureType !== "subtestsFailed") {
-            failures.push(result);
-            console.log(`  \x1b[31m\u2717 ${result.name}\x1b[0m`);
-            if (result.metadata?.error) {
-              // Print first line of error indented
-              const errorLines = result.metadata.error.split("\n");
-              console.log(`    \x1b[90m${errorLines[0]}\x1b[0m`);
-            }
-          }
-        } else {
-          passed++;
+  if (report) {
+    for (const file of report.testResults) {
+      for (const assertion of file.assertionResults) {
+        if (assertion.status === "failed") {
+          failures.push({
+            name: assertion.fullName,
+            error: assertion.failureMessages[0],
+          });
         }
       }
-      yield* each.next();
     }
-  });
+  }
 
-  // Wait for process to complete
-  const { code } = yield* proc.join();
+  if (exitCode !== 0) {
+    const diagnostic = [stderr, stdout]
+      .filter(Boolean)
+      .join("\n")
+      .trim()
+      .slice(0, 1600);
+
+    if (failures.length === 0) {
+      failures.push({
+        name: "vitest run failed",
+        error: diagnostic
+          ? `vitest exited with code ${exitCode}\n${diagnostic}`
+          : `vitest exited with code ${exitCode}`,
+      });
+    }
+  }
+
+  const passed = report?.numPassedTests ?? 0;
+  const failed = Math.max(report?.numFailedTests ?? 0, failures.length);
+  const skipped = (report?.numPendingTests ?? 0) + (report?.numTodoTests ?? 0);
+  const total = report?.numTotalTests ?? passed + failed + skipped;
 
   return {
     overrides,
     packages,
     failures,
     passed,
-    exitCode: code ?? 1,
+    failed,
+    skipped,
+    total,
+    exitCode,
   };
 }
 
@@ -307,7 +363,15 @@ function printSummaryTable(results: MatrixResult[]): void {
   console.log(`${"=".repeat(70)}\n`);
 
   // Dynamic header based on which deps are being tested
-  const cols = [...keys, "Packages", "Passed", "Failed", "Status"];
+  const cols = [
+    ...keys,
+    "Packages",
+    "Passed",
+    "Failed",
+    "Skipped",
+    "Rate",
+    "Status",
+  ];
   const widths = cols.map((c) => Math.max(c.length + 2, 12));
 
   const header = cols.map((c, i) => c.padEnd(widths[i])).join("");
@@ -316,15 +380,21 @@ function printSummaryTable(results: MatrixResult[]): void {
 
   for (const result of results) {
     const status =
-      result.failures.length === 0
-        ? "\x1b[32mPASS\x1b[0m"
-        : "\x1b[31mFAIL\x1b[0m";
+      result.failed === 0 ? "\x1b[32mPASS\x1b[0m" : "\x1b[31mFAIL\x1b[0m";
+
+    const attempted = result.passed + result.failed;
+    const rate =
+      attempted === 0
+        ? "-"
+        : `${Math.round((result.passed / attempted) * 100)}%`;
 
     const values = [
       ...keys.map((k) => result.overrides[k] ?? "-"),
       String(result.packages.length),
       String(result.passed),
-      String(result.failures.length),
+      String(result.failed),
+      String(result.skipped),
+      rate,
       status,
     ];
 
@@ -353,24 +423,8 @@ function printFailureDetails(results: MatrixResult[]): void {
 
     for (const failure of result.failures) {
       console.log(`\n\x1b[31m[${overrideStr}]\x1b[0m ${failure.name}`);
-
-      if (failure.metadata?.location) {
-        console.log(`  Location: ${failure.metadata.location}`);
-      }
-
-      if (failure.metadata?.error) {
-        console.log(`  Error: ${failure.metadata.error}`);
-      }
-
-      if (failure.metadata?.stack) {
-        console.log("  Stack:");
-        const stackLines = failure.metadata.stack.split("\n");
-        for (const line of stackLines.slice(0, 5)) {
-          console.log(`    ${line}`);
-        }
-        if (stackLines.length > 5) {
-          console.log(`    ... (${stackLines.length - 5} more lines)`);
-        }
+      if (failure.error) {
+        console.log(`  Error: ${failure.error}`);
       }
     }
   }
@@ -383,7 +437,7 @@ await main(function* () {
   console.log("Resolving packages and peer dependencies...");
   const packages = yield* getWorkspacePackages();
 
-  console.log("\nGenerating test matrix...");
+  console.log("Generating test matrix...");
   const matrix = generateMatrix(packages);
 
   if (matrix.length === 0) {
@@ -395,10 +449,12 @@ await main(function* () {
 
   const results: MatrixResult[] = [];
 
-  for (const entry of matrix) {
+  for (const [index, entry] of matrix.entries()) {
     const overrideStr = Object.entries(entry.overrides)
       .map(([k, v]) => `${k}@${v}`)
       .join(", ");
+
+    groupStart(`Matrix ${index + 1}/${matrix.length}: ${overrideStr}`);
 
     console.log(`\n${"=".repeat(60)}`);
     console.log(`Testing with: ${overrideStr}`);
@@ -416,16 +472,18 @@ await main(function* () {
     yield* runCommand("pnpm install --no-frozen-lockfile");
 
     console.log("[3/3] Running tests...\n");
-    const result = yield* runTestsWithTap(entry.overrides, entry.packages);
+    const result = yield* runTestsWithVitest(entry.overrides, entry.packages);
     results.push(result);
 
     const status =
-      result.failures.length === 0
+      result.failed === 0
         ? "\x1b[32mPASS\x1b[0m"
-        : `\x1b[31mFAIL (${result.failures.length} failures)\x1b[0m`;
-    console.log(`\nCompleted: ${result.passed} passed, ${status}`);
+        : `\x1b[31mFAIL (${result.failed} failures)\x1b[0m`;
+    console.log(`\nCompleted: ${status}`);
+    groupEnd();
   }
 
+  groupStart("Cleanup and restore dependencies");
   console.log(`\n${"=".repeat(60)}`);
   console.log("Cleaning up...");
   console.log("=".repeat(60));
@@ -438,13 +496,14 @@ await main(function* () {
   }
 
   yield* runCommand("pnpm install --no-frozen-lockfile");
+  groupEnd();
 
   // Print summary
   printSummaryTable(results);
   printFailureDetails(results);
 
   // Set exit code if any failures
-  const hasFailures = results.some((r) => r.failures.length > 0);
+  const hasFailures = results.some((r) => r.failed > 0);
   if (hasFailures) {
     process.exitCode = 1;
     console.log("\n\x1b[31mMatrix tests failed!\x1b[0m");

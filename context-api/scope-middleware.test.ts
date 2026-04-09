@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { createApi } from "@effectionx/context-api";
 import { type Operation, scoped, spawn, withResolvers } from "effection";
 import { expect } from "expect";

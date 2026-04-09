@@ -1,4 +1,4 @@
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { createArraySignal, is } from "@effectionx/signals";
 import { forEach } from "@effectionx/stream-helpers";
 import { expect } from "expect";

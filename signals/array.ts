@@ -1,8 +1,8 @@
-import { type Operation, createSignal, resource } from "effection";
-import { List } from "immutable";
+import { type Operation, resource } from "effection";
 
 import { is } from "./helpers.ts";
 import type { ValueSignal } from "./types.ts";
+import { createValueSignal } from "./value.ts";
 
 /**
  * Interface for return value of {@link createArraySignal}.
@@ -49,51 +49,48 @@ export function createArraySignal<T>(
   initial: Iterable<T>,
 ): Operation<ArraySignal<T>> {
   return resource(function* (provide) {
-    const signal = createSignal<T[], void>();
-    const ref = {
-      current: List.of<T>(...initial),
-    };
+    const signal = yield* createValueSignal(snapshotArray(initial), {
+      equals: areArraysEqual,
+    });
 
-    function set(value: Iterable<T>) {
-      if (ref.current.equals(List.of<T>(...value))) {
-        return ref.current.toArray();
-      }
-
-      ref.current = List.of<T>(...value);
-      signal.send(ref.current.toArray());
-      return ref.current.toArray();
+    function set(value: Iterable<T>): T[] {
+      return signal.set(snapshotArray(value)).slice();
     }
 
     const array: ArraySignal<T> = {
       [Symbol.iterator]: signal[Symbol.iterator],
       set,
       update(updater) {
-        return set(updater(ref.current.toArray()));
+        return set(updater(signal.valueOf().slice()));
       },
       push(...args: T[]) {
-        ref.current = ref.current.push(...args);
-        signal.send(ref.current.toArray());
-        return ref.current.size;
+        return signal.set(snapshotArray([...signal.valueOf(), ...args])).length;
       },
       *shift() {
         yield* is(array, (array) => array.length > 0);
-        const value = ref.current.first()!;
-        ref.current = ref.current.shift();
-        signal.send(ref.current.toArray());
-        return value;
+        const [value, ...rest] = signal.valueOf();
+        signal.set(snapshotArray(rest));
+        return value!;
       },
       valueOf() {
-        return ref.current.toArray();
+        return signal.valueOf().slice();
       },
       get length() {
-        return ref.current.size;
+        return signal.valueOf().length;
       },
     };
 
-    try {
-      yield* provide(array);
-    } finally {
-      signal.close();
-    }
+    yield* provide(array);
   });
+}
+
+function snapshotArray<T>(value: Iterable<T>): T[] {
+  return Object.freeze([...value]) as T[];
+}
+
+function areArraysEqual<T>(current: readonly T[], next: readonly T[]): boolean {
+  return (
+    current.length === next.length &&
+    current.every((value, index) => Object.is(value, next[index]))
+  );
 }

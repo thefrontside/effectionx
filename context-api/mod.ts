@@ -4,25 +4,27 @@ import { type Operation, type Scope, createContext, useScope } from "effection";
 export type { Middleware };
 
 /**
- * The shape of middlewares that can surround a particular {@link Api}.
+ * The middleware type for a single property of an {@link Api}.
  *
- * Members that are functions get middleware matching their signature.
- * Members that are values get middleware wrapping a no-arg accessor.
- */
-export type Around<A> = {
-  [K in keyof A]: A[K] extends (...args: infer TArgs) => infer TReturn
-    ? Middleware<TArgs, TReturn>
-    : Middleware<[], A[K]>;
-};
-
-/**
- * The middleware type for a single operation slot in an {@link Api}.
+ * Function members get middleware matching their signature.
+ * Value members get middleware wrapping a no-arg accessor.
  *
  * Use this to type helper functions that accept or return middleware
  * for a specific key of an API without reconstructing the mapping
  * from {@link Around} by hand.
  */
-export type MiddlewareSlot<A, K extends keyof A> = Around<A>[K];
+export type PropertyMiddleware<A, K extends keyof A> = A[K] extends (
+  ...args: infer TArgs
+) => infer TReturn
+  ? Middleware<TArgs, TReturn>
+  : Middleware<[], A[K]>;
+
+/**
+ * The shape of middlewares that can surround a particular {@link Api}.
+ */
+export type Around<A> = {
+  [K in keyof A]: PropertyMiddleware<A, K>;
+};
 
 export interface Api<A> {
   operations: Operations<A>;

@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import type { Stats } from "node:fs";
-import { describe, it } from "@effectionx/bdd";
+import { describe, it } from "@effectionx/vitest";
 import { scoped } from "effection";
 import { expect } from "expect";
 

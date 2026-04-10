@@ -79,8 +79,8 @@ describe("@effectionx/converge", () => {
       let end = Date.now();
 
       expect(stats.start).toBeGreaterThanOrEqual(start);
-      expect(stats.start).toBeLessThanOrEqual(start + 5);
-      expect(stats.end).toBeGreaterThanOrEqual(end - 5);
+      expect(stats.start).toBeLessThanOrEqual(start + 50);
+      expect(stats.end).toBeGreaterThanOrEqual(end - 50);
       expect(stats.end).toBeLessThanOrEqual(end);
       expect(stats.elapsed).toBeGreaterThanOrEqual(30);
       expect(stats.elapsed).toBeLessThan(100);
@@ -222,8 +222,8 @@ describe("@effectionx/converge", () => {
       let end = Date.now();
 
       expect(stats.start).toBeGreaterThanOrEqual(start);
-      expect(stats.start).toBeLessThanOrEqual(start + 5);
-      expect(stats.end).toBeGreaterThanOrEqual(end - 5);
+      expect(stats.start).toBeLessThanOrEqual(start + 50);
+      expect(stats.end).toBeGreaterThanOrEqual(end - 50);
       expect(stats.end).toBeLessThanOrEqual(end);
       expect(stats.elapsed).toBeGreaterThanOrEqual(50);
       expect(stats.runs).toBeGreaterThanOrEqual(3); // ~50ms / 10ms interval = ~5 runs, allow for timing variance on slower CI

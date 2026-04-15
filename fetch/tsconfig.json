@@ -9,6 +9,9 @@
   "exclude": ["**/*.test.ts", "dist"],
   "references": [
     {
+      "path": "../context-api"
+    },
+    {
       "path": "../vitest"
     }
   ]

@@ -22,7 +22,7 @@ import type {
   Process,
   Writable,
 } from "./types.ts";
-import { Stdio } from "../api.ts";
+import { Stdio } from "@effectionx/node/stdio";
 import { ExecError } from "./error.ts";
 
 type ProcessResultValue = [number?, string?];

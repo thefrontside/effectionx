@@ -7,7 +7,7 @@ import { captureError, expectMatch, fetchText } from "./helpers.ts";
 
 import { lines } from "@effectionx/stream-helpers";
 import { type Process, type ProcessResult, exec } from "../mod.ts";
-import { Stdio } from "../src/api.ts";
+import { Stdio } from "@effectionx/node/stdio";
 
 const SystemRoot = process.env.SystemRoot;
 

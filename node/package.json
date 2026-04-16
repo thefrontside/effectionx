@@ -24,10 +24,19 @@
       "development": "./events.ts",
       "import": "./dist/events.js",
       "default": "./dist/events.js"
+    },
+    "./stdio": {
+      "types": "./dist/stdio.d.ts",
+      "development": "./stdio.ts",
+      "import": "./dist/stdio.js",
+      "default": "./dist/stdio.js"
     }
   },
   "peerDependencies": {
     "effection": "^3 || ^4"
+  },
+  "dependencies": {
+    "@effectionx/context-api": "workspace:*"
   },
   "license": "MIT",
   "author": "engineering@frontside.com",

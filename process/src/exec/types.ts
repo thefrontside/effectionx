@@ -1,6 +1,9 @@
 import type { Operation } from "effection";
 import type { OutputStream } from "../helpers.ts";
 import type { Api } from "@effectionx/context-api";
+import type { StdioApi } from "@effectionx/node/stdio";
+
+export type { StdioApi };
 
 /**
  * Writable handle used for process stdin.
@@ -100,11 +103,6 @@ export interface StdIO {
 
   /** Writable interface for sending data to process standard input. */
   stdin: Writable<string>;
-}
-
-export interface StdioApi {
-  stdout(bytes: Uint8Array): Operation<void>;
-  stderr(bytes: Uint8Array): Operation<void>;
 }
 
 export interface ExitStatus {

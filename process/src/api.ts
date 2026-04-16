@@ -38,7 +38,7 @@ import type { StdioApi } from "./exec/types.ts";
  * });
  * ```
  */
-export const Stdio = createApi<StdioApi>("@effectionx/process", {
+export const Stdio = createApi<StdioApi>("@effectionx/stdio", {
   *stdout(line) {
     process.stdout.write(line);
   },

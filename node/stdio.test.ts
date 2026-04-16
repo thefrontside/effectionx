@@ -37,14 +37,13 @@ describe("@effectionx/node/stdio", () => {
 
   it("substitutes stdin through middleware", function* () {
     yield* Stdio.around({
-      *stdin() {
+      stdin() {
         return fromReadable(Readable.from([Buffer.from("mocked")]));
       },
     });
 
-    const stream = yield* stdin();
     const chunks: Uint8Array[] = [];
-    for (const chunk of yield* each(stream)) {
+    for (const chunk of yield* each(stdin())) {
       chunks.push(chunk);
       yield* each.next();
     }

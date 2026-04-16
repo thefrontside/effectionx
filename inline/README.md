@@ -38,6 +38,9 @@ let value = (yield inline(someOperation())) as SomeType;
 The trade-off is that the return type is `unknown` (requiring a cast),
 and you lose the natural generator stack trace.
 
+> **Note:** Source map support for the build-time transforms is not yet
+> available but is planned for a future release.
+
 ## Build-time Transform
 
 Instead of manually converting each `yield*` call, you can apply the

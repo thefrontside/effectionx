@@ -32,7 +32,7 @@ describe("FsApi middleware", () => {
 
     yield* FsApi.around({
       *readTextFile(args, next) {
-        reads.push(args[0]);
+        reads.push(String(args[0]));
         return yield* next(...args);
       },
     });
@@ -51,7 +51,7 @@ describe("FsApi middleware", () => {
 
   it("can mock cwd", function* () {
     yield* FsApi.around({
-      *cwd(_args, _next) {
+      cwd(_args, _next) {
         return "/mocked/working/dir";
       },
     });

@@ -13,25 +13,28 @@ export interface ProcessHandler {
   daemon(command: string, options: ExecOptions): Operation<Daemon>;
 }
 
-export const ProcessApi: Api<ProcessHandler> = createApi("process", {
-  *exec(command: string, options: ExecOptions): Operation<Process> {
-    if (isWin32()) {
-      return yield* createWin32Process(command, options);
-    }
-    return yield* createPosixProcess(command, options);
-  },
+export const ProcessApi: Api<ProcessHandler> = createApi(
+  "@effectionx/process",
+  {
+    *exec(command: string, options: ExecOptions): Operation<Process> {
+      if (isWin32()) {
+        return yield* createWin32Process(command, options);
+      }
+      return yield* createPosixProcess(command, options);
+    },
 
-  *daemon(command: string, options: ExecOptions): Operation<Daemon> {
-    return yield* resource(function* (provide) {
-      let process = yield* ProcessApi.operations.exec(command, options);
+    *daemon(command: string, options: ExecOptions): Operation<Daemon> {
+      return yield* resource(function* (provide) {
+        let process = yield* ProcessApi.operations.exec(command, options);
 
-      yield* provide({
-        *[Symbol.iterator]() {
-          let status = yield* process.join();
-          throw new DaemonExitError(status, command, options);
-        },
-        ...process,
+        yield* provide({
+          *[Symbol.iterator]() {
+            let status = yield* process.join();
+            throw new DaemonExitError(status, command, options);
+          },
+          ...process,
+        });
       });
-    });
+    },
   },
-});
+);

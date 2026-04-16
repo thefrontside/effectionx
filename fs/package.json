@@ -1,7 +1,7 @@
 {
   "name": "@effectionx/fs",
   "description": "File system operations wrapped as Effection operations",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "keywords": ["io"],
   "type": "module",
   "main": "./dist/mod.js",
@@ -13,6 +13,9 @@
       "import": "./dist/mod.js",
       "default": "./dist/mod.js"
     }
+  },
+  "dependencies": {
+    "@effectionx/context-api": "workspace:*"
   },
   "peerDependencies": {
     "effection": "^3 || ^4"

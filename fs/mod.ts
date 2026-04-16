@@ -1,222 +1,30 @@
-import * as fsp from "node:fs/promises";
-import type { Stats } from "node:fs";
 import * as path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
-  all,
+  createSignal,
+  type Operation,
   resource,
   spawn,
-  until,
-  type Operation,
   type Stream,
-  createSignal,
 } from "effection";
+
+import { FsApi, toPath } from "./api.ts";
 
 export * from "./api.ts";
 
-import { FsApi } from "./api.ts";
-
-/**
- * Convert a path or URL to a file path string
- */
-export function toPath(pathOrUrl: string | URL): string {
-  return pathOrUrl instanceof URL ? fileURLToPath(pathOrUrl) : pathOrUrl;
-}
-
-/**
- * Get file or directory stats
- *
- * @example
- * ```ts
- * import { stat } from "@effectionx/fs";
- *
- * const stats = yield* stat("./file.txt");
- * console.log(stats.isFile());
- * ```
- */
-export function stat(pathOrUrl: string | URL): Operation<Stats> {
-  return FsApi.operations.stat(toPath(pathOrUrl));
-}
-
-/**
- * Get file or directory stats without following symlinks
- *
- * @example
- * ```ts
- * import { lstat } from "@effectionx/fs";
- *
- * const stats = yield* lstat("./symlink");
- * console.log(stats.isSymbolicLink());
- * ```
- */
-export function lstat(pathOrUrl: string | URL): Operation<Stats> {
-  return FsApi.operations.lstat(toPath(pathOrUrl));
-}
-
-/**
- * Check if a file or directory exists
- *
- * @example
- * ```ts
- * import { exists } from "@effectionx/fs";
- *
- * if (yield* exists("./config.json")) {
- *   console.log("Config file found");
- * }
- * ```
- */
-export function* exists(pathOrUrl: string | URL): Operation<boolean> {
-  try {
-    yield* until(fsp.access(toPath(pathOrUrl)));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Ensure a directory exists, creating it recursively if needed
- *
- * @example
- * ```ts
- * import { ensureDir } from "@effectionx/fs";
- *
- * yield* ensureDir("./data/cache");
- * ```
- */
-export function* ensureDir(pathOrUrl: string | URL): Operation<void> {
-  yield* until(fsp.mkdir(toPath(pathOrUrl), { recursive: true }));
-}
-
-/**
- * Ensure a file exists, creating parent directories and the file if needed
- *
- * @example
- * ```ts
- * import { ensureFile } from "@effectionx/fs";
- *
- * yield* ensureFile("./data/config.json");
- * ```
- */
-export function* ensureFile(pathOrUrl: string | URL): Operation<void> {
-  const filePath = toPath(pathOrUrl);
-  try {
-    yield* until(fsp.access(filePath));
-  } catch {
-    yield* until(fsp.mkdir(path.dirname(filePath), { recursive: true }));
-    yield* FsApi.operations.writeTextFile(filePath, "");
-  }
-}
-
-/**
- * Read the contents of a directory
- *
- * @example
- * ```ts
- * import { readdir } from "@effectionx/fs";
- *
- * const entries = yield* readdir("./src");
- * ```
- */
-export function readdir(pathOrUrl: string | URL): Operation<string[]> {
-  return FsApi.operations.readdir(toPath(pathOrUrl));
-}
-
-/**
- * Empty a directory by removing all its contents.
- * Creates the directory if it doesn't exist.
- *
- * @example
- * ```ts
- * import { emptyDir } from "@effectionx/fs";
- *
- * yield* emptyDir("./dist");
- * ```
- */
-export function* emptyDir(pathOrUrl: string | URL): Operation<void> {
-  const dirPath = toPath(pathOrUrl);
-
-  try {
-    const entries = yield* readdir(dirPath);
-    yield* all(
-      entries.map((entry) =>
-        rm(path.join(dirPath, entry), { recursive: true, force: true }),
-      ),
-    );
-  } catch (error) {
-    // If directory doesn't exist, create it
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      yield* until(fsp.mkdir(dirPath, { recursive: true }));
-    } else {
-      throw error;
-    }
-  }
-}
-
-/**
- * Remove a file or directory
- *
- * @example
- * ```ts
- * import { rm } from "@effectionx/fs";
- *
- * yield* rm("./temp", { recursive: true });
- * ```
- */
-export function rm(
-  pathOrUrl: string | URL,
-  options?: { recursive?: boolean; force?: boolean },
-): Operation<void> {
-  return FsApi.operations.rm(toPath(pathOrUrl), options);
-}
-
-/**
- * Copy a file
- *
- * @example
- * ```ts
- * import { copyFile } from "@effectionx/fs";
- *
- * yield* copyFile("./source.txt", "./dest.txt");
- * ```
- */
-export function copyFile(
-  src: string | URL,
-  dest: string | URL,
-): Operation<void> {
-  return FsApi.operations.copyFile(toPath(src), toPath(dest));
-}
-
-/**
- * Read a file as text
- *
- * @example
- * ```ts
- * import { readTextFile } from "@effectionx/fs";
- *
- * const content = yield* readTextFile("./config.json");
- * ```
- */
-export function readTextFile(pathOrUrl: string | URL): Operation<string> {
-  return FsApi.operations.readTextFile(toPath(pathOrUrl));
-}
-
-/**
- * Write text to a file
- *
- * @example
- * ```ts
- * import { writeTextFile } from "@effectionx/fs";
- *
- * yield* writeTextFile("./output.txt", "Hello, World!");
- * ```
- */
-export function writeTextFile(
-  pathOrUrl: string | URL,
-  content: string,
-): Operation<void> {
-  return FsApi.operations.writeTextFile(toPath(pathOrUrl), content);
-}
+export const {
+  cwd,
+  stat,
+  lstat,
+  readdir,
+  rm,
+  copyFile,
+  readTextFile,
+  writeTextFile,
+  exists,
+  ensureDir,
+  ensureFile,
+  emptyDir,
+} = FsApi.operations;
 
 /**
  * Entry returned by walk()
@@ -314,7 +122,7 @@ export function walk(
         // If following symlinks, resolve the target type
         if (isSymlink && followSymlinks) {
           try {
-            const stats = yield* stat(fullPath);
+            const stats = yield* FsApi.operations.stat(fullPath);
             isDirectory = stats.isDirectory();
             isFile = stats.isFile();
           } catch {

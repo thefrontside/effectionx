@@ -51,10 +51,7 @@ export interface Fs {
   /**
    * Write text to a file.
    */
-  writeTextFile(
-    pathOrUrl: string | URL,
-    content: string,
-  ): Operation<void>;
+  writeTextFile(pathOrUrl: string | URL, content: string): Operation<void>;
   /**
    * Check if a file or directory exists.
    */

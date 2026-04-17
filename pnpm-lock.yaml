@@ -166,10 +166,6 @@ importers:
         version: link:../vitest
 
   node:
-    dependencies:
-      '@effectionx/context-api':
-        specifier: workspace:*
-        version: link:../context-api
     devDependencies:
       '@effectionx/vitest':
         specifier: workspace:*

@@ -1,17 +1,11 @@
 import process from "node:process";
 import { type Api, createApi } from "@effectionx/context-api";
-import type { Operation, Stream } from "effection";
-import { fromReadable } from "./stream.ts";
+import type { Operation } from "effection";
 
 /**
- * Middleware-capable shape for host stdio.
- *
- * `stdin` yields a readable byte stream sourced from the host's standard
- * input; `stdout` and `stderr` take bytes and write them to the host's
- * corresponding output streams.
+ * Middleware-capable shape for host stdio writes.
  */
 export interface StdioApi {
-  stdin(): Operation<Stream<Uint8Array, void>>;
   stdout(bytes: Uint8Array): Operation<void>;
   stderr(bytes: Uint8Array): Operation<void>;
 }
@@ -49,9 +43,6 @@ export interface StdioApi {
 export const Stdio: Api<StdioApi> = createApi<StdioApi>(
   "@effectionx/node/stdio",
   {
-    *stdin() {
-      return fromReadable(process.stdin);
-    },
     *stdout(bytes) {
       process.stdout.write(bytes);
     },

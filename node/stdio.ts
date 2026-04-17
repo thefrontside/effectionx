@@ -26,19 +26,23 @@ export interface StdioApi {
  * @example
  * ```ts
  * import { main } from "effection";
- * import { Stdio, stdout } from "@effectionx/node/stdio";
+ * import { Stdio } from "@effectionx/node/stdio";
  *
  * await main(function* () {
  *   let captured: Uint8Array[] = [];
  *
  *   yield* Stdio.around({
- *     *stdout([bytes]) {
+ *     *stdout(line, next) {
+ *       const [bytes] = line;
  *       captured.push(bytes);
+ *       return yield* next(line);
  *     },
  *   });
  *
- *   yield* stdout(new TextEncoder().encode("hello\n"));
- *   // captured now holds the bytes; nothing was written to process.stdout
+ *   // Any code in this scope (including nested child-process helpers
+ *   // that write through `Stdio.operations.stdout`) now flows through
+ *   // the middleware instead of the host stdout stream.
+ *   yield* Stdio.operations.stdout(new TextEncoder().encode("hello\n"));
  * });
  * ```
  */

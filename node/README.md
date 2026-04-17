@@ -151,7 +151,7 @@ import { each, main } from "effection";
 import { stdin } from "@effectionx/node/stdio";
 
 await main(function* () {
-  for (const chunk of yield* each(stdin())) {
+  for (const chunk of yield* each(yield* stdin())) {
     console.log(new TextDecoder().decode(chunk));
     yield* each.next();
   }

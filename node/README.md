@@ -14,16 +14,15 @@ npm install @effectionx/node
 
 ## Modules
 
-This package provides three sub-modules:
+This package provides two sub-modules:
 
 - `@effectionx/node/stream` - Stream utilities for Node.js
 - `@effectionx/node/events` - Event utilities for Node.js EventEmitters
-- `@effectionx/node/stdio` - Host process stdio middleware seam
 
 You can also import everything from the main module:
 
 ```typescript
-import { fromReadable, on, once, Stdio, stdin, stdout, stderr } from "@effectionx/node";
+import { fromReadable, on, once } from "@effectionx/node";
 ```
 
 ## Stream Utilities
@@ -103,88 +102,6 @@ await main(function* () {
   console.log("Process exited with code:", code);
 });
 ```
-
-## Host Stdio
-
-`Stdio` is a [`createApi`][context-api] middleware seam over the host process's
-`stdin`, `stdout`, and `stderr`. By default, `stdout` and `stderr` write bytes
-to `process.stdout` / `process.stderr`, and `stdin` returns a readable Effection
-stream sourced from `process.stdin`. Middleware can wrap these operations via
-`Stdio.around(...)` to capture, transform, or substitute the bytes without
-touching the call sites.
-
-[context-api]: ../context-api/README.md
-
-### stdout()
-
-Write bytes to the host process's standard output.
-
-```typescript
-import { main } from "effection";
-import { stdout } from "@effectionx/node/stdio";
-
-await main(function* () {
-  yield* stdout(new TextEncoder().encode("hello\n"));
-});
-```
-
-### stderr()
-
-Write bytes to the host process's standard error.
-
-```typescript
-import { main } from "effection";
-import { stderr } from "@effectionx/node/stdio";
-
-await main(function* () {
-  yield* stderr(new TextEncoder().encode("something went wrong\n"));
-});
-```
-
-### stdin()
-
-Yield an Effection `Stream<Uint8Array, void>` of bytes read from the host
-process's standard input.
-
-```typescript
-import { each, main } from "effection";
-import { stdin } from "@effectionx/node/stdio";
-
-await main(function* () {
-  for (const chunk of yield* each(yield* stdin())) {
-    console.log(new TextDecoder().decode(chunk));
-    yield* each.next();
-  }
-});
-```
-
-### Stdio.around()
-
-Install middleware that intercepts any of the three operations for the current
-scope. The example below captures every byte written to `stdout` into an
-in-memory buffer instead of forwarding it to the host.
-
-```typescript
-import { main } from "effection";
-import { Stdio, stdout } from "@effectionx/node/stdio";
-
-await main(function* () {
-  const captured: Uint8Array[] = [];
-
-  yield* Stdio.around({
-    *stdout([bytes]) {
-      captured.push(bytes);
-    },
-  });
-
-  yield* stdout(new TextEncoder().encode("hello\n"));
-  // captured now holds the bytes; nothing was written to process.stdout
-});
-```
-
-`@effectionx/process` pipes child-process output through these same operations,
-so installing an `Stdio.around(...)` in an outer scope also intercepts child
-process stdio from any nested `exec` calls.
 
 ## TypeScript Support
 

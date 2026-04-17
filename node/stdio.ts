@@ -60,5 +60,3 @@ export const Stdio: Api<StdioApi> = createApi<StdioApi>(
     },
   },
 );
-
-export const { stdin, stdout, stderr } = Stdio.operations;

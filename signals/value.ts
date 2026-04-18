@@ -2,14 +2,37 @@ import { createSignal, type Operation, resource } from "effection";
 
 import type { ValueSignal } from "./types.ts";
 
-export function createValueSignal<T>(initial: T): Operation<ValueSignal<T>> {
+/**
+ * Configuration for {@link createValueSignal}.
+ */
+export interface CreateValueSignalOptions<T> {
+  /**
+   * Returns `true` when two values should be treated as unchanged.
+   *
+   * Defaults to `Object.is`.
+   */
+  equals?: (current: T, next: T) => boolean;
+}
+
+/**
+ * Creates a value-backed signal with configurable equality semantics.
+ *
+ * @param initial - Initial signal value.
+ * @param options - Equality overrides.
+ * @returns A value signal resource.
+ */
+export function createValueSignal<T>(
+  initial: T,
+  options: CreateValueSignalOptions<T> = {},
+): Operation<ValueSignal<T>> {
   return resource(function* (provide) {
     const signal = createSignal<T, void>();
+    const equals = options.equals ?? Object.is;
 
     const ref = { current: initial };
 
-    function set(value: T) {
-      if (value !== ref.current) {
+    function set(value: T): T {
+      if (!equals(ref.current, value)) {
         ref.current = value;
 
         signal.send(ref.current);

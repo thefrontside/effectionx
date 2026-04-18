@@ -2,7 +2,9 @@ import type { Stream } from "effection";
 
 /**
  * A signal is a stream with set, update, and valueOf methods.
- * Subscribing to a signal will yield the current value of the signal.
+ * Subscribing to a signal yields values as they change.
+ * Use {@link createSubject} from `@effectionx/stream-helpers` to replay
+ * the latest value to new subscribers.
  */
 export interface ValueSignal<T> extends Stream<T, void> {
   /**

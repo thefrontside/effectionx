@@ -1,13 +1,13 @@
 import assert from "node:assert";
 import { MessagePort, parentPort } from "node:worker_threads";
-import type { ValueSignal } from "@effectionx/signals";
+import { createValueSignal, type ValueSignal } from "@effectionx/signals";
+import { createSubject } from "@effectionx/stream-helpers";
 import {
   Err,
   Ok,
   type Operation,
   type Task,
   createChannel,
-  createSignal,
   each,
   main,
   on,
@@ -292,66 +292,54 @@ interface WorkerStateSignal extends ValueSignal<WorkerState> {
 
 export function createWorkerStatesSignal(): Operation<WorkerStateSignal> {
   return resource(function* (provide) {
-    let ref: { current: WorkerState } = {
-      current: { type: "new" },
-    };
-    const signal = createSignal<WorkerState>();
-
-    const set: WorkerStateSignal["set"] = (value) => {
-      ref.current = value;
-      signal.send(value);
-      return value;
-    };
-
-    const update: WorkerStateSignal["update"] = (updater) =>
-      set(updater(ref.current));
+    const signal = yield* createValueSignal<WorkerState>({ type: "new" });
+    const replayStream = yield* createSubject<WorkerState>({
+      type: "new",
+    })(signal);
 
     const interrupt: WorkerStateSignal["interrupt"] = () => {
       let next: Interrupted = {
         type: "interrupted",
         error: new Error("worker terminated"),
       };
-      set(next);
+      signal.set(next);
       return next;
     };
 
     try {
       yield* provide({
-        *[Symbol.iterator]() {
-          let subscription = yield* signal;
-          signal.send(ref.current);
-          return subscription;
-        },
+        [Symbol.iterator]: replayStream[Symbol.iterator],
         get state() {
-          return ref.current.type;
+          return signal.valueOf().type;
         },
-        set,
-        update,
+        set: signal.set,
+        update: signal.update,
         valueOf() {
-          return ref.current;
+          return signal.valueOf();
         },
         start(task) {
-          if (ref.current.type === "complete") {
-            return ref.current;
+          const current = signal.valueOf();
+          if (current.type === "complete") {
+            return current;
           }
           const next: Running = { type: "running", task };
-          set(next);
+          signal.set(next);
           return next;
         },
         complete(value) {
           let next: Complete = { type: "complete", value };
-          set(next);
+          signal.set(next);
           return next;
         },
         crash(error) {
           let next: Errored = { type: "error", error };
-          set(next);
+          signal.set(next);
           return next;
         },
         interrupt: interrupt,
       });
     } finally {
-      if (ref.current.type === "running") {
+      if (signal.valueOf().type === "running") {
         interrupt();
       }
     }

@@ -5,13 +5,10 @@
     "rootDir": "."
   },
   "include": ["**/*.ts"],
-  "exclude": ["**/*.test.ts", "dist"],
+  "exclude": ["**/*.test.ts", "dist", "swc"],
   "references": [
     {
-      "path": "../context-api"
-    },
-    {
-      "path": "../vitest"
+      "path": "../bdd"
     }
   ]
 }

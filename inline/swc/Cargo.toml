@@ -1,0 +1,30 @@
+[package]
+name = "swc-plugin-inline"
+version = "0.0.1"
+edition = "2021"
+description = "SWC plugin to optimize effection yield* delegation via @effectionx/inline"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+swc_core = { version = "47", features = [
+    "common",
+    "ecma_ast",
+    "ecma_visit",
+    "ecma_utils",
+    "ecma_plugin_transform",
+] }
+
+[dev-dependencies]
+swc_core = { version = "47", features = [
+    "testing_transform",
+    "ecma_parser",
+] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = "symbols"

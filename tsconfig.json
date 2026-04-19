@@ -29,6 +29,7 @@
     { "path": "raf" },
     { "path": "scope-eval" },
     { "path": "signals" },
+    { "path": "state-api" },
     { "path": "stream-helpers" },
     { "path": "stream-yaml" },
     { "path": "task-buffer" },

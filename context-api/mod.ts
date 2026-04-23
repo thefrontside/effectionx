@@ -60,7 +60,7 @@ export interface Api<A, Group extends string = "max" | "min"> {
   operations: Operations<A>;
   around: (
     around: Partial<Around<A>>,
-    options?: { at?: Group },
+    options?: { at: Group },
   ) => Operation<void>;
 }
 
@@ -202,14 +202,14 @@ export function createApi<A extends {}, Group extends string = "max" | "min">(
 
   function* around(
     middlewares: Partial<Around<A>>,
-    options: { at?: Group } = {},
+    options?: { at: Group },
   ): Operation<void> {
     let hasAny = fields.some((field) => Boolean((middlewares as any)[field]));
     if (!hasAny) {
       return;
     }
 
-    let at = options.at ?? groups[0].name;
+    let at = options?.at ?? groups[0].name;
     let group = groupByName.get(at);
     if (!group) {
       let known = Array.from(groupByName.keys()).join(", ");

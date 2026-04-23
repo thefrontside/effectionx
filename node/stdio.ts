@@ -44,7 +44,7 @@ export interface StdioApi {
  *   });
  *
  *   yield* stdout(new TextEncoder().encode("hello\n"));
- *   // bytes flow into `captured` instead of the terminal
+ *   // bytes flow into `captured` and then on to the terminal
  * });
  * ```
  */

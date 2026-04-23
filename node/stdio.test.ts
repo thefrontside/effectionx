@@ -1,7 +1,12 @@
 import process from "node:process";
 import { PassThrough, Writable } from "node:stream";
 import { describe, it } from "@effectionx/vitest";
-import { createSignal, scoped, type Stream } from "effection";
+import {
+  createSignal,
+  scoped,
+  type Stream,
+  type Subscription,
+} from "effection";
 import { expect } from "expect";
 
 import { Stdio, stderr, stdin, stdout } from "./stdio.ts";
@@ -24,6 +29,17 @@ function overrideStdio(
   const original = Object.getOwnPropertyDescriptor(process, key)!;
   Object.defineProperty(process, key, { configurable: true, value });
   return original;
+}
+
+function* drain(subscription: Subscription<Uint8Array, void>) {
+  const decoder = new TextDecoder();
+  const chunks: string[] = [];
+  let r = yield* subscription.next();
+  while (!r.done) {
+    chunks.push(decoder.decode(r.value));
+    r = yield* subscription.next();
+  }
+  return chunks;
 }
 
 describe("Stdio middleware", () => {
@@ -175,6 +191,28 @@ describe("Stdio defaults", () => {
 
       result = yield* subscription.next();
       expect(result.done).toBe(true);
+    } finally {
+      Object.defineProperty(process, "stdin", original);
+    }
+  });
+
+  it("supports multiple concurrent stdin() consumers", function* () {
+    const fake = new PassThrough();
+    const original = overrideStdio("stdin", fake);
+
+    try {
+      const left = yield* stdin();
+      const right = yield* stdin();
+
+      fake.write(Buffer.from("one"));
+      fake.write(Buffer.from("two"));
+      fake.end();
+
+      const leftChunks = yield* drain(left);
+      const rightChunks = yield* drain(right);
+
+      expect(leftChunks).toEqual(["one", "two"]);
+      expect(rightChunks).toEqual(["one", "two"]);
     } finally {
       Object.defineProperty(process, "stdin", original);
     }

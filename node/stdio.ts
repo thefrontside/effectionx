@@ -11,7 +11,7 @@ import { fromReadable } from "./stream.ts";
  * corresponding output streams.
  */
 export interface StdioApi {
-  stdin(): Operation<Stream<Uint8Array, void>>;
+  stdin(): Stream<Uint8Array, void>;
   stdout(bytes: Uint8Array): Operation<void>;
   stderr(bytes: Uint8Array): Operation<void>;
 }
@@ -51,7 +51,7 @@ export interface StdioApi {
 export const Stdio: Api<StdioApi> = createApi<StdioApi>(
   "@effectionx/node/stdio",
   {
-    *stdin() {
+    stdin() {
       return fromReadable(process.stdin);
     },
     *stdout(bytes) {

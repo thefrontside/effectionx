@@ -84,13 +84,12 @@ describe("Stdio middleware", () => {
     const synthetic: Stream<Uint8Array, void> = signal;
 
     yield* Stdio.around({
-      *stdin(_args, _next) {
+      stdin(_args, _next) {
         return synthetic;
       },
     });
 
-    const stream = yield* stdin();
-    const subscription = yield* stream;
+    const subscription = yield* stdin();
 
     const encoder = new TextEncoder();
     signal.send(encoder.encode("one"));
@@ -161,8 +160,7 @@ describe("Stdio defaults", () => {
     const original = overrideStdio("stdin", fake);
 
     try {
-      const stream = yield* stdin();
-      const subscription = yield* stream;
+      const subscription = yield* stdin();
 
       fake.write(Buffer.from("hello\n"));
       fake.end();

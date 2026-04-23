@@ -1,5 +1,7 @@
+import process from "node:process";
+import { PassThrough } from "node:stream";
 import { describe, it } from "@effectionx/vitest";
-import { createSignal, each, scoped, type Stream } from "effection";
+import { createSignal, scoped, type Stream } from "effection";
 import { expect } from "expect";
 
 import { Stdio, stderr, stdin, stdout } from "./stdio.ts";
@@ -104,15 +106,34 @@ describe("Stdio middleware", () => {
 });
 
 describe("Stdio defaults", () => {
-  it("reads from process.stdin by default (subscription acquires without error)", function* () {
-    yield* scoped(function* () {
-      // Default handler wraps process.stdin via fromReadable. We just
-      // verify that acquiring a subscription and then letting the scope
-      // tear it down does not throw; we can't easily assert on real
-      // host stdin bytes in a unit test.
-      const stream = yield* stdin();
-      const _sub = yield* stream;
-      expect(true).toBe(true);
+  it("reads bytes from process.stdin by default", function* () {
+    const original = Object.getOwnPropertyDescriptor(process, "stdin")!;
+    const fake = new PassThrough();
+
+    Object.defineProperty(process, "stdin", {
+      configurable: true,
+      value: fake,
     });
+
+    try {
+      const stream = yield* stdin();
+      const subscription = yield* stream;
+
+      fake.write(Buffer.from("hello\n"));
+      fake.end();
+
+      const decoder = new TextDecoder();
+
+      let result = yield* subscription.next();
+      if (result.done) {
+        throw new Error("expected a chunk before end-of-stream");
+      }
+      expect(decoder.decode(result.value)).toBe("hello\n");
+
+      result = yield* subscription.next();
+      expect(result.done).toBe(true);
+    } finally {
+      Object.defineProperty(process, "stdin", original);
+    }
   });
 });

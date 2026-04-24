@@ -26,11 +26,56 @@ export type Around<A> = {
   [K in keyof A]: PropertyMiddleware<A, K>;
 };
 
-export interface Api<A> {
+/**
+ * How repeated registrations inside a group are ordered.
+ *
+ * - `"append"` — earlier registrations run outer (like the default `"max"` lane).
+ *   Across scopes, this means parent-outer / child-inner.
+ * - `"prepend"` — later registrations run outer (like the default `"min"` lane).
+ *   Across scopes, this means child-outer / parent-inner.
+ */
+export type GroupMode = "append" | "prepend";
+
+/**
+ * A user-declared middleware group for a {@link createApi} instance.
+ *
+ * `mode` defaults to `"append"` when omitted.
+ */
+export type MiddlewareGroup<Name extends string> = {
+  name: Name;
+  mode?: GroupMode;
+};
+
+/**
+ * Options accepted by {@link createApi}.
+ *
+ * `groups` defaults to the backward-compatible two-lane configuration:
+ * `[{ name: "max", mode: "append" }, { name: "min", mode: "prepend" }]`.
+ *
+ * Pass `groups: [...] as const` so TypeScript infers the literal union of
+ * group names into the `Group` type parameter. Without `as const`, names
+ * widen to `string` and `around({ at })` loses its typed group check.
+ *
+ * @example
+ * ```ts
+ * const api = createApi("effects", handler, {
+ *   groups: [
+ *     { name: "max", mode: "append" },
+ *     { name: "replay", mode: "append" },
+ *     { name: "min", mode: "prepend" },
+ *   ] as const,
+ * });
+ * ```
+ */
+export type CreateApiOptions<Group extends string> = {
+  groups?: readonly MiddlewareGroup<Group>[];
+};
+
+export interface Api<A, Group extends string = "max" | "min"> {
   operations: Operations<A>;
   around: (
     around: Partial<Around<A>>,
-    options?: { at: "min" | "max" },
+    options?: { at: Group },
   ) => Operation<void>;
 }
 
@@ -55,22 +100,83 @@ export type Operations<A> = {
       : Operation<A[K]>;
 };
 
-type ScopeMiddleware<A> = {
-  max: Partial<Around<A>>[];
-  min: Partial<Around<A>>[];
+type GroupDefinition<Group extends string> = {
+  name: Group;
+  mode: GroupMode;
 };
 
-type MiddlewareStack = {
-  max: Middleware<any[], any>[];
-  min: Middleware<any[], any>[];
-};
+type ScopeMiddleware<A, Group extends string> = Record<
+  Group,
+  Partial<Around<A>>[]
+>;
 
-export function createApi<A extends {}>(name: string, handler: A): Api<A> {
+const DEFAULT_GROUPS: readonly MiddlewareGroup<"max" | "min">[] = [
+  { name: "max", mode: "append" },
+  { name: "min", mode: "prepend" },
+];
+
+export function createApi<A extends {}, Group extends string = "max" | "min">(
+  name: string,
+  handler: A,
+  options?: CreateApiOptions<Group>,
+): Api<A, Group> {
   let fields = Object.keys(handler) as (keyof A)[];
-  let context = createContext<ScopeMiddleware<A>>(`$api:${name}`, {
-    max: [],
-    min: [],
-  });
+
+  let rawGroups = (options?.groups ??
+    DEFAULT_GROUPS) as readonly MiddlewareGroup<Group>[];
+
+  if (rawGroups.length === 0) {
+    throw new Error(`context-api "${name}": \`groups\` must not be empty`);
+  }
+
+  let seen = new Set<string>();
+  let duplicates: string[] = [];
+  let groups: readonly GroupDefinition<Group>[] = Object.freeze(
+    rawGroups.map((g) => {
+      if (seen.has(g.name)) {
+        duplicates.push(g.name);
+      }
+      seen.add(g.name);
+      return Object.freeze({
+        name: g.name,
+        mode: g.mode ?? "append",
+      }) as GroupDefinition<Group>;
+    }),
+  );
+
+  if (duplicates.length > 0) {
+    let unique = Array.from(new Set(duplicates));
+    throw new Error(
+      `context-api "${name}": duplicate group name${unique.length === 1 ? "" : "s"}: ${unique.join(", ")}`,
+    );
+  }
+
+  let groupByName = new Map<string, GroupDefinition<Group>>(
+    groups.map((g) => [g.name, g]),
+  );
+
+  function emptyState(): ScopeMiddleware<A, Group> {
+    let state = {} as ScopeMiddleware<A, Group>;
+    for (let g of groups) {
+      state[g.name] = [];
+    }
+    return state;
+  }
+
+  function cloneState(
+    current: ScopeMiddleware<A, Group>,
+  ): ScopeMiddleware<A, Group> {
+    let next = {} as ScopeMiddleware<A, Group>;
+    for (let g of groups) {
+      next[g.name] = [...(current[g.name] ?? [])];
+    }
+    return next;
+  }
+
+  let context = createContext<ScopeMiddleware<A, Group>>(
+    `$api:${name}`,
+    emptyState(),
+  );
 
   let operations = fields.reduce(
     (api, field) => {
@@ -81,8 +187,13 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
           [field]: (...args: any[]) => ({
             *[Symbol.iterator]() {
               let scope = yield* useScope();
-              let { max, min } = collectMiddleware(scope, context, field);
-              let stack = combine([...max, ...min]);
+              let middlewares = collectMiddleware(
+                scope,
+                context,
+                field,
+                groups,
+              );
+              let stack = combine(middlewares);
               let result = stack(args, fn);
               return isOperation(result) ? yield* result : result;
             },
@@ -93,8 +204,8 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
         [field]: {
           *[Symbol.iterator]() {
             let scope = yield* useScope();
-            let { max, min } = collectMiddleware(scope, context, field);
-            let stack = combine([...max, ...min]);
+            let middlewares = collectMiddleware(scope, context, field, groups);
+            let stack = combine(middlewares);
             let result = stack([], () => handle);
             return isOperation(result) ? yield* result : result;
           },
@@ -106,27 +217,31 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
 
   function* around(
     middlewares: Partial<Around<A>>,
-    options: { at: "min" | "max" } = { at: "max" },
+    options?: { at: Group },
   ): Operation<void> {
     let hasAny = fields.some((field) => Boolean((middlewares as any)[field]));
     if (!hasAny) {
       return;
     }
 
+    let at = options?.at ?? groups[0].name;
+    let group = groupByName.get(at);
+    if (!group) {
+      let known = Array.from(groupByName.keys()).join(", ");
+      throw new Error(
+        `context-api "${name}": unknown group "${at}". Known groups: ${known}`,
+      );
+    }
+
     let scope = yield* useScope();
-    let current = scope.hasOwn(context)
-      ? scope.expect(context)
-      : { max: [], min: [] };
+    let current = scope.hasOwn(context) ? scope.expect(context) : emptyState();
 
-    let next: ScopeMiddleware<A> = {
-      max: [...current.max],
-      min: [...current.min],
-    };
+    let next = cloneState(current);
 
-    if (options.at === "min") {
-      next.min = [middlewares, ...next.min];
+    if (group.mode === "prepend") {
+      next[group.name] = [middlewares, ...next[group.name]];
     } else {
-      next.max.push(middlewares);
+      next[group.name] = [...next[group.name], middlewares];
     }
 
     scope.set(context, next);
@@ -135,42 +250,59 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
   return { operations, around };
 }
 
-function collectMiddleware<A extends {}>(
+function collectMiddleware<A extends {}, Group extends string>(
   scope: Scope,
   context: { name?: string; key?: string },
   field: keyof A,
-): MiddlewareStack {
+  groups: readonly GroupDefinition<Group>[],
+): Middleware<any[], any>[] {
   let key = contextName(context);
   let window = contextWindow(scope);
 
-  return reducePrototypeChain(
+  let lanes: Record<string, Middleware<any[], any>[]> = {};
+  for (let g of groups) {
+    lanes[g.name] = [];
+  }
+
+  reducePrototypeChain(
     window,
-    (sum, current) => {
+    (_, current) => {
       if (!Object.prototype.hasOwnProperty.call(current, key)) {
-        return sum;
+        return null;
       }
 
-      let state = current[key] as ScopeMiddleware<A>;
+      let state = current[key] as ScopeMiddleware<A, Group>;
 
-      let max = state.max.flatMap((around) => {
-        let middleware = (around as any)[field] as
-          | Middleware<any[], any>
-          | undefined;
-        return middleware ? [middleware] : [];
-      });
-      let min = state.min.flatMap((around) => {
-        let middleware = (around as any)[field] as
-          | Middleware<any[], any>
-          | undefined;
-        return middleware ? [middleware] : [];
-      });
+      for (let g of groups) {
+        let fromScope = (state[g.name] ?? []).flatMap((around) => {
+          let middleware = (around as any)[field] as
+            | Middleware<any[], any>
+            | undefined;
+          return middleware ? [middleware] : [];
+        });
+        if (g.mode === "append") {
+          // parent outer / child inner — walking child→parent,
+          // parent scopes are encountered last so unshift accumulates
+          // in parent-outer-first order.
+          lanes[g.name].unshift(...fromScope);
+        } else {
+          // child outer / parent inner — walking child→parent, child
+          // scopes are encountered first so push accumulates in
+          // child-outer-first order.
+          lanes[g.name].push(...fromScope);
+        }
+      }
 
-      sum.max.unshift(...max);
-      sum.min.push(...min);
-      return sum;
+      return null;
     },
-    { max: [], min: [] } as MiddlewareStack,
+    null,
   );
+
+  let out: Middleware<any[], any>[] = [];
+  for (let g of groups) {
+    out.push(...lanes[g.name]);
+  }
+  return out;
 }
 
 function reducePrototypeChain<T>(

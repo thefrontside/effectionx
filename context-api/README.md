@@ -1,14 +1,17 @@
 # Context APIs
 
-Algebraic effects pattern for context-dependent operations with middleware
+Algebraic effects pattern for context-dependent operations with ordered middleware groups
 
 ---
 
 Often called "Algebraic Effects" or "Contextual Effects", Context APIs let you
 access an operation via the context in a way that it can be easily (and
 contextually) wrapped with middleware. Middleware is powered by
-[`@effectionx/middleware`](../middleware/README.md) and supports min/max priority
-ordering.
+[`@effectionx/middleware`](../middleware/README.md) and is organized into
+ordered groups — each API declares the lanes it needs, and middleware within a
+group follows an `append` or `prepend` rule. The default configuration provides
+`max`/`min` lanes, matching the common outer-wrapper / inner-implementation
+split.
 
 ## Quick Start
 
@@ -61,8 +64,17 @@ the scope exits, the middleware is removed.
 
 ## Min/Max Priority
 
-By default, `around()` registers middleware at `"max"` priority (outermost,
-closest to the caller). You can also register at `"min"` priority (innermost,
+By default, `createApi()` configures two middleware groups:
+
+```ts
+[
+  { name: "max", mode: "append" },
+  { name: "min", mode: "prepend" },
+]
+```
+
+`around()` registers into `"max"` priority (outermost, closest to the caller)
+when no `at` is passed. You can also register at `"min"` priority (innermost,
 closest to the core handler) by passing an options argument:
 
 ```ts
@@ -133,6 +145,51 @@ The execution order with max middlewares `[M1, M2]` and min middlewares
 M1 → M2 → m1 → m2 → core
 ```
 
+## Custom groups
+
+The two-lane default is the right shape for most APIs, but an API can declare
+its own ordered list of middleware groups when more than two structural lanes
+are needed. Each group has a `name` and a `mode`:
+
+- **`"append"`** — earlier registrations run outer. Matches the default
+  `"max"` behavior. Across scopes: parent-outer / child-inner.
+- **`"prepend"`** — later registrations run outer. Matches the default
+  `"min"` behavior. Across scopes: child-outer / parent-inner.
+
+For example, a replay system may need a third lane that sits structurally
+between general wrappers and core-providing middleware:
+
+```ts
+const effects = createApi("effects", handler, {
+  groups: [
+    { name: "max", mode: "append" },
+    { name: "replay", mode: "append" },
+    { name: "min", mode: "prepend" },
+  ] as const,
+});
+
+yield* effects.around(loggingAndOtherWrappers, { at: "max" });
+yield* effects.around(replayRestore, { at: "replay" });
+yield* effects.around(defaultImplementations, { at: "min" });
+yield* effects.around(dispatchOverrides, { at: "min" });
+```
+
+Execution order follows the declared group order, group by group, then the
+core handler:
+
+```text
+max → replay → min → core
+```
+
+Passing `groups: [...] as const` lets TypeScript infer the literal union of
+group names, so `around(..., { at })` is type-checked against the declared
+set. `createApi()` throws at call time if `groups` is empty or has duplicate
+names; `around()` throws at runtime if `at` names a group that was not
+declared.
+
+Default `at` is the first declared group. For the built-in configuration that
+is `"max"`, so existing callers keep their behavior.
+
 ## Instrumentation
 
 Middleware can be useful for automatic instrumentation:
@@ -199,10 +256,15 @@ function* example() {
 
 ## API
 
-### `createApi(name, handler)`
+### `createApi(name, handler, options?)`
 
 Create a context API from a name and an object of handler functions or
 operations. Returns an object with `operations` and `around`.
+
+The optional `options.groups` argument declares the middleware lanes this API
+exposes. Each group has a `name` and a `mode` of `"append"` or `"prepend"`.
+When omitted, it defaults to
+`[{ name: "max", mode: "append" }, { name: "min", mode: "prepend" }]`.
 
 ```ts
 import { createApi } from "@effectionx/context-api";
@@ -223,11 +285,17 @@ function* example(): Operation<void> {
 
 ### `around(middlewares, options?)`
 
-Register middleware around one or more operations. The second argument controls
-priority:
+Register middleware around one or more operations. The second argument chooses
+which declared group to register into.
+
+For the default configuration:
 
 - **`{ at: "max" }`** (default) — outermost, closest to the caller
 - **`{ at: "min" }`** — innermost, closest to the core handler
+
+For APIs that declare custom groups, `at` accepts any declared group name and
+defaults to the first declared group. Passing an unknown name throws at
+runtime.
 
 ```ts
 function* example() {

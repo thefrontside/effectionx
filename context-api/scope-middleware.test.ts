@@ -895,4 +895,722 @@ describe("scope middleware", () => {
       expect(yield* api.operations.syncFn()).toEqual(20);
     });
   });
+
+  describe("custom groups", () => {
+    const THREE_LANE = [
+      { name: "max", mode: "append" },
+      { name: "replay", mode: "append" },
+      { name: "min", mode: "prepend" },
+    ] as const;
+
+    it("executes middleware in declared group order", function* () {
+      const api = createApi(
+        "groups.declared-order",
+        {
+          *value(): Operation<string> {
+            return "core";
+          },
+        },
+        { groups: THREE_LANE },
+      );
+
+      const log: string[] = [];
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("max:enter");
+            const result = yield* next(...args);
+            log.push("max:exit");
+            return result;
+          },
+        },
+        { at: "max" },
+      );
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("replay:enter");
+            const result = yield* next(...args);
+            log.push("replay:exit");
+            return result;
+          },
+        },
+        { at: "replay" },
+      );
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("min:enter");
+            const result = yield* next(...args);
+            log.push("min:exit");
+            return result;
+          },
+        },
+        { at: "min" },
+      );
+
+      yield* api.operations.value();
+      expect(log).toEqual([
+        "max:enter",
+        "replay:enter",
+        "min:enter",
+        "min:exit",
+        "replay:exit",
+        "max:exit",
+      ]);
+    });
+
+    it("append preserves install order within a lane", function* () {
+      const api = createApi(
+        "groups.append-order",
+        {
+          *value(): Operation<string> {
+            return "core";
+          },
+        },
+        { groups: THREE_LANE },
+      );
+
+      const log: string[] = [];
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("max-a:enter");
+            const result = yield* next(...args);
+            log.push("max-a:exit");
+            return result;
+          },
+        },
+        { at: "max" },
+      );
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("max-b:enter");
+            const result = yield* next(...args);
+            log.push("max-b:exit");
+            return result;
+          },
+        },
+        { at: "max" },
+      );
+
+      yield* api.operations.value();
+      expect(log).toEqual([
+        "max-a:enter",
+        "max-b:enter",
+        "max-b:exit",
+        "max-a:exit",
+      ]);
+    });
+
+    it("prepend reverses install order within a lane", function* () {
+      const api = createApi(
+        "groups.prepend-order",
+        {
+          *value(): Operation<string> {
+            return "core";
+          },
+        },
+        { groups: THREE_LANE },
+      );
+
+      const log: string[] = [];
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("min-a:enter");
+            const result = yield* next(...args);
+            log.push("min-a:exit");
+            return result;
+          },
+        },
+        { at: "min" },
+      );
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("min-b:enter");
+            const result = yield* next(...args);
+            log.push("min-b:exit");
+            return result;
+          },
+        },
+        { at: "min" },
+      );
+
+      yield* api.operations.value();
+      expect(log).toEqual([
+        "min-b:enter",
+        "min-a:enter",
+        "min-a:exit",
+        "min-b:exit",
+      ]);
+    });
+
+    it("middle lane stays between outer and inner regardless of install order", function* () {
+      const api = createApi(
+        "groups.middle-stable",
+        {
+          *value(): Operation<string> {
+            return "core";
+          },
+        },
+        { groups: THREE_LANE },
+      );
+
+      const log: string[] = [];
+
+      // Install in mixed order: min, max, replay, min
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("min-1:enter");
+            const result = yield* next(...args);
+            log.push("min-1:exit");
+            return result;
+          },
+        },
+        { at: "min" },
+      );
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("max-1:enter");
+            const result = yield* next(...args);
+            log.push("max-1:exit");
+            return result;
+          },
+        },
+        { at: "max" },
+      );
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("replay-1:enter");
+            const result = yield* next(...args);
+            log.push("replay-1:exit");
+            return result;
+          },
+        },
+        { at: "replay" },
+      );
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("min-2:enter");
+            const result = yield* next(...args);
+            log.push("min-2:exit");
+            return result;
+          },
+        },
+        { at: "min" },
+      );
+
+      yield* api.operations.value();
+      // max → replay → min (with min prepend so min-2 before min-1)
+      expect(log).toEqual([
+        "max-1:enter",
+        "replay-1:enter",
+        "min-2:enter",
+        "min-1:enter",
+        "min-1:exit",
+        "min-2:exit",
+        "replay-1:exit",
+        "max-1:exit",
+      ]);
+    });
+
+    it("child extends parent per-group across all lanes", function* () {
+      const api = createApi(
+        "groups.child-extends-parent",
+        {
+          *value(): Operation<string> {
+            return "core";
+          },
+        },
+        { groups: THREE_LANE },
+      );
+
+      const log: string[] = [];
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("max-a:enter");
+            const result = yield* next(...args);
+            log.push("max-a:exit");
+            return result;
+          },
+        },
+        { at: "max" },
+      );
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("replay-a:enter");
+            const result = yield* next(...args);
+            log.push("replay-a:exit");
+            return result;
+          },
+        },
+        { at: "replay" },
+      );
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("min-a:enter");
+            const result = yield* next(...args);
+            log.push("min-a:exit");
+            return result;
+          },
+        },
+        { at: "min" },
+      );
+
+      yield* scoped(function* () {
+        yield* api.around(
+          {
+            *value(args, next) {
+              log.push("max-b:enter");
+              const result = yield* next(...args);
+              log.push("max-b:exit");
+              return result;
+            },
+          },
+          { at: "max" },
+        );
+        yield* api.around(
+          {
+            *value(args, next) {
+              log.push("replay-b:enter");
+              const result = yield* next(...args);
+              log.push("replay-b:exit");
+              return result;
+            },
+          },
+          { at: "replay" },
+        );
+        yield* api.around(
+          {
+            *value(args, next) {
+              log.push("min-b:enter");
+              const result = yield* next(...args);
+              log.push("min-b:exit");
+              return result;
+            },
+          },
+          { at: "min" },
+        );
+
+        yield* api.operations.value();
+      });
+
+      // append lanes: parent outer / child inner (a outer, b inner)
+      // prepend lane: child outer / parent inner (b outer, a inner)
+      expect(log).toEqual([
+        "max-a:enter",
+        "max-b:enter",
+        "replay-a:enter",
+        "replay-b:enter",
+        "min-b:enter",
+        "min-a:enter",
+        "min-a:exit",
+        "min-b:exit",
+        "replay-b:exit",
+        "replay-a:exit",
+        "max-b:exit",
+        "max-a:exit",
+      ]);
+    });
+
+    it("child custom-group middleware does not leak back to parent", function* () {
+      const api = createApi(
+        "groups.no-leak",
+        {
+          *value(): Operation<string> {
+            return "core";
+          },
+        },
+        { groups: THREE_LANE },
+      );
+
+      const log: string[] = [];
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("max-a:enter");
+            const result = yield* next(...args);
+            log.push("max-a:exit");
+            return result;
+          },
+        },
+        { at: "max" },
+      );
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("replay-a:enter");
+            const result = yield* next(...args);
+            log.push("replay-a:exit");
+            return result;
+          },
+        },
+        { at: "replay" },
+      );
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("min-a:enter");
+            const result = yield* next(...args);
+            log.push("min-a:exit");
+            return result;
+          },
+        },
+        { at: "min" },
+      );
+
+      yield* scoped(function* () {
+        yield* api.around(
+          {
+            *value(args, next) {
+              log.push("max-b:enter");
+              const result = yield* next(...args);
+              log.push("max-b:exit");
+              return result;
+            },
+          },
+          { at: "max" },
+        );
+        yield* api.around(
+          {
+            *value(args, next) {
+              log.push("replay-b:enter");
+              const result = yield* next(...args);
+              log.push("replay-b:exit");
+              return result;
+            },
+          },
+          { at: "replay" },
+        );
+        yield* api.around(
+          {
+            *value(args, next) {
+              log.push("min-b:enter");
+              const result = yield* next(...args);
+              log.push("min-b:exit");
+              return result;
+            },
+          },
+          { at: "min" },
+        );
+
+        yield* api.operations.value();
+      });
+
+      log.length = 0;
+      yield* api.operations.value();
+      expect(log).toEqual([
+        "max-a:enter",
+        "replay-a:enter",
+        "min-a:enter",
+        "min-a:exit",
+        "replay-a:exit",
+        "max-a:exit",
+      ]);
+    });
+
+    it("spawned child sees later parent replay middleware", function* () {
+      const api = createApi(
+        "groups.spawn-replay",
+        {
+          *value(): Operation<string> {
+            return "core";
+          },
+        },
+        { groups: THREE_LANE },
+      );
+
+      const log: string[] = [];
+      const gate = withResolvers<void>();
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("replay-a:enter");
+            const result = yield* next(...args);
+            log.push("replay-a:exit");
+            return result;
+          },
+        },
+        { at: "replay" },
+      );
+
+      const task = yield* spawn(function* () {
+        yield* gate.operation;
+        return yield* api.operations.value();
+      });
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("replay-b:enter");
+            const result = yield* next(...args);
+            log.push("replay-b:exit");
+            return result;
+          },
+        },
+        { at: "replay" },
+      );
+
+      gate.resolve();
+
+      const result = yield* task;
+      expect(result).toEqual("core");
+      // Spawned child reads live context: sees both earlier and later replay.
+      // replay is append, so replay-a runs outer.
+      expect(log).toEqual([
+        "replay-a:enter",
+        "replay-b:enter",
+        "replay-b:exit",
+        "replay-a:exit",
+      ]);
+    });
+
+    it("mixed later parent updates across all three lanes remain deterministic", function* () {
+      const api = createApi(
+        "groups.mixed-later-updates",
+        {
+          *value(): Operation<string> {
+            return "core";
+          },
+        },
+        { groups: THREE_LANE },
+      );
+
+      const log: string[] = [];
+      const childReady = withResolvers<void>();
+      const parentUpdated = withResolvers<void>();
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("max-a:enter");
+            const result = yield* next(...args);
+            log.push("max-a:exit");
+            return result;
+          },
+        },
+        { at: "max" },
+      );
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("replay-a:enter");
+            const result = yield* next(...args);
+            log.push("replay-a:exit");
+            return result;
+          },
+        },
+        { at: "replay" },
+      );
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("min-a:enter");
+            const result = yield* next(...args);
+            log.push("min-a:exit");
+            return result;
+          },
+        },
+        { at: "min" },
+      );
+
+      const task = yield* spawn(function* () {
+        yield* api.around(
+          {
+            *value(args, next) {
+              log.push("max-b:enter");
+              const result = yield* next(...args);
+              log.push("max-b:exit");
+              return result;
+            },
+          },
+          { at: "max" },
+        );
+        yield* api.around(
+          {
+            *value(args, next) {
+              log.push("replay-b:enter");
+              const result = yield* next(...args);
+              log.push("replay-b:exit");
+              return result;
+            },
+          },
+          { at: "replay" },
+        );
+        yield* api.around(
+          {
+            *value(args, next) {
+              log.push("min-b:enter");
+              const result = yield* next(...args);
+              log.push("min-b:exit");
+              return result;
+            },
+          },
+          { at: "min" },
+        );
+
+        childReady.resolve();
+        yield* parentUpdated.operation;
+        return yield* api.operations.value();
+      });
+
+      yield* childReady.operation;
+
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("max-c:enter");
+            const result = yield* next(...args);
+            log.push("max-c:exit");
+            return result;
+          },
+        },
+        { at: "max" },
+      );
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("replay-c:enter");
+            const result = yield* next(...args);
+            log.push("replay-c:exit");
+            return result;
+          },
+        },
+        { at: "replay" },
+      );
+      yield* api.around(
+        {
+          *value(args, next) {
+            log.push("min-c:enter");
+            const result = yield* next(...args);
+            log.push("min-c:exit");
+            return result;
+          },
+        },
+        { at: "min" },
+      );
+
+      parentUpdated.resolve();
+
+      const childResult = yield* task;
+      expect(childResult).toEqual("core");
+      // append lanes (max, replay): parent outer / child inner;
+      // parent install order preserved (a then c), child appended inner.
+      // prepend lane (min): child outer / parent inner, with later installs outermost.
+      expect(log).toEqual([
+        "max-a:enter",
+        "max-c:enter",
+        "max-b:enter",
+        "replay-a:enter",
+        "replay-c:enter",
+        "replay-b:enter",
+        "min-b:enter",
+        "min-c:enter",
+        "min-a:enter",
+        "min-a:exit",
+        "min-c:exit",
+        "min-b:exit",
+        "replay-b:exit",
+        "replay-c:exit",
+        "replay-a:exit",
+        "max-b:exit",
+        "max-c:exit",
+        "max-a:exit",
+      ]);
+    });
+
+    describe("validation", () => {
+      it("createApi throws on duplicate group names", function* () {
+        expect(() =>
+          createApi(
+            "groups.dup",
+            { *v(): Operation<void> {} },
+            {
+              groups: [
+                { name: "max", mode: "append" },
+                { name: "replay", mode: "append" },
+                { name: "max", mode: "prepend" },
+              ] as const,
+            },
+          ),
+        ).toThrow(/duplicate group name/);
+
+        expect(() =>
+          createApi(
+            "groups.dup",
+            { *v(): Operation<void> {} },
+            {
+              groups: [
+                { name: "max", mode: "append" },
+                { name: "max", mode: "prepend" },
+              ] as const,
+            },
+          ),
+        ).toThrow(/duplicate group names?:[^:]*\bmax\b/);
+      });
+
+      it("createApi throws on an empty groups array", function* () {
+        expect(() =>
+          createApi(
+            "groups.empty",
+            { *v(): Operation<void> {} },
+            { groups: [] as const },
+          ),
+        ).toThrow(/must not be empty/);
+      });
+
+      it("around throws on unknown `at` with known names in the error message", function* () {
+        const api = createApi(
+          "groups.unknown-at",
+          { *v(): Operation<void> {} },
+          { groups: THREE_LANE },
+        );
+
+        let error: unknown;
+        try {
+          yield* api.around(
+            {
+              *v(args, next) {
+                yield* next(...args);
+              },
+            },
+            // deliberately cast to bypass the compile-time guard
+            { at: "nope" as unknown as "max" | "replay" | "min" },
+          );
+        } catch (e) {
+          error = e;
+        }
+
+        expect(error).toBeInstanceOf(Error);
+        const message = (error as Error).message;
+        expect(message).toMatch(/unknown group "nope"/);
+        expect(message).toMatch(/max/);
+        expect(message).toMatch(/replay/);
+        expect(message).toMatch(/min/);
+      });
+    });
+  });
 });

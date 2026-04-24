@@ -45,12 +45,7 @@
     "build:bundle": "cargo build --manifest-path swc/Cargo.toml --target wasm32-wasip1 --release",
     "prepack": "pnpm run build:bundle"
   },
-  "files": [
-    "dist",
-    "mod.ts",
-    "esbuild.ts",
-    "swc/target/wasm32-wasip1/release/swc_plugin_inline.wasm"
-  ],
+  "files": ["dist", "swc/target/wasm32-wasip1/release/swc_plugin_inline.wasm"],
   "sideEffects": false,
   "devDependencies": {
     "@effectionx/bdd": "workspace:*",

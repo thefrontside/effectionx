@@ -26,6 +26,7 @@
       "default": "./dist/events.js"
     }
   },
+  "files": ["dist"],
   "peerDependencies": {
     "effection": "^3 || ^4"
   },

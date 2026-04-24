@@ -26,6 +26,7 @@
       "default": "./mod.deno.ts"
     }
   },
+  "files": ["dist", "mod.deno.ts"],
   "peerDependencies": {
     "effection": "^3 || ^4"
   },

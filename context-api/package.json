@@ -30,7 +30,7 @@
     "url": "https://github.com/thefrontside/effectionx/issues"
   },
   "sideEffects": false,
-  "files": ["dist", "mod.ts"],
+  "files": ["dist"],
   "devDependencies": {
     "@effectionx/vitest": "workspace:*",
     "effection": "^4"

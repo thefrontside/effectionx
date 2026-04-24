@@ -14,7 +14,7 @@
       "default": "./dist/mod.js"
     }
   },
-  "files": ["dist", "mod.ts", "box.ts", "eval-scope.ts"],
+  "files": ["dist"],
   "peerDependencies": {
     "effection": "^3 || ^4"
   },

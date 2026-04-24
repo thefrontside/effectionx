@@ -21,7 +21,7 @@
       "default": "./dist/mod.js"
     }
   },
-  "files": ["dist", "mod.ts", "state.ts"],
+  "files": ["dist"],
   "peerDependencies": {
     "effection": "^3 || ^4"
   },

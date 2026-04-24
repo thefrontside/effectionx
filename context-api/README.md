@@ -1,14 +1,17 @@
 # Context APIs
 
-Algebraic effects pattern for context-dependent operations with middleware
+Algebraic effects pattern for context-dependent operations with ordered middleware groups
 
 ---
 
 Often called "Algebraic Effects" or "Contextual Effects", Context APIs let you
 access an operation via the context in a way that it can be easily (and
 contextually) wrapped with middleware. Middleware is powered by
-[`@effectionx/middleware`](../middleware/README.md) and supports min/max priority
-ordering.
+[`@effectionx/middleware`](../middleware/README.md) and is organized into
+ordered groups — each API declares the lanes it needs, and middleware within a
+group follows an `append` or `prepend` rule. The default configuration provides
+`max`/`min` lanes, matching the common outer-wrapper / inner-implementation
+split.
 
 ## Quick Start
 

@@ -51,6 +51,21 @@ export type MiddlewareGroup<Name extends string> = {
  *
  * `groups` defaults to the backward-compatible two-lane configuration:
  * `[{ name: "max", mode: "append" }, { name: "min", mode: "prepend" }]`.
+ *
+ * Pass `groups: [...] as const` so TypeScript infers the literal union of
+ * group names into the `Group` type parameter. Without `as const`, names
+ * widen to `string` and `around({ at })` loses its typed group check.
+ *
+ * @example
+ * ```ts
+ * const api = createApi("effects", handler, {
+ *   groups: [
+ *     { name: "max", mode: "append" },
+ *     { name: "replay", mode: "append" },
+ *     { name: "min", mode: "prepend" },
+ *   ] as const,
+ * });
+ * ```
  */
 export type CreateApiOptions<Group extends string> = {
   groups?: readonly MiddlewareGroup<Group>[];

@@ -1569,7 +1569,7 @@ describe("scope middleware", () => {
               ] as const,
             },
           ),
-        ).toThrow(/max/);
+        ).toThrow(/duplicate group names?:[^:]*\bmax\b/);
       });
 
       it("createApi throws on an empty groups array", function* () {

@@ -14,7 +14,7 @@
       "default": "./dist/mod.js"
     }
   },
-  "files": ["dist", "mod.ts", "middleware.ts"],
+  "files": ["dist"],
   "license": "MIT",
   "author": "engineering@frontside.com",
   "repository": {

@@ -103,7 +103,7 @@ Each package requires:
 - `type`: `"module"`
 - `exports`: Must include `types`, `development`, `import`, and `default` conditions
 - `peerDependencies`: Usually `effection: "^3 || ^4"`
-- `files`: Include `dist`, `mod.ts`, and source files
+- `files`: Include only published artifacts (`dist`). Exceptions: `bdd` also ships `mod.deno.ts` (the `./deno` subpath serves source directly); `inline` also ships `swc/target/wasm32-wasip1/release/swc_plugin_inline.wasm`. Workspace dev resolves source via the `development` export condition — source `.ts` files do not need to be in `files`
 
 ### Test Files
 

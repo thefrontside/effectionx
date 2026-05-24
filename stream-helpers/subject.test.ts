@@ -1,6 +1,8 @@
 import {
   createChannel,
+  createSignal,
   type Operation,
+  scoped,
   type Stream,
   type Subscription,
 } from "effection";
@@ -29,7 +31,7 @@ describe("subject", () => {
 
     upstream = createChannel();
 
-    downstream = subject(upstream);
+    downstream = yield* subject(upstream);
   });
 
   it("allows multiple subscribers", function* () {
@@ -78,7 +80,7 @@ describe("subject", () => {
 
   it("yields initial value to first subscriber before any upstream values", function* () {
     subject = createSubject(42);
-    downstream = subject(upstream);
+    downstream = yield* subject(upstream);
 
     const subscriber = yield* downstream;
     expect(yield* next(subscriber)).toEqual(42);
@@ -89,7 +91,7 @@ describe("subject", () => {
 
   it("yields upstream value to late subscriber once upstream has sent", function* () {
     subject = createSubject(42);
-    downstream = subject(upstream);
+    downstream = yield* subject(upstream);
 
     const subscriber1 = yield* downstream;
     expect(yield* next(subscriber1)).toEqual(42);
@@ -114,5 +116,40 @@ describe("subject", () => {
     // Late subscriber after close should get last value and close value
     const subscriber2 = yield* downstream;
     expect(yield* next(subscriber2)).toEqual("bye");
+  });
+
+  it("tracks latest value even when no subscriber has pulled", function* () {
+    const source = createSignal<number, string>();
+    downstream = yield* createSubject<number>(0)(source);
+
+    const sub1 = yield* downstream;
+    expect(yield* next(sub1)).toEqual(0);
+
+    // Upstream emits — sub1 does NOT pull these
+    source.send(1);
+    source.send(2);
+
+    // Late subscriber gets latest, not initial
+    const sub2 = yield* downstream;
+    expect(yield* next(sub2)).toEqual(2);
+  });
+
+  it("continues tracking after first subscriber exits", function* () {
+    const source = createSignal<number, string>();
+    downstream = yield* createSubject<number>()(source);
+
+    // First subscriber in a scoped block — exits after reading
+    yield* scoped(function* () {
+      const sub = yield* downstream;
+      source.send(1);
+      expect(yield* next(sub)).toEqual(1);
+    });
+    // sub's scope is gone, but drain lives in the resource scope
+
+    source.send(2);
+
+    // New subscriber still works
+    const sub2 = yield* downstream;
+    expect(yield* next(sub2)).toEqual(2);
   });
 });

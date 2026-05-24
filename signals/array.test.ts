@@ -1,6 +1,7 @@
+import { timebox } from "@effectionx/timebox";
 import { describe, it } from "@effectionx/vitest";
 import { expect } from "expect";
-import { race, sleep, spawn, withResolvers } from "effection";
+import { sleep, spawn, withResolvers } from "effection";
 
 import { createArraySignal } from "./array.ts";
 
@@ -37,15 +38,9 @@ describe("array signal", () => {
 
         array.set([1, 2, 3]);
 
-        const result = yield* race([
-          subscription.next(),
-          (function* () {
-            yield* sleep(1);
-            return "sleep won; update not received";
-          })(),
-        ]);
+        const result = yield* timebox(10, () => subscription.next());
 
-        expect(result).toEqual("sleep won; update not received");
+        expect(result.timeout).toEqual(true);
         resolve();
       });
 

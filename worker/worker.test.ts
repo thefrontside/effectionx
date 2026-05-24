@@ -16,6 +16,7 @@ import { expect } from "expect";
 
 import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
 import { useWorker } from "./worker.ts";
+import { createWorkerStatesSignal } from "./worker-main.ts";
 
 describe("worker", () => {
   it("sends and receive messages in synchrony", function* () {
@@ -472,6 +473,27 @@ describe("worker", () => {
       expect(result).toEqual(
         "processed: trigger with host-handled: worker-request-for: trigger",
       );
+    });
+  });
+
+  describe("WorkerStateSignal", () => {
+    it("replays the latest state to a late subscriber", function* () {
+      const worker = yield* createWorkerStatesSignal();
+
+      // First subscriber gets the initial state
+      const sub1 = yield* worker;
+      const first = yield* sub1.next();
+      expect(first.done).toEqual(false);
+      if (!first.done) expect(first.value.type).toEqual("new");
+
+      // Transition — sub1 does NOT pull this
+      worker.complete("done");
+
+      // Late subscriber gets latest, not initial
+      const sub2 = yield* worker;
+      const second = yield* sub2.next();
+      expect(second.done).toEqual(false);
+      if (!second.done) expect(second.value.type).toEqual("complete");
     });
   });
 });

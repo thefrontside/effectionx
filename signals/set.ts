@@ -1,6 +1,7 @@
-import { createSignal, type Operation, resource } from "effection";
-import type { ValueSignal } from "./types.ts";
+import { type Operation, resource } from "effection";
 import { is, Set } from "immutable";
+import type { ValueSignal } from "./types.ts";
+import { createValueSignal } from "./value.ts";
 
 /**
  * A signal that represents a Set.
@@ -41,50 +42,36 @@ export function createSetSignal<T>(
   initial: Array<T> = [],
 ): Operation<SetSignal<T>> {
   return resource(function* (provide) {
-    const signal = createSignal<Set<T>, void>();
+    const signal = yield* createValueSignal(Set.of<T>(...initial), {
+      equals: is,
+    });
 
-    const ref = { current: Set.of<T>(...initial) };
-
-    function set(value: Iterable<T>) {
-      if (is(ref.current, value)) {
-        return ref.current;
-      }
-      ref.current = Set.of<T>(...value);
-      signal.send(ref.current);
-      return ref.current;
+    function set(value: Iterable<T>): Set<T> {
+      return signal.set(Set.of<T>(...value));
     }
 
-    try {
-      yield* provide({
-        [Symbol.iterator]: signal[Symbol.iterator],
-        set,
-        update(updater) {
-          return set(updater(ref.current));
-        },
-        add(item) {
-          ref.current = ref.current.add(item);
-          signal.send(ref.current);
-          return ref.current;
-        },
-        difference(items) {
-          ref.current = ref.current.subtract(items);
-          signal.send(ref.current);
-          return ref.current;
-        },
-        delete(item) {
-          if (ref.current.has(item)) {
-            ref.current = ref.current.delete(item);
-            signal.send(ref.current);
-            return true;
-          }
-          return false;
-        },
-        valueOf() {
-          return ref.current.toSet();
-        },
-      });
-    } finally {
-      signal.close();
-    }
+    yield* provide({
+      [Symbol.iterator]: signal[Symbol.iterator],
+      set,
+      update(updater) {
+        return set(updater(signal.valueOf().toSet()));
+      },
+      add(item) {
+        return signal.set(signal.valueOf().add(item));
+      },
+      difference(items) {
+        return signal.set(signal.valueOf().subtract(items));
+      },
+      delete(item) {
+        if (signal.valueOf().has(item)) {
+          signal.set(signal.valueOf().delete(item));
+          return true;
+        }
+        return false;
+      },
+      valueOf() {
+        return signal.valueOf().toSet();
+      },
+    });
   });
 }

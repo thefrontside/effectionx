@@ -1,14 +1,17 @@
 import { call, main } from "effection";
 import { promises as fsp } from "node:fs";
 import process from "node:process";
+import { x } from "@effectionx/tinyexec";
 
 await main(function* () {
-  // Read matrix from environment variable (now only npm)
   const npmMatrixStr = process.env.NPM_MATRIX || '{"include":[]}';
+  const jsrMatrixStr = process.env.JSR_MATRIX || '{"include":[]}';
   const npmMatrix = JSON.parse(npmMatrixStr);
+  const jsrMatrix = JSON.parse(jsrMatrixStr);
 
-  // Filter out "nothing" workspace and get unique tags
-  const uniqueTags = npmMatrix.include
+  const publishItems = [...npmMatrix.include, ...jsrMatrix.include];
+
+  const candidateTags = publishItems
     .filter((item: { workspace: string }) => item.workspace !== "nothing")
     .flatMap(
       (
@@ -21,6 +24,16 @@ await main(function* () {
         return firstIndex === index ? [item] : [];
       },
     );
+  const uniqueTags = [];
+
+  for (const item of candidateTags) {
+    const git = yield* x("git", ["tag", "--list", item.tagname]);
+    const { stdout } = yield* git;
+
+    if (stdout.trim() === "") {
+      uniqueTags.push(item);
+    }
+  }
 
   const tagsExist = uniqueTags.length > 0;
   const tagsMatrix = { include: uniqueTags };

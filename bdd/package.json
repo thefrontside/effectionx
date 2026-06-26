@@ -35,6 +35,13 @@
   "devDependencies": {
     "effection": "^4"
   },
+  "effectionx": {
+    "jsr": {
+      "imports": {
+        "@std/testing/bdd": "jsr:@std/testing@1/bdd"
+      }
+    }
+  },
   "license": "MIT",
   "author": "engineering@frontside.com",
   "repository": {

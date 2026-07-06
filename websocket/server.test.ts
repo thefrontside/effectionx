@@ -94,8 +94,23 @@ describe("WebSocketServer", () => {
     let event = yield* drain(messages);
     expect(event.type).toEqual("close");
     expect(event.wasClean).toEqual(true);
-    expect(event.code).toEqual(1000);
-    expect(event.reason).toEqual("released");
+    expect(event.code).toEqual(1001);
+    expect(event.reason).toEqual("server shutting down");
+  });
+
+  it("closes a connection with an explicit code and reason", function* () {
+    let { server, port } = yield* useTestServer();
+    let incoming = yield* server;
+
+    let client = yield* connect(port);
+    let connection = (yield* incoming.next()).value;
+    let clientMessages = yield* client;
+
+    yield* connection.close(4002, "custom");
+
+    let event = yield* drain(clientMessages);
+    expect(event.code).toEqual(4002);
+    expect(event.reason).toEqual("custom");
   });
 
   it("buffers a connection that arrives before it is consumed", function* () {

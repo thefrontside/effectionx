@@ -83,6 +83,7 @@ export function useWebSocketServer<T>(
     let server = create();
 
     let connections = createQueue<WebSocketResource<T>, never>();
+    let live = new Set<WebSocketResource<T>>();
 
     // crash the resource scope if the server itself errors, mirroring the
     // client's `throw yield* once(socket, "error")` behavior
@@ -97,7 +98,9 @@ export function useWebSocketServer<T>(
     // concurrently in this accept task's scope.
     yield* spawn(function* () {
       for (let [raw] of yield* each(on<[WebSocket]>(server, "connection"))) {
-        connections.add(yield* useWebSocket<T>(() => raw));
+        let connection = yield* useWebSocket<T>(() => raw);
+        live.add(connection);
+        connections.add(connection);
         yield* each.next();
       }
     });
@@ -111,10 +114,12 @@ export function useWebSocketServer<T>(
         },
       });
     } finally {
-      // stop accepting new connections; the live connection tasks close their
-      // own sockets as this scope tears down. We don't await the close callback
-      // here because it can depend on those sockets closing, which happens as
-      // part of this same teardown.
+      // Compose a going-away shutdown: close live connections with 1001 before
+      // releasing. The first close wins, so this takes precedence over each
+      // connection's scope-exit close (1000) as the accept task tears down.
+      for (let connection of live) {
+        yield* connection.close(1001, "server shutting down");
+      }
       server.close();
     }
   });

@@ -24,8 +24,10 @@ const CLOSE_TIMEOUT_MS = 1000;
  * itself is a subscribale stream. When the socket is closed, the stream will
  * complete with a [`CloseEvent`](https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent)
  *
- * A WebSocketResource does not have an explicit close method. Rather, the underlying
- * socket will be automatically closed when the resource passes out of scope.
+ * The underlying socket is automatically closed when the resource passes out of
+ * scope (with code `1000` and reason `"released"`). For a different close code
+ * or reason — e.g. a `1001` "going away" on server shutdown — compose an
+ * explicit {@link WebSocketResource.close} before the resource is released.
  */
 export interface WebSocketResource<T>
   extends Stream<MessageEvent<T>, CloseEvent> {
@@ -39,6 +41,17 @@ export interface WebSocketResource<T>
   readonly readyState: number;
   readonly url: string;
   send(data: WebSocketData): Operation<void>;
+  /**
+   * Close the socket with an explicit code and reason, resolving once the close
+   * handshake completes (bounded by an internal timeout so a silent peer cannot
+   * hang). Because the first close wins, calling this before the resource is
+   * released lets you choose the close code the peer observes; the automatic
+   * scope-exit close then becomes a no-op.
+   *
+   * @param code - a valid WebSocket close code (default `1000`)
+   * @param reason - a close reason string (default `"released"`)
+   */
+  close(code?: number, reason?: string): Operation<void>;
 }
 
 /**
@@ -141,13 +154,18 @@ export function useWebSocket<T>(
       close(next.value);
     });
 
+    // The first close wins, so whoever calls this first picks the code the peer
+    // sees. On timeout we stop waiting rather than forcing a terminate.
+    function* closeSocket(code: number, reason: string): Operation<void> {
+      socket.close(code, reason);
+      yield* timebox(CLOSE_TIMEOUT_MS, () => closed);
+    }
+
     // Don't hoist this above the spawns — teardown would hang waiting on
     // `closed`.
     yield* ensure(function* () {
-      socket.close(1000, "released");
-      // Bound the wait for the peer's close handshake so a silent peer can't
-      // hang teardown; on timeout we simply stop waiting (no forced terminate).
-      yield* timebox(CLOSE_TIMEOUT_MS, () => closed);
+      // A no-op if the caller already closed with an explicit code via `close()`.
+      yield* closeSocket(1000, "released");
       socket.removeEventListener("message", messages.send);
       socket.removeEventListener("close", messages.close);
     });
@@ -178,6 +196,9 @@ export function useWebSocket<T>(
         },
         *send(data: WebSocketData): Operation<void> {
           socket.send(data);
+        },
+        *close(code = 1000, reason = "released"): Operation<void> {
+          yield* closeSocket(code, reason);
         },
         [Symbol.iterator]: messages[Symbol.iterator],
       }),

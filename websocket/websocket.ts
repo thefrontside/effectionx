@@ -8,6 +8,13 @@ import {
   withResolvers,
 } from "effection";
 import type { Operation, Stream } from "effection";
+import { timebox } from "@effectionx/timebox";
+
+/**
+ * How long to wait for the peer's `close` handshake when a socket is released
+ * before giving up and moving on, so a silent peer can never hang teardown.
+ */
+const CLOSE_TIMEOUT_MS = 1000;
 
 /**
  * Handle to a
@@ -138,7 +145,9 @@ export function useWebSocket<T>(
     // `closed`.
     yield* ensure(function* () {
       socket.close(1000, "released");
-      yield* closed;
+      // Bound the wait for the peer's close handshake so a silent peer can't
+      // hang teardown; on timeout we simply stop waiting (no forced terminate).
+      yield* timebox(CLOSE_TIMEOUT_MS, () => closed);
       socket.removeEventListener("message", messages.send);
       socket.removeEventListener("close", messages.close);
     });

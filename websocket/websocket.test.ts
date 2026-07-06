@@ -6,6 +6,7 @@ import {
   createQueue,
   ensure,
   resource,
+  scoped,
   suspend,
   useScope,
   withResolvers,
@@ -63,7 +64,47 @@ describe("WebSocket", () => {
     expect(event.type).toEqual("close");
     expect(event.wasClean).toEqual(true);
   });
+
+  it("does not hang teardown when the peer never sends a close frame", function* () {
+    let socket = makeSilentSocket();
+
+    // `scoped` runs the body in a child scope and tears it down when the body
+    // returns — releasing the connection. Even though the socket never emits
+    // "close", the release must complete (bounded by the close timeout) rather
+    // than hang forever.
+    yield* scoped(function* () {
+      yield* useWebSocket(() => socket as unknown as WebSocket);
+    });
+
+    // reaching here means teardown completed; it also attempted the close
+    expect(socket.closeCalls).toEqual(1);
+  });
 });
+
+/**
+ * A minimal WebSocket stand-in that is already OPEN and never emits an "open",
+ * "close", or "error" event — used to prove teardown does not hang on a silent
+ * peer.
+ */
+function makeSilentSocket() {
+  return {
+    readyState: WebSocket.OPEN,
+    binaryType: "blob" as BinaryType,
+    bufferedAmount: 0,
+    extensions: "",
+    protocol: "",
+    url: "ws://silent.test",
+    closeCalls: 0,
+    // record listeners but never fire any event
+    addEventListener() {},
+    removeEventListener() {},
+    send() {},
+    close() {
+      // deliberately never fires a "close" event
+      this.closeCalls += 1;
+    },
+  };
+}
 
 interface TestSocket {
   close(): void;

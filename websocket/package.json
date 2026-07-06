@@ -16,7 +16,8 @@
   },
   "files": ["dist"],
   "dependencies": {
-    "@effectionx/node": "workspace:*"
+    "@effectionx/node": "workspace:*",
+    "@effectionx/timebox": "workspace:*"
   },
   "peerDependencies": {
     "effection": "^3 || ^4"

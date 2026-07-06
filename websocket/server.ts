@@ -1,4 +1,4 @@
-import { createQueue, each, resource, spawn, useScope } from "effection";
+import { createQueue, each, resource, spawn } from "effection";
 import type { Operation, Stream } from "effection";
 import { on, once } from "@effectionx/node";
 import type { EventEmitterLike } from "@effectionx/node";
@@ -84,8 +84,6 @@ export function useWebSocketServer<T>(
 
     let connections = createQueue<WebSocketResource<T>, never>();
 
-    let scope = yield* useScope();
-
     // crash the resource scope if the server itself errors, mirroring the
     // client's `throw yield* once(socket, "error")` behavior
     yield* spawn(function* () {
@@ -93,22 +91,13 @@ export function useWebSocketServer<T>(
       throw error;
     });
 
-    // each incoming socket lives as an independent task in this scope: it wraps
-    // the raw socket with the client resource, publishes it, and stays alive
-    // until the socket closes — at which point its scope (and the wrapped
-    // resource) is torn down instead of leaking a task per past connection.
+    // accept connections: wrap each raw socket with the client resource and
+    // publish it. `useWebSocket` self-terminates when its socket closes, so no
+    // per-connection task or drain loop is needed — the wrapped connections live
+    // concurrently in this accept task's scope.
     yield* spawn(function* () {
       for (let [raw] of yield* each(on<[WebSocket]>(server, "connection"))) {
-        scope.run(function* () {
-          let connection = yield* useWebSocket<T>(() => raw);
-          connections.add(connection);
-
-          let subscription = yield* connection;
-          let next = yield* subscription.next();
-          while (!next.done) {
-            next = yield* subscription.next();
-          }
-        });
+        connections.add(yield* useWebSocket<T>(() => raw));
         yield* each.next();
       }
     });

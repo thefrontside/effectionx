@@ -58,11 +58,13 @@ describe("WebSocketServer", () => {
     let connection = (yield* incoming.next()).value;
     let messages = yield* connection;
 
-    raw.close();
+    raw.close(4001, "goodbye");
 
     let event = yield* drain(messages);
     expect(event.type).toEqual("close");
     expect(event.wasClean).toEqual(true);
+    expect(event.code).toEqual(4001);
+    expect(event.reason).toEqual("goodbye");
   });
 
   it("closes live client connections when the server is torn down", function* () {
@@ -92,6 +94,25 @@ describe("WebSocketServer", () => {
     let event = yield* drain(messages);
     expect(event.type).toEqual("close");
     expect(event.wasClean).toEqual(true);
+    expect(event.code).toEqual(1000);
+    expect(event.reason).toEqual("released");
+  });
+
+  it("buffers a connection that arrives before it is consumed", function* () {
+    let { server, port } = yield* useTestServer();
+
+    // connect the client before subscribing to the server stream
+    let client = yield* connect(port);
+    let incoming = yield* server;
+
+    // the connection was buffered while nobody was subscribed
+    let connection = (yield* incoming.next()).value;
+
+    let messages = yield* connection;
+    yield* client.send("buffered hello");
+
+    let { value } = yield* messages.next();
+    expect(value).toMatchObject({ data: "buffered hello" });
   });
 
   it("surfaces each simultaneous client as a distinct connection", function* () {

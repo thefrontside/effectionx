@@ -115,8 +115,8 @@ describe("WebSocketServer", () => {
     yield* clientB.send("B");
 
     let received = [
-      (yield* firstMessages.next()).value?.data,
-      (yield* secondMessages.next()).value?.data,
+      ((yield* firstMessages.next()).value as MessageEvent<string>).data,
+      ((yield* secondMessages.next()).value as MessageEvent<string>).data,
     ].sort();
 
     expect(received).toEqual(["A", "B"]);

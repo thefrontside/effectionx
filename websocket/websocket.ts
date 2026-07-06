@@ -167,7 +167,7 @@ export function useWebSocket<T>(
         get url() {
           return socket.url;
         },
-        *send(data) {
+        *send(data: WebSocketData): Operation<void> {
           socket.send(data);
         },
         [Symbol.iterator]: messages[Symbol.iterator],

@@ -21,7 +21,7 @@ describe("WebSocket", () => {
 
     let subscription = yield* server.socket;
 
-    client.socket.send("hello from client");
+    yield* client.socket.send("hello from client");
 
     let { value } = yield* subscription.next();
 
@@ -33,7 +33,7 @@ describe("WebSocket", () => {
 
     let subscription = yield* client.socket;
 
-    server.socket.send("hello from server");
+    yield* server.socket.send("hello from server");
 
     let { value } = yield* subscription.next();
 

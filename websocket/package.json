@@ -1,7 +1,7 @@
 {
   "name": "@effectionx/websocket",
-  "description": "WebSocket client with stream-based message handling and automatic cleanup",
-  "version": "2.3.4",
+  "description": "WebSocket client and server with stream-based message handling and automatic cleanup",
+  "version": "3.0.0",
   "keywords": ["io", "streams"],
   "type": "module",
   "main": "./dist/mod.js",

@@ -31,7 +31,7 @@ export interface WebSocketResource<T>
   readonly protocol: string;
   readonly readyState: number;
   readonly url: string;
-  send(data: WebSocketData): void;
+  send(data: WebSocketData): Operation<void>;
 }
 
 /**
@@ -167,7 +167,9 @@ export function useWebSocket<T>(
         get url() {
           return socket.url;
         },
-        send: (data) => socket.send(data),
+        *send(data) {
+          socket.send(data);
+        },
         [Symbol.iterator]: messages[Symbol.iterator],
       }),
     ]);

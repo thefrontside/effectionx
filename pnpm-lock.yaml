@@ -419,6 +419,10 @@ importers:
         version: 4.1.0
 
   websocket:
+    dependencies:
+      '@effectionx/node':
+        specifier: workspace:*
+        version: link:../node
     devDependencies:
       '@effectionx/vitest':
         specifier: workspace:*

@@ -1,18 +1,16 @@
-import {
-  createQueue,
-  resource,
-  spawn,
-  useScope,
-  withResolvers,
-} from "effection";
+import { createQueue, each, resource, spawn, useScope } from "effection";
 import type { Operation, Stream } from "effection";
+import { on, once } from "@effectionx/node";
+import type { EventEmitterLike } from "@effectionx/node";
 
 import { type WebSocketResource, useWebSocket } from "./websocket.ts";
 
 /**
  * The minimal structural surface of a
  * [`ws`](https://github.com/websockets/ws) `WebSocketServer` (or any
- * compatible server) that {@link useWebSocketServer} needs.
+ * compatible server) that {@link useWebSocketServer} needs: an
+ * {@link EventEmitterLike} that emits `connection` and `error` events, plus a
+ * `close` method.
  *
  * This is intentionally narrow so that the package never has to import a
  * concrete server implementation and stays platform-agnostic. Because the
@@ -21,11 +19,7 @@ import { type WebSocketResource, useWebSocket } from "./websocket.ts";
  * server, e.g. `new WebSocketServer({ port }) as unknown as WebSocketServerLike`
  * — mirroring the `ws as unknown as WebSocket` cast used with the client.
  */
-export interface WebSocketServerLike {
-  on(event: "connection", listener: (socket: WebSocket) => void): void;
-  on(event: "error", listener: (error: Error) => void): void;
-  off(event: "connection", listener: (socket: WebSocket) => void): void;
-  off(event: "error", listener: (error: Error) => void): void;
+export interface WebSocketServerLike extends EventEmitterLike {
   close(callback?: () => void): void;
 }
 
@@ -90,34 +84,34 @@ export function useWebSocketServer<T>(
 
     let connections = createQueue<WebSocketResource<T>, never>();
 
-    // crash the resource scope if the server itself errors, mirroring the
-    // client's `throw yield* once(socket, "error")` behavior
-    let errored = withResolvers<Error>();
-    let onError = (error: Error) => errored.resolve(error);
-    server.on("error", onError);
-    yield* spawn(function* () {
-      throw yield* errored.operation;
-    });
-
     let scope = yield* useScope();
 
-    // each connection lives as an independent task in this scope: it wraps the
-    // raw socket with the client resource, publishes it, and stays alive until
-    // the socket closes — at which point its scope (and the wrapped resource) is
-    // torn down instead of leaking a task per past connection.
-    let onConnection = (raw: WebSocket) => {
-      scope.run(function* () {
-        let connection = yield* useWebSocket<T>(() => raw);
-        connections.add(connection);
+    // crash the resource scope if the server itself errors, mirroring the
+    // client's `throw yield* once(socket, "error")` behavior
+    yield* spawn(function* () {
+      let [error] = yield* once<[Error]>(server, "error");
+      throw error;
+    });
 
-        let subscription = yield* connection;
-        let next = yield* subscription.next();
-        while (!next.done) {
-          next = yield* subscription.next();
-        }
-      });
-    };
-    server.on("connection", onConnection);
+    // each incoming socket lives as an independent task in this scope: it wraps
+    // the raw socket with the client resource, publishes it, and stays alive
+    // until the socket closes — at which point its scope (and the wrapped
+    // resource) is torn down instead of leaking a task per past connection.
+    yield* spawn(function* () {
+      for (let [raw] of yield* each(on<[WebSocket]>(server, "connection"))) {
+        scope.run(function* () {
+          let connection = yield* useWebSocket<T>(() => raw);
+          connections.add(connection);
+
+          let subscription = yield* connection;
+          let next = yield* subscription.next();
+          while (!next.done) {
+            next = yield* subscription.next();
+          }
+        });
+        yield* each.next();
+      }
+    });
 
     try {
       // a queue is itself a subscription; expose it as a stream whose
@@ -128,8 +122,6 @@ export function useWebSocketServer<T>(
         },
       });
     } finally {
-      server.off("connection", onConnection);
-      server.off("error", onError);
       // stop accepting new connections; the live connection tasks close their
       // own sockets as this scope tears down. We don't await the close callback
       // here because it can depend on those sockets closing, which happens as

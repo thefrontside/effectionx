@@ -1,4 +1,11 @@
-import { createQueue, each, resource, spawn } from "effection";
+import {
+  createQueue,
+  createSignal,
+  each,
+  resource,
+  scoped,
+  spawn,
+} from "effection";
 import type { Operation, Stream } from "effection";
 import { on, once } from "@effectionx/node";
 import type { EventEmitterLike } from "@effectionx/node";
@@ -33,7 +40,17 @@ export interface WebSocketServerLike extends EventEmitterLike {
  * when the resource passes out of scope.
  */
 export interface WebSocketServerResource<T>
-  extends Stream<WebSocketResource<T>, never> {}
+  extends Stream<WebSocketResource<T>, never> {
+  /**
+   * A stream of errors raised by individual connections. A failing connection
+   * is isolated — it does not crash the server — and whatever it threw (for a
+   * socket failure, the DOM `error` event) is published here so you can observe
+   * per-connection failures by consuming this stream (rather than via a
+   * callback). It is lossy: errors emitted while nobody is subscribed are not
+   * buffered.
+   */
+  errors: Stream<unknown, never>;
+}
 
 /**
  * Create a WebSocket server resource that yields a {@link Stream} of incoming
@@ -83,6 +100,7 @@ export function useWebSocketServer<T>(
     let server = create();
 
     let connections = createQueue<WebSocketResource<T>, never>();
+    let errors = createSignal<unknown, never>();
     let live = new Set<WebSocketResource<T>>();
 
     // crash the resource scope if the server itself errors, mirroring the
@@ -92,15 +110,34 @@ export function useWebSocketServer<T>(
       throw error;
     });
 
-    // accept connections: wrap each raw socket with the client resource and
-    // publish it. `useWebSocket` self-terminates when its socket closes, so no
-    // per-connection task or drain loop is needed — the wrapped connections live
-    // concurrently in this accept task's scope.
+    // accept connections. Each is handled in its own task wrapped in `scoped`,
+    // which is a real error boundary (its trap/delimiter contains a crash) — so
+    // a single socket erroring is isolated to that connection and published on
+    // `errors` instead of taking down the server. The connection is held open
+    // until its socket closes.
     yield* spawn(function* () {
       for (let [raw] of yield* each(on<[WebSocket]>(server, "connection"))) {
-        let connection = yield* useWebSocket<T>(() => raw);
-        live.add(connection);
-        connections.add(connection);
+        yield* spawn(function* () {
+          try {
+            yield* scoped(function* () {
+              let connection = yield* useWebSocket<T>(() => raw);
+              live.add(connection);
+              connections.add(connection);
+              try {
+                // stay alive until the socket closes
+                let subscription = yield* connection;
+                let next = yield* subscription.next();
+                while (!next.done) {
+                  next = yield* subscription.next();
+                }
+              } finally {
+                live.delete(connection);
+              }
+            });
+          } catch (error) {
+            errors.send(error);
+          }
+        });
         yield* each.next();
       }
     });
@@ -112,12 +149,14 @@ export function useWebSocketServer<T>(
         *[Symbol.iterator]() {
           return connections;
         },
+        errors,
       });
     } finally {
       // Compose a going-away shutdown: close live connections with 1001 before
       // releasing. The first close wins, so this takes precedence over each
-      // connection's scope-exit close (1000) as the accept task tears down.
-      for (let connection of live) {
+      // connection's scope-exit close (1000) as its task tears down. Snapshot
+      // the set because connections delete themselves from it as they close.
+      for (let connection of [...live]) {
         yield* connection.close(1001, "server shutting down");
       }
       server.close();

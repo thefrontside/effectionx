@@ -11,7 +11,7 @@ import {
   withResolvers,
 } from "effection";
 import { expect } from "expect";
-import { WebSocketServer } from "ws";
+import { WebSocketServer, type WebSocket as WsWebSocket } from "ws";
 
 import {
   type WebSocketServerLike,
@@ -128,6 +128,41 @@ describe("WebSocketServer", () => {
 
     let { value } = yield* messages.next();
     expect(value).toMatchObject({ data: "buffered hello" });
+  });
+
+  it("isolates a connection error so the server keeps serving other clients", function* () {
+    let { httpServer, port } = yield* useHttp();
+
+    // capture the raw accepted sockets so we can force an error on one
+    let wss = new WebSocketServer({ server: httpServer });
+    let rawSockets = createQueue<WsWebSocket, never>();
+    wss.on("connection", (ws) => rawSockets.add(ws));
+
+    let server = yield* useWebSocketServer<string>(
+      () => wss as unknown as WebSocketServerLike,
+    );
+    let incoming = yield* server;
+    let serverErrors = yield* server.errors;
+
+    // accept one client, then make its underlying socket error
+    yield* connect(port);
+    yield* incoming.next();
+    let raw = (yield* rawSockets.next()).value;
+    raw.emit("error", new Error("boom"));
+
+    // the failure is surfaced on the errors stream, not thrown at the server.
+    // A socket failure surfaces as the DOM `error` event, whose message is the
+    // underlying error's message.
+    let { value: error } = yield* serverErrors.next();
+    expect((error as ErrorEvent).message).toContain("boom");
+
+    // and the server survives, serving a fresh client
+    let client = yield* connect(port);
+    let connection = (yield* incoming.next()).value;
+    let messages = yield* connection;
+    yield* client.send("still alive");
+    let { value } = yield* messages.next();
+    expect(value).toMatchObject({ data: "still alive" });
   });
 
   it("surfaces each simultaneous client as a distinct connection", function* () {

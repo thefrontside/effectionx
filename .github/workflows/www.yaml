@@ -1,0 +1,20 @@
+name: Trigger Effection Website Rebuild
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  trigger-effection-rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Trigger effection website rebuild
+        env:
+          GH_TOKEN: ${{ secrets.FRONTSIDEJACK_GITHUB_TOKEN }}
+        run: |
+          gh workflow run www.yaml \
+            --repo thefrontside/effection

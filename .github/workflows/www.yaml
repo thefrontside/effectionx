@@ -6,10 +6,14 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   trigger-effection-rebuild:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    concurrency: 1
 
     steps:
       - name: Trigger effection website rebuild

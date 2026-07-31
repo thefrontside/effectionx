@@ -31,8 +31,6 @@ const DatabaseConnection = createContext<Connection>("database");
 const withDatabase: Handler = function* (args, next) {
   const conn = yield* connect(process.env.DATABASE_URL);
   yield* DatabaseConnection.set(conn);
-  // async teardown goes in ensure(), not finally — a `yield*` inside a
-  // `finally` disarms halt propagation for the frame
   yield* ensure(function* () {
     yield* conn.close();
   });

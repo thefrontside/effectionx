@@ -53,8 +53,6 @@ function useDatabase(url: string): Operation<Database> {
   return resource(function* (provide) {
     let db = yield* connect(url);
 
-    // async teardown goes in ensure(), never in finally
-    // see .policies/async-teardown.md
     yield* ensure(function* () {
       yield* db.close();
     });
@@ -108,8 +106,7 @@ function* main(): Operation<void> {
     // More work...
     yield* moreWork(db);
   } finally {
-    // BAD: teardown mixed with business logic, and `yield*` in a finally
-    // disarms halt propagation — see .policies/async-teardown.md
+    // BAD: teardown mixed with business logic
     yield* db.close();
   }
 }

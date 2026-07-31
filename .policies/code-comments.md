@@ -1,6 +1,6 @@
-# Code Comments Policy (Recommended)
+# Code Comments Policy (Strict)
 
-This document defines the recommended policy for writing comments in source code.
+This document defines the strict policy for writing comments in source code.
 
 ## Core Principle
 

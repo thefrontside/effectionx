@@ -1,12 +1,22 @@
 import { Ok } from "effection";
-import type { Effect, Operation, Result } from "effection";
+import type { Coroutine, Effect, Operation, Result } from "effection";
+
+/**
+ * A coroutine's `data.iterator` is what drives the routine, and swapping it is
+ * how `inline` splices an operation into the current frame. It is present at
+ * runtime, but was dropped from Effection's public `Coroutine` type in 4.0.3,
+ * so we restate it here.
+ */
+type RoutineData = Coroutine["data"] & {
+  iterator: EffectIterator;
+};
 
 export function inline<T>(operation: Operation<T>): Inline<T> {
   return {
     operation,
     description: `inline(${operation})`,
     enter(resolve, routine) {
-      let current = routine.data.iterator;
+      let current = (routine.data as RoutineData).iterator;
       if (isInlineIterator(current)) {
         current.stack.push(current.current);
         current.current = operation[Symbol.iterator]();

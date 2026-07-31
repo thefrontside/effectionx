@@ -2,8 +2,8 @@ import { Ok } from "effection";
 import type { Coroutine, Effect, Operation, Result } from "effection";
 
 /**
- * Still present at runtime, but dropped from Effection's public `Coroutine`
- * type in 4.0.3.
+ * Still present at runtime but intentionally omitted from Effection's public
+ * `Coroutine` because it's considered a private API.
  */
 type RoutineData = Coroutine["data"] & {
   iterator: EffectIterator;
@@ -20,9 +20,9 @@ export function inline<T>(operation: Operation<T>): Inline<T> {
         current.stack.push(current.current);
         current.current = operation[Symbol.iterator]();
       } else {
-        // `step()` reads the iterator from a closure variable that only this
-        // setter writes. Shadowing the property with a getter type checks, runs
-        // and does nothing.
+        // Don't turn this back into a `defineProperty`. `step()` reads the
+        // iterator from a closure variable that only this setter writes, so a
+        // getter type checks, runs, and silently does nothing.
         data.iterator = new InlineIterator(operation, current);
       }
       resolve(Ok() as Result<T>);

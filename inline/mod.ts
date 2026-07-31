@@ -2,10 +2,8 @@ import { Ok } from "effection";
 import type { Coroutine, Effect, Operation, Result } from "effection";
 
 /**
- * A coroutine's `data.iterator` is what drives the routine, and swapping it is
- * how `inline` splices an operation into the current frame. It is present at
- * runtime, but was dropped from Effection's public `Coroutine` type in 4.0.3,
- * so we restate it here.
+ * Still present at runtime, but dropped from Effection's public `Coroutine`
+ * type in 4.0.3.
  */
 type RoutineData = Coroutine["data"] & {
   iterator: EffectIterator;
@@ -22,11 +20,9 @@ export function inline<T>(operation: Operation<T>): Inline<T> {
         current.stack.push(current.current);
         current.current = operation[Symbol.iterator]();
       } else {
-        // Assign through `data`'s own setter rather than redefining the
-        // property. Since effection 4.1, `Coroutine.step()` reads the iterator
-        // from a closure variable that only the setter writes, so shadowing the
-        // property with a getter leaves the routine driving the original
-        // iterator and `inline` silently does nothing.
+        // `step()` reads the iterator from a closure variable that only this
+        // setter writes. Shadowing the property with a getter type checks, runs
+        // and does nothing.
         data.iterator = new InlineIterator(operation, current);
       }
       resolve(Ok() as Result<T>);

@@ -3,7 +3,6 @@ import {
   type PropertyMiddleware,
   createApi,
 } from "@effectionx/context-api";
-import { unbox, useEvalScope } from "@effectionx/scope-eval";
 import {
   Err,
   Ok,
@@ -86,6 +85,10 @@ export interface WorkerResource<TSend, TRecv, TReturn>
 export interface WorkerShutdownApi {
   /** Hard-terminate the Worker if shutdown middleware delegates to `next()`. */
   shutdown(): Operation<void>;
+}
+
+interface InternalWorkerShutdownApi extends WorkerShutdownApi {
+  configured: boolean;
 }
 
 /** Middleware that controls escalation from graceful shutdown to termination. */
@@ -189,18 +192,18 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
         rejectOutcome(new Error("worker terminated"));
       }
     });
-    let shutdownScope = yield* useEvalScope();
-    let hasShutdownMiddleware = false;
 
     function* around(
-      ...args: Parameters<typeof shutdownApi.around>
-    ): ReturnType<typeof shutdownApi.around> {
-      let [middlewares] = args;
-      let result = yield* shutdownScope.eval(() => shutdownApi.around(...args));
-      unbox(result);
-      if (middlewares.shutdown) {
-        hasShutdownMiddleware = true;
-      }
+      ...args: Parameters<Api<WorkerShutdownApi>["around"]>
+    ): ReturnType<Api<WorkerShutdownApi>["around"]> {
+      let [middlewares, aroundOptions] = args;
+      yield* shutdownApi.around(
+        {
+          shutdown: middlewares.shutdown,
+          configured: middlewares.shutdown ? () => true : undefined,
+        },
+        aroundOptions,
+      );
     }
 
     if (initialShutdownMiddleware) {
@@ -284,10 +287,10 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
     yield* ensure(function* () {
       if (!outcomeSettled) {
         worker.postMessage({ type: "close" });
-        if (hasShutdownMiddleware) {
+        if (yield* shutdownApi.operations.configured) {
           let result = yield* race([
             settled(outcome.operation),
-            shutdownScope.eval(() => shutdownApi.operations.shutdown()),
+            settled(shutdownApi.operations.shutdown()),
           ]);
           if (!result.ok && !outcomeSettled) {
             worker.terminate();
@@ -393,10 +396,11 @@ let shutdownApiSequence = 0;
 
 function createWorkerShutdownApi(
   terminate: () => void,
-): Api<WorkerShutdownApi> {
-  let api = createApi<WorkerShutdownApi>(
+): Api<InternalWorkerShutdownApi> {
+  let api = createApi<InternalWorkerShutdownApi>(
     `@effectionx/worker:shutdown:${shutdownApiSequence++}`,
     {
+      configured: false,
       *shutdown(): Operation<void> {
         terminate();
       },

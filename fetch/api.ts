@@ -30,16 +30,11 @@ export const FetchApi: Api<Fetch> = createApi("fetch", {
     });
 
     let response = yield* until(
-      globalThis.fetch(input, { ...init, signal: controller.signal }).then(
-        (value) => {
+      globalThis
+        .fetch(input, { ...init, signal: controller.signal })
+        .finally(() => {
           settled = true;
-          return value;
-        },
-        (error) => {
-          settled = true;
-          throw error;
-        },
-      ),
+        }),
     );
     let fetchResponse = createFetchResponse(response);
 

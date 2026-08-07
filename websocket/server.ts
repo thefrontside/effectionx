@@ -1,3 +1,5 @@
+import { on, once } from "@effectionx/node";
+import type { EventEmitterLike } from "@effectionx/node";
 import {
   createQueue,
   createSignal,
@@ -7,10 +9,12 @@ import {
   spawn,
 } from "effection";
 import type { Operation, Stream } from "effection";
-import { on, once } from "@effectionx/node";
-import type { EventEmitterLike } from "@effectionx/node";
 
-import { type WebSocketResource, useWebSocket } from "./websocket.ts";
+import {
+  type UseWebSocketOptions,
+  type WebSocketResource,
+  useWebSocket,
+} from "./websocket.ts";
 
 /**
  * The minimal structural surface of a
@@ -91,10 +95,12 @@ export interface WebSocketServerResource<T>
  *
  * @param create - a function that constructs the underlying server object that
  * this resource will manage
+ * @param options - options applied to every accepted WebSocket connection
  * @returns an operation yielding a {@link WebSocketServerResource}
  */
 export function useWebSocketServer<T>(
   create: () => WebSocketServerLike,
+  options: UseWebSocketOptions = {},
 ): Operation<WebSocketServerResource<T>> {
   return resource(function* (provide) {
     let server = create();
@@ -120,7 +126,7 @@ export function useWebSocketServer<T>(
         yield* spawn(function* () {
           try {
             yield* scoped(function* () {
-              let connection = yield* useWebSocket<T>(() => raw);
+              let connection = yield* useWebSocket<T>(() => raw, options);
               live.add(connection);
               connections.add(connection);
               try {

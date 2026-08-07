@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { timebox } from "@effectionx/timebox";
 import { describe, it } from "@effectionx/vitest";
 import {
   type Operation,
@@ -68,15 +69,15 @@ describe("WebSocket", () => {
   it("does not hang teardown when the peer never sends a close frame", function* () {
     let socket = makeSilentSocket();
 
-    // `scoped` runs the body in a child scope and tears it down when the body
-    // returns — releasing the connection. Even though the socket never emits
-    // "close", the release must complete (bounded by the close timeout) rather
-    // than hang forever.
-    yield* scoped(function* () {
-      yield* useWebSocket(() => socket as unknown as WebSocket);
-    });
+    let outcome = yield* timebox(100, () =>
+      scoped(function* () {
+        yield* useWebSocket(() => socket as unknown as WebSocket, {
+          closeTimeout: 0,
+        });
+      }),
+    );
 
-    // reaching here means teardown completed; it also attempted the close
+    expect(outcome.timeout).toEqual(false);
     expect(socket.closeCalls).toEqual(1);
   });
 });

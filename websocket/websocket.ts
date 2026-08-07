@@ -1,3 +1,4 @@
+import { timebox } from "@effectionx/timebox";
 import {
   createSignal,
   ensure,
@@ -8,13 +9,14 @@ import {
   withResolvers,
 } from "effection";
 import type { Operation, Stream } from "effection";
-import { timebox } from "@effectionx/timebox";
 
-/**
- * How long to wait for the peer's `close` handshake when a socket is released
- * before giving up and moving on, so a silent peer can never hang teardown.
- */
-const CLOSE_TIMEOUT_MS = 1000;
+export interface UseWebSocketOptions {
+  /**
+   * How many milliseconds to wait for the peer's close handshake before
+   * allowing teardown to continue. Defaults to `1000`.
+   */
+  closeTimeout?: number;
+}
 
 /**
  * Handle to a
@@ -79,13 +81,16 @@ export interface WebSocketResource<T>
  *
  * @param url - The URL of the target WebSocket server to connect to. The URL must use one of the following schemes: ws, wss, http, or https, and cannot include a URL fragment. If a relative URL is provided, it is relative to the base URL of the calling script. For more detail, see https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/WebSocket#url
  *
- * @param prototol - A single string or an array of strings representing the sub-protocol(s) that the client would like to use, in order of preference. If it is omitted, an empty array is used by default, i.e. []. For more details, see
+ * @param protocolsOrOptions - A sub-protocol string, or resource options when
+ * no sub-protocol is needed
+ * @param options - Resource options when a sub-protocol is provided
  *
  * @returns an operation yielding a {@link WebSocketResource}
  */
 export function useWebSocket<T>(
   url: string,
-  protocols?: string,
+  protocolsOrOptions?: string | UseWebSocketOptions,
+  options?: UseWebSocketOptions,
 ): Operation<WebSocketResource<T>>;
 
 /**
@@ -116,10 +121,12 @@ export function useWebSocket<T>(
  *
  * ```
  * @param create - a function that will construct the underlying [`WebSocket`](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket) object that this resource wil use
+ * @param options - Resource options
  * @returns an operation yielding a {@link WebSocketResource}
  */
 export function useWebSocket<T>(
   create: () => WebSocket,
+  options?: UseWebSocketOptions,
 ): Operation<WebSocketResource<T>>;
 
 /**
@@ -127,9 +134,17 @@ export function useWebSocket<T>(
  */
 export function useWebSocket<T>(
   url: string | (() => WebSocket),
-  protocols?: string,
+  protocolsOrOptions?: string | UseWebSocketOptions,
+  additionalOptions: UseWebSocketOptions = {},
 ): Operation<WebSocketResource<T>> {
   return resource(function* (provide) {
+    let protocols =
+      typeof protocolsOrOptions === "string" ? protocolsOrOptions : undefined;
+    let options =
+      typeof protocolsOrOptions === "object"
+        ? protocolsOrOptions
+        : additionalOptions;
+    let { closeTimeout = 1000 } = options;
     let socket =
       typeof url === "string" ? new WebSocket(url, protocols) : url();
 
@@ -158,7 +173,7 @@ export function useWebSocket<T>(
     // sees. On timeout we stop waiting rather than forcing a terminate.
     function* closeSocket(code: number, reason: string): Operation<void> {
       socket.close(code, reason);
-      yield* timebox(CLOSE_TIMEOUT_MS, () => closed);
+      yield* timebox(closeTimeout, () => closed);
     }
 
     // Don't hoist this above the spawns — teardown would hang waiting on

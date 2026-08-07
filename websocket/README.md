@@ -36,6 +36,16 @@ await main(function* () {
 });
 ```
 
+By default, teardown waits up to one second for the peer's close handshake.
+Configure that deadline when creating the resource if your environment needs a
+different shutdown policy:
+
+```typescript
+let socket = yield* useWebSocket("ws://websocket.example.org", {
+  closeTimeout: 5_000,
+});
+```
+
 ## Features
 
 - **Ready-to-use Connections**: `useWebSocket()` returns only after the
@@ -68,6 +78,7 @@ import {
 await main(function* () {
   let server = yield* useWebSocketServer<string>(
     () => new WebSocketServer({ port: 3000 }) as unknown as WebSocketServerLike,
+    { closeTimeout: 5_000 },
   );
 
   // A stream is consumed sequentially, so spawn a handler per connection to
@@ -106,7 +117,8 @@ await main(function* () {
 Connections are buffered, so none are dropped between the moment the server
 starts listening and the moment you begin iterating. The server — and every live
 connection it produced — is automatically closed when the resource passes out of
-scope.
+scope. The server's second argument configures the close-handshake timeout for
+every accepted connection.
 
 ## Advanced Usage
 

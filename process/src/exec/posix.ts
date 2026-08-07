@@ -113,7 +113,7 @@ export function* createPosixProcess(
       processResult.resolve(Ok(value));
     });
 
-    function* exited() {
+    function* exited(): Operation<ExitStatus> {
       let result = yield* exitResult.operation;
       if (result.ok) {
         let [code, signal] = result.value;

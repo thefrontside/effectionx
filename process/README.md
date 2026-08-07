@@ -158,6 +158,8 @@ await main(function* () {
 
 - **`exited()`** waits for the direct child to exit and does not wait for stdio
   to close
+- If the process fails to spawn, **`exited()`** raises the spawn error and
+  replays that same error when evaluated again
 - **`join()`** waits for the direct child to exit and for its stdio streams to
   close
 - **`expect()`** has the same close-settled behavior as `join()`, and throws an
@@ -249,7 +251,8 @@ interface Process {
   // Input stream
   stdin: Writable<string>;
 
-  // Wait for the direct child to exit without waiting for stdio to close
+  // Wait for the direct child to exit without waiting for stdio to close.
+  // Spawn failures raise and replay the same error.
   exited(): Operation<ExitStatus>;
 
   // Wait for exit and stdio closure (returns exit status)

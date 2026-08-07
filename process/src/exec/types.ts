@@ -21,7 +21,9 @@ export interface Process extends StdIO {
    * Completes once the process exits, without waiting for its stdio streams to
    * close.
    *
-   * The exit status is replayed when this operation is evaluated again.
+   * The exit status is replayed when this operation is evaluated again. If the
+   * process fails to spawn, the operation raises the spawn error and replays
+   * that same error on subsequent evaluations.
    *
    * @example
    * ```ts

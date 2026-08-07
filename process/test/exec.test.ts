@@ -1,12 +1,24 @@
 import process from "node:process";
 import { beforeEach, describe, it } from "@effectionx/vitest";
-import { type Task, sleep, spawn, withResolvers } from "effection";
+import {
+  type Task,
+  createContext,
+  sleep,
+  spawn,
+  suspend,
+  withResolvers,
+} from "effection";
 import { expect } from "expect";
 
 import { captureError, expectMatch, fetchText } from "./helpers.ts";
 
 import { lines } from "@effectionx/stream-helpers";
-import { type Process, type ProcessResult, exec } from "../mod.ts";
+import {
+  type ExitStatus,
+  type Process,
+  type ProcessResult,
+  exec,
+} from "../mod.ts";
 import { Stdio } from "../src/api.ts";
 
 const SystemRoot = process.env.SystemRoot;
@@ -116,6 +128,100 @@ describe("exec", () => {
 
         expect(status.code).toEqual(23);
         expect(joined).toBe(false);
+      });
+    }
+  });
+
+  describe("shutdown middleware", () => {
+    it("can inspect context and hard-terminate the process tree", function* () {
+      const shutdownContext = createContext<string>("process shutdown test");
+      yield* shutdownContext.set("available during shutdown");
+
+      let observedContext: string | undefined;
+      let terminated = false;
+      const ready = withResolvers<Process>();
+      const task = yield* spawn(function* () {
+        const proc = yield* exec("node", {
+          arguments: [
+            "--experimental-strip-types",
+            "fixtures/shutdown-resistant.ts",
+          ],
+          cwd: import.meta.dirname,
+          *shutdown(args, terminate) {
+            observedContext = yield* shutdownContext.expect();
+            yield* terminate(...args);
+            terminated = true;
+          },
+        });
+        ready.resolve(proc);
+        yield* suspend();
+      });
+
+      const proc = yield* ready.operation;
+      expect(yield* expectMatch(/ready/, lines()(proc.stdout))).toBe(true);
+      yield* task.halt();
+
+      expect(observedContext).toEqual("available during shutdown");
+      expect(terminated).toBe(true);
+    });
+
+    if (process.platform !== "win32") {
+      it("does not mistake direct-child exit for completed shutdown", function* () {
+        let terminated = false;
+        const ready = withResolvers<Process>();
+        const exited = withResolvers<ExitStatus>();
+        const task = yield* spawn(function* () {
+          const proc = yield* exec("node", {
+            arguments: [
+              "--experimental-strip-types",
+              "fixtures/shutdown-stdio-descendant.ts",
+            ],
+            cwd: import.meta.dirname,
+            *shutdown(args, terminate) {
+              yield* terminate(...args);
+              terminated = true;
+            },
+          });
+          ready.resolve(proc);
+          exited.resolve(yield* proc.exited());
+          yield* suspend();
+        });
+
+        yield* ready.operation;
+        expect((yield* exited.operation).code).toEqual(23);
+        expect(terminated).toBe(false);
+
+        yield* task.halt();
+        expect(terminated).toBe(true);
+      });
+
+      it("is canceled when the process and its stdio close", function* () {
+        let escalated = false;
+        const ready = withResolvers<Process>();
+        const task = yield* spawn(function* () {
+          const proc = yield* exec("node", {
+            arguments: [
+              "--experimental-strip-types",
+              "fixtures/shutdown-resistant.ts",
+            ],
+            cwd: import.meta.dirname,
+            *shutdown(_args, terminate) {
+              const running = yield* ready.operation;
+              process.kill(running.pid, "SIGUSR1");
+              yield* suspend();
+              escalated = true;
+              yield* terminate();
+            },
+          });
+          ready.resolve(proc);
+          yield* suspend();
+        });
+
+        const running = yield* ready.operation;
+        expect(yield* expectMatch(/ready/, lines()(running.stdout))).toBe(true);
+        yield* task.halt();
+
+        expect(escalated).toBe(false);
       });
     }
   });

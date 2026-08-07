@@ -16,6 +16,7 @@ finite lifetime, and `daemon()` for long-running processes like servers.
 - Shell mode for complex commands with glob expansion
 - Structured error handling with `join()` and `expect()` methods
 - Independent process-exit observation with `exited()`
+- State-aware escalation from graceful shutdown to hard termination
 
 ## Basic Usage
 
@@ -165,6 +166,50 @@ await main(function* () {
 - **`expect()`** has the same close-settled behavior as `join()`, and throws an
   `ExecError` for an unsuccessful exit status
 
+## Shutdown escalation
+
+When an active process's host scope shuts down, `exec()` first requests a
+graceful shutdown. On POSIX it sends `SIGTERM` to the process group; on Windows
+it sends Ctrl-C and closes stdin.
+
+The optional `shutdown` middleware controls whether that graceful request
+should escalate to hard termination. It runs concurrently with process and
+stdio closure. Calling `next()` hard-terminates the process tree; if the process
+and its stdio close first, Effection cancels the middleware. Without middleware,
+shutdown remains graceful and can wait indefinitely for a non-cooperative
+process.
+
+Because middleware runs in the process's evaluation scope, it can inspect
+context and wait for application state instead of relying on a fixed timeout:
+
+```typescript
+import { createContext, main, type Operation } from "effection";
+import { exec } from "@effectionx/process";
+
+interface ShutdownState {
+  untilUnresponsive(): Operation<void>;
+}
+
+const shutdownState = createContext<ShutdownState>("shutdown state");
+
+await main(function* () {
+  const process = yield* exec("node server.js", {
+    *shutdown(args, terminate) {
+      const state = yield* shutdownState.expect();
+      yield* state.untilUnresponsive();
+      return yield* terminate(...args);
+    },
+  });
+
+  yield* process.expect();
+});
+```
+
+`shutdownState` in this example is an application-owned context whose
+`untilUnresponsive()` operation observes health, draining, child ownership, or
+another meaningful escalation condition. Returning without calling `next()`
+keeps the shutdown graceful.
+
 ## Running Daemons
 
 Use `daemon()` for long-running processes like servers. Unlike `exec()`, a
@@ -203,6 +248,9 @@ interface ExecOptions {
 
   // Working directory for the process
   cwd?: string;
+
+  // Optional policy for escalating graceful shutdown to hard termination
+  shutdown?: ProcessShutdownMiddleware;
 }
 ```
 

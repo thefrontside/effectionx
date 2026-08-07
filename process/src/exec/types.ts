@@ -1,6 +1,6 @@
 import type { Operation } from "effection";
 import type { OutputStream } from "../helpers.ts";
-import type { Api } from "@effectionx/context-api";
+import type { Api, PropertyMiddleware } from "@effectionx/context-api";
 
 /**
  * Writable handle used for process stdin.
@@ -106,7 +106,26 @@ export interface ExecOptions {
    * Sets the working directory of the process
    */
   cwd?: string;
+
+  /**
+   * Middleware that may escalate graceful shutdown by calling `next()`, which
+   * hard-terminates the process tree. Without middleware, shutdown remains
+   * graceful.
+   */
+  shutdown?: ProcessShutdownMiddleware;
 }
+
+/** Context API invoked when an active process begins shutting down. */
+export interface ProcessShutdownApi {
+  /** Hard-terminate the process tree if shutdown middleware delegates. */
+  shutdown(): Operation<void>;
+}
+
+/** Middleware that controls escalation from graceful process shutdown. */
+export type ProcessShutdownMiddleware = PropertyMiddleware<
+  ProcessShutdownApi,
+  "shutdown"
+>;
 
 export interface StdIO {
   /** Stream of bytes written by the process to standard output. */

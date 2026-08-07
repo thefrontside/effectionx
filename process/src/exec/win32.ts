@@ -13,6 +13,7 @@ import {
   all,
   createSignal,
   ensure,
+  race,
   spawn,
   withResolvers,
 } from "effection";
@@ -26,6 +27,7 @@ import type {
 import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
+import { createProcessShutdownApi, settled } from "./shutdown.ts";
 
 type ProcessResultValue = [number?, string?];
 
@@ -161,6 +163,25 @@ export function* createWin32Process(
       return status;
     }
 
+    function* closed(): Operation<void> {
+      yield* all([
+        processResult.operation,
+        io.stdoutDone.operation,
+        io.stderrDone.operation,
+      ]);
+    }
+
+    function* terminate(): Operation<void> {
+      if (pid) {
+        yield* killTree(pid);
+      }
+    }
+
+    const shutdownApi = createProcessShutdownApi(terminate);
+    if (options.shutdown) {
+      yield* shutdownApi.around({ shutdown: options.shutdown });
+    }
+
     // Suppress EPIPE errors on stdin - these occur on Windows when the child
     // process exits before we finish writing to it. This is expected during
     // cleanup when we're killing the process.
@@ -193,16 +214,17 @@ export function* createWin32Process(
         stdin.end();
       }
 
-      // depending on how we shutdown, this may already be closed and
-      // will pass immediately over the operations
-      yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
-
-      if (pid && childProcess.exitCode === null) {
-        // If the process is still around after we've waited
-        // for stdout and stderr to close,
-        // then force kill the tree.
-        yield* killTree(pid);
+      if (options.shutdown) {
+        const result = yield* race([
+          settled(closed()),
+          settled(shutdownApi.operations.shutdown()),
+        ]);
+        if (!result.ok) {
+          yield* terminate();
+        }
       }
+
+      yield* settled(closed());
     });
 
     return {

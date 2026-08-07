@@ -9,6 +9,7 @@ import {
   all,
   createSignal,
   ensure,
+  race,
   spawn,
   withResolvers,
 } from "effection";
@@ -24,6 +25,7 @@ import type {
 } from "./types.ts";
 import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
+import { createProcessShutdownApi, settled } from "./shutdown.ts";
 
 type ProcessResultValue = [number?, string?];
 
@@ -139,16 +141,46 @@ export function* createPosixProcess(
       return status;
     }
 
+    function* closed(): Operation<void> {
+      yield* all([
+        processResult.operation,
+        io.stdoutDone.operation,
+        io.stderrDone.operation,
+      ]);
+    }
+
+    function* terminate(): Operation<void> {
+      if (typeof pid !== "undefined") {
+        try {
+          process.kill(-pid, "SIGKILL");
+        } catch (_error) {}
+      }
+    }
+
+    const shutdownApi = createProcessShutdownApi(terminate);
+    if (options.shutdown) {
+      yield* shutdownApi.around({ shutdown: options.shutdown });
+    }
+
     yield* ensure(function* () {
       try {
-        if (typeof childProcess.pid === "undefined") {
+        if (typeof pid === "undefined") {
           throw new Error("no pid for childProcess");
         }
-        process.kill(-childProcess.pid, "SIGTERM");
-        yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
-      } catch (_e) {
-        // do nothing, process is probably already dead
+        process.kill(-pid, "SIGTERM");
+      } catch (_error) {}
+
+      if (options.shutdown) {
+        const result = yield* race([
+          settled(closed()),
+          settled(shutdownApi.operations.shutdown()),
+        ]);
+        if (!result.ok) {
+          yield* terminate();
+        }
       }
+
+      yield* settled(closed());
     });
 
     return {

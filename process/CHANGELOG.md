@@ -6,6 +6,8 @@
 
 - Add `Process.exited()` to observe child exit without waiting for stdio to
   close.
+- Add options-supplied shutdown middleware for state-aware hard termination of
+  process trees.
 
 ## \[2.1.4]
 

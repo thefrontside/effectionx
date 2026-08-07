@@ -438,9 +438,6 @@ importers:
       '@effectionx/context-api':
         specifier: workspace:*
         version: link:../context-api
-      '@effectionx/scope-eval':
-        specifier: workspace:*
-        version: link:../scope-eval
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals

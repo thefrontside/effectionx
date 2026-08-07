@@ -62,6 +62,10 @@ yield* worker.around({
 });
 ```
 
+Middleware installed with `worker.around()` remains active for the Effection
+scope that installs it. The `shutdown` construction option remains active for
+the Worker's resource lifetime.
+
 Without shutdown middleware, `useWorker()` preserves the existing behavior: it
 waits for graceful Worker-side teardown without imposing a deadline. Hard
 termination does not run Worker-side finalizers, so durable cleanup for a

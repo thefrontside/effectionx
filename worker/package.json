@@ -30,7 +30,6 @@
   "sideEffects": false,
   "dependencies": {
     "@effectionx/context-api": "workspace:*",
-    "@effectionx/scope-eval": "workspace:*",
     "@effectionx/signals": "workspace:*",
     "@effectionx/timebox": "workspace:*",
     "web-worker": "^1"

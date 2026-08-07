@@ -1,5 +1,5 @@
 import { type Api, createApi } from "@effectionx/context-api";
-import { type Operation, until, useAbortSignal } from "effection";
+import { type Operation, ensure, until } from "effection";
 
 import { createFetchResponse } from "./create-fetch-response.ts";
 import { type FetchInit, type FetchResponse, HttpError } from "./fetch.ts";
@@ -18,8 +18,29 @@ export const FetchApi: Api<Fetch> = createApi("fetch", {
     init: FetchInit | undefined,
     shouldExpect: boolean,
   ): Operation<FetchResponse> {
-    let signal = yield* useAbortSignal();
-    let response = yield* until(globalThis.fetch(input, { ...init, signal }));
+    // Do not replace this with useAbortSignal(); its unconditional scope-exit
+    // abort can make Node's fetch throw after the request has settled.
+    let controller = new AbortController();
+    let settled = false;
+
+    yield* ensure(() => {
+      if (!settled) {
+        controller.abort();
+      }
+    });
+
+    let response = yield* until(
+      globalThis.fetch(input, { ...init, signal: controller.signal }).then(
+        (value) => {
+          settled = true;
+          return value;
+        },
+        (error) => {
+          settled = true;
+          throw error;
+        },
+      ),
+    );
     let fetchResponse = createFetchResponse(response);
 
     if (shouldExpect && !response.ok) {

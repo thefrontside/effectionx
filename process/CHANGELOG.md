@@ -1,5 +1,9 @@
 # @effection/process
 
+## \[0.8.2]
+
+- Bound graceful Windows process shutdown before force-killing the process tree.
+
 ## \[2.1.4]
 
 ### Dependencies

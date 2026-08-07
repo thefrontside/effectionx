@@ -13,6 +13,8 @@ import {
   all,
   createSignal,
   ensure,
+  race,
+  sleep,
   spawn,
   withResolvers,
 } from "effection";
@@ -28,6 +30,8 @@ import { ExecError } from "./error.ts";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
 
 type ProcessResultValue = [number?, string?];
+
+const gracefulShutdownTimeout = 1000;
 
 function* killTree(pid: number) {
   try {
@@ -177,16 +181,22 @@ export function* createWin32Process(
         stdin.end();
       }
 
-      // depending on how we shutdown, this may already be closed and
-      // will pass immediately over the operations
-      yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
+      const closed = yield* race([
+        (function* () {
+          yield* processResult.operation;
+          return true;
+        })(),
+        (function* () {
+          yield* sleep(gracefulShutdownTimeout);
+          return false;
+        })(),
+      ]);
 
-      if (pid && childProcess.exitCode === null) {
-        // If the process is still around after we've waited
-        // for stdout and stderr to close,
-        // then force kill the tree.
+      if (pid && !closed) {
         yield* killTree(pid);
       }
+
+      yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
     });
 
     return {

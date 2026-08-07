@@ -162,6 +162,29 @@ describe("exec", () => {
         expect(status).toBeUndefined();
       });
     });
+
+    if (process.platform === "win32") {
+      it("force kills the process tree when graceful shutdown does not close stdio", function* () {
+        const ready = withResolvers<Process>();
+        const task = yield* spawn(function* () {
+          const proc = yield* exec("node", {
+            arguments: [
+              "--experimental-strip-types",
+              "fixtures/ignore-shutdown.ts",
+            ],
+            cwd: import.meta.dirname,
+          });
+          ready.resolve(proc);
+          yield* proc.join();
+        });
+
+        const proc = yield* ready.operation;
+        const started = yield* expectMatch(/ready/, lines()(proc.stdout));
+        expect(started).toBe(true);
+
+        expect(yield* task.halt()).toBeUndefined();
+      });
+    }
   });
 
   describe("successfully", () => {

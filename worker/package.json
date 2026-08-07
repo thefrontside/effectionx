@@ -1,6 +1,6 @@
 {
   "name": "@effectionx/worker",
-  "description": "Web Worker integration with two-way messaging and preemptible cancellation",
+  "description": "Web Worker integration with two-way messaging and configurable shutdown",
   "version": "0.6.0",
   "keywords": ["platform"],
   "type": "module",

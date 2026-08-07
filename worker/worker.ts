@@ -217,24 +217,9 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
     });
 
     yield* ensure(function* () {
-      worker.postMessage({ type: "close" });
       if (!outcomeSettled) {
-        while (!outcomeSettled) {
-          const event = yield* once(worker, "message");
-          const msg = event.data;
-          if (msg.type === "close") {
-            const { result } = msg as { result: Result<TReturn> };
-            if (result.ok) {
-              resolveOutcome(result.value);
-            } else {
-              const serializedError =
-                result.error as unknown as SerializedError;
-              rejectOutcome(
-                errorFromSerialized("Worker failed", serializedError),
-              );
-            }
-          }
-        }
+        worker.terminate();
+        rejectOutcome(new Error("worker terminated"));
       }
       yield* settled(outcome.operation);
     });

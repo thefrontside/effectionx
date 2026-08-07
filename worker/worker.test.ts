@@ -5,6 +5,7 @@ import { when } from "@effectionx/converge";
 import { beforeEach, describe, it } from "@effectionx/vitest";
 import {
   all,
+  createContext,
   scoped,
   sleep,
   spawn,
@@ -118,6 +119,54 @@ describe("worker", () => {
       );
     });
 
+    it("cancels its shutdown policy when graceful shutdown completes", function* () {
+      let shutdownContext = createContext<string>("worker shutdown test");
+      yield* shutdownContext.set("available during shutdown");
+
+      let policyContext: string | undefined;
+      let terminated = false;
+      let task = yield* spawn(function* () {
+        let worker = yield* useWorker(url, {
+          type: "module",
+          data: {
+            startFile,
+            endFile,
+            endText: "graceful",
+          } satisfies ShutdownWorkerParams,
+        });
+        yield* worker.around({
+          *shutdown(_args, terminate) {
+            policyContext = yield* shutdownContext.expect();
+            yield* suspend();
+            terminated = true;
+            return yield* terminate();
+          },
+        });
+        yield* suspend();
+      });
+
+      yield* when(
+        function* () {
+          let exists = yield* until(
+            access(startFile).then(
+              () => true,
+              () => false,
+            ),
+          );
+          if (!exists) {
+            throw new Error("worker has not started");
+          }
+        },
+        { timeout: 10_000 },
+      );
+
+      yield* task.halt();
+
+      expect(yield* until(readFile(endFile, "utf-8"))).toEqual("graceful");
+      expect(policyContext).toEqual("available during shutdown");
+      expect(terminated).toEqual(false);
+    });
+
     it("terminates a CPU-bound worker", function* () {
       expect.assertions(1);
       let state = new Int32Array(
@@ -126,7 +175,13 @@ describe("worker", () => {
       let task = yield* spawn(function* () {
         yield* useWorker(
           import.meta.resolve("./test-assets/cpu-bound-worker.ts"),
-          { type: "module", data: state.buffer, shutdown: "terminate" },
+          {
+            type: "module",
+            data: state.buffer,
+            *shutdown(args, terminate) {
+              return yield* terminate(...args);
+            },
+          },
         );
         yield* suspend();
       });

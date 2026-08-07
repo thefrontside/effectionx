@@ -69,6 +69,14 @@ export interface WorkerResource<TSend, TRecv, TReturn>
   ): Operation<TReturn>;
 }
 
+/** Options for creating and shutting down a Worker. */
+export interface UseWorkerOptions<TData> extends WorkerOptions {
+  /** Data passed to `workerMain()` during initialization. */
+  data?: TData;
+  /** How an active Worker shuts down with its host scope. Defaults to graceful. */
+  shutdown?: "graceful" | "terminate";
+}
+
 /**
  * Use on the main thread to create and exeecute a well behaved web worker.
  *
@@ -110,7 +118,7 @@ export interface WorkerResource<TSend, TRecv, TReturn>
  * ```
  *
  * @param url URL or string of script
- * @param options WorkerOptions
+ * @param options Worker construction and shutdown options
  * @template TSend - value main thread will send to the worker
  * @template TRecv - value main thread will receive from the worker
  * @template TReturn - worker operation return value
@@ -119,7 +127,7 @@ export interface WorkerResource<TSend, TRecv, TReturn>
  */
 export function useWorker<TSend, TRecv, TReturn, TData>(
   url: string | URL,
-  options?: WorkerOptions & { data?: TData },
+  options?: UseWorkerOptions<TData>,
 ): Operation<WorkerResource<TSend, TRecv, TReturn>> {
   return resource(function* (provide) {
     let outcome = withResolvers<TReturn>();
@@ -218,8 +226,12 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
 
     yield* ensure(function* () {
       if (!outcomeSettled) {
-        worker.terminate();
-        rejectOutcome(new Error("worker terminated"));
+        if (options?.shutdown === "terminate") {
+          worker.terminate();
+          rejectOutcome(new Error("worker terminated"));
+        } else {
+          worker.postMessage({ type: "close" });
+        }
       }
       yield* settled(outcome.operation);
     });

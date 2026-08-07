@@ -1,5 +1,8 @@
+import { access, mkdir, readFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { when } from "@effectionx/converge";
-import { describe, it } from "@effectionx/vitest";
+import { beforeEach, describe, it } from "@effectionx/vitest";
 import {
   all,
   scoped,
@@ -11,6 +14,7 @@ import {
 } from "effection";
 import { expect } from "expect";
 
+import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
 import { useWorker } from "./worker.ts";
 
 describe("worker", () => {
@@ -63,6 +67,57 @@ describe("worker", () => {
     }
   });
   describe("shutdown", () => {
+    let startFile: string;
+    let endFile: string;
+    let url: string;
+
+    beforeEach(function* () {
+      let dir = fileURLToPath(import.meta.resolve("./test-tmp"));
+      yield* until(
+        rm(dir, { recursive: true, force: true }).then(() =>
+          mkdir(dir, { recursive: true }),
+        ),
+      );
+      startFile = join(dir, "started.txt");
+      endFile = join(dir, "ended.txt");
+      url = import.meta.resolve("./test-assets/shutdown-worker.ts");
+    });
+
+    it("shuts down gracefully by default", function* () {
+      let task = yield* spawn(function* () {
+        yield* useWorker(url, {
+          type: "module",
+          data: {
+            startFile,
+            endFile,
+            endText: "goodbye cruel world!",
+          } satisfies ShutdownWorkerParams,
+        });
+        yield* suspend();
+      });
+
+      yield* when(
+        function* () {
+          let exists = yield* until(
+            access(startFile).then(
+              () => true,
+              () => false,
+            ),
+          );
+          if (!exists) {
+            throw new Error("worker has not started");
+          }
+        },
+        { timeout: 10_000 },
+      );
+
+      yield* task.halt();
+
+      expect(yield* until(readFile(endFile, "utf-8"))).toEqual(
+        "goodbye cruel world!",
+      );
+    });
+
     it("terminates a CPU-bound worker", function* () {
       expect.assertions(1);
       let state = new Int32Array(
@@ -71,7 +126,7 @@ describe("worker", () => {
       let task = yield* spawn(function* () {
         yield* useWorker(
           import.meta.resolve("./test-assets/cpu-bound-worker.ts"),
-          { type: "module", data: state.buffer },
+          { type: "module", data: state.buffer, shutdown: "terminate" },
         );
         yield* suspend();
       });

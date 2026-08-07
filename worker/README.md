@@ -14,22 +14,31 @@ thread.
 ## Features
 
 - Establishes two-way communication between the main and the worker threads
-- Preemptibly terminates active workers when their host scope shuts down
+- Gracefully shuts down Workers by default with optional forceful termination
 - Propagates errors from the worker to the main thread
 - Type-safe message handling with TypeScript
 - Supports worker-initiated requests handled by the host
 
 ## Shutdown
 
-Workers that finish on their own deliver their result normally. When the host
-scope shuts down while a Worker is still active, `useWorker()` calls
-`Worker.terminate()`. Cancellation therefore does not depend on the Worker's
-event loop, and can reclaim Workers that are CPU-bound or otherwise
-non-cooperative. Worker-side teardown is not guaranteed during cancellation;
-durable cleanup should remain owned by the host.
+Workers shut down gracefully by default. When their host scope shuts down,
+`useWorker()` sends a close message and waits for Worker-side teardown and the
+final result.
 
-Applications upgrading from `0.5` that relied on Worker-side finalizers during
-host cancellation should move that cleanup to the host before upgrading.
+CPU-bound or otherwise non-cooperative Workers cannot process a close message.
+Use the `terminate` policy when cancellation must be preemptible:
+
+```ts
+const worker = yield* useWorker("./worker.ts", {
+  type: "module",
+  shutdown: "terminate",
+});
+```
+
+When this Worker is still active during host teardown, `useWorker()` calls
+`Worker.terminate()` and reports that the Worker was terminated. This policy
+does not run Worker-side finalizers, so durable cleanup for terminated Workers
+must be owned by the host.
 
 ## Usage: Get worker's return value
 

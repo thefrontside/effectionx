@@ -18,14 +18,29 @@ export interface Process extends StdIO {
   readonly pid: number;
 
   /**
-   * Completes once the process has finished regardless of whether it was
-   * successful or not.
+   * Completes once the process exits, without waiting for its stdio streams to
+   * close.
+   *
+   * The exit status is replayed when this operation is evaluated again.
+   *
+   * @example
+   * ```ts
+   * const process = yield* exec("node task.js");
+   * const status = yield* process.exited();
+   * ```
+   */
+  exited(): Operation<ExitStatus>;
+
+  /**
+   * Completes once the process has exited and its stdio streams have closed,
+   * regardless of whether it was successful or not.
    */
   join(): Operation<ExitStatus>;
 
   /**
-   * Completes once the process has finished successfully. If the process does
-   * not complete successfully, it will raise an ExecError.
+   * Completes once the process has exited successfully and its stdio streams
+   * have closed. If the process does not complete successfully, it will raise
+   * an ExecError.
    */
   expect(): Operation<ExitStatus>;
 

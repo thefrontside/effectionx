@@ -31,6 +31,7 @@ export function* createPosixProcess(
   command: string,
   options: ExecOptions,
 ): Operation<Process> {
+  let exitResult = withResolvers<Result<ProcessResultValue>>();
   let processResult = withResolvers<Result<ProcessResultValue>>();
   const evalScope = yield* useEvalScope();
   const result = yield* evalScope.eval(function* () {
@@ -98,13 +99,28 @@ export function* createPosixProcess(
 
     yield* spawn(function* trapError() {
       let [error] = yield* once<[Error]>(childProcess, "error");
+      exitResult.resolve(Err(error));
       processResult.resolve(Err(error));
+    });
+
+    yield* spawn(function* () {
+      let value = yield* once<ProcessResultValue>(childProcess, "exit");
+      exitResult.resolve(Ok(value));
     });
 
     yield* spawn(function* () {
       let value = yield* once<ProcessResultValue>(childProcess, "close");
       processResult.resolve(Ok(value));
     });
+
+    function* exited() {
+      let result = yield* exitResult.operation;
+      if (result.ok) {
+        let [code, signal] = result.value;
+        return { command, options, code, signal } as ExitStatus;
+      }
+      throw result.error;
+    }
 
     function* join() {
       let result = yield* processResult.operation;
@@ -146,6 +162,7 @@ export function* createPosixProcess(
       stdin,
       stdout,
       stderr,
+      exited,
       join,
       expect,
     } satisfies Yielded<ReturnType<CreateOSProcess>>;

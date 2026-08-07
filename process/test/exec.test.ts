@@ -73,6 +73,53 @@ describe("exec", () => {
     });
   });
 
+  describe(".exited", () => {
+    it("returns and replays the exit status", function* () {
+      let proc = yield* exec("node './fixtures/hello-world-failed.js'", {
+        cwd: import.meta.dirname,
+      });
+
+      let first = yield* proc.exited();
+      yield* proc.join();
+      let second = yield* proc.exited();
+
+      expect(first.code).toEqual(37);
+      expect(second).toEqual(first);
+    });
+
+    it("throws and replays an error when the process fails to spawn", function* () {
+      let proc = yield* exec("argle", { arguments: ["bargle"] });
+
+      let first = yield* captureError(proc.exited());
+      let second = yield* captureError(proc.exited());
+
+      expect(first).toBeInstanceOf(Error);
+      expect(second).toBe(first);
+    });
+
+    if (process.platform !== "win32") {
+      it("settles before close when a descendant inherits stdio", function* () {
+        let proc = yield* exec(
+          "node --experimental-strip-types './fixtures/stdio-descendant.ts'",
+          {
+            cwd: import.meta.dirname,
+          },
+        );
+        let joined = false;
+
+        yield* spawn(function* () {
+          yield* proc.join();
+          joined = true;
+        });
+
+        let status = yield* proc.exited();
+
+        expect(status.code).toEqual(23);
+        expect(joined).toBe(false);
+      });
+    }
+  });
+
   describe(".expect", () => {
     it("runs successfully to completion", function* () {
       let result: ProcessResult = yield* exec(

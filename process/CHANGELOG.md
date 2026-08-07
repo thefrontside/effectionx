@@ -1,5 +1,12 @@
 # @effection/process
 
+## [0.9.0]
+
+### Features
+
+- Add `Process.exited()` to observe child exit without waiting for stdio to
+  close.
+
 ## \[2.1.4]
 
 ### Dependencies

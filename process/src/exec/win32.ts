@@ -46,6 +46,7 @@ export function* createWin32Process(
   command: string,
   options: ExecOptions,
 ): Operation<Process> {
+  let exitResult = withResolvers<Result<ProcessResultValue>>();
   let processResult = withResolvers<Result<ProcessResultValue>>();
   const evalScope = yield* useEvalScope();
   const result = yield* evalScope.eval(function* () {
@@ -116,7 +117,13 @@ export function* createWin32Process(
 
     yield* spawn(function* trapError() {
       const [error] = yield* once<Error[]>(childProcess, "error");
+      exitResult.resolve(Err(error));
       processResult.resolve(Err(error));
+    });
+
+    yield* spawn(function* () {
+      let value = yield* once<ProcessResultValue>(childProcess, "exit");
+      exitResult.resolve(Ok(value));
     });
 
     yield* spawn(function* () {
@@ -127,6 +134,15 @@ export function* createWin32Process(
       yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
       processResult.resolve(Ok(value));
     });
+
+    function* exited() {
+      let result = yield* exitResult.operation;
+      if (result.ok) {
+        let [code, signal] = result.value;
+        return { command, options, code, signal } as ExitStatus;
+      }
+      throw result.error;
+    }
 
     function* join() {
       let result = yield* processResult.operation;
@@ -200,6 +216,7 @@ export function* createWin32Process(
       stdin,
       stdout,
       stderr,
+      exited,
       join,
       expect,
     } satisfies Yielded<ReturnType<CreateOSProcess>>;

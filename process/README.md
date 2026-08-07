@@ -15,6 +15,7 @@ finite lifetime, and `daemon()` for long-running processes like servers.
 - Proper signal handling and cleanup on both POSIX and Windows
 - Shell mode for complex commands with glob expansion
 - Structured error handling with `join()` and `expect()` methods
+- Independent process-exit observation with `exited()`
 
 ## Basic Usage
 
@@ -133,6 +134,35 @@ await main(function* () {
 });
 ```
 
+## exited() vs join()
+
+Use `exited()` when you need the direct child's exit status without waiting for
+its stdout and stderr streams to close. This distinction matters when a
+descendant inherits one of those streams and keeps it open after the direct
+child exits.
+
+`exited()` observes process lifetime only. Output remains available separately
+through `stdout` and `stderr`:
+
+```typescript
+import { main } from "effection";
+import { exec } from "@effectionx/process";
+
+await main(function* () {
+  let process = yield* exec("node task.js");
+  let status = yield* process.exited();
+
+  console.log(status.code);
+});
+```
+
+- **`exited()`** waits for the direct child to exit and does not wait for stdio
+  to close
+- **`join()`** waits for the direct child to exit and for its stdio streams to
+  close
+- **`expect()`** has the same close-settled behavior as `join()`, and throws an
+  `ExecError` for an unsuccessful exit status
+
 ## Running Daemons
 
 Use `daemon()` for long-running processes like servers. Unlike `exec()`, a
@@ -219,10 +249,13 @@ interface Process {
   // Input stream
   stdin: Writable<string>;
 
-  // Wait for completion (returns exit status)
+  // Wait for the direct child to exit without waiting for stdio to close
+  exited(): Operation<ExitStatus>;
+
+  // Wait for exit and stdio closure (returns exit status)
   join(): Operation<ExitStatus>;
 
-  // Wait for successful completion (throws on non-zero exit)
+  // Wait for successful exit and stdio closure (throws on non-zero exit)
   expect(): Operation<ExitStatus>;
 }
 ```

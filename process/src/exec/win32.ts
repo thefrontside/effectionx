@@ -171,10 +171,20 @@ export function* createWin32Process(
       ]);
     }
 
-    function* terminate(): Operation<void> {
-      if (pid) {
-        yield* killTree(pid);
+    let hardTerminationRequested = false;
+    const hardTerminationRequest = withResolvers<void>();
+    const hardTerminationComplete = withResolvers<void>();
+
+    function requestHardTermination(): void {
+      if (!hardTerminationRequested) {
+        hardTerminationRequested = true;
+        hardTerminationRequest.resolve();
       }
+    }
+
+    function* terminate(): Operation<void> {
+      requestHardTermination();
+      yield* hardTerminationComplete.operation;
     }
 
     const shutdownApi = createProcessShutdownApi(terminate);
@@ -215,12 +225,26 @@ export function* createWin32Process(
       }
 
       if (options.shutdown) {
+        const hardTerminationTask = yield* spawn(function* () {
+          yield* hardTerminationRequest.operation;
+          if (pid) {
+            yield* killTree(pid);
+          }
+          hardTerminationComplete.resolve();
+        });
+
         const result = yield* race([
           settled(closed()),
           settled(shutdownApi.operations.shutdown()),
         ]);
         if (!result.ok) {
-          yield* terminate();
+          requestHardTermination();
+        }
+
+        if (hardTerminationRequested) {
+          yield* hardTerminationTask;
+        } else {
+          yield* hardTerminationTask.halt();
         }
       }
 

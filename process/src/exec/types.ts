@@ -110,7 +110,8 @@ export interface ExecOptions {
   /**
    * Middleware that may escalate graceful shutdown by calling `next()`, which
    * hard-terminates the process tree. Without middleware, shutdown remains
-   * graceful.
+   * graceful. Treat `next()` as terminal delegation because process closure
+   * may cancel the middleware before it resumes.
    */
   shutdown?: ProcessShutdownMiddleware;
 }

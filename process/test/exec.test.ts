@@ -138,7 +138,7 @@ describe("exec", () => {
       yield* shutdownContext.set("available during shutdown");
 
       let observedContext: string | undefined;
-      let terminated = false;
+      let delegated = false;
       const ready = withResolvers<Process>();
       const task = yield* spawn(function* () {
         const proc = yield* exec("node", {
@@ -149,8 +149,8 @@ describe("exec", () => {
           cwd: import.meta.dirname,
           *shutdown(args, terminate) {
             observedContext = yield* shutdownContext.expect();
+            delegated = true;
             yield* terminate(...args);
-            terminated = true;
           },
         });
         ready.resolve(proc);
@@ -162,8 +162,32 @@ describe("exec", () => {
       yield* task.halt();
 
       expect(observedContext).toEqual("available during shutdown");
-      expect(terminated).toBe(true);
+      expect(delegated).toBe(true);
     });
+
+    if (process.platform === "win32") {
+      it("hard-terminates descendants that retain inherited stdio", function* () {
+        const ready = withResolvers<Process>();
+        const task = yield* spawn(function* () {
+          const proc = yield* exec("node", {
+            arguments: [
+              "--experimental-strip-types",
+              "fixtures/ignore-shutdown.ts",
+            ],
+            cwd: import.meta.dirname,
+            *shutdown(args, terminate) {
+              yield* terminate(...args);
+            },
+          });
+          ready.resolve(proc);
+          yield* suspend();
+        });
+
+        const proc = yield* ready.operation;
+        expect(yield* expectMatch(/ready/, lines()(proc.stdout))).toBe(true);
+        expect(yield* task.halt()).toBeUndefined();
+      });
+    }
 
     if (process.platform !== "win32") {
       it("does not mistake direct-child exit for completed shutdown", function* () {

@@ -179,6 +179,10 @@ and its stdio close first, Effection cancels the middleware. Without middleware,
 shutdown remains graceful and can wait indefinitely for a non-cooperative
 process.
 
+Treat `next()` as terminal delegation. Full closure can cancel the middleware
+while hard termination is completing, so middleware bookkeeping must happen
+before calling `next()` rather than after it returns.
+
 Because middleware runs in the process's evaluation scope, it can inspect
 context and wait for application state instead of relying on a fixed timeout:
 

@@ -126,15 +126,13 @@ describe("worker", () => {
       let policyContext: string | undefined;
       let terminated = false;
       let task = yield* spawn(function* () {
-        let worker = yield* useWorker(url, {
+        yield* useWorker(url, {
           type: "module",
           data: {
             startFile,
             endFile,
             endText: "graceful",
           } satisfies ShutdownWorkerParams,
-        });
-        yield* worker.around({
           *shutdown(_args, terminate) {
             policyContext = yield* shutdownContext.expect();
             yield* suspend();
@@ -165,57 +163,6 @@ describe("worker", () => {
       expect(yield* until(readFile(endFile, "utf-8"))).toEqual("graceful");
       expect(policyContext).toEqual("available during shutdown");
       expect(terminated).toEqual(false);
-    });
-
-    it("removes shutdown middleware when its scope exits", function* () {
-      let terminated = false;
-      let task = yield* spawn(function* () {
-        let worker = yield* useWorker(url, {
-          type: "module",
-          data: {
-            startFile,
-            endFile,
-            endText: "graceful",
-          } satisfies ShutdownWorkerParams,
-        });
-
-        yield* scoped(function* () {
-          yield* worker.around({
-            *shutdown(args, terminate) {
-              terminated = true;
-              return yield* terminate(...args);
-            },
-          });
-        });
-
-        yield* suspend();
-      });
-
-      yield* when(
-        function* () {
-          let exists = yield* until(
-            access(startFile).then(
-              () => true,
-              () => false,
-            ),
-          );
-          if (!exists) {
-            throw new Error("worker has not started");
-          }
-        },
-        { timeout: 10_000 },
-      );
-
-      yield* task.halt();
-
-      expect(terminated).toEqual(false);
-      let finalizer = yield* when(
-        function* () {
-          return yield* until(readFile(endFile, "utf-8"));
-        },
-        { timeout: 10_000 },
-      );
-      expect(finalizer.value).toEqual("graceful");
     });
 
     it("terminates a CPU-bound worker", function* () {

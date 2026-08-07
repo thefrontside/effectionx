@@ -1,6 +1,6 @@
 {
   "name": "@effectionx/worker",
-  "description": "Web Worker integration with two-way messaging and configurable shutdown",
+  "description": "Web Worker integration with two-way messaging and policy-driven shutdown",
   "version": "0.6.0",
   "keywords": ["platform"],
   "type": "module",
@@ -29,6 +29,8 @@
   },
   "sideEffects": false,
   "dependencies": {
+    "@effectionx/context-api": "workspace:*",
+    "@effectionx/scope-eval": "workspace:*",
     "@effectionx/signals": "workspace:*",
     "@effectionx/timebox": "workspace:*",
     "web-worker": "^1"

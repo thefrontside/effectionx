@@ -8,7 +8,13 @@
   "exclude": ["**/*.test.ts", "test-assets/**", "dist"],
   "references": [
     {
+      "path": "../context-api"
+    },
+    {
       "path": "../converge"
+    },
+    {
+      "path": "../scope-eval"
     },
     {
       "path": "../signals"

@@ -14,7 +14,7 @@ thread.
 ## Features
 
 - Establishes two-way communication between the main and the worker threads
-- Gracefully shuts down Workers by default with optional forceful termination
+- Gracefully shuts down Workers with contextual termination policies
 - Propagates errors from the worker to the main thread
 - Type-safe message handling with TypeScript
 - Supports worker-initiated requests handled by the host
@@ -25,20 +25,47 @@ Workers shut down gracefully by default. When their host scope shuts down,
 `useWorker()` sends a close message and waits for Worker-side teardown and the
 final result.
 
-CPU-bound or otherwise non-cooperative Workers cannot process a close message.
-Use the `terminate` policy when cancellation must be preemptible:
+CPU-bound or otherwise non-cooperative Workers cannot process that close
+message. Install shutdown middleware when cancellation must eventually become
+preemptible:
 
 ```ts
+import { sleep } from "effection";
+
 const worker = yield* useWorker("./worker.ts", {
   type: "module",
-  shutdown: "terminate",
+  *shutdown(args, terminate) {
+    yield* sleep(2_000);
+    return yield* terminate(...args);
+  },
 });
 ```
 
-When this Worker is still active during host teardown, `useWorker()` calls
-`Worker.terminate()` and reports that the Worker was terminated. This policy
-does not run Worker-side finalizers, so durable cleanup for terminated Workers
-must be owned by the host.
+The close message is posted before middleware runs. Middleware is raced against
+the Worker's result, so a Worker that completes gracefully during the delay
+cancels the pending escalation. Calling `terminate()`—the middleware chain's
+`next()` operation—hard-terminates the Worker only if it is still active. A
+middleware that returns without calling `terminate()` leaves shutdown graceful.
+
+Shutdown middleware is an Effection operation and can read context or other
+application state when selecting a policy:
+
+```ts
+const worker = yield* useWorker("./worker.ts", { type: "module" });
+
+yield* worker.around({
+  *shutdown(args, terminate) {
+    let usage = yield* measureCPUUsage();
+    yield* sleep(usage < 0.5 ? 10_000 : usage < 0.9 ? 2_000 : 100);
+    return yield* terminate(...args);
+  },
+});
+```
+
+Without shutdown middleware, `useWorker()` preserves the existing behavior: it
+waits for graceful Worker-side teardown without imposing a deadline. Hard
+termination does not run Worker-side finalizers, so durable cleanup for a
+terminated Worker must be owned by the host.
 
 ## Usage: Get worker's return value
 

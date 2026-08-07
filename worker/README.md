@@ -47,13 +47,13 @@ cancels the pending escalation. Calling `terminate()`—the middleware chain's
 `next()` operation—hard-terminates the Worker only if it is still active. A
 middleware that returns without calling `terminate()` leaves shutdown graceful.
 
-Shutdown middleware is an Effection operation and can read context or other
-application state when selecting a policy:
+Shutdown middleware is selected when the Worker is created but evaluated only
+when shutdown begins. It can read context or other application state when
+selecting a policy:
 
 ```ts
-const worker = yield* useWorker("./worker.ts", { type: "module" });
-
-yield* worker.around({
+const worker = yield* useWorker("./worker.ts", {
+  type: "module",
   *shutdown(args, terminate) {
     let usage = yield* measureCPUUsage();
     yield* sleep(usage < 0.5 ? 10_000 : usage < 0.9 ? 2_000 : 100);
@@ -61,10 +61,6 @@ yield* worker.around({
   },
 });
 ```
-
-Middleware installed with `worker.around()` remains active for the Effection
-scope that installs it. The `shutdown` construction option remains active for
-the Worker's resource lifetime.
 
 Without shutdown middleware, `useWorker()` preserves the existing behavior: it
 waits for graceful Worker-side teardown without imposing a deadline. Hard

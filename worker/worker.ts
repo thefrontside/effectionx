@@ -37,12 +37,6 @@ import {
 export interface WorkerResource<TSend, TRecv, TReturn>
   extends Operation<TReturn> {
   /**
-   * Install middleware that controls whether graceful shutdown escalates to
-   * hard termination. Calling `next()` terminates the Worker if it is still
-   * active.
-   */
-  around: Api<WorkerShutdownApi>["around"];
-  /**
    * Send a message to the worker and wait for a response.
    */
   send(data: TSend): Operation<TRecv>;
@@ -85,10 +79,6 @@ export interface WorkerResource<TSend, TRecv, TReturn>
 export interface WorkerShutdownApi {
   /** Hard-terminate the Worker if shutdown middleware delegates to `next()`. */
   shutdown(): Operation<void>;
-}
-
-interface InternalWorkerShutdownApi extends WorkerShutdownApi {
-  configured: boolean;
 }
 
 /** Middleware that controls escalation from graceful shutdown to termination. */
@@ -163,7 +153,7 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
   return resource(function* (provide) {
     let {
       data,
-      shutdown: initialShutdownMiddleware,
+      shutdown: shutdownMiddleware,
       ...workerOptions
     } = options ?? {};
     let outcome = withResolvers<TReturn>();
@@ -193,21 +183,8 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
       }
     });
 
-    function* around(
-      ...args: Parameters<Api<WorkerShutdownApi>["around"]>
-    ): ReturnType<Api<WorkerShutdownApi>["around"]> {
-      let [middlewares, aroundOptions] = args;
-      yield* shutdownApi.around(
-        {
-          shutdown: middlewares.shutdown,
-          configured: middlewares.shutdown ? () => true : undefined,
-        },
-        aroundOptions,
-      );
-    }
-
-    if (initialShutdownMiddleware) {
-      yield* around({ shutdown: initialShutdownMiddleware });
+    if (shutdownMiddleware) {
+      yield* shutdownApi.around({ shutdown: shutdownMiddleware });
     }
 
     let subscription = yield* on(worker, "message");
@@ -287,7 +264,7 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
     yield* ensure(function* () {
       if (!outcomeSettled) {
         worker.postMessage({ type: "close" });
-        if (yield* shutdownApi.operations.configured) {
+        if (shutdownMiddleware) {
           let result = yield* race([
             settled(outcome.operation),
             settled(shutdownApi.operations.shutdown()),
@@ -307,7 +284,6 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
     });
 
     yield* provide({
-      around,
       *send(value) {
         const response = yield* useChannelResponse<TRecv>();
         worker.postMessage(
@@ -396,11 +372,10 @@ let shutdownApiSequence = 0;
 
 function createWorkerShutdownApi(
   terminate: () => void,
-): Api<InternalWorkerShutdownApi> {
-  let api = createApi<InternalWorkerShutdownApi>(
+): Api<WorkerShutdownApi> {
+  let api = createApi<WorkerShutdownApi>(
     `@effectionx/worker:shutdown:${shutdownApiSequence++}`,
     {
-      configured: false,
       *shutdown(): Operation<void> {
         terminate();
       },

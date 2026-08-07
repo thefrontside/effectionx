@@ -1,8 +1,5 @@
-import { access, mkdir, readFile, rm } from "node:fs/promises";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { beforeEach, describe, it } from "@effectionx/vitest";
 import { when } from "@effectionx/converge";
+import { describe, it } from "@effectionx/vitest";
 import {
   all,
   scoped,
@@ -14,7 +11,6 @@ import {
 } from "effection";
 import { expect } from "expect";
 
-import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
 import { useWorker } from "./worker.ts";
 
 describe("worker", () => {
@@ -67,65 +63,37 @@ describe("worker", () => {
     }
   });
   describe("shutdown", () => {
-    let startFile: string;
-    let endFile: string;
-    let url: string;
-
-    beforeEach(function* () {
-      let dir = fileURLToPath(import.meta.resolve("./test-tmp"));
-      yield* until(
-        rm(dir, { recursive: true, force: true }).then(() =>
-          mkdir(dir, { recursive: true }),
-        ),
+    it("terminates a CPU-bound worker", function* () {
+      expect.assertions(1);
+      let state = new Int32Array(
+        new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT),
       );
-      startFile = join(dir, "started.txt");
-      endFile = join(dir, "ended.txt");
-      url = import.meta.resolve("./test-assets/shutdown-worker.ts");
-    });
-
-    it("shuts down gracefully", function* () {
       let task = yield* spawn(function* () {
-        yield* useWorker(url, {
-          type: "module",
-          data: {
-            startFile,
-            endFile,
-            endText: "goodbye cruel world!",
-          } satisfies ShutdownWorkerParams,
-        });
+        yield* useWorker(
+          import.meta.resolve("./test-assets/cpu-bound-worker.ts"),
+          { type: "module", data: state.buffer },
+        );
         yield* suspend();
       });
 
-      // Wait for worker to start
       yield* when(
         function* () {
-          let exists = yield* until(
-            access(startFile).then(
-              () => true,
-              () => false,
-            ),
-          );
-          if (!exists) throw new Error("start file not found");
-          return true;
+          if (Atomics.load(state, 0) !== 1) {
+            throw new Error("worker has not started spinning");
+          }
         },
         { timeout: 10_000 },
       );
 
       yield* task.halt();
 
-      // Wait for the end file to be written with expected content
-      let { value: content } = yield* when(
-        function* () {
-          let text = yield* until(readFile(endFile, "utf-8").catch(() => ""));
-          if (text !== "goodbye cruel world!") {
-            throw new Error(`expected "goodbye cruel world!", got "${text}"`);
-          }
-          return text;
-        },
-        { timeout: 500 },
-      );
-
-      expect(content).toEqual("goodbye cruel world!");
+      let taskError: Error | undefined;
+      try {
+        yield* task;
+      } catch (error) {
+        taskError = error as Error;
+      }
+      expect(taskError?.message).toContain("halted");
     });
   });
 

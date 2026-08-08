@@ -1,9 +1,4 @@
 import {
-  type Api,
-  type PropertyMiddleware,
-  createApi,
-} from "@effectionx/context-api";
-import {
   Err,
   Ok,
   type Operation,
@@ -75,27 +70,18 @@ export interface WorkerResource<TSend, TRecv, TReturn>
   ): Operation<TReturn>;
 }
 
-/** Context API invoked when an active Worker begins shutting down. */
-export interface WorkerShutdownApi {
-  /** Hard-terminate the Worker if shutdown middleware delegates to `next()`. */
-  shutdown(): Operation<void>;
-}
+/** How an active resource should shut down with its owning scope. */
+export type ShutdownMode = "graceful" | "forced";
 
-/** Middleware that controls escalation from graceful shutdown to termination. */
-export type WorkerShutdownMiddleware = PropertyMiddleware<
-  WorkerShutdownApi,
-  "shutdown"
->;
+/** Selects a Worker shutdown mode from application state. */
+export type WorkerShutdownPolicy = () => Operation<ShutdownMode>;
 
 /** Options for creating and shutting down a Worker. */
 export interface UseWorkerOptions<TData> extends WorkerOptions {
   /** Data passed to `workerMain()` during initialization. */
   data?: TData;
-  /**
-   * Middleware that may escalate graceful shutdown by calling `next()`, which
-   * hard-terminates the Worker. Without middleware, shutdown remains graceful.
-   */
-  shutdown?: WorkerShutdownMiddleware;
+  /** Selects graceful, forced, or policy-driven shutdown. */
+  shutdown?: ShutdownMode | WorkerShutdownPolicy;
 }
 
 /**
@@ -151,11 +137,7 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
   options?: UseWorkerOptions<TData>,
 ): Operation<WorkerResource<TSend, TRecv, TReturn>> {
   return resource(function* (provide) {
-    let {
-      data,
-      shutdown: shutdownMiddleware,
-      ...workerOptions
-    } = options ?? {};
+    let { data, shutdown = "graceful", ...workerOptions } = options ?? {};
     let outcome = withResolvers<TReturn>();
     let outcomeSettled = false;
 
@@ -176,16 +158,12 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
     };
 
     let worker = new Worker(url, workerOptions);
-    let shutdownApi = createWorkerShutdownApi(() => {
+    const terminate = (error = new Error("worker terminated")) => {
       if (!outcomeSettled) {
         worker.terminate();
-        rejectOutcome(new Error("worker terminated"));
+        rejectOutcome(error);
       }
-    });
-
-    if (shutdownMiddleware) {
-      yield* shutdownApi.around({ shutdown: shutdownMiddleware });
-    }
+    };
 
     let subscription = yield* on(worker, "message");
 
@@ -263,15 +241,25 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
 
     yield* ensure(function* () {
       if (!outcomeSettled) {
-        worker.postMessage({ type: "close" });
-        if (shutdownMiddleware) {
-          let result = yield* race([
-            settled(outcome.operation),
-            settled(shutdownApi.operations.shutdown()),
-          ]);
-          if (!result.ok && !outcomeSettled) {
-            worker.terminate();
-            rejectOutcome(result.error);
+        if (shutdown === "forced") {
+          terminate();
+        } else {
+          worker.postMessage({ type: "close" });
+          if (typeof shutdown === "function") {
+            let mode: ShutdownMode = "graceful";
+            try {
+              mode = yield* race([
+                gracefulCompletion(outcome.operation),
+                shutdown(),
+              ]);
+            } catch (error) {
+              if (!outcomeSettled) {
+                terminate(error as Error);
+              }
+            }
+            if (mode === "forced") {
+              terminate();
+            }
           }
         }
       }
@@ -368,20 +356,11 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
   });
 }
 
-let shutdownApiSequence = 0;
-
-function createWorkerShutdownApi(
-  terminate: () => void,
-): Api<WorkerShutdownApi> {
-  let api = createApi<WorkerShutdownApi>(
-    `@effectionx/worker:shutdown:${shutdownApiSequence++}`,
-    {
-      *shutdown(): Operation<void> {
-        terminate();
-      },
-    },
-  );
-  return api;
+function* gracefulCompletion<T>(
+  outcome: Operation<T>,
+): Operation<ShutdownMode> {
+  yield* outcome;
+  return "graceful";
 }
 
 function settled<T>(operation: Operation<T>): Operation<Result<void>> {

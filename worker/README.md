@@ -14,7 +14,7 @@ thread.
 ## Features
 
 - Establishes two-way communication between the main and the worker threads
-- Gracefully shuts down Workers with contextual termination policies
+- Gracefully or forcibly shuts down Workers with contextual policies
 - Propagates errors from the worker to the main thread
 - Type-safe message handling with TypeScript
 - Supports worker-initiated requests handled by the host
@@ -26,46 +26,48 @@ Workers shut down gracefully by default. When their host scope shuts down,
 final result.
 
 CPU-bound or otherwise non-cooperative Workers cannot process that close
-message. Install shutdown middleware when cancellation must eventually become
-preemptible:
-
-```ts
-import { sleep } from "effection";
-
-const worker = yield* useWorker("./worker.ts", {
-  type: "module",
-  *shutdown(args, terminate) {
-    yield* sleep(2_000);
-    return yield* terminate(...args);
-  },
-});
-```
-
-The close message is posted before middleware runs. Middleware is raced against
-the Worker's result, so a Worker that completes gracefully during the delay
-cancels the pending escalation. Calling `terminate()`—the middleware chain's
-`next()` operation—hard-terminates the Worker only if it is still active. A
-middleware that returns without calling `terminate()` leaves shutdown graceful.
-
-Shutdown middleware is selected when the Worker is created but evaluated only
-when shutdown begins. It can read context or other application state when
-selecting a policy:
+message. Use `shutdown: "forced"` when cancellation should terminate the Worker
+immediately:
 
 ```ts
 const worker = yield* useWorker("./worker.ts", {
   type: "module",
-  *shutdown(args, terminate) {
-    let usage = yield* measureCPUUsage();
-    yield* sleep(usage < 0.5 ? 10_000 : usage < 0.9 ? 2_000 : 100);
-    return yield* terminate(...args);
+  shutdown: "forced",
+});
+```
+
+A generator policy first requests graceful shutdown, then chooses whether to
+keep waiting or force termination. It runs in the Worker's host evaluation
+scope, so it can use application context. For example, a host-owned heartbeat
+monitor can expose the point when the Worker's control channel stops responding:
+
+```ts
+import { createContext, type Operation } from "effection";
+
+interface WorkerHealth {
+  controlChannelUnresponsive: Operation<void>;
+}
+
+const workerHealth = createContext<WorkerHealth>("worker health");
+
+const worker = yield* useWorker("./worker.ts", {
+  type: "module",
+  *shutdown() {
+    const health = yield* workerHealth.expect();
+    yield* health.controlChannelUnresponsive;
+    return "forced";
   },
 });
 ```
 
-Without shutdown middleware, `useWorker()` preserves the existing behavior: it
-waits for graceful Worker-side teardown without imposing a deadline. Hard
-termination does not run Worker-side finalizers, so durable cleanup for a
-terminated Worker must be owned by the host.
+The heartbeat monitor is application-owned because the package cannot infer
+whether CPU use or delayed messages mean that a particular Worker is unhealthy.
+If the Worker completes while the policy is pending, Effection cancels the
+policy and finishes gracefully. Returning `"graceful"` also keeps waiting for
+Worker-side teardown. No timeout is imposed by the package.
+
+Forced termination does not run Worker-side finalizers, so durable cleanup for
+a forcibly terminated Worker must be owned by the host.
 
 ## Usage: Get worker's return value
 

@@ -6,6 +6,7 @@ import { beforeEach, describe, it } from "@effectionx/vitest";
 import {
   all,
   createContext,
+  type Operation,
   scoped,
   sleep,
   spawn,
@@ -16,7 +17,11 @@ import {
 import { expect } from "expect";
 
 import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
-import { useWorker } from "./worker.ts";
+import {
+  type UseWorkerOptions,
+  type WorkerShutdownPolicy,
+  useWorker,
+} from "./worker.ts";
 
 describe("worker", () => {
   it("sends and receive messages in synchrony", function* () {
@@ -84,6 +89,42 @@ describe("worker", () => {
       url = import.meta.resolve("./test-assets/shutdown-worker.ts");
     });
 
+    function* haltCPUWorker(
+      shutdown: UseWorkerOptions<SharedArrayBuffer>["shutdown"],
+    ): Operation<Error | undefined> {
+      let state = new Int32Array(
+        new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT),
+      );
+      let task = yield* spawn(function* () {
+        yield* useWorker(
+          import.meta.resolve("./test-assets/cpu-bound-worker.ts"),
+          {
+            type: "module",
+            data: state.buffer,
+            shutdown,
+          },
+        );
+        yield* suspend();
+      });
+
+      yield* when(
+        function* () {
+          if (Atomics.load(state, 0) !== 1) {
+            throw new Error("worker has not started spinning");
+          }
+        },
+        { timeout: 10_000 },
+      );
+
+      yield* task.halt();
+
+      try {
+        yield* task;
+      } catch (error) {
+        return error as Error;
+      }
+    }
+
     it("shuts down gracefully by default", function* () {
       let task = yield* spawn(function* () {
         yield* useWorker(url, {
@@ -133,11 +174,11 @@ describe("worker", () => {
             endFile,
             endText: "graceful",
           } satisfies ShutdownWorkerParams,
-          *shutdown(_args, terminate) {
+          *shutdown() {
             policyContext = yield* shutdownContext.expect();
             yield* suspend();
             terminated = true;
-            return yield* terminate();
+            return "forced";
           },
         });
         yield* suspend();
@@ -165,42 +206,34 @@ describe("worker", () => {
       expect(terminated).toEqual(false);
     });
 
-    it("terminates a CPU-bound worker", function* () {
+    it("terminates a CPU-bound worker in forced mode", function* () {
       expect.assertions(1);
-      let state = new Int32Array(
-        new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT),
-      );
-      let task = yield* spawn(function* () {
-        yield* useWorker(
-          import.meta.resolve("./test-assets/cpu-bound-worker.ts"),
-          {
-            type: "module",
-            data: state.buffer,
-            *shutdown(args, terminate) {
-              return yield* terminate(...args);
-            },
-          },
-        );
-        yield* suspend();
+      const taskError = yield* haltCPUWorker("forced");
+      expect(taskError?.message).toContain("halted");
+    });
+
+    it("can force a CPU-bound worker from host health state", function* () {
+      expect.assertions(2);
+      const workerHealth = createContext<{
+        controlChannelUnresponsive: Operation<void>;
+      }>("worker health");
+      const controlChannelUnresponsive = withResolvers<void>();
+      yield* workerHealth.set({
+        controlChannelUnresponsive: controlChannelUnresponsive.operation,
       });
+      controlChannelUnresponsive.resolve();
 
-      yield* when(
-        function* () {
-          if (Atomics.load(state, 0) !== 1) {
-            throw new Error("worker has not started spinning");
-          }
-        },
-        { timeout: 10_000 },
-      );
+      let observedHealth = false;
+      const shutdown: WorkerShutdownPolicy = function* () {
+        const health = yield* workerHealth.expect();
+        observedHealth = true;
+        yield* health.controlChannelUnresponsive;
+        return "forced";
+      };
 
-      yield* task.halt();
+      const taskError = yield* haltCPUWorker(shutdown);
 
-      let taskError: Error | undefined;
-      try {
-        yield* task;
-      } catch (error) {
-        taskError = error as Error;
-      }
+      expect(observedHealth).toEqual(true);
       expect(taskError?.message).toContain("halted");
     });
   });

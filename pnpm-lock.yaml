@@ -435,9 +435,6 @@ importers:
 
   worker:
     dependencies:
-      '@effectionx/context-api':
-        specifier: workspace:*
-        version: link:../context-api
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals

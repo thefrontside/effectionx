@@ -15,8 +15,7 @@ finite lifetime, and `daemon()` for long-running processes like servers.
 - Proper signal handling and cleanup on both POSIX and Windows
 - Shell mode for complex commands with glob expansion
 - Structured error handling with `join()` and `expect()` methods
-- Independent process-exit observation with `exited()`
-- State-aware escalation from graceful shutdown to hard termination
+- Graceful, forced, and policy-driven shutdown
 
 ## Basic Usage
 
@@ -135,73 +134,44 @@ await main(function* () {
 });
 ```
 
-## exited() vs join()
+## Shutdown
 
-Use `exited()` when you need the direct child's exit status without waiting for
-its stdout and stderr streams to close. This distinction matters when a
-descendant inherits one of those streams and keeps it open after the direct
-child exits.
+Processes shut down gracefully by default. On POSIX, graceful shutdown sends
+`SIGTERM` to the process group. On Windows, it sends Ctrl-C and closes stdin.
+The process resource then waits until the direct command has finished and no
+more captured stdout or stderr can arrive.
 
-`exited()` observes process lifetime only. Output remains available separately
-through `stdout` and `stderr`:
+Use `shutdown: "forced"` when cancellation must immediately use `SIGKILL` or
+`taskkill /T /F`:
 
 ```typescript
-import { main } from "effection";
-import { exec } from "@effectionx/process";
-
-await main(function* () {
-  let process = yield* exec("node task.js");
-  let status = yield* process.exited();
-
-  console.log(status.code);
+const process = yield* exec("node server.js", {
+  shutdown: "forced",
 });
 ```
 
-- **`exited()`** waits for the direct child to exit and does not wait for stdio
-  to close
-- If the process fails to spawn, **`exited()`** raises the spawn error and
-  replays that same error when evaluated again
-- **`join()`** waits for the direct child to exit and for its stdio streams to
-  close
-- **`expect()`** has the same close-settled behavior as `join()`, and throws an
-  `ExecError` for an unsuccessful exit status
-
-## Shutdown escalation
-
-When an active process's host scope shuts down, `exec()` first requests a
-graceful shutdown. On POSIX it sends `SIGTERM` to the process group; on Windows
-it sends Ctrl-C and closes stdin.
-
-The optional `shutdown` middleware controls whether that graceful request
-should escalate to hard termination. It runs concurrently with process and
-stdio closure. Calling `next()` hard-terminates the process tree; if the process
-and its stdio close first, Effection cancels the middleware. Without middleware,
-shutdown remains graceful and can wait indefinitely for a non-cooperative
-process.
-
-Treat `next()` as terminal delegation. Full closure can cancel the middleware
-while hard termination is completing, so middleware bookkeeping must happen
-before calling `next()` rather than after it returns.
-
-Because middleware runs in the process's evaluation scope, it can inspect
-context and wait for application state instead of relying on a fixed timeout:
+A generator policy begins with graceful shutdown requested and may later select
+forced shutdown. It runs in the process evaluation scope, so it can inspect
+application context. The `exit` operation provides the direct command's status
+without waiting for inherited stdout or stderr handles to close:
 
 ```typescript
 import { createContext, main, type Operation } from "effection";
-import { exec } from "@effectionx/process";
+import { exec, type ExitStatus } from "@effectionx/process";
 
 interface ShutdownState {
-  untilUnresponsive(): Operation<void>;
+  untilUnresponsive(status: ExitStatus): Operation<void>;
 }
 
 const shutdownState = createContext<ShutdownState>("shutdown state");
 
 await main(function* () {
   const process = yield* exec("node server.js", {
-    *shutdown(args, terminate) {
+    *shutdown({ exit }) {
+      const status = yield* exit;
       const state = yield* shutdownState.expect();
-      yield* state.untilUnresponsive();
-      return yield* terminate(...args);
+      yield* state.untilUnresponsive(status);
+      return "forced";
     },
   });
 
@@ -211,8 +181,10 @@ await main(function* () {
 
 `shutdownState` in this example is an application-owned context whose
 `untilUnresponsive()` operation observes health, draining, child ownership, or
-another meaningful escalation condition. Returning without calling `next()`
-keeps the shutdown graceful.
+another meaningful escalation condition. If output completes while the policy
+is pending, Effection cancels the policy and finishes gracefully. Returning
+`"graceful"` also keeps the process on the cooperative path. No timeout is
+imposed by the package.
 
 ## Running Daemons
 
@@ -253,8 +225,8 @@ interface ExecOptions {
   // Working directory for the process
   cwd?: string;
 
-  // Optional policy for escalating graceful shutdown to hard termination
-  shutdown?: ProcessShutdownMiddleware;
+  // Graceful, forced, or dynamically selected shutdown
+  shutdown?: ShutdownMode | ProcessShutdownPolicy;
 }
 ```
 
@@ -302,10 +274,6 @@ interface Process {
 
   // Input stream
   stdin: Writable<string>;
-
-  // Wait for the direct child to exit without waiting for stdio to close.
-  // Spawn failures raise and replay the same error.
-  exited(): Operation<ExitStatus>;
 
   // Wait for exit and stdio closure (returns exit status)
   join(): Operation<ExitStatus>;

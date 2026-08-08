@@ -4,10 +4,9 @@
 
 ### Features
 
-- Add `Process.exited()` to observe child exit without waiting for stdio to
-  close.
-- Add options-supplied shutdown middleware for state-aware hard termination of
-  process trees.
+- Add graceful, forced, and generator-based shutdown policies for process
+  trees. Dynamic policies can observe direct command exit and application
+  context before selecting forced shutdown.
 
 ## \[2.1.4]
 

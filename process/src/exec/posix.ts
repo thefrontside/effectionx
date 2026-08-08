@@ -21,11 +21,12 @@ import type {
   ExecOptions,
   ExitStatus,
   Process,
+  ShutdownMode,
   Writable,
 } from "./types.ts";
 import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
-import { createProcessShutdownApi, settled } from "./shutdown.ts";
+import { settled } from "./shutdown.ts";
 
 type ProcessResultValue = [number?, string?];
 
@@ -115,14 +116,16 @@ export function* createPosixProcess(
       processResult.resolve(Ok(value));
     });
 
-    function* exited(): Operation<ExitStatus> {
-      let result = yield* exitResult.operation;
-      if (result.ok) {
-        let [code, signal] = result.value;
-        return { command, options, code, signal } as ExitStatus;
-      }
-      throw result.error;
-    }
+    const exit: Operation<ExitStatus> = {
+      *[Symbol.iterator]() {
+        let result = yield* exitResult.operation;
+        if (result.ok) {
+          let [code, signal] = result.value;
+          return { command, options, code, signal } as ExitStatus;
+        }
+        throw result.error;
+      },
+    };
 
     function* join() {
       let result = yield* processResult.operation;
@@ -149,6 +152,11 @@ export function* createPosixProcess(
       ]);
     }
 
+    function* gracefulCompletion(): Operation<ShutdownMode> {
+      yield* closed();
+      return "graceful";
+    }
+
     function* terminate(): Operation<void> {
       if (typeof pid !== "undefined") {
         try {
@@ -157,26 +165,29 @@ export function* createPosixProcess(
       }
     }
 
-    const shutdownApi = createProcessShutdownApi(terminate);
-    if (options.shutdown) {
-      yield* shutdownApi.around({ shutdown: options.shutdown });
-    }
+    const shutdown = options.shutdown ?? "graceful";
 
     yield* ensure(function* () {
-      try {
-        if (typeof pid === "undefined") {
-          throw new Error("no pid for childProcess");
-        }
-        process.kill(-pid, "SIGTERM");
-      } catch (_error) {}
+      if (shutdown === "forced") {
+        yield* terminate();
+      } else {
+        try {
+          if (typeof pid === "undefined") {
+            throw new Error("no pid for childProcess");
+          }
+          process.kill(-pid, "SIGTERM");
+        } catch (_error) {}
 
-      if (options.shutdown) {
-        const result = yield* race([
-          settled(closed()),
-          settled(shutdownApi.operations.shutdown()),
-        ]);
-        if (!result.ok) {
-          yield* terminate();
+        if (typeof shutdown === "function") {
+          let mode: ShutdownMode;
+          try {
+            mode = yield* race([gracefulCompletion(), shutdown({ exit })]);
+          } catch (_error) {
+            mode = "forced";
+          }
+          if (mode === "forced") {
+            yield* terminate();
+          }
         }
       }
 
@@ -194,7 +205,6 @@ export function* createPosixProcess(
       stdin,
       stdout,
       stderr,
-      exited,
       join,
       expect,
     } satisfies Yielded<ReturnType<CreateOSProcess>>;

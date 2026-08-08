@@ -13,4 +13,6 @@ const descendant = spawn(
 );
 
 descendant.unref();
-process.exit(23);
+console.log("ready");
+process.on("SIGTERM", () => process.exit(23));
+setInterval(() => {}, 1_000);

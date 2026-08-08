@@ -22,12 +22,13 @@ import type {
   ExecOptions,
   ExitStatus,
   Process,
+  ShutdownMode,
   Writable,
 } from "./types.ts";
 import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
-import { createProcessShutdownApi, settled } from "./shutdown.ts";
+import { settled } from "./shutdown.ts";
 
 type ProcessResultValue = [number?, string?];
 
@@ -137,14 +138,16 @@ export function* createWin32Process(
       processResult.resolve(Ok(value));
     });
 
-    function* exited(): Operation<ExitStatus> {
-      let result = yield* exitResult.operation;
-      if (result.ok) {
-        let [code, signal] = result.value;
-        return { command, options, code, signal } as ExitStatus;
-      }
-      throw result.error;
-    }
+    const exit: Operation<ExitStatus> = {
+      *[Symbol.iterator]() {
+        let result = yield* exitResult.operation;
+        if (result.ok) {
+          let [code, signal] = result.value;
+          return { command, options, code, signal } as ExitStatus;
+        }
+        throw result.error;
+      },
+    };
 
     function* join() {
       let result = yield* processResult.operation;
@@ -171,9 +174,13 @@ export function* createWin32Process(
       ]);
     }
 
+    function* gracefulCompletion(): Operation<ShutdownMode> {
+      yield* closed();
+      return "graceful";
+    }
+
     let hardTerminationRequested = false;
     const hardTerminationRequest = withResolvers<void>();
-    const hardTerminationComplete = withResolvers<void>();
 
     function requestHardTermination(): void {
       if (!hardTerminationRequested) {
@@ -182,15 +189,7 @@ export function* createWin32Process(
       }
     }
 
-    function* terminate(): Operation<void> {
-      requestHardTermination();
-      yield* hardTerminationComplete.operation;
-    }
-
-    const shutdownApi = createProcessShutdownApi(terminate);
-    if (options.shutdown) {
-      yield* shutdownApi.around({ shutdown: options.shutdown });
-    }
+    const shutdown = options.shutdown ?? "graceful";
 
     // Suppress EPIPE errors on stdin - these occur on Windows when the child
     // process exits before we finish writing to it. This is expected during
@@ -202,45 +201,47 @@ export function* createWin32Process(
     });
 
     yield* ensure(function* () {
-      // If no pid is available, we have no way to kill the process,
-      //  so we skip and presume it is cleaned up.
-      if (pid) {
-        try {
-          ctrlc(pid);
-        } catch (_) {
-          // if it throws, the process probably doesn't exist anymore
-          //  as it does a process.kill(0) check which will throw if the process is not found
+      const hardTerminationTask =
+        shutdown !== "graceful"
+          ? yield* spawn(function* () {
+              yield* hardTerminationRequest.operation;
+              if (pid) {
+                yield* killTree(pid);
+              }
+            })
+          : undefined;
+
+      if (shutdown === "forced") {
+        requestHardTermination();
+      } else {
+        if (pid) {
+          try {
+            ctrlc(pid);
+          } catch (_) {}
+
+          let stdin = childProcess.stdin;
+          if (stdin.writable) {
+            try {
+              stdin.write("Y\n");
+            } catch (_error) {}
+          }
+          stdin.end();
         }
 
-        let stdin = childProcess.stdin;
-        if (stdin.writable) {
+        if (typeof shutdown === "function") {
+          let mode: ShutdownMode;
           try {
-            //Terminate batch process (Y/N)
-            stdin.write("Y\n");
-          } catch (_err) {
-            /* not much we can do here */
+            mode = yield* race([gracefulCompletion(), shutdown({ exit })]);
+          } catch (_error) {
+            mode = "forced";
+          }
+          if (mode === "forced") {
+            requestHardTermination();
           }
         }
-        stdin.end();
       }
 
-      if (options.shutdown) {
-        const hardTerminationTask = yield* spawn(function* () {
-          yield* hardTerminationRequest.operation;
-          if (pid) {
-            yield* killTree(pid);
-          }
-          hardTerminationComplete.resolve();
-        });
-
-        const result = yield* race([
-          settled(closed()),
-          settled(shutdownApi.operations.shutdown()),
-        ]);
-        if (!result.ok) {
-          requestHardTermination();
-        }
-
+      if (hardTerminationTask) {
         if (hardTerminationRequested) {
           yield* hardTerminationTask;
         } else {
@@ -262,7 +263,6 @@ export function* createWin32Process(
       stdin,
       stdout,
       stderr,
-      exited,
       join,
       expect,
     } satisfies Yielded<ReturnType<CreateOSProcess>>;

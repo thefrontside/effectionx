@@ -13,12 +13,7 @@ import { expect } from "expect";
 import { captureError, expectMatch, fetchText } from "./helpers.ts";
 
 import { lines } from "@effectionx/stream-helpers";
-import {
-  type ExitStatus,
-  type Process,
-  type ProcessResult,
-  exec,
-} from "../mod.ts";
+import { type Process, type ProcessResult, exec } from "../mod.ts";
 import { Stdio } from "../src/api.ts";
 
 const SystemRoot = process.env.SystemRoot;
@@ -85,60 +80,13 @@ describe("exec", () => {
     });
   });
 
-  describe(".exited", () => {
-    it("returns and replays the exit status", function* () {
-      let proc = yield* exec("node './fixtures/hello-world-failed.js'", {
-        cwd: import.meta.dirname,
-      });
-
-      let first = yield* proc.exited();
-      yield* proc.join();
-      let second = yield* proc.exited();
-
-      expect(first.code).toEqual(37);
-      expect(second).toEqual(first);
-    });
-
-    it("throws and replays an error when the process fails to spawn", function* () {
-      let proc = yield* exec("argle", { arguments: ["bargle"] });
-
-      let first = yield* captureError(proc.exited());
-      let second = yield* captureError(proc.exited());
-
-      expect(first).toBeInstanceOf(Error);
-      expect(second).toBe(first);
-    });
-
-    if (process.platform !== "win32") {
-      it("settles before close when a descendant inherits stdio", function* () {
-        let proc = yield* exec(
-          "node --experimental-strip-types './fixtures/stdio-descendant.ts'",
-          {
-            cwd: import.meta.dirname,
-          },
-        );
-        let joined = false;
-
-        yield* spawn(function* () {
-          yield* proc.join();
-          joined = true;
-        });
-
-        let status = yield* proc.exited();
-
-        expect(status.code).toEqual(23);
-        expect(joined).toBe(false);
-      });
-    }
-  });
-
-  describe("shutdown middleware", () => {
+  describe("shutdown", () => {
     it("can inspect context and hard-terminate the process tree", function* () {
       const shutdownContext = createContext<string>("process shutdown test");
       yield* shutdownContext.set("available during shutdown");
 
       let observedContext: string | undefined;
-      let delegated = false;
+      let selectedForced = false;
       const ready = withResolvers<Process>();
       const task = yield* spawn(function* () {
         const proc = yield* exec("node", {
@@ -147,10 +95,10 @@ describe("exec", () => {
             "fixtures/shutdown-resistant.ts",
           ],
           cwd: import.meta.dirname,
-          *shutdown(args, terminate) {
+          *shutdown() {
             observedContext = yield* shutdownContext.expect();
-            delegated = true;
-            yield* terminate(...args);
+            selectedForced = true;
+            return "forced";
           },
         });
         ready.resolve(proc);
@@ -162,7 +110,27 @@ describe("exec", () => {
       yield* task.halt();
 
       expect(observedContext).toEqual("available during shutdown");
-      expect(delegated).toBe(true);
+      expect(selectedForced).toBe(true);
+    });
+
+    it("supports an explicit forced mode", function* () {
+      const ready = withResolvers<Process>();
+      const task = yield* spawn(function* () {
+        const proc = yield* exec("node", {
+          arguments: [
+            "--experimental-strip-types",
+            "fixtures/shutdown-resistant.ts",
+          ],
+          cwd: import.meta.dirname,
+          shutdown: "forced",
+        });
+        ready.resolve(proc);
+        yield* suspend();
+      });
+
+      const proc = yield* ready.operation;
+      expect(yield* expectMatch(/ready/, lines()(proc.stdout))).toBe(true);
+      expect(yield* task.halt()).toBeUndefined();
     });
 
     if (process.platform === "win32") {
@@ -175,9 +143,7 @@ describe("exec", () => {
               "fixtures/ignore-shutdown.ts",
             ],
             cwd: import.meta.dirname,
-            *shutdown(args, terminate) {
-              yield* terminate(...args);
-            },
+            shutdown: "forced",
           });
           ready.resolve(proc);
           yield* suspend();
@@ -190,10 +156,10 @@ describe("exec", () => {
     }
 
     if (process.platform !== "win32") {
-      it("does not mistake direct-child exit for completed shutdown", function* () {
-        let terminated = false;
+      it("provides command exit status to a dynamic policy", function* () {
+        let selectedForced = false;
+        let exitCode: number | undefined;
         const ready = withResolvers<Process>();
-        const exited = withResolvers<ExitStatus>();
         const task = yield* spawn(function* () {
           const proc = yield* exec("node", {
             arguments: [
@@ -201,22 +167,22 @@ describe("exec", () => {
               "fixtures/shutdown-stdio-descendant.ts",
             ],
             cwd: import.meta.dirname,
-            *shutdown(args, terminate) {
-              yield* terminate(...args);
-              terminated = true;
+            *shutdown({ exit }) {
+              exitCode = (yield* exit).code;
+              selectedForced = true;
+              return "forced";
             },
           });
           ready.resolve(proc);
-          exited.resolve(yield* proc.exited());
           yield* suspend();
         });
 
-        yield* ready.operation;
-        expect((yield* exited.operation).code).toEqual(23);
-        expect(terminated).toBe(false);
-
+        const proc = yield* ready.operation;
+        expect(yield* expectMatch(/ready/, lines()(proc.stdout))).toBe(true);
         yield* task.halt();
-        expect(terminated).toBe(true);
+
+        expect(exitCode).toEqual(23);
+        expect(selectedForced).toBe(true);
       });
 
       it("is canceled when the process and its stdio close", function* () {
@@ -229,12 +195,12 @@ describe("exec", () => {
               "fixtures/shutdown-resistant.ts",
             ],
             cwd: import.meta.dirname,
-            *shutdown(_args, terminate) {
+            *shutdown() {
               const running = yield* ready.operation;
               process.kill(running.pid, "SIGUSR1");
               yield* suspend();
               escalated = true;
-              yield* terminate();
+              return "forced";
             },
           });
           ready.resolve(proc);

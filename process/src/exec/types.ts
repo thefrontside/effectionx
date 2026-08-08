@@ -1,6 +1,6 @@
 import type { Operation } from "effection";
 import type { OutputStream } from "../helpers.ts";
-import type { Api, PropertyMiddleware } from "@effectionx/context-api";
+import type { Api } from "@effectionx/context-api";
 
 /**
  * Writable handle used for process stdin.
@@ -16,22 +16,6 @@ export interface Writable<T> {
 export interface Process extends StdIO {
   /** Child process id as reported by the operating system. */
   readonly pid: number;
-
-  /**
-   * Completes once the process exits, without waiting for its stdio streams to
-   * close.
-   *
-   * The exit status is replayed when this operation is evaluated again. If the
-   * process fails to spawn, the operation raises the spawn error and replays
-   * that same error on subsequent evaluations.
-   *
-   * @example
-   * ```ts
-   * const process = yield* exec("node task.js");
-   * const status = yield* process.exited();
-   * ```
-   */
-  exited(): Operation<ExitStatus>;
 
   /**
    * Completes once the process has exited and its stdio streams have closed,
@@ -107,26 +91,26 @@ export interface ExecOptions {
    */
   cwd?: string;
 
+  /** Selects graceful, forced, or policy-driven shutdown. */
+  shutdown?: ShutdownMode | ProcessShutdownPolicy;
+}
+
+/** How an active resource should shut down with its owning scope. */
+export type ShutdownMode = "graceful" | "forced";
+
+/** State available to a dynamic process shutdown policy. */
+export interface ProcessShutdownState {
   /**
-   * Middleware that may escalate graceful shutdown by calling `next()`, which
-   * hard-terminates the process tree. Without middleware, shutdown remains
-   * graceful. Treat `next()` as terminal delegation because process closure
-   * may cancel the middleware before it resumes.
+   * Direct command exit status. This operation does not wait for captured
+   * stdout or stderr to finish.
    */
-  shutdown?: ProcessShutdownMiddleware;
+  readonly exit: Operation<ExitStatus>;
 }
 
-/** Context API invoked when an active process begins shutting down. */
-export interface ProcessShutdownApi {
-  /** Hard-terminate the process tree if shutdown middleware delegates. */
-  shutdown(): Operation<void>;
-}
-
-/** Middleware that controls escalation from graceful process shutdown. */
-export type ProcessShutdownMiddleware = PropertyMiddleware<
-  ProcessShutdownApi,
-  "shutdown"
->;
+/** Selects a shutdown mode from process and application state. */
+export type ProcessShutdownPolicy = (
+  state: ProcessShutdownState,
+) => Operation<ShutdownMode>;
 
 export interface StdIO {
   /** Stream of bytes written by the process to standard output. */

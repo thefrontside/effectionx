@@ -32,7 +32,42 @@ export interface Api<A> {
     around: Partial<Around<A>>,
     options?: { at: "min" | "max" },
   ) => Operation<void>;
+  /**
+   * Invoke one operation with the final continuation supplied by this call.
+   *
+   * The same stable-name middleware is collected, in the same `max`/`min`
+   * order, and composed around the continuation given here instead of around
+   * the handler `createApi()` was built with.
+   *
+   * The continuation stays in the caller's own lexical state: it is never
+   * stored, never placed in a context, never part of the operation's public
+   * arguments, and never reachable by the middleware composed around it. A
+   * handler that returns without calling `next` does not reach it, and nested
+   * or concurrent calls each reach their own.
+   *
+   * ```ts
+   * let api = createApi("greet", { *hello(name: string) { return `hi ${name}`; } });
+   *
+   * // Public middleware still runs; this call ends somewhere else.
+   * yield* api.terminating.hello(function* (name) {
+   *   return `HELLO ${name}`;
+   * })("world");
+   * ```
+   */
+  terminating: Terminating<A>;
 }
+
+/**
+ * The per-call terminal form of each function member.
+ *
+ * Value members have no arguments to intercept and no continuation to supply,
+ * so they are not terminable.
+ */
+export type Terminating<A> = {
+  [K in keyof A]: A[K] extends (...args: infer TArgs) => infer TReturn
+    ? (terminal: (...args: TArgs) => TReturn) => Operations<A>[K]
+    : never;
+};
 
 /**
  * Maps each member of an API core to its lifted Operation form.
@@ -104,6 +139,32 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
     {} as Operations<A>,
   );
 
+  let terminating = fields.reduce(
+    (api, field) => {
+      if (typeof handler[field] !== "function") {
+        return api;
+      }
+      return Object.assign(api, {
+        [field]:
+          (terminal: (...args: any[]) => any) =>
+          (...args: any[]) => ({
+            *[Symbol.iterator]() {
+              let scope = yield* useScope();
+              let { max, min } = collectMiddleware(scope, context, field);
+              let stack = combine([...max, ...min]);
+              // Identical to `operations`, except for the base the public stack
+              // is applied to. Collection, ordering and delegation are the same,
+              // so middleware cannot tell which base is underneath it — and
+              // cannot reach it.
+              let result = stack(args, terminal);
+              return isOperation(result) ? yield* result : result;
+            },
+          }),
+      });
+    },
+    {} as Terminating<A>,
+  );
+
   function* around(
     middlewares: Partial<Around<A>>,
     options: { at: "min" | "max" } = { at: "max" },
@@ -132,7 +193,7 @@ export function createApi<A extends {}>(name: string, handler: A): Api<A> {
     scope.set(context, next);
   }
 
-  return { operations, around };
+  return { operations, around, terminating };
 }
 
 function collectMiddleware<A extends {}>(

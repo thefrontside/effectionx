@@ -1,4 +1,4 @@
-import { spawn as spawnProcess } from "node:child_process";
+import { type ChildProcess, spawn as spawnProcess } from "node:child_process";
 import process from "node:process";
 import {
   type Result,
@@ -14,7 +14,6 @@ import {
   withResolvers,
 } from "effection";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
-import { once } from "@effectionx/node/events";
 import { fromReadable } from "@effectionx/node/stream";
 import type {
   CreateOSProcess,
@@ -38,6 +37,92 @@ export function* createPosixProcess(
   let processResult = withResolvers<Result<ProcessResultValue>>();
   const evalScope = yield* useEvalScope();
   const result = yield* evalScope.eval(function* () {
+    let stdoutDone = withResolvers<void>();
+    let stderrDone = withResolvers<void>();
+
+    let childProcess: ChildProcess | undefined;
+    let teardownStarted = false;
+
+    const shutdown = options.shutdown ?? "graceful";
+
+    const exit: Operation<ExitStatus> = {
+      *[Symbol.iterator]() {
+        let result = yield* exitResult.operation;
+        if (result.ok) {
+          let [code, signal] = result.value;
+          return { command, options, code, signal } as ExitStatus;
+        }
+        throw result.error;
+      },
+    };
+
+    function* terminate(): Operation<void> {
+      let pid = childProcess?.pid;
+      if (typeof pid !== "undefined") {
+        try {
+          process.kill(-pid, "SIGKILL");
+        } catch (_error) {}
+      }
+    }
+
+    function* reaped(): Operation<void> {
+      yield* processResult.operation;
+    }
+
+    function* closed(): Operation<void> {
+      yield* all([
+        processResult.operation,
+        stdoutDone.operation,
+        stderrDone.operation,
+      ]);
+    }
+
+    function* shutdownProcess(join: () => Operation<void>): Operation<void> {
+      let pid = childProcess?.pid;
+      if (typeof pid === "undefined") {
+        return;
+      }
+
+      function* gracefulCompletion(): Operation<ShutdownMode> {
+        yield* join();
+        return "graceful";
+      }
+
+      if (shutdown === "forced") {
+        yield* terminate();
+      } else {
+        try {
+          process.kill(-pid, "SIGTERM");
+        } catch (_error) {}
+
+        if (typeof shutdown === "function") {
+          let mode: ShutdownMode;
+          try {
+            mode = yield* race([gracefulCompletion(), shutdown({ exit })]);
+          } catch (_error) {
+            mode = "forced";
+          }
+          if (mode === "forced") {
+            yield* terminate();
+          }
+        }
+      }
+
+      yield* settled(join());
+    }
+
+    // A halt can land on any suspension point between here and the primary
+    // teardown at the end of this generator, discarding every instruction
+    // after it. This guard registers while `childProcess` is still empty and
+    // the spawn below follows in the same synchronous continuation, so at no
+    // point does the process exist without an armed teardown. It joins on
+    // process exit alone because the stdio pumps may never have been wired.
+    yield* ensure(function* () {
+      if (!teardownStarted) {
+        yield* shutdownProcess(reaped);
+      }
+    });
+
     // Killing all child processes started by this command is surprisingly
     // tricky. If a process spawns another processes and we kill the parent,
     // then the child process is NOT automatically killed. Instead we're using
@@ -48,25 +133,38 @@ export function* createPosixProcess(
     // process.
     //
     // More information here: https://unix.stackexchange.com/questions/14815/process-descendants
-    let childProcess = spawnProcess(command, options.arguments || [], {
+    const child = spawnProcess(command, options.arguments || [], {
       detached: true,
       shell: options.shell,
       env: options.env,
       cwd: options.cwd,
       stdio: "pipe",
     });
+    childProcess = child;
 
-    let { pid } = childProcess;
+    // Node listeners instead of spawned effection watchers: exit observation
+    // must arm in the same synchronous continuation as the spawn so that the
+    // guard above can join on it no matter where a halt lands.
+    child.once("error", (error) => {
+      exitResult.resolve(Err(error));
+      processResult.resolve(Err(error));
+    });
+    child.once("exit", (code, signal) => {
+      exitResult.resolve(Ok([code ?? undefined, signal ?? undefined]));
+    });
+    child.once("close", (code, signal) => {
+      processResult.resolve(Ok([code ?? undefined, signal ?? undefined]));
+    });
 
-    if (!childProcess.stdout || !childProcess.stderr) {
+    let { pid } = child;
+
+    if (!child.stdout || !child.stderr) {
       throw new Error("stdout and stderr must be available with stdio: pipe");
     }
 
     let io = {
-      stdout: yield* fromReadable(childProcess.stdout),
-      stderr: yield* fromReadable(childProcess.stderr),
-      stdoutDone: withResolvers<void>(),
-      stderrDone: withResolvers<void>(),
+      stdout: yield* fromReadable(child.stdout),
+      stderr: yield* fromReadable(child.stderr),
     };
 
     let stdout = createSignal<Uint8Array, void>();
@@ -80,7 +178,7 @@ export function* createPosixProcess(
         next = yield* io.stdout.next();
       }
       stdout.close();
-      io.stdoutDone.resolve();
+      stdoutDone.resolve();
     });
 
     yield* spawn(function* () {
@@ -91,39 +189,12 @@ export function* createPosixProcess(
         next = yield* io.stderr.next();
       }
       stderr.close();
-      io.stderrDone.resolve();
+      stderrDone.resolve();
     });
 
     let stdin: Writable<string> = {
       send(data: string) {
-        childProcess.stdin.write(data);
-      },
-    };
-
-    yield* spawn(function* trapError() {
-      let [error] = yield* once<[Error]>(childProcess, "error");
-      exitResult.resolve(Err(error));
-      processResult.resolve(Err(error));
-    });
-
-    yield* spawn(function* () {
-      let value = yield* once<ProcessResultValue>(childProcess, "exit");
-      exitResult.resolve(Ok(value));
-    });
-
-    yield* spawn(function* () {
-      let value = yield* once<ProcessResultValue>(childProcess, "close");
-      processResult.resolve(Ok(value));
-    });
-
-    const exit: Operation<ExitStatus> = {
-      *[Symbol.iterator]() {
-        let result = yield* exitResult.operation;
-        if (result.ok) {
-          let [code, signal] = result.value;
-          return { command, options, code, signal } as ExitStatus;
-        }
-        throw result.error;
+        child.stdin.write(data);
       },
     };
 
@@ -144,54 +215,9 @@ export function* createPosixProcess(
       return status;
     }
 
-    function* closed(): Operation<void> {
-      yield* all([
-        processResult.operation,
-        io.stdoutDone.operation,
-        io.stderrDone.operation,
-      ]);
-    }
-
-    function* gracefulCompletion(): Operation<ShutdownMode> {
-      yield* closed();
-      return "graceful";
-    }
-
-    function* terminate(): Operation<void> {
-      if (typeof pid !== "undefined") {
-        try {
-          process.kill(-pid, "SIGKILL");
-        } catch (_error) {}
-      }
-    }
-
-    const shutdown = options.shutdown ?? "graceful";
-
     yield* ensure(function* () {
-      if (shutdown === "forced") {
-        yield* terminate();
-      } else {
-        try {
-          if (typeof pid === "undefined") {
-            throw new Error("no pid for childProcess");
-          }
-          process.kill(-pid, "SIGTERM");
-        } catch (_error) {}
-
-        if (typeof shutdown === "function") {
-          let mode: ShutdownMode;
-          try {
-            mode = yield* race([gracefulCompletion(), shutdown({ exit })]);
-          } catch (_error) {
-            mode = "forced";
-          }
-          if (mode === "forced") {
-            yield* terminate();
-          }
-        }
-      }
-
-      yield* settled(closed());
+      teardownStarted = true;
+      yield* shutdownProcess(closed);
     });
 
     return {

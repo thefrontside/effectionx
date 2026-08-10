@@ -1,11 +1,14 @@
+import { execSync } from "node:child_process";
 import process from "node:process";
 import { beforeEach, describe, it } from "@effectionx/vitest";
 import {
+  type Operation,
   type Task,
   createContext,
   sleep,
   spawn,
   suspend,
+  useScope,
   withResolvers,
 } from "effection";
 import { expect } from "expect";
@@ -774,4 +777,65 @@ describe("exec", () => {
       });
     }
   });
+
+  if (process.platform !== "win32") {
+    describe("halt during acquisition", () => {
+      function deep(
+        levels: number,
+        body: () => Operation<void>,
+      ): Operation<void> {
+        if (levels === 0) {
+          return body();
+        }
+        return {
+          *[Symbol.iterator]() {
+            const inner = yield* spawn(() => deep(levels - 1, body));
+            yield* inner;
+          },
+        };
+      }
+
+      function isRunning(marker: string): boolean {
+        const commands = execSync("ps -axww -o command").toString();
+        return commands
+          .split("\n")
+          .some((line) => line.includes(marker) && !line.includes("ps -axww"));
+      }
+
+      it("never leaves the child process behind, wherever the halt lands", function* () {
+        // The scheduler interleaves same-generation routines one
+        // instruction per turn, so a halter spawned one scope deeper than
+        // the exec task runs in lockstep with the acquisition sequence.
+        // Sweeping the number of turns before the halt lands it on every
+        // suspension point of that sequence — including between the OS
+        // spawn and the registration of the kill-teardown (#236).
+        for (let turns = 0; turns < 40; turns++) {
+          const marker = `halt-sweep-236-${process.pid}-${turns}`;
+          const task = yield* spawn(function* () {
+            yield* exec("node", {
+              arguments: ["-e", "setTimeout(() => {}, 30000)", marker],
+            });
+            yield* suspend();
+          });
+          const halter = yield* spawn(() =>
+            deep(1, function* () {
+              for (let t = 0; t < turns; t++) {
+                yield* useScope();
+              }
+              yield* task.halt();
+            }),
+          );
+          yield* halter;
+          if (isRunning(marker)) {
+            try {
+              execSync(`pkill -f ${marker}`);
+            } catch (_error) {}
+            throw new Error(
+              `process orphaned when halted after ${turns} scheduler turns`,
+            );
+          }
+        }
+      }, 30000);
+    });
+  }
 });

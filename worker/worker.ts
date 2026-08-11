@@ -122,7 +122,8 @@ export interface UseWorkerOptions<TData> extends WorkerOptions {
  * ```
  *
  * @param url URL or string of script
- * @param options Worker construction and shutdown options
+ * @param options Worker construction options. Shutdown is graceful; wrap
+ * the resource in `withForce()` from `@effectionx/forceable` to bound it.
  * @template TSend - value main thread will send to the worker
  * @template TRecv - value main thread will receive from the worker
  * @template TReturn - worker operation return value

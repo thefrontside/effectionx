@@ -87,11 +87,18 @@ force, so it is the natural place to log, count, or alert.
 
 ```ts
 function* (force) {
+  let reason = `worker did not close within ${grace}ms`;
   yield* sleep(grace);
   logger.warn({ reason }, "forced teardown");
   force(reason);
 }
 ```
+
+The reason is recorded on a `ForcedTerminationError` that settles the
+resource's outcome, but do not rely on reading it there: forcing happens
+during teardown, so on halt anyone awaiting the resource is cancelled before
+the rejection lands, and on a normal exit the scope body has already returned.
+The policy is what knows.
 
 Raising from inside a policy is **not** a reliable way to make forcing loud.
 Whether the error escapes is a race against how many turns the resource's own

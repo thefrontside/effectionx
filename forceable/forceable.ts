@@ -19,9 +19,15 @@ import {
 export const force = Symbol.for("effection.force");
 
 /**
- * Reported to whoever is waiting on a resource that was torn down forcibly.
- * Its graceful teardown never ran, so anything that teardown was responsible
- * for is still outstanding.
+ * Settles the outcome of a resource that was torn down forcibly, so its result
+ * records a failure rather than a clean finish. Its graceful teardown never
+ * ran, so anything that teardown was responsible for is still outstanding.
+ *
+ * Note that in practice nothing is usually positioned to read it. Forcing
+ * happens during teardown: on halt, anyone awaiting the resource is cancelled
+ * first, and on normal exit the scope body has already returned. Treat the
+ * policy that called `force` as the place that knows, not this error. Whether
+ * forcing should raise instead is an open question — see the README.
  */
 export class ForcedTerminationError extends Error {
   override name = "ForcedTerminationError";
@@ -37,8 +43,8 @@ export interface Forceable {
    * Tear down immediately. Safe to call more than once and safe to call on a
    * resource that already finished — later calls do nothing.
    *
-   * @param reason why the graceful teardown was abandoned, for the error the
-   * resource reports to whoever is waiting on it
+   * @param reason why the graceful teardown was abandoned, recorded on the
+   * {@link ForcedTerminationError} the resource settles its outcome with
    */
   [force](reason?: string): void;
 }

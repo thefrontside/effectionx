@@ -27,6 +27,7 @@
     "url": "https://github.com/thefrontside/effectionx/issues"
   },
   "sideEffects": false,
+  "files": ["dist"],
   "devDependencies": {
     "@effectionx/vitest": "workspace:*",
     "effection": "^4"

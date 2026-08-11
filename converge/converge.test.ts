@@ -78,10 +78,12 @@ describe("@effectionx/converge", () => {
       );
       let end = Date.now();
 
+      // Assert ordering invariants only: the gap between the test's clock
+      // reads and convergeOn's is scheduler-dependent and unbounded.
       expect(stats.start).toBeGreaterThanOrEqual(start);
-      expect(stats.start).toBeLessThanOrEqual(start + 50);
-      expect(stats.end).toBeGreaterThanOrEqual(end - 50);
       expect(stats.end).toBeLessThanOrEqual(end);
+      expect(stats.start).toBeLessThanOrEqual(stats.end);
+      expect(stats.elapsed).toBe(stats.end - stats.start);
       expect(stats.elapsed).toBeGreaterThanOrEqual(30);
       expect(stats.elapsed).toBeLessThan(100);
       expect(stats.runs).toBeGreaterThanOrEqual(3);
@@ -221,10 +223,12 @@ describe("@effectionx/converge", () => {
       );
       let end = Date.now();
 
+      // Assert ordering invariants only: the gap between the test's clock
+      // reads and convergeOn's is scheduler-dependent and unbounded.
       expect(stats.start).toBeGreaterThanOrEqual(start);
-      expect(stats.start).toBeLessThanOrEqual(start + 50);
-      expect(stats.end).toBeGreaterThanOrEqual(end - 50);
       expect(stats.end).toBeLessThanOrEqual(end);
+      expect(stats.start).toBeLessThanOrEqual(stats.end);
+      expect(stats.elapsed).toBe(stats.end - stats.start);
       expect(stats.elapsed).toBeGreaterThanOrEqual(50);
       expect(stats.runs).toBeGreaterThanOrEqual(3); // ~50ms / 10ms interval = ~5 runs, allow for timing variance on slower CI
       expect(stats.timeout).toEqual(50);

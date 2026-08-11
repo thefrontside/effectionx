@@ -240,8 +240,13 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
       if (!outcomeSettled) {
         worker.postMessage({ type: "close" });
       }
-      // A worker that cannot service the close message never settles this.
-      // Wrap with withForce() to put a deadline on it.
+      // Settled by the spawned message loop above, which is still running:
+      // ensure handlers run before a resource's spawned children are halted.
+      // Verified against effection 3.0.0, 3.6.1, and 4.1.0 — see test:matrix.
+      //
+      // A Worker that cannot service the close message never settles this, and
+      // waiting on it holds this scope open forever. Wrap the resource in
+      // withForce() from @effectionx/forceable to put a deadline on the wait.
       yield* settled(outcome.operation);
     });
 

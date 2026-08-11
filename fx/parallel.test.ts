@@ -25,25 +25,30 @@ function defer<T>(): Defer<T> {
 
 describe("parallel()", () => {
   it("should return an immediate channel with results as they are completed", function* () {
+    // Completion order is what this test is about, so drive it with deferreds
+    // rather than sleeps. `immediate` is an unbuffered channel, so subscribe
+    // before resolving anything, and resolve each operation only after the
+    // previous one has been observed.
+    const second = defer<string>();
+    const first = defer<string>();
+
     const results = yield* parallel([
-      function* () {
-        yield* sleep(20);
-        return "second";
-      },
-      function* () {
-        yield* sleep(10);
-        return "first";
-      },
+      () => until(second.promise),
+      () => until(first.promise),
     ]);
 
+    const immediate = yield* results.immediate;
     const res: Result<string>[] = [];
-    for (const val of yield* each(results.immediate)) {
-      res.push(val);
-      yield* each.next();
-    }
+
+    first.resolve("first");
+    res.push((yield* immediate.next()).value as Result<string>);
+
+    second.resolve("second");
+    res.push((yield* immediate.next()).value as Result<string>);
 
     yield* results;
 
+    // The array's second operation completed first, so it arrives first.
     expect(res).toEqual([Ok("first"), Ok("second")]);
   });
 

@@ -7,7 +7,6 @@ import {
   ensure,
   on,
   once,
-  race,
   resource,
   spawn,
   withResolvers,
@@ -15,6 +14,11 @@ import {
 import Worker from "web-worker";
 
 import { useChannelRequest, useChannelResponse } from "./channel.ts";
+import {
+  ForcedTerminationError,
+  type Forceable,
+  force,
+} from "@effectionx/forceable";
 import {
   type ForEachContext,
   type SerializedError,
@@ -30,7 +34,8 @@ import {
  * @template TReturn - worker operation return value
  */
 export interface WorkerResource<TSend, TRecv, TReturn>
-  extends Operation<TReturn> {
+  extends Operation<TReturn>,
+    Forceable {
   /**
    * Send a message to the worker and wait for a response.
    */
@@ -70,18 +75,10 @@ export interface WorkerResource<TSend, TRecv, TReturn>
   ): Operation<TReturn>;
 }
 
-/** How an active resource should shut down with its owning scope. */
-export type ShutdownMode = "graceful" | "forced";
-
-/** Selects a Worker shutdown mode from application state. */
-export type WorkerShutdownPolicy = () => Operation<ShutdownMode>;
-
-/** Options for creating and shutting down a Worker. */
+/** Options for creating a Worker. */
 export interface UseWorkerOptions<TData> extends WorkerOptions {
   /** Data passed to `workerMain()` during initialization. */
   data?: TData;
-  /** Selects graceful, forced, or policy-driven shutdown. */
-  shutdown?: ShutdownMode | WorkerShutdownPolicy;
 }
 
 /**
@@ -137,7 +134,7 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
   options?: UseWorkerOptions<TData>,
 ): Operation<WorkerResource<TSend, TRecv, TReturn>> {
   return resource(function* (provide) {
-    let { data, shutdown = "graceful", ...workerOptions } = options ?? {};
+    let { data, ...workerOptions } = options ?? {};
     let outcome = withResolvers<TReturn>();
     let outcomeSettled = false;
 
@@ -241,28 +238,10 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
 
     yield* ensure(function* () {
       if (!outcomeSettled) {
-        if (shutdown === "forced") {
-          terminate();
-        } else {
-          worker.postMessage({ type: "close" });
-          if (typeof shutdown === "function") {
-            let mode: ShutdownMode = "graceful";
-            try {
-              mode = yield* race([
-                gracefulCompletion(outcome.operation),
-                shutdown(),
-              ]);
-            } catch (error) {
-              if (!outcomeSettled) {
-                terminate(error as Error);
-              }
-            }
-            if (mode === "forced") {
-              terminate();
-            }
-          }
-        }
+        worker.postMessage({ type: "close" });
       }
+      // A worker that cannot service the close message never settles this.
+      // Wrap with withForce() to put a deadline on it.
       yield* settled(outcome.operation);
     });
 
@@ -351,16 +330,13 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
         }
       },
 
+      [force](reason?: string) {
+        terminate(new ForcedTerminationError(reason));
+      },
+
       [Symbol.iterator]: outcome.operation[Symbol.iterator],
     });
   });
-}
-
-function* gracefulCompletion<T>(
-  outcome: Operation<T>,
-): Operation<ShutdownMode> {
-  yield* outcome;
-  return "graceful";
 }
 
 function settled<T>(operation: Operation<T>): Operation<Result<void>> {

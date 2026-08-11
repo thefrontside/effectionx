@@ -1,8 +1,8 @@
 {
-  "name": "@effectionx/worker",
-  "description": "Web Worker integration with two-way messaging and structured shutdown",
-  "version": "0.6.0",
-  "keywords": ["platform"],
+  "name": "@effectionx/forceable",
+  "description": "Put a deadline on a resource's graceful teardown and tear it down forcibly when it expires",
+  "version": "0.1.0",
+  "keywords": ["concurrency"],
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
@@ -14,7 +14,6 @@
       "default": "./dist/mod.js"
     }
   },
-  "files": ["dist"],
   "peerDependencies": {
     "effection": "^3 || ^4"
   },
@@ -28,15 +27,8 @@
     "url": "https://github.com/thefrontside/effectionx/issues"
   },
   "sideEffects": false,
-  "dependencies": {
-    "@effectionx/forceable": "workspace:*",
-    "@effectionx/signals": "workspace:*",
-    "@effectionx/timebox": "workspace:*",
-    "web-worker": "^1"
-  },
   "devDependencies": {
     "@effectionx/vitest": "workspace:*",
-    "@effectionx/converge": "workspace:*",
     "effection": "^4"
   }
 }

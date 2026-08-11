@@ -136,6 +136,15 @@ importers:
         specifier: ^4
         version: 4.1.0
 
+  forceable:
+    devDependencies:
+      '@effectionx/vitest':
+        specifier: workspace:*
+        version: link:../vitest
+      effection:
+        specifier: ^4
+        version: 4.1.0
+
   fs:
     dependencies:
       '@effectionx/context-api':
@@ -435,6 +444,9 @@ importers:
 
   worker:
     dependencies:
+      '@effectionx/forceable':
+        specifier: workspace:*
+        version: link:../forceable
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals

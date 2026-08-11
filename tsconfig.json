@@ -19,6 +19,7 @@
     { "path": "converge" },
     { "path": "effect-ts" },
     { "path": "fetch" },
+    { "path": "forceable" },
     { "path": "fs" },
     { "path": "fx" },
     { "path": "inline" },

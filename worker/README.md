@@ -14,60 +14,60 @@ thread.
 ## Features
 
 - Establishes two-way communication between the main and the worker threads
-- Gracefully or forcibly shuts down Workers with contextual policies
+- Shuts down gracefully, with an opt-in deadline for Workers that will not close
 - Propagates errors from the worker to the main thread
 - Type-safe message handling with TypeScript
 - Supports worker-initiated requests handled by the host
 
 ## Shutdown
 
-Workers shut down gracefully by default. When their host scope shuts down,
-`useWorker()` sends a close message and waits for Worker-side teardown and the
-final result.
+Workers shut down gracefully. When the host scope shuts down, `useWorker()`
+sends a close message and waits for Worker-side teardown and the final result,
+so the Worker gets to run its own cleanup.
 
-CPU-bound or otherwise non-cooperative Workers cannot process that close
-message. Use `shutdown: "forced"` when cancellation should terminate the Worker
-immediately:
+That waiting assumes the Worker is listening. A Worker busy in a tight loop
+never reads the close message, and waiting on it holds the host scope open
+forever.
+
+`useWorker()` implements [`@effectionx/forceable`][forceable], so wrap it in
+`withForce()` to put a deadline on that wait:
 
 ```ts
-const worker = yield* useWorker("./worker.ts", {
-  type: "module",
-  shutdown: "forced",
-});
+import { sleep } from "effection";
+import { withForce } from "@effectionx/forceable";
+import { useWorker } from "@effectionx/worker";
+
+const worker = yield* withForce(
+  useWorker("./worker.ts", { type: "module" }),
+  function* (force) {
+    yield* sleep(10_000);
+    force("worker did not close within 10s");
+  },
+);
 ```
 
-A generator policy first requests graceful shutdown, then chooses whether to
-keep waiting or force termination. It runs in the Worker's host evaluation
-scope, so it can use application context. For example, a host-owned heartbeat
-monitor can expose the point when the Worker's control channel stops responding:
+A policy is an operation, so it can wait on application state instead of a
+clock. This package does not infer that CPU use or delayed messages mean a
+particular Worker is unhealthy — applications define that:
 
 ```ts
-import { createContext, type Operation } from "effection";
-
-interface WorkerHealth {
-  controlChannelUnresponsive: Operation<void>;
-}
-
-const workerHealth = createContext<WorkerHealth>("worker health");
-
-const worker = yield* useWorker("./worker.ts", {
-  type: "module",
-  *shutdown() {
+const worker = yield* withForce(
+  useWorker("./worker.ts", { type: "module" }),
+  function* (force) {
     const health = yield* workerHealth.expect();
     yield* health.controlChannelUnresponsive;
-    return "forced";
+    force("control channel stopped answering");
   },
-});
+);
 ```
 
-The heartbeat monitor is application-owned because the package cannot infer
-whether CPU use or delayed messages mean that a particular Worker is unhealthy.
-If the Worker completes while the policy is pending, Effection cancels the
-policy and finishes gracefully. Returning `"graceful"` also keeps waiting for
-Worker-side teardown. No timeout is imposed by the package.
+If the Worker closes before the policy forces, the policy is cancelled where it
+stands and teardown finishes normally. No timeout is imposed by default.
 
-Forced termination does not run Worker-side finalizers, so durable cleanup for
-a forcibly terminated Worker must be owned by the host.
+Forcing calls `Worker.terminate()`, which does not run Worker-side finalizers,
+so durable cleanup for a Worker that might be forced must be owned by the host.
+
+[forceable]: ../forceable/README.md
 
 ## Usage: Get worker's return value
 

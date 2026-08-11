@@ -16,12 +16,9 @@ import {
 } from "effection";
 import { expect } from "expect";
 
+import { type ForcePolicy, withForce } from "@effectionx/forceable";
 import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
-import {
-  type UseWorkerOptions,
-  type WorkerShutdownPolicy,
-  useWorker,
-} from "./worker.ts";
+import { useWorker } from "./worker.ts";
 
 describe("worker", () => {
   it("sends and receive messages in synchrony", function* () {
@@ -72,6 +69,23 @@ describe("worker", () => {
       expect((e as Error).message).toContain("boom!");
     }
   });
+  it("propagates a worker error through withForce", function* () {
+    expect.assertions(2);
+    let worker = yield* withForce(
+      useWorker(import.meta.resolve("./test-assets/boom-result-worker.ts"), {
+        type: "module",
+        data: "boom!",
+      }),
+      function* () {},
+    );
+
+    try {
+      yield* worker;
+    } catch (e) {
+      expect(e).toBeInstanceOf(Error);
+      expect((e as Error).message).toContain("boom!");
+    }
+  });
   describe("shutdown", () => {
     let startFile: string;
     let endFile: string;
@@ -89,20 +103,17 @@ describe("worker", () => {
       url = import.meta.resolve("./test-assets/shutdown-worker.ts");
     });
 
-    function* haltCPUWorker(
-      shutdown: UseWorkerOptions<SharedArrayBuffer>["shutdown"],
-    ): Operation<Error | undefined> {
+    function* haltCPUWorker(policy: ForcePolicy): Operation<Error | undefined> {
       let state = new Int32Array(
         new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT),
       );
       let task = yield* spawn(function* () {
-        yield* useWorker(
-          import.meta.resolve("./test-assets/cpu-bound-worker.ts"),
-          {
+        yield* withForce(
+          useWorker(import.meta.resolve("./test-assets/cpu-bound-worker.ts"), {
             type: "module",
             data: state.buffer,
-            shutdown,
-          },
+          }),
+          policy,
         );
         yield* suspend();
       });
@@ -160,27 +171,29 @@ describe("worker", () => {
       );
     });
 
-    it("cancels its shutdown policy when graceful shutdown completes", function* () {
+    it("cancels its force policy when graceful shutdown completes", function* () {
       let shutdownContext = createContext<string>("worker shutdown test");
       yield* shutdownContext.set("available during shutdown");
 
       let policyContext: string | undefined;
-      let terminated = false;
+      let forced = false;
       let task = yield* spawn(function* () {
-        yield* useWorker(url, {
-          type: "module",
-          data: {
-            startFile,
-            endFile,
-            endText: "graceful",
-          } satisfies ShutdownWorkerParams,
-          *shutdown() {
+        yield* withForce(
+          useWorker(url, {
+            type: "module",
+            data: {
+              startFile,
+              endFile,
+              endText: "graceful",
+            } satisfies ShutdownWorkerParams,
+          }),
+          function* (force) {
             policyContext = yield* shutdownContext.expect();
             yield* suspend();
-            terminated = true;
-            return "forced";
+            forced = true;
+            force("should never happen");
           },
-        });
+        );
         yield* suspend();
       });
 
@@ -203,12 +216,14 @@ describe("worker", () => {
 
       expect(yield* until(readFile(endFile, "utf-8"))).toEqual("graceful");
       expect(policyContext).toEqual("available during shutdown");
-      expect(terminated).toEqual(false);
+      expect(forced).toEqual(false);
     });
 
-    it("terminates a CPU-bound worker in forced mode", function* () {
+    it("forces a CPU-bound worker that cannot service the close message", function* () {
       expect.assertions(1);
-      const taskError = yield* haltCPUWorker("forced");
+      const taskError = yield* haltCPUWorker(function* (force) {
+        force("cpu bound");
+      });
       expect(taskError?.message).toContain("halted");
     });
 
@@ -224,17 +239,63 @@ describe("worker", () => {
       controlChannelUnresponsive.resolve();
 
       let observedHealth = false;
-      const shutdown: WorkerShutdownPolicy = function* () {
+      const policy: ForcePolicy = function* (force) {
         const health = yield* workerHealth.expect();
         observedHealth = true;
         yield* health.controlChannelUnresponsive;
-        return "forced";
+        force("control channel unresponsive");
       };
 
-      const taskError = yield* haltCPUWorker(shutdown);
+      const taskError = yield* haltCPUWorker(policy);
 
       expect(observedHealth).toEqual(true);
       expect(taskError?.message).toContain("halted");
+    });
+
+    // Documents a gap rather than a guarantee. Forcing settles the outcome as a
+    // ForcedTerminationError, but an awaiter inside the halted scope is cancelled
+    // before it can observe that rejection, and useWorker's own teardown swallows
+    // it via settled(). So the reason reaches nobody. Whether it should escape —
+    // and at the cost of masking an in-flight error — is the open question.
+    it("does not surface the force reason to an awaiter", function* () {
+      expect.assertions(1);
+      let state = new Int32Array(
+        new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT),
+      );
+      let outcome: Error | undefined;
+
+      let task = yield* spawn(function* () {
+        let worker = yield* withForce(
+          useWorker(import.meta.resolve("./test-assets/cpu-bound-worker.ts"), {
+            type: "module",
+            data: state.buffer,
+          }),
+          function* (force) {
+            force("event loop p99 300ms");
+          },
+        );
+        yield* spawn(function* () {
+          try {
+            yield* worker;
+          } catch (error) {
+            outcome = error as Error;
+          }
+        });
+        yield* suspend();
+      });
+
+      yield* when(
+        function* () {
+          if (Atomics.load(state, 0) !== 1) {
+            throw new Error("worker has not started spinning");
+          }
+        },
+        { timeout: 10_000 },
+      );
+
+      yield* task.halt();
+
+      expect(outcome).toBeUndefined();
     });
   });
 

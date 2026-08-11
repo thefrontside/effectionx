@@ -19,10 +19,11 @@ This package provides two sub-modules:
 - `@effectionx/node/stream` - Stream utilities for Node.js
 - `@effectionx/node/events` - Event utilities for Node.js EventEmitters
 
-You can also import everything from the main module:
+You can also import everything — including the `Stdio` context API —
+from the main module:
 
 ```typescript
-import { fromReadable, on, once } from "@effectionx/node";
+import { Stdio, fromReadable, on, once, stdin, stdout } from "@effectionx/node";
 ```
 
 ## Stream Utilities
@@ -48,6 +49,123 @@ await main(function* () {
 
 The returned stream emits `Uint8Array` chunks and automatically cleans up
 event listeners when the stream is closed or the operation is shut down.
+
+## Host Stdio
+
+`Stdio` is a middleware-capable context API for the **host** process's
+standard input, output, and error streams. The default handlers read
+from `process.stdin` and write to `process.stdout` / `process.stderr`,
+so in normal production code you just call the operations and bytes
+flow as you'd expect. Install middleware with `Stdio.around({ ... })`
+inside any scope to observe, transform, or redirect those bytes — useful
+for tests that assert what a program wrote to stdout, or harnesses that
+feed synthesized input to code reading from stdin.
+
+This is distinct from `@effectionx/process`'s `Stdio`, which governs
+**child**-process stdio.
+
+### Writing to stdout / stderr
+
+`stdout` and `stderr` are `(bytes: Uint8Array) => Operation<void>`
+operations destructured from `Stdio.operations` and re-exported at the
+package root, so you can use them directly:
+
+```typescript
+import { main } from "effection";
+import { stderr, stdout } from "@effectionx/node";
+
+await main(function* () {
+  yield* stdout(new TextEncoder().encode("hello\n"));
+  yield* stderr(new TextEncoder().encode("oops\n"));
+});
+```
+
+### Reading stdin
+
+`stdin()` returns a `Stream<Uint8Array, void>` sourced from
+`process.stdin`. A single `yield*` gives you a subscription you can
+iterate, or use `each` for a `for`-loop:
+
+```typescript
+import { each, main } from "effection";
+import { stdin, stdout } from "@effectionx/node";
+
+await main(function* () {
+  // echo every chunk back to stdout
+  for (const chunk of yield* each(stdin())) {
+    yield* stdout(chunk);
+    yield* each.next();
+  }
+});
+```
+
+### Intercepting with middleware
+
+Middleware is registered per scope via `Stdio.around(...)`. Each member
+is a function `(args, next) => TReturn` where delegation to the next
+link (including the default handler) is `next(...args)`. Middleware
+applies to the current scope and its descendants until they exit.
+
+```typescript
+import { main } from "effection";
+import { Stdio, stdout } from "@effectionx/node";
+
+await main(function* () {
+  const captured: Uint8Array[] = [];
+
+  yield* Stdio.around({
+    *stdout(args, next) {
+      captured.push(args[0]);
+      return yield* next(...args); // delegate so bytes still reach process.stdout
+    },
+  });
+
+  yield* stdout(new TextEncoder().encode("hello\n"));
+  // `captured` holds the bytes, and they also reached the terminal
+});
+```
+
+To **redirect** without reaching the default handler, simply don't call
+`next`:
+
+```typescript
+yield* Stdio.around({
+  *stdout(args, _next) {
+    captured.push(args[0]);
+    // no call to next → nothing is written to process.stdout
+  },
+});
+```
+
+### Substituting stdin
+
+Because `stdin()` returns a `Stream` directly, a `stdin` middleware is
+a plain function that returns a replacement stream — useful for
+feeding a synthetic input sequence from a test:
+
+```typescript
+import { createSignal, each, main } from "effection";
+import { Stdio, stdin } from "@effectionx/node";
+
+await main(function* () {
+  const signal = createSignal<Uint8Array, void>();
+
+  yield* Stdio.around({
+    stdin(_args, _next) {
+      return signal;
+    },
+  });
+
+  // From elsewhere in your test, drive the stream:
+  //   signal.send(new TextEncoder().encode("line 1\n"));
+  //   signal.close();
+
+  for (const chunk of yield* each(stdin())) {
+    // ...handle synthesized input
+    yield* each.next();
+  }
+});
+```
 
 ## Event Utilities
 

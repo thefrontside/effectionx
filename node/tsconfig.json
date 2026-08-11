@@ -9,6 +9,9 @@
   "references": [
     {
       "path": "../vitest"
+    },
+    {
+      "path": "../context-api"
     }
   ]
 }

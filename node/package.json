@@ -1,7 +1,7 @@
 {
   "name": "@effectionx/node",
   "description": "Node.js stream and event emitter adapters for Effection",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "keywords": ["io", "streams"],
   "type": "module",
   "main": "./dist/mod.js",
@@ -25,6 +25,9 @@
       "import": "./dist/events.js",
       "default": "./dist/events.js"
     }
+  },
+  "dependencies": {
+    "@effectionx/context-api": "workspace:*"
   },
   "peerDependencies": {
     "effection": "^3 || ^4"

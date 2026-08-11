@@ -2,14 +2,13 @@ import shellwords from "shellwords-ts";
 
 import { type Operation, spawn } from "effection";
 import type {
-  CreateOSProcess,
   ExecOptions,
   ExitStatus,
   Process,
   ProcessResult,
 } from "./exec/types.ts";
-import { createPosixProcess } from "./exec/posix.ts";
-import { createWin32Process, isWin32 } from "./exec/win32.ts";
+
+import { ProcessApi } from "../api.ts";
 
 export * from "./exec/types.ts";
 export * from "./exec/error.ts";
@@ -25,13 +24,6 @@ export interface Exec extends Operation<Process> {
    */
   expect(): Operation<ProcessResult>;
 }
-
-const createProcess: CreateOSProcess = (cmd, opts) => {
-  if (isWin32()) {
-    return createWin32Process(cmd, opts);
-  }
-  return createPosixProcess(cmd, opts);
-};
 
 /**
  * Execute `command` with `options`. You should use this operation for processes
@@ -60,10 +52,10 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
 
   return {
     *[Symbol.iterator]() {
-      return yield* createProcess(cmd, opts);
+      return yield* ProcessApi.operations.exec(cmd, opts);
     },
     *join() {
-      const process = yield* createProcess(cmd, opts);
+      const process = yield* ProcessApi.operations.exec(cmd, opts);
 
       let stdout = "";
       let stderr = "";
@@ -91,7 +83,7 @@ export function exec(command: string, options: ExecOptions = {}): Exec {
       return { ...status, stdout, stderr };
     },
     *expect() {
-      const process = yield* createProcess(cmd, opts);
+      const process = yield* ProcessApi.operations.exec(cmd, opts);
 
       let stdout = "";
       let stderr = "";

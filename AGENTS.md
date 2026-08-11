@@ -65,11 +65,19 @@ When reviewing PRs:
 - Target ES2022
 - Prefer `type` imports for type-only imports
 - Use explicit return types on public functions
+- Comments must say what the code cannot. Do not narrate the next line, and do not
+  restate a rule that already lives in `.policies/`. Before keeping a comment, ask
+  why it is needed at all (see the [Code Comments policy](.policies/code-comments.md))
 
 ### Effection Patterns
 
 - Use structured concurrency (spawn, scope)
 - Resources must clean up properly on scope exit
+- **Teardown that needs `yield*` must go in `ensure()`, never in a `finally` block.**
+  When a task is halted Effection unwinds it with `iterator.return()`; if a `finally`
+  yields, the resume comes back as `iterator.next()`, which takes the frame out of
+  return-mode and the halt is lost. Synchronous cleanup in `finally` is fine.
+  See the [Async Teardown policy](.policies/async-teardown.md)
 - Prefer `Operation<T>` for async operations
 - Use `*[Symbol.iterator]` pattern for reusable stream operations (see Stateless Streams policy)
 - Avoid `sleep()` for test synchronization (see No-Sleep Test Sync policy)
@@ -103,7 +111,7 @@ Each package requires:
 - `type`: `"module"`
 - `exports`: Must include `types`, `development`, `import`, and `default` conditions
 - `peerDependencies`: Usually `effection: "^3 || ^4"`
-- `files`: Include `dist`, `mod.ts`, and source files
+- `files`: Include only published artifacts (`dist`). Exceptions: `bdd` also ships `mod.deno.ts` (the `./deno` subpath serves source directly); `inline` also ships `swc/target/wasm32-wasip1/release/swc_plugin_inline.wasm`. Workspace dev resolves source via the `development` export condition — source `.ts` files do not need to be in `files`
 
 ### Test Files
 

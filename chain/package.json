@@ -1,7 +1,7 @@
 {
   "name": "@effectionx/chain",
   "description": "Promise-like chaining with then/catch/finally for Effection operations",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "keywords": ["interop"],
   "type": "module",
   "main": "./dist/mod.js",
@@ -14,6 +14,7 @@
       "default": "./dist/mod.js"
     }
   },
+  "files": ["dist"],
   "peerDependencies": {
     "effection": "^3 || ^4"
   },

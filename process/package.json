@@ -30,6 +30,7 @@
   "sideEffects": false,
   "dependencies": {
     "@effectionx/context-api": "workspace:*",
+    "@effectionx/forceable": "workspace:*",
     "@effectionx/node": "workspace:*",
     "@effectionx/scope-eval": "workspace:*",
     "cross-spawn": "^7",

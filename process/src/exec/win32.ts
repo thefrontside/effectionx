@@ -25,6 +25,7 @@ import type {
 } from "./types.ts";
 import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
+import { ForcedTerminationError, force } from "@effectionx/forceable";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
 
 type ProcessResultValue = [number?, string?];
@@ -154,6 +155,18 @@ export function* createWin32Process(
       }
     });
 
+    // taskkill is an operation, but [force] is synchronous, so the kill runs in
+    // a task owned by this resource. Cancelling whatever policy called [force]
+    // therefore cannot cancel the kill it asked for.
+    let forced = withResolvers<string | undefined>();
+    yield* spawn(function* () {
+      let reason = yield* forced.operation;
+      if (pid) {
+        yield* killTree(pid);
+      }
+      processResult.resolve(Err(new ForcedTerminationError(reason)));
+    });
+
     yield* ensure(function* () {
       // If no pid is available, we have no way to kill the process,
       //  so we skip and presume it is cleaned up.
@@ -191,6 +204,9 @@ export function* createWin32Process(
 
     return {
       pid: pid as number,
+      [force](reason?: string) {
+        forced.resolve(reason);
+      },
       *around(
         ...args: Parameters<typeof Stdio.around>
       ): ReturnType<typeof Stdio.around> {

@@ -12,6 +12,7 @@ import {
   spawn,
   withResolvers,
 } from "effection";
+import { ForcedTerminationError, force } from "@effectionx/forceable";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
 import { once } from "@effectionx/node/events";
 import { fromReadable } from "@effectionx/node/stream";
@@ -129,6 +130,8 @@ export function* createPosixProcess(
           throw new Error("no pid for childProcess");
         }
         process.kill(-childProcess.pid, "SIGTERM");
+        // A process that traps SIGTERM, or a descendant holding the inherited
+        // stdio open, never settles this. Wrap with withForce() to bound it.
         yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
       } catch (_e) {
         // do nothing, process is probably already dead
@@ -137,6 +140,18 @@ export function* createPosixProcess(
 
     return {
       pid: pid as number,
+      [force](reason?: string) {
+        // SIGKILL cannot be trapped, and addressing the group reaches
+        // descendants that are holding the inherited stdio open.
+        try {
+          if (typeof childProcess.pid === "number") {
+            process.kill(-childProcess.pid, "SIGKILL");
+          }
+        } catch (_e) {
+          // already gone
+        }
+        processResult.resolve(Err(new ForcedTerminationError(reason)));
+      },
       *around(
         ...args: Parameters<typeof Stdio.around>
       ): ReturnType<typeof Stdio.around> {

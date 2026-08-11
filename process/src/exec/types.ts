@@ -1,3 +1,4 @@
+import type { Forceable } from "@effectionx/forceable";
 import type { Operation } from "effection";
 import type { OutputStream } from "../helpers.ts";
 import type { Api } from "@effectionx/context-api";
@@ -13,7 +14,7 @@ export interface Writable<T> {
  * The process type is what is returned by the `exec` operation. It has all of
  * standard io handles, and methods for synchronizing on return.
  */
-export interface Process extends StdIO {
+export interface Process extends StdIO, Forceable {
   /** Child process id as reported by the operating system. */
   readonly pid: number;
 

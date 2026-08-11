@@ -214,6 +214,9 @@ importers:
       '@effectionx/context-api':
         specifier: workspace:*
         version: link:../context-api
+      '@effectionx/forceable':
+        specifier: workspace:*
+        version: link:../forceable
       '@effectionx/node':
         specifier: workspace:*
         version: link:../node

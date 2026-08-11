@@ -20,6 +20,7 @@
       "default": "./dist/test-helpers.js"
     }
   },
+  "files": ["dist"],
   "peerDependencies": {
     "effection": "^3 || ^4"
   },

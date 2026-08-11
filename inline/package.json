@@ -45,6 +45,20 @@
     "build:bundle": "cargo build --manifest-path swc/Cargo.toml --target wasm32-wasip1 --release",
     "prepack": "pnpm run build:bundle"
   },
+  "effectionx": {
+    "jsr": {
+      "exports": {
+        ".": "./mod.ts",
+        "./esbuild": "./esbuild.ts"
+      },
+      "imports": {
+        "@swc/core": "npm:@swc/core@^1.15.0",
+        "@swc/core/": "npm:@swc/core@^1.15.0/",
+        "@swc/core/Visitor.js": "npm:@swc/core@^1.15.0/Visitor.js",
+        "esbuild": "npm:esbuild@^0.25.0"
+      }
+    }
+  },
   "files": [
     "dist",
     "mod.ts",

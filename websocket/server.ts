@@ -1,9 +1,11 @@
 import { on, once } from "@effectionx/node";
 import type { EventEmitterLike } from "@effectionx/node";
 import {
+  all,
   createQueue,
   createSignal,
   each,
+  ensure,
   resource,
   scoped,
   spawn,
@@ -148,24 +150,27 @@ export function useWebSocketServer<T>(
       }
     });
 
-    try {
-      // a queue is itself a subscription; expose it as a stream whose
-      // subscription is the shared connection queue
-      yield* provide({
-        *[Symbol.iterator]() {
-          return connections;
-        },
-        errors,
-      });
-    } finally {
-      // Compose a going-away shutdown: close live connections with 1001 before
-      // releasing. The first close wins, so this takes precedence over each
-      // connection's scope-exit close (1000) as its task tears down. Snapshot
-      // the set because connections delete themselves from it as they close.
-      for (let connection of [...live]) {
-        yield* connection.close(1001, "server shutting down");
-      }
+    // Registered after the spawns so that it runs before they are halted: the
+    // going-away close has to land while each connection task is still alive.
+    yield* ensure(function* () {
+      // The first close wins, so 1001 takes precedence over the 1000 each
+      // connection sends as its own scope exits. Snapshot the set, because
+      // connections remove themselves from it as they close. Closing
+      // concurrently keeps a silent peer from serializing the whole shutdown
+      // into one close timeout apiece.
+      yield* all(
+        [...live].map((connection) =>
+          connection.close(1001, "server shutting down"),
+        ),
+      );
       server.close();
-    }
+    });
+
+    yield* provide({
+      *[Symbol.iterator]() {
+        return connections;
+      },
+      errors,
+    });
   });
 }

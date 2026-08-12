@@ -1,33 +1,11 @@
 import { platform } from "node:os";
 import { once } from "@effectionx/node/events";
-import { fromReadable } from "@effectionx/node/stream";
 // @ts-types="npm:@types/cross-spawn@6.0.6"
 import { spawn as spawnProcess } from "cross-spawn";
 import { ctrlc } from "ctrlc-windows";
-import {
-  type Operation,
-  type Result,
-  type Yielded,
-  Err,
-  Ok,
-  all,
-  createSignal,
-  ensure,
-  spawn,
-  withResolvers,
-} from "effection";
-import type {
-  CreateOSProcess,
-  ExecOptions,
-  ExitStatus,
-  Process,
-  Writable,
-} from "./types.ts";
-import { Stdio } from "../api.ts";
-import { ExecError } from "./error.ts";
-import { unbox, useEvalScope } from "@effectionx/scope-eval";
-
-type ProcessResultValue = [number?, string?];
+import type { Operation } from "effection";
+import type { ExecOptions, Process } from "./types.ts";
+import { type SpawnStrategy, createNativeProcess } from "./native.ts";
 
 function* killTree(pid: number) {
   try {
@@ -42,15 +20,10 @@ function* killTree(pid: number) {
   }
 }
 
-export function* createWin32Process(
-  command: string,
-  options: ExecOptions,
-): Operation<Process> {
-  let processResult = withResolvers<Result<ProcessResultValue>>();
-  const evalScope = yield* useEvalScope();
-  const result = yield* evalScope.eval(function* () {
+const win32: SpawnStrategy = {
+  spawn(command: string, options: ExecOptions) {
     // Windows-specific process spawning with different options than POSIX
-    let childProcess = spawnProcess(command, options.arguments || [], {
+    const child = spawnProcess(command, options.arguments || [], {
       // We lose exit information and events if this is detached in windows
       // and it opens a window in windows+powershell.
       detached: false,
@@ -70,102 +43,32 @@ export function* createWin32Process(
       cwd: options.cwd,
     });
 
-    let { pid } = childProcess;
-
-    if (!childProcess.stdout || !childProcess.stderr) {
-      throw new Error("stdout and stderr must be available with stdio: pipe");
-    }
-
-    let io = {
-      stdout: yield* fromReadable(childProcess.stdout),
-      stderr: yield* fromReadable(childProcess.stderr),
-      stdoutDone: withResolvers<void>(),
-      stderrDone: withResolvers<void>(),
-    };
-
-    const stdout = createSignal<Uint8Array, void>();
-    const stderr = createSignal<Uint8Array, void>();
-
-    yield* spawn(function* () {
-      let next = yield* io.stdout.next();
-      while (!next.done) {
-        yield* Stdio.operations.stdout(next.value);
-        stdout.send(next.value);
-        next = yield* io.stdout.next();
-      }
-      stdout.close();
-      io.stdoutDone.resolve();
-    });
-
-    yield* spawn(function* () {
-      let next = yield* io.stderr.next();
-      while (!next.done) {
-        yield* Stdio.operations.stderr(next.value);
-        stderr.send(next.value);
-        next = yield* io.stderr.next();
-      }
-      stderr.close();
-      io.stderrDone.resolve();
-    });
-
-    let stdin: Writable<string> = {
-      send(data: string) {
-        childProcess.stdin.write(data);
-      },
-    };
-
-    yield* spawn(function* trapError() {
-      const [error] = yield* once<Error[]>(childProcess, "error");
-      processResult.resolve(Err(error));
-    });
-
-    yield* spawn(function* () {
-      let value = yield* once<ProcessResultValue>(childProcess, "close");
-      // out of band with the finally block below compared to posix as
-      // win32 is more sensitive to graceful shutdown timing that it is
-      // worth waiting for stdout and stderr to close before resolving the process result
-      yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
-      processResult.resolve(Ok(value));
-    });
-
-    function* join() {
-      let result = yield* processResult.operation;
-      if (result.ok) {
-        let [code, signal] = result.value;
-        return { command, options, code, signal } as ExitStatus;
-      }
-      throw result.error;
-    }
-
-    function* expect() {
-      let status = yield* join();
-      if (status.code !== 0) {
-        throw new ExecError(status, command, options);
-      }
-      return status;
-    }
-
     // Suppress EPIPE errors on stdin - these occur on Windows when the child
     // process exits before we finish writing to it. This is expected during
     // cleanup when we're killing the process.
-    childProcess.stdin.on("error", (err: Error & { code?: string }) => {
+    child.stdin?.on("error", (err: Error & { code?: string }) => {
       if (err.code !== "EPIPE") {
         throw err;
       }
     });
 
-    yield* ensure(function* () {
-      // If no pid is available, we have no way to kill the process,
-      //  so we skip and presume it is cleaned up.
-      if (pid) {
-        try {
-          ctrlc(pid);
-        } catch (_) {
-          // if it throws, the process probably doesn't exist anymore
-          //  as it does a process.kill(0) check which will throw if the process is not found
-        }
+    return child;
+  },
 
-        let stdin = childProcess.stdin;
+  *shutdown(child, drained) {
+    // If no pid is available, we have no way to kill the process,
+    //  so we skip and presume it is cleaned up.
+    const pid = child.pid;
+    if (pid) {
+      try {
+        ctrlc(pid);
+      } catch (_) {
+        // if it throws, the process probably doesn't exist anymore
+        //  as it does a process.kill(0) check which will throw if the process is not found
+      }
+
+      const stdin = child.stdin;
+      if (stdin) {
         if (stdin.writable) {
           try {
             //Terminate batch process (Y/N)
@@ -176,35 +79,26 @@ export function* createWin32Process(
         }
         stdin.end();
       }
+    }
 
-      // depending on how we shutdown, this may already be closed and
-      // will pass immediately over the operations
-      yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
+    // depending on how we shutdown, this may already be closed and
+    // will pass immediately over the operations
+    yield* drained();
 
-      if (pid && childProcess.exitCode === null) {
-        // If the process is still around after we've waited
-        // for stdout and stderr to close,
-        // then force kill the tree.
-        yield* killTree(pid);
-      }
-    });
+    if (pid && child.exitCode === null) {
+      // If the process is still around after we've waited
+      // for stdout and stderr to close,
+      // then force kill the tree.
+      yield* killTree(pid);
+    }
+  },
+};
 
-    return {
-      pid: pid as number,
-      *around(
-        ...args: Parameters<typeof Stdio.around>
-      ): ReturnType<typeof Stdio.around> {
-        const result = yield* evalScope.eval(() => Stdio.around(...args));
-        return unbox(result);
-      },
-      stdin,
-      stdout,
-      stderr,
-      join,
-      expect,
-    } satisfies Yielded<ReturnType<CreateOSProcess>>;
-  });
-  return unbox(result);
+export function* createWin32Process(
+  command: string,
+  options: ExecOptions,
+): Operation<Process> {
+  return yield* createNativeProcess(command, options, win32);
 }
 
 export const isWin32 = (): boolean => platform() === "win32";

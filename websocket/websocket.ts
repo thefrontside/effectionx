@@ -50,7 +50,13 @@ export interface WebSocketResource<T>
    * released lets you choose the close code the peer observes; the automatic
    * scope-exit close then becomes a no-op.
    *
-   * @param code - a valid WebSocket close code (default `1000`)
+   * The code is handed to the underlying socket unchanged, so which codes are
+   * legal depends on the implementation. The WHATWG API accepts only `1000` and
+   * `3000`–`4999`, throwing `InvalidAccessError` for anything else, while a
+   * `ws` socket accepts the full RFC 6455 range — `1001` ("going away")
+   * included.
+   *
+   * @param code - a close code the underlying socket accepts (default `1000`)
    * @param reason - a close reason string (default `"released"`)
    */
   close(code?: number, reason?: string): Operation<void>;

@@ -121,6 +121,27 @@ the resource passes out of scope, with close code `1001` ("going away"). The
 server's second argument configures the close-handshake timeout for every
 accepted connection.
 
+### Observing connection failures
+
+The two kinds of failure are reported differently. An error on the server itself
+crashes the resource's scope, reaching your error boundary like any other
+failure. An error on a single connection is isolated so it cannot take the server
+down, and is published on `server.errors` instead — spawn a task to watch that
+stream if you want to see them:
+
+```typescript
+yield* spawn(function* () {
+  for (let error of yield* each(connections.errors)) {
+    // a socket failure throws the DOM `error` event, which is not an `Error`;
+    // effection 4.1+ boxes it and keeps the original on `cause`
+    console.error("connection failed:", (error as Error)?.cause ?? error);
+    yield* each.next();
+  }
+});
+```
+
+`errors` is lossy: failures raised while nobody is subscribed are not buffered.
+
 ## Advanced Usage
 
 ### Custom WebSocket Implementations

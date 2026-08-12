@@ -9,6 +9,7 @@ import {
   resource,
   scoped,
   spawn,
+  withResolvers,
 } from "effection";
 import type { Operation, Stream, Subscription } from "effection";
 
@@ -29,6 +30,10 @@ import {
  * concrete server implementation and stays platform-agnostic. A `ws`
  * `WebSocketServer` satisfies it structurally, so it can be passed directly
  * with no cast.
+ *
+ * Shutdown closes accepted sockets with `1001` ("going away"), which the full
+ * RFC 6455 range allows but the WHATWG API does not, so an implementation whose
+ * accepted sockets enforce the browser restriction needs a different code.
  */
 export interface WebSocketServerLike extends EventEmitterLike {
   close(callback?: () => void): void;
@@ -176,7 +181,11 @@ export function useWebSocketServer<T>(
           connection.close(1001, "server shutting down"),
         ),
       );
-      server.close();
+      // Wait for the listening socket to be released, so a resource that binds
+      // the same port after this one cannot lose the race with EADDRINUSE.
+      let closed = withResolvers<void>();
+      server.close(() => closed.resolve());
+      yield* closed.operation;
     });
 
     // A queue is already a subscription, so it is the handle itself.

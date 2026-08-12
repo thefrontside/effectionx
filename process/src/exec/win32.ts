@@ -7,8 +7,6 @@ import {
   type Operation,
   type Result,
   type Yielded,
-  Err,
-  Ok,
   all,
   createSignal,
   ensure,
@@ -24,9 +22,8 @@ import type {
 } from "./types.ts";
 import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
+import { type ProcessResultValue, useNativeProcess } from "./native.ts";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
-
-type ProcessResultValue = [number?, string?];
 
 function* killTree(pid: number) {
   try {
@@ -45,59 +42,35 @@ export function* createWin32Process(
   command: string,
   options: ExecOptions,
 ): Operation<Process> {
-  let processResult = withResolvers<Result<ProcessResultValue>>();
   const evalScope = yield* useEvalScope();
   const result = yield* evalScope.eval(function* () {
     // Windows-specific process spawning with different options than POSIX
-    let childProcess = spawnProcess(command, options.arguments || [], {
-      // We lose exit information and events if this is detached in windows
-      // and it opens a window in windows+powershell.
-      detached: false,
-      // The `shell` option is passed to `cross-spawn` to control whether a shell is used.
-      // On Windows, `shell: true` is necessary to run command strings, as it uses
-      // `cmd.exe` to parse the command and find executables in the PATH.
-      // Using a boolean `true` was previously disabled, causing ENOENT errors for
-      // commands that were not a direct path to an executable.
-      shell: options.shell || false,
-      // With stdio as pipe, windows gets stuck where neither the child nor the
-      // parent wants to close the stream, so we call it ourselves in the exit event.
-      stdio: "pipe",
-      // Hide the child window so that killing it will not block the parent
-      // with a Terminate Batch Process (Y/n)
-      windowsHide: true,
-      env: options.env,
-      cwd: options.cwd,
-    });
+    const os = yield* useNativeProcess(() =>
+      spawnProcess(command, options.arguments || [], {
+        // We lose exit information and events if this is detached in windows
+        // and it opens a window in windows+powershell.
+        detached: false,
+        // The `shell` option is passed to `cross-spawn` to control whether a shell is used.
+        // On Windows, `shell: true` is necessary to run command strings, as it uses
+        // `cmd.exe` to parse the command and find executables in the PATH.
+        // Using a boolean `true` was previously disabled, causing ENOENT errors for
+        // commands that were not a direct path to an executable.
+        shell: options.shell || false,
+        // With stdio as pipe, windows gets stuck where neither the child nor the
+        // parent wants to close the stream, so we call it ourselves in the exit event.
+        stdio: "pipe",
+        // Hide the child window so that killing it will not block the parent
+        // with a Terminate Batch Process (Y/n)
+        windowsHide: true,
+        env: options.env,
+        cwd: options.cwd,
+      }),
+    );
 
+    let { childProcess } = os;
     let { pid } = childProcess;
 
-    if (!childProcess.stdout || !childProcess.stderr) {
-      throw new Error("stdout and stderr must be available with stdio: pipe");
-    }
-
-    // Native listeners attached in the same synchronous continuation as the
-    // spawn: process events and stdio chunks cannot be missed, and no
-    // readable pumps are needed.
-    let rawClose = withResolvers<ProcessResultValue>();
-    childProcess.once("error", (error) => {
-      processResult.resolve(Err(error));
-    });
-    childProcess.once("close", (code, signal) => {
-      rawClose.resolve([code ?? undefined, signal ?? undefined]);
-    });
-
-    let raw = {
-      stdout: createSignal<Uint8Array, void>(),
-      stderr: createSignal<Uint8Array, void>(),
-    };
-    childProcess.stdout.on("data", (chunk: Uint8Array) =>
-      raw.stdout.send(chunk),
-    );
-    childProcess.stdout.once("close", () => raw.stdout.close());
-    childProcess.stderr.on("data", (chunk: Uint8Array) =>
-      raw.stderr.send(chunk),
-    );
-    childProcess.stderr.once("close", () => raw.stderr.close());
+    let processResult = withResolvers<Result<ProcessResultValue>>();
 
     let io = {
       stdoutDone: withResolvers<void>(),
@@ -108,7 +81,7 @@ export function* createWin32Process(
     const stderr = createSignal<Uint8Array, void>();
 
     yield* spawn(function* () {
-      let subscription = yield* raw.stdout;
+      let subscription = yield* os.stdout;
       let next = yield* subscription.next();
       while (!next.done) {
         yield* Stdio.operations.stdout(next.value);
@@ -120,7 +93,7 @@ export function* createWin32Process(
     });
 
     yield* spawn(function* () {
-      let subscription = yield* raw.stderr;
+      let subscription = yield* os.stderr;
       let next = yield* subscription.next();
       while (!next.done) {
         yield* Stdio.operations.stderr(next.value);
@@ -133,17 +106,17 @@ export function* createWin32Process(
 
     let stdin: Writable<string> = {
       send(data: string) {
-        childProcess.stdin.write(data);
+        childProcess.stdin?.write(data);
       },
     };
 
     yield* spawn(function* () {
-      let value = yield* rawClose.operation;
+      let value = yield* os.result;
       // out of band with the finally block below compared to posix as
       // win32 is more sensitive to graceful shutdown timing that it is
       // worth waiting for stdout and stderr to close before resolving the process result
       yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
-      processResult.resolve(Ok(value));
+      processResult.resolve(value);
     });
 
     function* join() {
@@ -166,7 +139,7 @@ export function* createWin32Process(
     // Suppress EPIPE errors on stdin - these occur on Windows when the child
     // process exits before we finish writing to it. This is expected during
     // cleanup when we're killing the process.
-    childProcess.stdin.on("error", (err: Error & { code?: string }) => {
+    childProcess.stdin?.on("error", (err: Error & { code?: string }) => {
       if (err.code !== "EPIPE") {
         throw err;
       }
@@ -184,15 +157,17 @@ export function* createWin32Process(
         }
 
         let stdin = childProcess.stdin;
-        if (stdin.writable) {
-          try {
-            //Terminate batch process (Y/N)
-            stdin.write("Y\n");
-          } catch (_err) {
-            /* not much we can do here */
+        if (stdin) {
+          if (stdin.writable) {
+            try {
+              //Terminate batch process (Y/N)
+              stdin.write("Y\n");
+            } catch (_err) {
+              /* not much we can do here */
+            }
           }
+          stdin.end();
         }
-        stdin.end();
       }
 
       // depending on how we shutdown, this may already be closed and

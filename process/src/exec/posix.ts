@@ -1,11 +1,8 @@
 import { spawn as spawnProcess } from "node:child_process";
 import process from "node:process";
 import {
-  type Result,
   type Operation,
   type Yielded,
-  Err,
-  Ok,
   all,
   createSignal,
   ensure,
@@ -22,14 +19,12 @@ import type {
 } from "./types.ts";
 import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
-
-type ProcessResultValue = [number?, string?];
+import { useNativeProcess } from "./native.ts";
 
 export function* createPosixProcess(
   command: string,
   options: ExecOptions,
 ): Operation<Process> {
-  let processResult = withResolvers<Result<ProcessResultValue>>();
   const evalScope = yield* useEvalScope();
   const result = yield* evalScope.eval(function* () {
     // Killing all child processes started by this command is surprisingly
@@ -42,42 +37,18 @@ export function* createPosixProcess(
     // process.
     //
     // More information here: https://unix.stackexchange.com/questions/14815/process-descendants
-    let childProcess = spawnProcess(command, options.arguments || [], {
-      detached: true,
-      shell: options.shell,
-      env: options.env,
-      cwd: options.cwd,
-      stdio: "pipe",
-    });
+    const os = yield* useNativeProcess(() =>
+      spawnProcess(command, options.arguments || [], {
+        detached: true,
+        shell: options.shell,
+        env: options.env,
+        cwd: options.cwd,
+        stdio: "pipe",
+      }),
+    );
 
+    let { childProcess } = os;
     let { pid } = childProcess;
-
-    if (!childProcess.stdout || !childProcess.stderr) {
-      throw new Error("stdout and stderr must be available with stdio: pipe");
-    }
-
-    // Native listeners attached in the same synchronous continuation as the
-    // spawn: process events and stdio chunks cannot be missed, and no
-    // readable pumps are needed.
-    childProcess.once("error", (error) => {
-      processResult.resolve(Err(error));
-    });
-    childProcess.once("close", (code, signal) => {
-      processResult.resolve(Ok([code ?? undefined, signal ?? undefined]));
-    });
-
-    let raw = {
-      stdout: createSignal<Uint8Array, void>(),
-      stderr: createSignal<Uint8Array, void>(),
-    };
-    childProcess.stdout.on("data", (chunk: Uint8Array) =>
-      raw.stdout.send(chunk),
-    );
-    childProcess.stdout.once("close", () => raw.stdout.close());
-    childProcess.stderr.on("data", (chunk: Uint8Array) =>
-      raw.stderr.send(chunk),
-    );
-    childProcess.stderr.once("close", () => raw.stderr.close());
 
     let io = {
       stdoutDone: withResolvers<void>(),
@@ -88,7 +59,7 @@ export function* createPosixProcess(
     let stderr = createSignal<Uint8Array, void>();
 
     yield* spawn(function* () {
-      let subscription = yield* raw.stdout;
+      let subscription = yield* os.stdout;
       let next = yield* subscription.next();
       while (!next.done) {
         yield* Stdio.operations.stdout(next.value);
@@ -100,7 +71,7 @@ export function* createPosixProcess(
     });
 
     yield* spawn(function* () {
-      let subscription = yield* raw.stderr;
+      let subscription = yield* os.stderr;
       let next = yield* subscription.next();
       while (!next.done) {
         yield* Stdio.operations.stderr(next.value);
@@ -113,12 +84,12 @@ export function* createPosixProcess(
 
     let stdin: Writable<string> = {
       send(data: string) {
-        childProcess.stdin.write(data);
+        childProcess.stdin?.write(data);
       },
     };
 
     function* join() {
-      let result = yield* processResult.operation;
+      let result = yield* os.result;
       if (result.ok) {
         let [code, signal] = result.value;
         return { command, options, code, signal } as ExitStatus;

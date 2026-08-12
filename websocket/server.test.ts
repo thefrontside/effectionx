@@ -1,5 +1,7 @@
+import { EventEmitter } from "node:events";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
+import { timebox } from "@effectionx/timebox";
 import { describe, it } from "@effectionx/vitest";
 import {
   type Operation,
@@ -7,6 +9,8 @@ import {
   createQueue,
   ensure,
   resource,
+  scoped,
+  sleep,
   spawn,
   suspend,
   withResolvers,
@@ -14,7 +18,11 @@ import {
 import { expect } from "expect";
 import { WebSocketServer, type WebSocket as WsWebSocket } from "ws";
 
-import { type WebSocketServerResource, useWebSocketServer } from "./server.ts";
+import {
+  type WebSocketServerLike,
+  type WebSocketServerResource,
+  useWebSocketServer,
+} from "./server.ts";
 import { type WebSocketResource, useWebSocket } from "./websocket.ts";
 
 describe("WebSocketServer", () => {
@@ -89,6 +97,98 @@ describe("WebSocketServer", () => {
     expect(event.wasClean).toEqual(true);
     expect(event.code).toEqual(1001);
     expect(event.reason).toEqual("server shutting down");
+  });
+
+  it("closes every live connection when the server is torn down", function* () {
+    let { httpServer, port } = yield* useHttp();
+    let accepted = createQueue<void, never>();
+
+    let serverTask = yield* spawn(function* () {
+      let server = yield* useWebSocketServer<string>(
+        () => new WebSocketServer({ server: httpServer }),
+      );
+      yield* server.next();
+      yield* server.next();
+      accepted.add();
+      yield* suspend();
+    });
+
+    let clients = [yield* connect(port), yield* connect(port)];
+    let inboxes = [yield* clients[0], yield* clients[1]];
+
+    // both connections are established, so both belong to the live roster
+    yield* accepted.next();
+    yield* serverTask.halt();
+
+    for (let inbox of inboxes) {
+      let event = yield* drain(inbox);
+      expect(event.code).toEqual(1001);
+      expect(event.reason).toEqual("server shutting down");
+      expect(event.wasClean).toEqual(true);
+    }
+  });
+
+  it("does not complete teardown until the server has finished closing", function* () {
+    // this server never invokes its close callback until released, standing in
+    // for one with connections still winding down
+    let server = makeFakeServer({ deferClose: true });
+    let finished = createQueue<void, never>();
+
+    yield* spawn(function* () {
+      yield* scoped(function* () {
+        yield* useWebSocketServer<string>(() => server);
+      });
+      finished.add();
+    });
+
+    // the scope body is done, so teardown has asked the server to close
+    yield* sleep(0);
+    expect(server.closeCalls).toEqual(1);
+
+    // ...but teardown is still pending, because the callback has not fired
+    let early = yield* timebox(100, () => finished.next());
+    expect(early.timeout).toEqual(true);
+
+    server.releaseClose();
+
+    let late = yield* timebox(1_000, () => finished.next());
+    expect(late.timeout).toEqual(false);
+  });
+
+  it("bounds teardown when peers never answer the close handshake", function* () {
+    let server = makeFakeServer();
+    let sockets = [makeSilentSocket(), makeSilentSocket(), makeSilentSocket()];
+
+    let outcome = yield* timebox(2_000, () =>
+      scoped(function* () {
+        let connections = yield* useWebSocketServer<string>(() => server, {
+          closeTimeout: 10,
+        });
+        // emit once the accept loop is subscribed, which a real server's I/O
+        // guarantees but a hand-driven emitter does not
+        yield* spawn(function* () {
+          yield* sleep(0);
+          for (let socket of sockets) {
+            server.emit("connection", socket);
+          }
+        });
+        for (let _ of sockets) {
+          yield* connections.next();
+        }
+      }),
+    );
+
+    // leaving the scope closed all three without waiting on a reply that never
+    // comes, rather than hanging on the first silent peer
+    expect(outcome.timeout).toEqual(false);
+    expect(sockets.map((socket) => socket.closeCalls)).toEqual([1, 1, 1]);
+    // the going-away close won, so the scope-exit 1000 was a no-op
+    expect(sockets.map((socket) => socket.codes)).toEqual([
+      [1001],
+      [1001],
+      [1001],
+    ]);
+    expect(server.closeCalls).toEqual(1);
   });
 
   it("closes a connection with an explicit code and reason", function* () {
@@ -220,6 +320,60 @@ function useHttp(): Operation<{
 
     yield* provide({ httpServer, port });
   });
+}
+
+/**
+ * A server we drive by hand, so a test can hand {@link useWebSocketServer}
+ * sockets that a real peer would never produce.
+ */
+function makeFakeServer({ deferClose = false }: { deferClose?: boolean } = {}) {
+  let pending: (() => void) | undefined;
+  return Object.assign(new EventEmitter(), {
+    closeCalls: 0,
+    close(callback?: () => void) {
+      this.closeCalls += 1;
+      if (deferClose) {
+        pending = callback;
+      } else {
+        callback?.();
+      }
+    },
+    /** Fire a close callback that `deferClose` withheld. */
+    releaseClose() {
+      pending?.();
+    },
+  }) as unknown as EventEmitter &
+    WebSocketServerLike & { closeCalls: number; releaseClose(): void };
+}
+
+/**
+ * An accepted socket that is already open and never emits `open`, `close`, or
+ * `error` — a peer that takes a close frame and never answers it. `close()`
+ * only takes effect while the socket is open, like a real one, so a second
+ * close is the no-op the "first close wins" rule depends on.
+ */
+function makeSilentSocket() {
+  return {
+    readyState: WebSocket.OPEN as number,
+    binaryType: "blob" as BinaryType,
+    bufferedAmount: 0,
+    extensions: "",
+    protocol: "",
+    url: "ws://silent.test",
+    closeCalls: 0,
+    codes: [] as number[],
+    addEventListener() {},
+    removeEventListener() {},
+    send() {},
+    close(code?: number) {
+      if (this.readyState !== WebSocket.OPEN) {
+        return;
+      }
+      this.readyState = WebSocket.CLOSING;
+      this.closeCalls += 1;
+      this.codes.push(code ?? 1000);
+    },
+  };
 }
 
 /**

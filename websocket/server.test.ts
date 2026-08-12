@@ -138,11 +138,9 @@ describe("WebSocketServer", () => {
     let raw = (yield* rawSockets.next()).value;
     raw.emit("error", new Error("boom"));
 
-    // the failure is surfaced on the errors stream, not thrown at the server.
-    // A socket failure surfaces as the DOM `error` event, whose message is the
-    // underlying error's message.
+    // the failure is surfaced on the errors stream, not thrown at the server
     let { value: error } = yield* serverErrors.next();
-    expect((error as ErrorEvent).message).toContain("boom");
+    expect(socketErrorEvent(error).message).toContain("boom");
 
     // and the server survives, serving a fresh client
     let client = yield* connect(port);
@@ -222,6 +220,18 @@ function useHttp(): Operation<{
 
     yield* provide({ httpServer, port });
   });
+}
+
+/**
+ * A socket failure throws the DOM `error` event, which is not an `Error`.
+ * Effection 4.1 and later box such a value in a `ThrownValueError` that keeps
+ * the original on `cause`, while earlier versions publish the event itself, and
+ * this package supports both.
+ */
+function socketErrorEvent(error: unknown): ErrorEvent {
+  return (
+    error instanceof Error && error.cause ? error.cause : error
+  ) as ErrorEvent;
 }
 
 function* connect(port: number): Operation<WebSocketResource<string>> {

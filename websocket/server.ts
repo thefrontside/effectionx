@@ -54,11 +54,16 @@ export interface WebSocketServerResource<T>
   extends Subscription<WebSocketResource<T>, never> {
   /**
    * A stream of errors raised by individual connections. A failing connection
-   * is isolated — it does not crash the server — and whatever it threw (for a
-   * socket failure, the DOM `error` event) is published here so you can observe
-   * per-connection failures by consuming this stream (rather than via a
-   * callback). It is lossy: errors emitted while nobody is subscribed are not
-   * buffered.
+   * is isolated — it does not crash the server — and whatever it threw is
+   * published here, so per-connection failures are observed by consuming this
+   * stream rather than through a callback. It is lossy: errors emitted while
+   * nobody is subscribed are not buffered.
+   *
+   * A socket failure throws the DOM `error` event, which is not an `Error`.
+   * Effection 4.1 and later box a thrown non-`Error` in a `ThrownValueError`
+   * whose `message` is the useless `String(event)` but whose `cause` is the
+   * event itself; earlier versions publish the event directly. Read `cause`
+   * first and fall back to the value.
    */
   errors: Stream<unknown, never>;
 }

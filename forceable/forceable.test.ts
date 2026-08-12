@@ -10,7 +10,17 @@ import {
 } from "effection";
 import { expect } from "expect";
 
-import { type Forceable, force, withForce } from "./forceable.ts";
+import {
+  ForcedTerminationError,
+  type Forceable,
+  force,
+  withForce,
+} from "./forceable.ts";
+
+interface Stubborn extends Forceable {
+  /** the error the resource settled with, readable after the scope is gone */
+  outcome(): Error | undefined;
+}
 
 /**
  * A resource that will not finish its graceful teardown unless something tells
@@ -19,33 +29,41 @@ import { type Forceable, force, withForce } from "./forceable.ts";
  */
 function useStubborn(
   log: string[],
-  onTeardown: (closeGracefully: () => void) => void = () => {},
-): Operation<Forceable> {
-  return resource(function* (provide) {
-    let settled = withResolvers<void>();
-    let done = false;
+  onTeardown: (
+    closeGracefully: () => void,
+  ) => Operation<void> = function* () {},
+): Operation<Stubborn> {
+  let settled = withResolvers<void>();
+  let done = false;
+  let failure: Error | undefined;
 
-    const finish = (how: string) => {
+  return resource(function* (provide) {
+    const finish = (how: string, error?: Error) => {
       if (!done) {
         done = true;
+        failure = error;
         log.push(how);
         settled.resolve();
       }
     };
 
     yield* ensure(function* () {
-      onTeardown(() => finish("closed gracefully"));
+      yield* onTeardown(() => finish("closed gracefully"));
       yield* settled.operation;
     });
 
     yield* provide({
-      [force]: (reason?: string) => finish(`forced: ${reason}`),
+      [force]: (reason?: string) =>
+        finish(`forced: ${reason}`, new ForcedTerminationError(reason)),
+      outcome: () => failure,
     });
   });
 }
 
 /** Closes as soon as teardown begins, so the graceful path always wins. */
-const cooperative = (closeGracefully: () => void) => closeGracefully();
+function* cooperative(closeGracefully: () => void): Operation<void> {
+  closeGracefully();
+}
 
 describe("withForce", () => {
   it("lets graceful teardown finish when the resource cooperates", function* () {
@@ -63,27 +81,41 @@ describe("withForce", () => {
 
   it("cuts graceful teardown short when the policy forces", function* () {
     let log: string[] = [];
+    let stubborn: Stubborn | undefined;
 
     yield* scoped(function* () {
       // No onTeardown, so this resource never closes on its own.
-      yield* withForce(useStubborn(log), function* (force) {
+      stubborn = yield* withForce(useStubborn(log), function* (force) {
         force("deadline expired");
       });
     });
 
     expect(log).toEqual(["forced: deadline expired"]);
+    // The resource settled as a failure rather than a clean finish.
+    expect(stubborn?.outcome()).toBeInstanceOf(ForcedTerminationError);
+    expect(stubborn?.outcome()?.message).toEqual("deadline expired");
   });
 
   it("cancels the policy so it cannot force after a graceful teardown", function* () {
     let log: string[] = [];
     let policyResumed = false;
+    let policyReady = withResolvers<void>();
 
     yield* scoped(function* () {
-      yield* withForce(useStubborn(log, cooperative), function* (force) {
-        yield* suspend();
-        policyResumed = true;
-        force("should never happen");
-      });
+      yield* withForce(
+        // Hold the graceful close until the policy is actually suspended.
+        // Closing sooner would let this pass without cancelling anything.
+        useStubborn(log, function* (closeGracefully) {
+          yield* policyReady.operation;
+          closeGracefully();
+        }),
+        function* (force) {
+          policyReady.resolve();
+          yield* suspend();
+          policyResumed = true;
+          force("should never happen");
+        },
+      );
     });
 
     expect(log).toEqual(["closed gracefully"]);
@@ -95,9 +127,10 @@ describe("withForce", () => {
     let acquired = withResolvers<void>();
     let forced = false;
     let halted: Error | undefined;
+    let stubborn: Stubborn | undefined;
 
     let task = yield* spawn(function* () {
-      yield* withForce(useStubborn(log), function* (force) {
+      stubborn = yield* withForce(useStubborn(log), function* (force) {
         forced = true;
         force("deadline expired");
       });
@@ -113,9 +146,9 @@ describe("withForce", () => {
       halted = error as Error;
     }
 
-    // Forcing happened, and the halt still completed without an error.
+    // The resource failed, and the halt that caused it still completed cleanly.
     expect(forced).toEqual(true);
-    expect(log).toEqual(["forced: deadline expired"]);
+    expect(stubborn?.outcome()).toBeInstanceOf(ForcedTerminationError);
     expect(halted).toBeUndefined();
   });
 

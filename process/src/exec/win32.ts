@@ -48,6 +48,14 @@ export function* createWin32Process(
   options: ExecOptions,
 ): Operation<Process> {
   let processResult = withResolvers<Result<ProcessResultValue>>();
+  // Tracked so that [force] cannot kill a pid the OS may already have reused.
+  let settled = false;
+  const settle = (result: Result<ProcessResultValue>) => {
+    if (!settled) {
+      settled = true;
+      processResult.resolve(result);
+    }
+  };
   const evalScope = yield* useEvalScope();
   const result = yield* evalScope.eval(function* () {
     // Windows-specific process spawning with different options than POSIX
@@ -117,7 +125,7 @@ export function* createWin32Process(
 
     yield* spawn(function* trapError() {
       const [error] = yield* once<Error[]>(childProcess, "error");
-      processResult.resolve(Err(error));
+      settle(Err(error));
     });
 
     yield* spawn(function* () {
@@ -126,7 +134,7 @@ export function* createWin32Process(
       // win32 is more sensitive to graceful shutdown timing that it is
       // worth waiting for stdout and stderr to close before resolving the process result
       yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
-      processResult.resolve(Ok(value));
+      settle(Ok(value));
     });
 
     function* join() {
@@ -161,10 +169,13 @@ export function* createWin32Process(
     let forced = withResolvers<string | undefined>();
     yield* spawn(function* () {
       let reason = yield* forced.operation;
+      if (settled) {
+        return;
+      }
       if (pid) {
         yield* killTree(pid);
       }
-      processResult.resolve(Err(new ForcedTerminationError(reason)));
+      settle(Err(new ForcedTerminationError(reason)));
     });
 
     yield* ensure(function* () {
@@ -205,6 +216,10 @@ export function* createWin32Process(
     return {
       pid: pid as number,
       [force](reason?: string) {
+        // Forcing a resource that already finished must do nothing.
+        if (settled) {
+          return;
+        }
         forced.resolve(reason);
       },
       *around(

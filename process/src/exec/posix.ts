@@ -33,6 +33,14 @@ export function* createPosixProcess(
   options: ExecOptions,
 ): Operation<Process> {
   let processResult = withResolvers<Result<ProcessResultValue>>();
+  // Tracked so that [force] cannot signal a pid the OS may already have reused.
+  let settled = false;
+  const settle = (result: Result<ProcessResultValue>) => {
+    if (!settled) {
+      settled = true;
+      processResult.resolve(result);
+    }
+  };
   const evalScope = yield* useEvalScope();
   const result = yield* evalScope.eval(function* () {
     // Killing all child processes started by this command is surprisingly
@@ -99,12 +107,12 @@ export function* createPosixProcess(
 
     yield* spawn(function* trapError() {
       let [error] = yield* once<[Error]>(childProcess, "error");
-      processResult.resolve(Err(error));
+      settle(Err(error));
     });
 
     yield* spawn(function* () {
       let value = yield* once<ProcessResultValue>(childProcess, "close");
-      processResult.resolve(Ok(value));
+      settle(Ok(value));
     });
 
     function* join() {
@@ -141,6 +149,12 @@ export function* createPosixProcess(
     return {
       pid: pid as number,
       [force](reason?: string) {
+        // Forcing a resource that already finished must do nothing. Signalling
+        // anyway would address a process group id the OS is free to have
+        // reused, killing something unrelated.
+        if (settled) {
+          return;
+        }
         // SIGKILL cannot be trapped, and addressing the group reaches
         // descendants that are holding the inherited stdio open.
         try {
@@ -150,7 +164,7 @@ export function* createPosixProcess(
         } catch (_e) {
           // already gone
         }
-        processResult.resolve(Err(new ForcedTerminationError(reason)));
+        settle(Err(new ForcedTerminationError(reason)));
       },
       *around(
         ...args: Parameters<typeof Stdio.around>

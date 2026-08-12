@@ -38,8 +38,9 @@
     "shellwords-ts": "^3.0.1"
   },
   "devDependencies": {
-    "@effectionx/vitest": "workspace:*",
+    "@effectionx/converge": "workspace:*",
     "@effectionx/stream-helpers": "workspace:*",
+    "@effectionx/vitest": "workspace:*",
     "@types/cross-spawn": "^6",
     "effection": "^4"
   }

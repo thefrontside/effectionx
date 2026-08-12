@@ -233,6 +233,9 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1
     devDependencies:
+      '@effectionx/converge':
+        specifier: workspace:*
+        version: link:../converge
       '@effectionx/stream-helpers':
         specifier: workspace:*
         version: link:../stream-helpers

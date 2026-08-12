@@ -25,6 +25,7 @@ import type {
 } from "./types.ts";
 import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
+import { CloseEvent } from "./internal.ts";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
 
 type ProcessResultValue = [number?, string?];
@@ -87,25 +88,37 @@ export function* createWin32Process(
     const stderr = createSignal<Uint8Array, void>();
 
     yield* spawn(function* () {
-      let next = yield* io.stdout.next();
-      while (!next.done) {
-        yield* Stdio.operations.stdout(next.value);
-        stdout.send(next.value);
-        next = yield* io.stdout.next();
+      try {
+        let next = yield* io.stdout.next();
+        while (!next.done) {
+          yield* Stdio.operations.stdout(next.value);
+          stdout.send(next.value);
+          next = yield* io.stdout.next();
+        }
+      } catch (error) {
+        // deliver Stdio middleware failures through join()/expect() so a
+        // broken handler cannot leave callers waiting on processResult
+        processResult.resolve(Err(error as Error));
+      } finally {
+        stdout.close();
+        io.stdoutDone.resolve();
       }
-      stdout.close();
-      io.stdoutDone.resolve();
     });
 
     yield* spawn(function* () {
-      let next = yield* io.stderr.next();
-      while (!next.done) {
-        yield* Stdio.operations.stderr(next.value);
-        stderr.send(next.value);
-        next = yield* io.stderr.next();
+      try {
+        let next = yield* io.stderr.next();
+        while (!next.done) {
+          yield* Stdio.operations.stderr(next.value);
+          stderr.send(next.value);
+          next = yield* io.stderr.next();
+        }
+      } catch (error) {
+        processResult.resolve(Err(error as Error));
+      } finally {
+        stderr.close();
+        io.stderrDone.resolve();
       }
-      stderr.close();
-      io.stderrDone.resolve();
     });
 
     let stdin: Writable<string> = {
@@ -121,6 +134,10 @@ export function* createWin32Process(
 
     yield* spawn(function* () {
       let value = yield* once<ProcessResultValue>(childProcess, "close");
+      let closeEvent = yield* CloseEvent.get();
+      if (closeEvent) {
+        yield* closeEvent();
+      }
       // out of band with the finally block below compared to posix as
       // win32 is more sensitive to graceful shutdown timing that it is
       // worth waiting for stdout and stderr to close before resolving the process result

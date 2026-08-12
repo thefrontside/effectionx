@@ -8,6 +8,7 @@ import { captureError, expectMatch, fetchText } from "./helpers.ts";
 import { lines } from "@effectionx/stream-helpers";
 import { type Process, type ProcessResult, exec } from "../mod.ts";
 import { Stdio } from "../src/api.ts";
+import { CloseEvent } from "../src/exec/internal.ts";
 
 const SystemRoot = process.env.SystemRoot;
 
@@ -296,6 +297,127 @@ describe("exec", () => {
         expect(stdoutResult.sawData).toEqual(true);
         expect(stderrResult.sawData).toEqual(true);
       });
+    });
+  });
+
+  describe("output completeness", () => {
+    // Gate every stdout chunk behind `release`, and only resolve `release`
+    // once the adapter has received the child-process close event (observed
+    // through the internal CloseEvent seam). join() is therefore settling
+    // strictly after the close event, and must still have the full gated
+    // output forwarded through Stdio middleware by the time it settles.
+    it("delivers all stdout through Stdio middleware before join() settles", function* () {
+      const closed = withResolvers<void>();
+      const release = withResolvers<void>();
+      const procReady = withResolvers<Process>();
+      const observed: Uint8Array[] = [];
+      let stdoutAtSettle: string | undefined;
+
+      yield* CloseEvent.set(function* () {
+        closed.resolve();
+      });
+
+      yield* Stdio.around({
+        *stdout([bytes]) {
+          yield* release.operation;
+          observed.push(bytes);
+        },
+      });
+
+      // spawned before exec so that whenever this task and the adapter's
+      // stdout pump are both runnable, this one resumes first and captures
+      // what had been forwarded at the moment join() settled
+      const joined = yield* spawn(function* () {
+        const proc = yield* procReady.operation;
+        const status = yield* proc.join();
+        stdoutAtSettle = Buffer.concat(observed)
+          .toString("utf8")
+          .replace(/\r\n/g, "\n");
+        return status;
+      });
+
+      const proc = yield* exec("node './fixtures/hello-world.js'", {
+        cwd: import.meta.dirname,
+      });
+      procReady.resolve(proc);
+
+      // the child process has closed, but the gate is still held
+      yield* closed.operation;
+      release.resolve();
+
+      const status = yield* joined;
+      expect(status.code).toEqual(0);
+      expect(stdoutAtSettle).toEqual("hello\nworld\n");
+    });
+
+    it("delivers all stderr through Stdio middleware before join() settles", function* () {
+      const closed = withResolvers<void>();
+      const release = withResolvers<void>();
+      const procReady = withResolvers<Process>();
+      const observed: Uint8Array[] = [];
+      let stderrAtSettle: string | undefined;
+
+      yield* CloseEvent.set(function* () {
+        closed.resolve();
+      });
+
+      yield* Stdio.around({
+        *stderr([bytes]) {
+          yield* release.operation;
+          observed.push(bytes);
+        },
+      });
+
+      const joined = yield* spawn(function* () {
+        const proc = yield* procReady.operation;
+        const status = yield* proc.join();
+        stderrAtSettle = Buffer.concat(observed)
+          .toString("utf8")
+          .replace(/\r\n/g, "\n");
+        return status;
+      });
+
+      const proc = yield* exec("node './fixtures/hello-world.js'", {
+        cwd: import.meta.dirname,
+      });
+      procReady.resolve(proc);
+
+      yield* closed.operation;
+      release.resolve();
+
+      const status = yield* joined;
+      expect(status.code).toEqual(0);
+      expect(stderrAtSettle).toContain("boom\n");
+    });
+
+    it("fails join() instead of hanging when a Stdio handler fails", function* () {
+      yield* Stdio.around({
+        *stdout() {
+          throw new Error("stdout handler exploded");
+        },
+      });
+
+      const proc = yield* exec("node './fixtures/hello-world.js'", {
+        cwd: import.meta.dirname,
+      });
+
+      const error = yield* captureError(proc.join());
+      expect(error.message).toEqual("stdout handler exploded");
+    });
+
+    it("fails expect() instead of hanging when a Stdio handler fails", function* () {
+      yield* Stdio.around({
+        *stderr() {
+          throw new Error("stderr handler exploded");
+        },
+      });
+
+      const proc = yield* exec("node './fixtures/hello-world.js'", {
+        cwd: import.meta.dirname,
+      });
+
+      const error = yield* captureError(proc.expect());
+      expect(error.message).toEqual("stderr handler exploded");
     });
   });
 

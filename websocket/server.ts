@@ -1,5 +1,5 @@
-import { on, once } from "@effectionx/node";
-import type { EventEmitterLike } from "@effectionx/node";
+import { on, once } from "@effectionx/node/events";
+import type { EventEmitterLike } from "@effectionx/node/events";
 import {
   all,
   createQueue,

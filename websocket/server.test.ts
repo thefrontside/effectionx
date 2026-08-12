@@ -5,6 +5,7 @@ import {
   type Operation,
   type Subscription,
   createQueue,
+  ensure,
   resource,
   spawn,
   suspend,
@@ -13,20 +14,15 @@ import {
 import { expect } from "expect";
 import { WebSocketServer, type WebSocket as WsWebSocket } from "ws";
 
-import {
-  type WebSocketServerLike,
-  type WebSocketServerResource,
-  useWebSocketServer,
-} from "./server.ts";
+import { type WebSocketServerResource, useWebSocketServer } from "./server.ts";
 import { type WebSocketResource, useWebSocket } from "./websocket.ts";
 
 describe("WebSocketServer", () => {
   it("yields a connection and receives a message from the client", function* () {
     let { server, port } = yield* useTestServer();
-    let incoming = yield* server;
 
     let client = yield* connect(port);
-    let connection = (yield* incoming.next()).value;
+    let connection = (yield* server.next()).value;
 
     let messages = yield* connection;
     yield* client.send("hello from client");
@@ -37,10 +33,9 @@ describe("WebSocketServer", () => {
 
   it("sends a message from a server connection to the client", function* () {
     let { server, port } = yield* useTestServer();
-    let incoming = yield* server;
 
     let client = yield* connect(port);
-    let connection = (yield* incoming.next()).value;
+    let connection = (yield* server.next()).value;
 
     let clientMessages = yield* client;
     yield* connection.send("hello from server");
@@ -51,11 +46,10 @@ describe("WebSocketServer", () => {
 
   it("completes a connection stream when its client disconnects", function* () {
     let { server, port } = yield* useTestServer();
-    let incoming = yield* server;
 
     let raw = new WebSocket(`ws://localhost:${port}`);
     yield* useWebSocket<string>(() => raw);
-    let connection = (yield* incoming.next()).value;
+    let connection = (yield* server.next()).value;
     let messages = yield* connection;
 
     raw.close(4001, "goodbye");
@@ -76,10 +70,9 @@ describe("WebSocketServer", () => {
         () =>
           new WebSocketServer({
             server: httpServer,
-          }) as unknown as WebSocketServerLike,
+          }),
       );
-      let incoming = yield* server;
-      yield* incoming.next();
+      yield* server.next();
       accepted.add();
       yield* suspend();
     });
@@ -100,10 +93,9 @@ describe("WebSocketServer", () => {
 
   it("closes a connection with an explicit code and reason", function* () {
     let { server, port } = yield* useTestServer();
-    let incoming = yield* server;
 
     let client = yield* connect(port);
-    let connection = (yield* incoming.next()).value;
+    let connection = (yield* server.next()).value;
     let clientMessages = yield* client;
 
     yield* connection.close(4002, "custom");
@@ -116,12 +108,11 @@ describe("WebSocketServer", () => {
   it("buffers a connection that arrives before it is consumed", function* () {
     let { server, port } = yield* useTestServer();
 
-    // connect the client before subscribing to the server stream
+    // connect the client before reading any connection
     let client = yield* connect(port);
-    let incoming = yield* server;
 
-    // the connection was buffered while nobody was subscribed
-    let connection = (yield* incoming.next()).value;
+    // the connection was buffered before anybody read it
+    let connection = (yield* server.next()).value;
 
     let messages = yield* connection;
     yield* client.send("buffered hello");
@@ -138,15 +129,12 @@ describe("WebSocketServer", () => {
     let rawSockets = createQueue<WsWebSocket, never>();
     wss.on("connection", (ws) => rawSockets.add(ws));
 
-    let server = yield* useWebSocketServer<string>(
-      () => wss as unknown as WebSocketServerLike,
-    );
-    let incoming = yield* server;
+    let server = yield* useWebSocketServer<string>(() => wss);
     let serverErrors = yield* server.errors;
 
     // accept one client, then make its underlying socket error
     yield* connect(port);
-    yield* incoming.next();
+    yield* server.next();
     let raw = (yield* rawSockets.next()).value;
     raw.emit("error", new Error("boom"));
 
@@ -158,7 +146,7 @@ describe("WebSocketServer", () => {
 
     // and the server survives, serving a fresh client
     let client = yield* connect(port);
-    let connection = (yield* incoming.next()).value;
+    let connection = (yield* server.next()).value;
     let messages = yield* connection;
     yield* client.send("still alive");
     let { value } = yield* messages.next();
@@ -167,14 +155,13 @@ describe("WebSocketServer", () => {
 
   it("surfaces each simultaneous client as a distinct connection", function* () {
     let { server, port } = yield* useTestServer();
-    let incoming = yield* server;
 
     // connect two clients, then read two buffered connections back out
     let clientA = yield* connect(port);
     let clientB = yield* connect(port);
 
-    let first = (yield* incoming.next()).value;
-    let second = (yield* incoming.next()).value;
+    let first = (yield* server.next()).value;
+    let second = (yield* server.next()).value;
 
     expect(first).not.toBe(second);
 
@@ -207,7 +194,7 @@ function useTestServer(): Operation<TestServer> {
       () =>
         new WebSocketServer({
           server: httpServer,
-        }) as unknown as WebSocketServerLike,
+        }),
     );
 
     yield* provide({ server, port });
@@ -227,13 +214,13 @@ function useHttp(): Operation<{
 
     let port = (httpServer.address() as AddressInfo).port;
 
-    try {
-      yield* provide({ httpServer, port });
-    } finally {
+    yield* ensure(function* () {
       let closed = withResolvers<void>();
       httpServer.close(() => closed.resolve());
       yield* closed.operation;
-    }
+    });
+
+    yield* provide({ httpServer, port });
   });
 }
 

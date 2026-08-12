@@ -58,10 +58,10 @@ let socket = yield* useWebSocket("ws://websocket.example.org", {
 
 ## WebSocket Server
 
-`useWebSocketServer()` is the server counterpart of `useWebSocket()`. It yields a
-stream of incoming connections, where **each connection is the same full-duplex
-`WebSocketResource`** produced by the client — you receive messages by iterating
-it and reply with `yield* connection.send()`.
+`useWebSocketServer()` is the server counterpart of `useWebSocket()`. It hands
+back a subscription of incoming connections, where **each connection is the same
+full-duplex `WebSocketResource`** produced by the client — you receive messages
+by iterating it and reply with `yield* connection.send()`.
 
 The underlying server is supplied through a factory, so this package never
 imports a concrete server implementation and stays platform-agnostic. On Node
@@ -70,27 +70,24 @@ this is typically the [`ws`](https://github.com/websockets/ws) `WebSocketServer`
 ```typescript
 import { each, main, spawn } from "effection";
 import { WebSocketServer } from "ws";
-import {
-  useWebSocketServer,
-  type WebSocketServerLike,
-} from "@effectionx/websocket";
+import { useWebSocketServer } from "@effectionx/websocket";
 
 await main(function* () {
-  let server = yield* useWebSocketServer<string>(
-    () => new WebSocketServer({ port: 3000 }) as unknown as WebSocketServerLike,
+  let connections = yield* useWebSocketServer<string>(
+    () => new WebSocketServer({ port: 3000 }),
     { closeTimeout: 5_000 },
   );
 
-  // A stream is consumed sequentially, so spawn a handler per connection to
+  // Connections are read one at a time, so spawn a handler per connection to
   // serve many clients concurrently.
-  for (let connection of yield* each(server)) {
+  while (true) {
+    let { value: connection } = yield* connections.next();
     yield* spawn(function* () {
       for (let message of yield* each(connection)) {
         yield* connection.send(`echo: ${message.data}`);
         yield* each.next();
       }
     });
-    yield* each.next();
   }
 });
 ```
@@ -114,11 +111,15 @@ await main(function* () {
 });
 ```
 
-Connections are buffered, so none are dropped between the moment the server
-starts listening and the moment you begin iterating. The server — and every live
-connection it produced — is automatically closed when the resource passes out of
-scope. The server's second argument configures the close-handshake timeout for
-every accepted connection.
+Connections are buffered from the moment the resource is created, so none are
+dropped before you start reading. That is why the server is a subscription rather
+than a stream: reading a connection consumes it, and every consumer draws from
+the same buffer instead of getting an independent replay.
+
+The server — and every live connection it produced — is automatically closed when
+the resource passes out of scope, with close code `1001` ("going away"). The
+server's second argument configures the close-handshake timeout for every
+accepted connection.
 
 ## Advanced Usage
 

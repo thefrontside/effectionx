@@ -1,6 +1,5 @@
 import { platform } from "node:os";
 import { once } from "@effectionx/node/events";
-import { fromReadable } from "@effectionx/node/stream";
 // @ts-types="npm:@types/cross-spawn@6.0.6"
 import { spawn as spawnProcess } from "cross-spawn";
 import { ctrlc } from "ctrlc-windows";
@@ -76,9 +75,31 @@ export function* createWin32Process(
       throw new Error("stdout and stderr must be available with stdio: pipe");
     }
 
+    // Native listeners attached in the same synchronous continuation as the
+    // spawn: process events and stdio chunks cannot be missed, and no
+    // readable pumps are needed.
+    let rawClose = withResolvers<ProcessResultValue>();
+    childProcess.once("error", (error) => {
+      processResult.resolve(Err(error));
+    });
+    childProcess.once("close", (code, signal) => {
+      rawClose.resolve([code ?? undefined, signal ?? undefined]);
+    });
+
+    let raw = {
+      stdout: createSignal<Uint8Array, void>(),
+      stderr: createSignal<Uint8Array, void>(),
+    };
+    childProcess.stdout.on("data", (chunk: Uint8Array) =>
+      raw.stdout.send(chunk),
+    );
+    childProcess.stdout.once("close", () => raw.stdout.close());
+    childProcess.stderr.on("data", (chunk: Uint8Array) =>
+      raw.stderr.send(chunk),
+    );
+    childProcess.stderr.once("close", () => raw.stderr.close());
+
     let io = {
-      stdout: yield* fromReadable(childProcess.stdout),
-      stderr: yield* fromReadable(childProcess.stderr),
       stdoutDone: withResolvers<void>(),
       stderrDone: withResolvers<void>(),
     };
@@ -87,22 +108,24 @@ export function* createWin32Process(
     const stderr = createSignal<Uint8Array, void>();
 
     yield* spawn(function* () {
-      let next = yield* io.stdout.next();
+      let subscription = yield* raw.stdout;
+      let next = yield* subscription.next();
       while (!next.done) {
         yield* Stdio.operations.stdout(next.value);
         stdout.send(next.value);
-        next = yield* io.stdout.next();
+        next = yield* subscription.next();
       }
       stdout.close();
       io.stdoutDone.resolve();
     });
 
     yield* spawn(function* () {
-      let next = yield* io.stderr.next();
+      let subscription = yield* raw.stderr;
+      let next = yield* subscription.next();
       while (!next.done) {
         yield* Stdio.operations.stderr(next.value);
         stderr.send(next.value);
-        next = yield* io.stderr.next();
+        next = yield* subscription.next();
       }
       stderr.close();
       io.stderrDone.resolve();
@@ -114,13 +137,8 @@ export function* createWin32Process(
       },
     };
 
-    yield* spawn(function* trapError() {
-      const [error] = yield* once<Error[]>(childProcess, "error");
-      processResult.resolve(Err(error));
-    });
-
     yield* spawn(function* () {
-      let value = yield* once<ProcessResultValue>(childProcess, "close");
+      let value = yield* rawClose.operation;
       // out of band with the finally block below compared to posix as
       // win32 is more sensitive to graceful shutdown timing that it is
       // worth waiting for stdout and stderr to close before resolving the process result

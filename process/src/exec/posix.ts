@@ -13,8 +13,6 @@ import {
   withResolvers,
 } from "effection";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
-import { once } from "@effectionx/node/events";
-import { fromReadable } from "@effectionx/node/stream";
 import type {
   CreateOSProcess,
   ExecOptions,
@@ -58,9 +56,30 @@ export function* createPosixProcess(
       throw new Error("stdout and stderr must be available with stdio: pipe");
     }
 
+    // Native listeners attached in the same synchronous continuation as the
+    // spawn: process events and stdio chunks cannot be missed, and no
+    // readable pumps are needed.
+    childProcess.once("error", (error) => {
+      processResult.resolve(Err(error));
+    });
+    childProcess.once("close", (code, signal) => {
+      processResult.resolve(Ok([code ?? undefined, signal ?? undefined]));
+    });
+
+    let raw = {
+      stdout: createSignal<Uint8Array, void>(),
+      stderr: createSignal<Uint8Array, void>(),
+    };
+    childProcess.stdout.on("data", (chunk: Uint8Array) =>
+      raw.stdout.send(chunk),
+    );
+    childProcess.stdout.once("close", () => raw.stdout.close());
+    childProcess.stderr.on("data", (chunk: Uint8Array) =>
+      raw.stderr.send(chunk),
+    );
+    childProcess.stderr.once("close", () => raw.stderr.close());
+
     let io = {
-      stdout: yield* fromReadable(childProcess.stdout),
-      stderr: yield* fromReadable(childProcess.stderr),
       stdoutDone: withResolvers<void>(),
       stderrDone: withResolvers<void>(),
     };
@@ -69,22 +88,24 @@ export function* createPosixProcess(
     let stderr = createSignal<Uint8Array, void>();
 
     yield* spawn(function* () {
-      let next = yield* io.stdout.next();
+      let subscription = yield* raw.stdout;
+      let next = yield* subscription.next();
       while (!next.done) {
         yield* Stdio.operations.stdout(next.value);
         stdout.send(next.value);
-        next = yield* io.stdout.next();
+        next = yield* subscription.next();
       }
       stdout.close();
       io.stdoutDone.resolve();
     });
 
     yield* spawn(function* () {
-      let next = yield* io.stderr.next();
+      let subscription = yield* raw.stderr;
+      let next = yield* subscription.next();
       while (!next.done) {
         yield* Stdio.operations.stderr(next.value);
         stderr.send(next.value);
-        next = yield* io.stderr.next();
+        next = yield* subscription.next();
       }
       stderr.close();
       io.stderrDone.resolve();
@@ -95,16 +116,6 @@ export function* createPosixProcess(
         childProcess.stdin.write(data);
       },
     };
-
-    yield* spawn(function* trapError() {
-      let [error] = yield* once<[Error]>(childProcess, "error");
-      processResult.resolve(Err(error));
-    });
-
-    yield* spawn(function* () {
-      let value = yield* once<ProcessResultValue>(childProcess, "close");
-      processResult.resolve(Ok(value));
-    });
 
     function* join() {
       let result = yield* processResult.operation;

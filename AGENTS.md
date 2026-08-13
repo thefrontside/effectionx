@@ -78,6 +78,11 @@ When reviewing PRs:
   yields, the resume comes back as `iterator.next()`, which takes the frame out of
   return-mode and the halt is lost. Synchronous cleanup in `finally` is fine.
   See the [Async Teardown policy](.policies/async-teardown.md)
+- **Never register event listeners with `emitter.once()`; listener lifetime must depend
+  on a scope, not on the event firing.** Register named handlers with `.on()` and remove
+  them with `.off()` in the scope's own teardown — after any teardown wait that needs the
+  listener still attached. See the
+  [Scope-Bound Event Registration policy](.policies/scope-bound-event-registration.md)
 - Prefer `Operation<T>` for async operations
 - Use `*[Symbol.iterator]` pattern for reusable stream operations (see Stateless Streams policy)
 - Avoid `sleep()` for test synchronization (see No-Sleep Test Sync policy)

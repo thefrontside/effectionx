@@ -21,6 +21,7 @@ This is the **single source of truth** for all policies in this repository.
 | [Stateless Stream Operations](./stateless-streams.md)    | Recommended | Use `*[Symbol.iterator]` pattern for reusable stream operations        |
 | [Version Bump](./version-bump.md)                        | Recommended | PRs changing package code must include a semantic version bump         |
 | [Async Teardown](./async-teardown.md)                    | Recommended | Teardown that needs `yield*` must use `ensure()`, not a `finally` block |
+| [Scope-Bound Event Registration](./scope-bound-event-registration.md) | Recommended | Listener lifetime depends on a scope, never on the event firing; no `once()` |
 | [Package.json Metadata](./package-json-metadata.md)      | Strict      | Every published package must include a description field               |
 | [No Agent Marketing](./no-agent-marketing.md)            | Strict      | No AI tool promotional material in commits, PRs, issues, or comments   |
 | [Code Comments](./code-comments.md)                      | Strict      | Comments say what the code cannot; delete the ones that restate it     |

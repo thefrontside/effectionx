@@ -15,7 +15,7 @@ firing.**
 | Registering any listener                                | Use `.on()` / `.addEventListener()` with a **named** handler             |
 | `emitter.once(...)` or `{ once: true }`                 | Never; convert to `.on()` plus scope-bound removal                       |
 | Removing the listener                                   | `.off()` in the scope's own teardown (`finally` for sync-only, `ensure()` otherwise) |
-| Teardown waits on a value the listener resolves         | Deregister **after** that wait, in the same `ensure()`                   |
+| Teardown waits on a value the listener resolves         | Deregister in a sync `finally` around that wait, in the same `ensure()`  |
 
 The `once()` *operation* from `@effectionx/node/events` is compliant and
 unaffected: it removes its listener when its scope exits, whether or not the
@@ -68,8 +68,11 @@ function useChildProcess(create: () => ChildProcess): Operation<NativeProcess> {
 
     yield* ensure(function* () {
       if (child) {
-        yield* result.operation; // needs `onClose` still attached
-        child.off("close", onClose); // removal ordered after the wait
+        try {
+          yield* result.operation; // needs `onClose` still attached
+        } finally {
+          child.off("close", onClose); // after the wait, but not dependent
+        } //                              on it completing — sync finally
       }
     });
 
@@ -105,7 +108,9 @@ Before marking a review complete, verify:
       `.off()` / `.removeEventListener()` on a teardown path of the same scope
 - [ ] Removal that follows a `yield*` lives in `ensure()`, not `finally`
       (see [Async Teardown](./async-teardown.md))
-- [ ] When teardown awaits a listener-resolved value, removal comes after the wait
+- [ ] When teardown awaits a listener-resolved value, removal sits in a sync
+      `finally` around that wait — ordered after it, but not dependent on it
+      completing
 
 ## Common Mistakes
 
@@ -113,7 +118,7 @@ Before marking a review complete, verify:
 | ------------------------------------------------------------ | ------------------------------------------------------------------- |
 | `emitter.once("close", handler)`                             | `emitter.on("close", handler)` + `.off()` in the scope's teardown   |
 | Anonymous inline listener                                    | Name it — `.off()` needs the same function reference                |
-| `.off()` in a `finally` while an `ensure()` still awaits the event | Move removal into that `ensure()`, after the wait             |
+| `.off()` in a `finally` while an `ensure()` still awaits the event | Move removal into that `ensure()`, in a sync `finally` around the wait |
 | Skipping removal because "the emitter dies with the process" | Remove anyway; the emitter may be shared beyond this scope          |
 
 ## Related Policies

@@ -44,6 +44,17 @@ export function useNativeProcess(
 
     let child: ChildProcess | undefined;
 
+    let onError = (error: Error) => {
+      result.resolve(Err(error));
+    };
+    let onClose = (code: number | null, signal: NodeJS.Signals | null) => {
+      result.resolve(Ok([code ?? undefined, signal ?? undefined]));
+    };
+    let onStdout = (chunk: Uint8Array) => stdout.send(chunk);
+    let onStdoutClose = () => stdout.close();
+    let onStderr = (chunk: Uint8Array) => stderr.send(chunk);
+    let onStderrClose = () => stderr.close();
+
     // Registered while `child` is still undefined; the spawn below follows
     // in the same synchronous continuation, so the process never exists
     // without this teardown armed.
@@ -55,26 +66,35 @@ export function useNativeProcess(
         // hold the scope until the OS has reaped the process and closed its
         // pipes; `result` is a value, so an error outcome cannot throw here
         yield* result.operation;
+        // deregistration is bound to this scope, never to an event firing,
+        // because the pipes may be shared beyond this process. It must
+        // follow the wait above, which needs `onClose` still attached.
+        child.off("error", onError);
+        child.off("close", onClose);
+        child.stdout?.off("data", onStdout);
+        child.stdout?.off("close", onStdoutClose);
+        child.stderr?.off("data", onStderr);
+        child.stderr?.off("close", onStderrClose);
       }
     });
 
     const spawned = create();
     child = spawned;
 
-    spawned.once("error", (error) => {
-      result.resolve(Err(error));
-    });
-    spawned.once("close", (code, signal) => {
-      result.resolve(Ok([code ?? undefined, signal ?? undefined]));
-    });
+    spawned.on("error", onError);
+    spawned.on("close", onClose);
 
     if (!spawned.stdout || !spawned.stderr) {
       throw new Error("stdout and stderr must be available with stdio: pipe");
     }
-    spawned.stdout.on("data", (chunk: Uint8Array) => stdout.send(chunk));
-    spawned.stdout.once("close", () => stdout.close());
-    spawned.stderr.on("data", (chunk: Uint8Array) => stderr.send(chunk));
-    spawned.stderr.once("close", () => stderr.close());
+
+    // Node emits the child "close" event only after both stdio streams have
+    // closed, and these listeners run synchronously with stream emission, so
+    // by the time `result` resolves every chunk is already in the signals.
+    spawned.stdout.on("data", onStdout);
+    spawned.stdout.on("close", onStdoutClose);
+    spawned.stderr.on("data", onStderr);
+    spawned.stderr.on("close", onStderrClose);
 
     yield* provide({
       childProcess: spawned,

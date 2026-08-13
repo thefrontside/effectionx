@@ -15,6 +15,11 @@ import Worker from "web-worker";
 
 import { useChannelRequest, useChannelResponse } from "./channel.ts";
 import {
+  ForcedTerminationError,
+  type Forceable,
+  force,
+} from "@effectionx/forceable";
+import {
   type ForEachContext,
   type SerializedError,
   errorFromSerialized,
@@ -29,7 +34,8 @@ import {
  * @template TReturn - worker operation return value
  */
 export interface WorkerResource<TSend, TRecv, TReturn>
-  extends Operation<TReturn> {
+  extends Operation<TReturn>,
+    Forceable {
   /**
    * Send a message to the worker and wait for a response.
    */
@@ -67,6 +73,12 @@ export interface WorkerResource<TSend, TRecv, TReturn>
       ctx: ForEachContext<WProgress>,
     ) => Operation<WResponse>,
   ): Operation<TReturn>;
+}
+
+/** Options for creating a Worker. */
+export interface UseWorkerOptions<TData> extends WorkerOptions {
+  /** Data passed to `workerMain()` during initialization. */
+  data?: TData;
 }
 
 /**
@@ -110,7 +122,8 @@ export interface WorkerResource<TSend, TRecv, TReturn>
  * ```
  *
  * @param url URL or string of script
- * @param options WorkerOptions
+ * @param options Worker construction options. Shutdown is graceful; wrap
+ * the resource in `withForce()` from `@effectionx/forceable` to bound it.
  * @template TSend - value main thread will send to the worker
  * @template TRecv - value main thread will receive from the worker
  * @template TReturn - worker operation return value
@@ -119,9 +132,10 @@ export interface WorkerResource<TSend, TRecv, TReturn>
  */
 export function useWorker<TSend, TRecv, TReturn, TData>(
   url: string | URL,
-  options?: WorkerOptions & { data?: TData },
+  options?: UseWorkerOptions<TData>,
 ): Operation<WorkerResource<TSend, TRecv, TReturn>> {
   return resource(function* (provide) {
+    let { data, ...workerOptions } = options ?? {};
     let outcome = withResolvers<TReturn>();
     let outcomeSettled = false;
 
@@ -141,7 +155,14 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
       outcome.reject(error);
     };
 
-    let worker = new Worker(url, options);
+    let worker = new Worker(url, workerOptions);
+    const terminate = (error = new Error("worker terminated")) => {
+      if (!outcomeSettled) {
+        worker.terminate();
+        rejectOutcome(error);
+      }
+    };
+
     let subscription = yield* on(worker, "message");
 
     // Channel for worker-initiated requests (buffered via eager subscription)
@@ -217,31 +238,22 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
     });
 
     yield* ensure(function* () {
-      worker.postMessage({ type: "close" });
       if (!outcomeSettled) {
-        while (!outcomeSettled) {
-          const event = yield* once(worker, "message");
-          const msg = event.data;
-          if (msg.type === "close") {
-            const { result } = msg as { result: Result<TReturn> };
-            if (result.ok) {
-              resolveOutcome(result.value);
-            } else {
-              const serializedError =
-                result.error as unknown as SerializedError;
-              rejectOutcome(
-                errorFromSerialized("Worker failed", serializedError),
-              );
-            }
-          }
-        }
+        worker.postMessage({ type: "close" });
       }
+      // Settled by the spawned message loop above, which is still running:
+      // ensure handlers run before a resource's spawned children are halted.
+      // Verified against effection 3.0.0, 3.6.1, and 4.1.0 — see test:matrix.
+      //
+      // A Worker that cannot service the close message never settles this, and
+      // waiting on it holds this scope open forever. Wrap the resource in
+      // withForce() from @effectionx/forceable to put a deadline on the wait.
       yield* settled(outcome.operation);
     });
 
     worker.postMessage({
       type: "init",
-      data: options?.data,
+      data,
     });
 
     yield* provide({
@@ -322,6 +334,10 @@ export function useWorker<TSend, TRecv, TReturn, TData>(
           forEachInProgress = false;
           forEachCompleted = true;
         }
+      },
+
+      [force](reason?: string) {
+        terminate(new ForcedTerminationError(reason));
       },
 
       [Symbol.iterator]: outcome.operation[Symbol.iterator],

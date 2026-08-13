@@ -7,6 +7,7 @@ packages:
   # deno-deploy excluded - deprecated Deno-only package
   - "effect-ts"
   - "fetch"
+  - "forceable"
   - "fs"
   - "fx"
   - "inline"

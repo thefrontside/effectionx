@@ -136,6 +136,15 @@ importers:
         specifier: ^4
         version: 4.1.0
 
+  forceable:
+    devDependencies:
+      '@effectionx/vitest':
+        specifier: workspace:*
+        version: link:../vitest
+      effection:
+        specifier: ^4
+        version: 4.1.0
+
   fs:
     dependencies:
       '@effectionx/context-api':
@@ -205,6 +214,9 @@ importers:
       '@effectionx/context-api':
         specifier: workspace:*
         version: link:../context-api
+      '@effectionx/forceable':
+        specifier: workspace:*
+        version: link:../forceable
       '@effectionx/node':
         specifier: workspace:*
         version: link:../node
@@ -221,6 +233,9 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1
     devDependencies:
+      '@effectionx/converge':
+        specifier: workspace:*
+        version: link:../converge
       '@effectionx/stream-helpers':
         specifier: workspace:*
         version: link:../stream-helpers
@@ -435,6 +450,9 @@ importers:
 
   worker:
     dependencies:
+      '@effectionx/forceable':
+        specifier: workspace:*
+        version: link:../forceable
       '@effectionx/signals':
         specifier: workspace:*
         version: link:../signals

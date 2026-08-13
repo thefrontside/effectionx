@@ -11,6 +11,12 @@
       "path": "../context-api"
     },
     {
+      "path": "../converge"
+    },
+    {
+      "path": "../forceable"
+    },
+    {
       "path": "../node"
     },
     {

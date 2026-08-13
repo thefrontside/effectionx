@@ -11,6 +11,9 @@
       "path": "../converge"
     },
     {
+      "path": "../forceable"
+    },
+    {
       "path": "../signals"
     },
     {

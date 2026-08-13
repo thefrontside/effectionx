@@ -13,6 +13,7 @@ finite lifetime, and `daemon()` for long-running processes like servers.
 - Stream-based access to stdout and stderr
 - Writable stdin for sending input to processes
 - Proper signal handling and cleanup on both POSIX and Windows
+- Optional deadline on shutdown for processes that will not exit
 - Shell mode for complex commands with glob expansion
 - Structured error handling with `join()` and `expect()` methods
 
@@ -153,6 +154,60 @@ await main(function* () {
 });
 ```
 
+## Shutdown
+
+When the owning scope exits, a process is shut down cooperatively: `SIGTERM` to
+the process group on POSIX, Ctrl-C plus stdin closure on Windows. Teardown then
+waits for the process to exit and for its captured stdout and stderr to close,
+so nothing is lost partway through.
+
+That wait has no bound, and two ordinary situations never satisfy it. A process
+that traps `SIGTERM` to run its own cleanup can simply decline to exit. A
+descendant that inherited stdout or stderr can hold them open long after the
+direct command is gone. In either case the scope stays open forever.
+
+`Process` implements [`@effectionx/forceable`][forceable], so wrap it in
+`withForce()` to put a deadline on that wait:
+
+```typescript
+import { main, sleep, suspend } from "effection";
+import { withForce } from "@effectionx/forceable";
+import { daemon } from "@effectionx/process";
+
+await main(function* () {
+  let server = yield* withForce(daemon("node server.js"), function* (force) {
+    yield* sleep(10_000);
+    force("server did not exit within 10s of SIGTERM");
+  });
+
+  yield* suspend();
+});
+```
+
+The policy runs alongside the cooperative shutdown rather than replacing it. If
+the process exits and its stdio closes in time, the policy is cancelled where it
+stands and nothing is forced. If it does not, `force` escalates: `SIGKILL` to
+the process group on POSIX, `taskkill /T /F` on Windows. Both reach descendants,
+which is what makes them effective against the inherited-stdio case.
+
+A policy is an operation, so it can wait on application state instead of a
+clock — whether a queue has drained, whether a health endpoint has gone quiet,
+whether this deploy is allowed to take its time:
+
+```typescript
+let server = yield* withForce(daemon("node server.js"), function* (force) {
+  let drain = yield* DrainState.expect();
+  yield* drain.abandoned;
+  force("drain abandoned by operator");
+});
+```
+
+Forcing skips whatever the process would have done on its way out — flushing
+buffers, removing lock files, acknowledging in-flight work. Durable cleanup for
+a process that might be forced has to be owned by something outside it.
+
+[forceable]: ../forceable/README.md
+
 ## Options
 
 The `exec()` and `daemon()` functions accept an options object:
@@ -224,5 +279,9 @@ interface Process {
 
   // Wait for successful completion (throws on non-zero exit)
   expect(): Operation<ExitStatus>;
+
+  // Abandon cooperative shutdown and terminate the process tree.
+  // Called for you by withForce(); see Shutdown above.
+  [force](reason?: string): void;
 }
 ```

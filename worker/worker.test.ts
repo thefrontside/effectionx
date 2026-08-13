@@ -1,10 +1,12 @@
 import { access, mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { beforeEach, describe, it } from "@effectionx/vitest";
 import { when } from "@effectionx/converge";
+import { beforeEach, describe, it } from "@effectionx/vitest";
 import {
   all,
+  createContext,
+  type Operation,
   scoped,
   sleep,
   spawn,
@@ -14,6 +16,7 @@ import {
 } from "effection";
 import { expect } from "expect";
 
+import { type ForcePolicy, withForce } from "@effectionx/forceable";
 import type { ShutdownWorkerParams } from "./test-assets/shutdown-worker.ts";
 import { useWorker } from "./worker.ts";
 
@@ -66,6 +69,23 @@ describe("worker", () => {
       expect((e as Error).message).toContain("boom!");
     }
   });
+  it("propagates a worker error through withForce", function* () {
+    expect.assertions(2);
+    let worker = yield* withForce(
+      useWorker(import.meta.resolve("./test-assets/boom-result-worker.ts"), {
+        type: "module",
+        data: "boom!",
+      }),
+      function* () {},
+    );
+
+    try {
+      yield* worker;
+    } catch (e) {
+      expect(e).toBeInstanceOf(Error);
+      expect((e as Error).message).toContain("boom!");
+    }
+  });
   describe("shutdown", () => {
     let startFile: string;
     let endFile: string;
@@ -83,7 +103,40 @@ describe("worker", () => {
       url = import.meta.resolve("./test-assets/shutdown-worker.ts");
     });
 
-    it("shuts down gracefully", function* () {
+    function* haltCPUWorker(policy: ForcePolicy): Operation<Error | undefined> {
+      let state = new Int32Array(
+        new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT),
+      );
+      let task = yield* spawn(function* () {
+        yield* withForce(
+          useWorker(import.meta.resolve("./test-assets/cpu-bound-worker.ts"), {
+            type: "module",
+            data: state.buffer,
+          }),
+          policy,
+        );
+        yield* suspend();
+      });
+
+      yield* when(
+        function* () {
+          if (Atomics.load(state, 0) !== 1) {
+            throw new Error("worker has not started spinning");
+          }
+        },
+        { timeout: 10_000 },
+      );
+
+      yield* task.halt();
+
+      try {
+        yield* task;
+      } catch (error) {
+        return error as Error;
+      }
+    }
+
+    it("shuts down gracefully by default", function* () {
       let task = yield* spawn(function* () {
         yield* useWorker(url, {
           type: "module",
@@ -96,7 +149,6 @@ describe("worker", () => {
         yield* suspend();
       });
 
-      // Wait for worker to start
       yield* when(
         function* () {
           let exists = yield* until(
@@ -105,27 +157,145 @@ describe("worker", () => {
               () => false,
             ),
           );
-          if (!exists) throw new Error("start file not found");
-          return true;
+          if (!exists) {
+            throw new Error("worker has not started");
+          }
         },
         { timeout: 10_000 },
       );
 
       yield* task.halt();
 
-      // Wait for the end file to be written with expected content
-      let { value: content } = yield* when(
+      expect(yield* until(readFile(endFile, "utf-8"))).toEqual(
+        "goodbye cruel world!",
+      );
+    });
+
+    it("cancels its force policy when graceful shutdown completes", function* () {
+      let shutdownContext = createContext<string>("worker shutdown test");
+      yield* shutdownContext.set("available during shutdown");
+
+      let policyContext: string | undefined;
+      let forced = false;
+      let task = yield* spawn(function* () {
+        yield* withForce(
+          useWorker(url, {
+            type: "module",
+            data: {
+              startFile,
+              endFile,
+              endText: "graceful",
+            } satisfies ShutdownWorkerParams,
+          }),
+          function* (force) {
+            policyContext = yield* shutdownContext.expect();
+            yield* suspend();
+            forced = true;
+            force("should never happen");
+          },
+        );
+        yield* suspend();
+      });
+
+      yield* when(
         function* () {
-          let text = yield* until(readFile(endFile, "utf-8").catch(() => ""));
-          if (text !== "goodbye cruel world!") {
-            throw new Error(`expected "goodbye cruel world!", got "${text}"`);
+          let exists = yield* until(
+            access(startFile).then(
+              () => true,
+              () => false,
+            ),
+          );
+          if (!exists) {
+            throw new Error("worker has not started");
           }
-          return text;
         },
-        { timeout: 500 },
+        { timeout: 10_000 },
       );
 
-      expect(content).toEqual("goodbye cruel world!");
+      yield* task.halt();
+
+      expect(yield* until(readFile(endFile, "utf-8"))).toEqual("graceful");
+      expect(policyContext).toEqual("available during shutdown");
+      expect(forced).toEqual(false);
+    });
+
+    it("forces a CPU-bound worker that cannot service the close message", function* () {
+      expect.assertions(1);
+      const taskError = yield* haltCPUWorker(function* (force) {
+        force("cpu bound");
+      });
+      expect(taskError?.message).toContain("halted");
+    });
+
+    it("can force a CPU-bound worker from host health state", function* () {
+      expect.assertions(2);
+      const workerHealth = createContext<{
+        controlChannelUnresponsive: Operation<void>;
+      }>("worker health");
+      const controlChannelUnresponsive = withResolvers<void>();
+      yield* workerHealth.set({
+        controlChannelUnresponsive: controlChannelUnresponsive.operation,
+      });
+      controlChannelUnresponsive.resolve();
+
+      let observedHealth = false;
+      const policy: ForcePolicy = function* (force) {
+        const health = yield* workerHealth.expect();
+        observedHealth = true;
+        yield* health.controlChannelUnresponsive;
+        force("control channel unresponsive");
+      };
+
+      const taskError = yield* haltCPUWorker(policy);
+
+      expect(observedHealth).toEqual(true);
+      expect(taskError?.message).toContain("halted");
+    });
+
+    // Documents a gap rather than a guarantee. Forcing settles the outcome as a
+    // ForcedTerminationError, but an awaiter inside the halted scope is cancelled
+    // before it can observe that rejection, and useWorker's own teardown swallows
+    // it via settled(). So the reason reaches nobody. Whether it should escape —
+    // and at the cost of masking an in-flight error — is the open question.
+    it("does not surface the force reason to an awaiter", function* () {
+      expect.assertions(1);
+      let state = new Int32Array(
+        new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT),
+      );
+      let outcome: Error | undefined;
+
+      let task = yield* spawn(function* () {
+        let worker = yield* withForce(
+          useWorker(import.meta.resolve("./test-assets/cpu-bound-worker.ts"), {
+            type: "module",
+            data: state.buffer,
+          }),
+          function* (force) {
+            force("event loop p99 300ms");
+          },
+        );
+        yield* spawn(function* () {
+          try {
+            yield* worker;
+          } catch (error) {
+            outcome = error as Error;
+          }
+        });
+        yield* suspend();
+      });
+
+      yield* when(
+        function* () {
+          if (Atomics.load(state, 0) !== 1) {
+            throw new Error("worker has not started spinning");
+          }
+        },
+        { timeout: 10_000 },
+      );
+
+      yield* task.halt();
+
+      expect(outcome).toBeUndefined();
     });
   });
 

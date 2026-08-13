@@ -12,6 +12,7 @@ import {
   spawn,
   withResolvers,
 } from "effection";
+import { ForcedTerminationError, force } from "@effectionx/forceable";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
 import { once } from "@effectionx/node/events";
 import { fromReadable } from "@effectionx/node/stream";
@@ -32,6 +33,14 @@ export function* createPosixProcess(
   options: ExecOptions,
 ): Operation<Process> {
   let processResult = withResolvers<Result<ProcessResultValue>>();
+  // Tracked so that [force] cannot signal a pid the OS may already have reused.
+  let settled = false;
+  const settle = (result: Result<ProcessResultValue>) => {
+    if (!settled) {
+      settled = true;
+      processResult.resolve(result);
+    }
+  };
   const evalScope = yield* useEvalScope();
   const result = yield* evalScope.eval(function* () {
     // Killing all child processes started by this command is surprisingly
@@ -98,12 +107,12 @@ export function* createPosixProcess(
 
     yield* spawn(function* trapError() {
       let [error] = yield* once<[Error]>(childProcess, "error");
-      processResult.resolve(Err(error));
+      settle(Err(error));
     });
 
     yield* spawn(function* () {
       let value = yield* once<ProcessResultValue>(childProcess, "close");
-      processResult.resolve(Ok(value));
+      settle(Ok(value));
     });
 
     function* join() {
@@ -129,6 +138,8 @@ export function* createPosixProcess(
           throw new Error("no pid for childProcess");
         }
         process.kill(-childProcess.pid, "SIGTERM");
+        // A process that traps SIGTERM, or a descendant holding the inherited
+        // stdio open, never settles this. Wrap with withForce() to bound it.
         yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
       } catch (_e) {
         // do nothing, process is probably already dead
@@ -137,6 +148,24 @@ export function* createPosixProcess(
 
     return {
       pid: pid as number,
+      [force](reason?: string) {
+        // Forcing a resource that already finished must do nothing. Signalling
+        // anyway would address a process group id the OS is free to have
+        // reused, killing something unrelated.
+        if (settled) {
+          return;
+        }
+        // SIGKILL cannot be trapped, and addressing the group reaches
+        // descendants that are holding the inherited stdio open.
+        try {
+          if (typeof childProcess.pid === "number") {
+            process.kill(-childProcess.pid, "SIGKILL");
+          }
+        } catch (_e) {
+          // already gone
+        }
+        settle(Err(new ForcedTerminationError(reason)));
+      },
       *around(
         ...args: Parameters<typeof Stdio.around>
       ): ReturnType<typeof Stdio.around> {

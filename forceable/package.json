@@ -1,8 +1,8 @@
 {
-  "name": "@effectionx/process",
-  "description": "Spawn and manage child processes with structured concurrency",
-  "version": "0.9.0",
-  "keywords": ["process"],
+  "name": "@effectionx/forceable",
+  "description": "Put a deadline on a resource's graceful teardown and tear it down forcibly when it expires",
+  "version": "0.1.0",
+  "keywords": ["concurrency"],
   "type": "module",
   "main": "./dist/mod.js",
   "types": "./dist/mod.d.ts",
@@ -14,7 +14,6 @@
       "default": "./dist/mod.js"
     }
   },
-  "files": ["dist"],
   "peerDependencies": {
     "effection": "^3 || ^4"
   },
@@ -28,20 +27,9 @@
     "url": "https://github.com/thefrontside/effectionx/issues"
   },
   "sideEffects": false,
-  "dependencies": {
-    "@effectionx/context-api": "workspace:*",
-    "@effectionx/forceable": "workspace:*",
-    "@effectionx/node": "workspace:*",
-    "@effectionx/scope-eval": "workspace:*",
-    "cross-spawn": "^7",
-    "ctrlc-windows": "^2",
-    "shellwords-ts": "^3.0.1"
-  },
+  "files": ["dist"],
   "devDependencies": {
-    "@effectionx/converge": "workspace:*",
-    "@effectionx/stream-helpers": "workspace:*",
     "@effectionx/vitest": "workspace:*",
-    "@types/cross-spawn": "^6",
     "effection": "^4"
   }
 }

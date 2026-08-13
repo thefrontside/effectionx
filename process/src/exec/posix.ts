@@ -2,7 +2,9 @@ import { spawn as spawnProcess } from "node:child_process";
 import process from "node:process";
 import {
   type Operation,
+  type Result,
   type Yielded,
+  Err,
   all,
   createSignal,
   ensure,
@@ -19,7 +21,8 @@ import type {
 } from "./types.ts";
 import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
-import { useNativeProcess } from "./native.ts";
+import { type ProcessResultValue, useNativeProcess } from "./native.ts";
+import { CloseEvent } from "./internal.ts";
 
 export function* createPosixProcess(
   command: string,
@@ -50,6 +53,8 @@ export function* createPosixProcess(
     let { childProcess } = os;
     let { pid } = childProcess;
 
+    let processResult = withResolvers<Result<ProcessResultValue>>();
+
     let io = {
       stdoutDone: withResolvers<void>(),
       stderrDone: withResolvers<void>(),
@@ -60,26 +65,38 @@ export function* createPosixProcess(
 
     yield* spawn(function* () {
       let subscription = yield* os.stdout;
-      let next = yield* subscription.next();
-      while (!next.done) {
-        yield* Stdio.operations.stdout(next.value);
-        stdout.send(next.value);
-        next = yield* subscription.next();
+      try {
+        let next = yield* subscription.next();
+        while (!next.done) {
+          yield* Stdio.operations.stdout(next.value);
+          stdout.send(next.value);
+          next = yield* subscription.next();
+        }
+      } catch (error) {
+        // deliver Stdio middleware failures through join()/expect() so a
+        // broken handler cannot leave callers waiting on processResult
+        processResult.resolve(Err(error as Error));
+      } finally {
+        stdout.close();
+        io.stdoutDone.resolve();
       }
-      stdout.close();
-      io.stdoutDone.resolve();
     });
 
     yield* spawn(function* () {
       let subscription = yield* os.stderr;
-      let next = yield* subscription.next();
-      while (!next.done) {
-        yield* Stdio.operations.stderr(next.value);
-        stderr.send(next.value);
-        next = yield* subscription.next();
+      try {
+        let next = yield* subscription.next();
+        while (!next.done) {
+          yield* Stdio.operations.stderr(next.value);
+          stderr.send(next.value);
+          next = yield* subscription.next();
+        }
+      } catch (error) {
+        processResult.resolve(Err(error as Error));
+      } finally {
+        stderr.close();
+        io.stderrDone.resolve();
       }
-      stderr.close();
-      io.stderrDone.resolve();
     });
 
     let stdin: Writable<string> = {
@@ -88,8 +105,20 @@ export function* createPosixProcess(
       },
     };
 
+    yield* spawn(function* () {
+      let value = yield* os.result;
+      let closeEvent = yield* CloseEvent.get();
+      if (closeEvent) {
+        yield* closeEvent();
+      }
+      // join() settles only after every chunk has also cleared Stdio
+      // middleware and the public signals
+      yield* all([io.stdoutDone.operation, io.stderrDone.operation]);
+      processResult.resolve(value);
+    });
+
     function* join() {
-      let result = yield* os.result;
+      let result = yield* processResult.operation;
       if (result.ok) {
         let [code, signal] = result.value;
         return { command, options, code, signal } as ExitStatus;

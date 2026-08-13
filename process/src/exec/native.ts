@@ -27,6 +27,12 @@ export type ProcessResultValue = [number?, string?];
  */
 export interface NativeProcess {
   childProcess: ChildProcess;
+
+  /**
+   * Hot streams: chunks that arrive before a subscription exists are
+   * dropped. Subscribe in the same continuation that acquires the resource,
+   * before awaiting `result`.
+   */
   stdout: Stream<Uint8Array, void>;
   stderr: Stream<Uint8Array, void>;
 
@@ -60,21 +66,25 @@ export function useNativeProcess(
     // without this teardown armed.
     yield* ensure(function* () {
       if (child) {
-        if (child.exitCode === null && child.signalCode === null) {
-          child.kill("SIGTERM");
+        try {
+          if (child.exitCode === null && child.signalCode === null) {
+            child.kill("SIGTERM");
+          }
+          // hold the scope until the OS has reaped the process and closed its
+          // pipes; `result` is a value, so an error outcome cannot throw here
+          yield* result.operation;
+        } finally {
+          // deregistration is bound to this scope, never to an event firing,
+          // because the pipes may be shared beyond this process. It follows
+          // the wait above, which needs `onClose` still attached, but must
+          // not depend on that wait completing — hence the sync finally.
+          child.off("error", onError);
+          child.off("close", onClose);
+          child.stdout?.off("data", onStdout);
+          child.stdout?.off("close", onStdoutClose);
+          child.stderr?.off("data", onStderr);
+          child.stderr?.off("close", onStderrClose);
         }
-        // hold the scope until the OS has reaped the process and closed its
-        // pipes; `result` is a value, so an error outcome cannot throw here
-        yield* result.operation;
-        // deregistration is bound to this scope, never to an event firing,
-        // because the pipes may be shared beyond this process. It must
-        // follow the wait above, which needs `onClose` still attached.
-        child.off("error", onError);
-        child.off("close", onClose);
-        child.stdout?.off("data", onStdout);
-        child.stdout?.off("close", onStdoutClose);
-        child.stderr?.off("data", onStderr);
-        child.stderr?.off("close", onStderrClose);
       }
     });
 

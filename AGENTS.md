@@ -43,7 +43,7 @@ When working in this repository:
 - **Package Manager**: pnpm 9.15.9
 - **Build**: TypeScript 5+, Turbo
 - **Linting/Formatting**: Biome
-- **Testing**: Node.js test runner
+- **Testing**: Vitest, via the `@effectionx/vitest` adapter
 
 ## Code Review Policies
 
@@ -105,7 +105,7 @@ Each package requires:
 ├── mod.ts            # Main entry point (exports public API)
 ├── package.json      # Package manifest with peerDependencies
 ├── tsconfig.json     # Extends root tsconfig
-├── *.test.ts         # Tests using Node.js test runner
+├── *.test.ts         # Tests using @effectionx/vitest
 └── README.md         # Documentation (text before --- used as description)
 ```
 
@@ -120,16 +120,22 @@ Each package requires:
 
 ### Test Files
 
-- Use Node.js test runner (`node --test`)
-- Import test utilities from `@effectionx/bdd` when needed
+- Import `describe`/`it` from `@effectionx/vitest`, which runs Effection
+  operations as tests. This is what new packages should use
+- `bdd` and `inline` are the two exceptions. Both are excluded from Vitest in
+  `vitest.config.ts`, import `@effectionx/bdd`, and run under `node --test` via
+  `pnpm test:node`
 - Tests run with `--env-file=../.env`
+- Do not use `sleep()` to wait for a result — see the
+  [No-Sleep Test Synchronization policy](.policies/no-sleep-test-sync.md)
 
 ## Commands
 
 ```bash
 pnpm build          # Build all packages (TypeScript + bundling)
 pnpm build:tsc      # Build TypeScript only
-pnpm test           # Run all tests
+pnpm test           # Run all tests (vitest)
+pnpm test:node      # Run the bdd and inline suites under node --test
 pnpm test:matrix    # Test against peer dependency versions
 pnpm check          # Type-check all packages
 pnpm lint           # Lint all packages

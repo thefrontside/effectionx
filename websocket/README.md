@@ -26,13 +26,23 @@ await main(function* () {
   let socket = yield* useWebSocket("ws://websocket.example.org");
 
   // Send messages to the server
-  socket.send("Hello World");
+  yield* socket.send("Hello World");
 
   // Receive messages using a simple iterator
   for (let message of yield* each(socket)) {
     console.log("Message from server", message);
     yield* each.next();
   }
+});
+```
+
+By default, teardown waits up to one second for the peer's close handshake.
+Configure that deadline when creating the resource if your environment needs a
+different shutdown policy:
+
+```typescript
+let socket = yield* useWebSocket("ws://websocket.example.org", {
+  closeTimeout: 5_000,
 });
 ```
 
@@ -45,6 +55,92 @@ await main(function* () {
 - **Stream-based API**: Messages are delivered through a simple stream interface
 - **Clean Resource Management**: Connections are properly cleaned up when the
   operation completes
+
+## WebSocket Server
+
+`useWebSocketServer()` is the server counterpart of `useWebSocket()`. It hands
+back a subscription of incoming connections, where **each connection is the same
+full-duplex `WebSocketResource`** produced by the client — you receive messages
+by iterating it and reply with `yield* connection.send()`.
+
+The underlying server is supplied through a factory, so this package never
+imports a concrete server implementation and stays platform-agnostic. On Node
+this is typically the [`ws`](https://github.com/websockets/ws) `WebSocketServer`.
+
+```typescript
+import { each, main, spawn } from "effection";
+import { WebSocketServer } from "ws";
+import { useWebSocketServer } from "@effectionx/websocket";
+
+await main(function* () {
+  let connections = yield* useWebSocketServer<string>(
+    () => new WebSocketServer({ port: 3000 }),
+    { closeTimeout: 5_000 },
+  );
+
+  // Connections are read one at a time, so spawn a handler per connection to
+  // serve many clients concurrently.
+  while (true) {
+    let { value: connection } = yield* connections.next();
+    yield* spawn(function* () {
+      for (let message of yield* each(connection)) {
+        yield* connection.send(`echo: ${message.data}`);
+        yield* each.next();
+      }
+    });
+  }
+});
+```
+
+A client — using `useWebSocket()` from the same package — pairs with it directly.
+Because `send` is an `Operation`, invoke it with `yield*` on both sides:
+
+```typescript
+import { each, main } from "effection";
+import { useWebSocket } from "@effectionx/websocket";
+
+await main(function* () {
+  let socket = yield* useWebSocket<string>("ws://localhost:3000");
+
+  yield* socket.send("hello"); // client -> server
+
+  for (let message of yield* each(socket)) {
+    console.log(message.data); // "echo: hello"  (server -> client)
+    yield* each.next();
+  }
+});
+```
+
+Connections are buffered from the moment the resource is created, so none are
+dropped before you start reading. That is why the server is a subscription rather
+than a stream: reading a connection consumes it, and every consumer draws from
+the same buffer instead of getting an independent replay.
+
+The server — and every live connection it produced — is automatically closed when
+the resource passes out of scope, with close code `1001` ("going away"). The
+server's second argument configures the close-handshake timeout for every
+accepted connection.
+
+### Observing connection failures
+
+The two kinds of failure are reported differently. An error on the server itself
+crashes the resource's scope, reaching your error boundary like any other
+failure. An error on a single connection is isolated so it cannot take the server
+down, and is published on `server.errors` instead — spawn a task to watch that
+stream if you want to see them:
+
+```typescript
+yield* spawn(function* () {
+  for (let error of yield* each(connections.errors)) {
+    // a socket failure throws the DOM `error` event, which is not an `Error`;
+    // effection 4.1+ boxes it and keeps the original on `cause`
+    console.error("connection failed:", (error as Error)?.cause ?? error);
+    yield* each.next();
+  }
+});
+```
+
+`errors` is lossy: failures raised while nobody is subscribed are not buffered.
 
 ## Advanced Usage
 

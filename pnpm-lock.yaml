@@ -419,6 +419,13 @@ importers:
         version: 4.1.0
 
   websocket:
+    dependencies:
+      '@effectionx/node':
+        specifier: workspace:*
+        version: link:../node
+      '@effectionx/timebox':
+        specifier: workspace:*
+        version: link:../timebox
     devDependencies:
       '@effectionx/vitest':
         specifier: workspace:*

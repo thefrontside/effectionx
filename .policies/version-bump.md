@@ -67,11 +67,34 @@ Changed files:
 Violation: Source code changed but version was not bumped.
 ```
 
+## Cascade Rule
+
+**When a package is bumped, all packages that list it as a published dependency
+(`dependencies` or `peerDependencies` with `workspace:*`) must also be bumped.**
+
+This ensures dependents are republished with the updated dependency range.
+`devDependencies` are excluded because they are stripped at publish time.
+
+### Tooling
+
+| Command | Purpose |
+|---------|---------|
+| `pnpm versions` | **Check** — verifies all cascade bumps are present (runs in CI) |
+| `pnpm versions:sync` | **Fix** — auto-applies patch bumps to dependents that need them |
+
+### Example
+
+If `@effectionx/test-adapter` is bumped from `0.7.3` to `0.7.4`:
+- `@effectionx/bdd` depends on it via `"@effectionx/test-adapter": "workspace:*"`
+- `@effectionx/bdd` must also be bumped (at minimum a patch bump)
+- Run `pnpm versions:sync` to apply the cascade bumps automatically
+
 ## Verification Checklist
 
 - [ ] If source files changed, `package.json` version was bumped
 - [ ] Version bump type matches the change (major/minor/patch)
 - [ ] Only one package version bumped per PR (unless changes span packages)
+- [ ] Cascade bumps applied for all published dependents (`pnpm versions` passes)
 
 ## Common Mistakes
 
@@ -80,6 +103,7 @@ Violation: Source code changed but version was not bumped.
 | Forgetting to bump version after bug fix | Add patch version bump to `package.json` |
 | Using patch for new features | Use minor version bump instead |
 | Bumping version for test-only changes | Remove unnecessary version bump |
+| Forgetting to bump dependents after a dep changes | Run `pnpm versions:sync` |
 
 ## Related Policies
 

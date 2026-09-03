@@ -109,6 +109,11 @@ export function on<T extends unknown[]>(
  * For EventEmitters, returns an array of arguments.
  * For EventTargets, returns a single-element array containing the event object.
  *
+ * The listener's lifetime is bound to the scope that interprets this operation,
+ * never to the event firing: constructing the operation registers nothing, and
+ * the listener is removed when the event arrives, the operation fails, or the
+ * scope is halted first.
+ *
  * @example
  * ```ts
  * import { once } from "@effectionx/node/events";
@@ -126,25 +131,31 @@ export function once<TArgs extends unknown[] = unknown[]>(
   target: EventSourceLike | null,
   eventName: string,
 ): Operation<TArgs> {
-  const result = withResolvers<TArgs>();
+  return {
+    *[Symbol.iterator]() {
+      const result = withResolvers<TArgs>();
 
-  if (target) {
-    if (isEventTarget(target)) {
-      // EventTarget style (DOM, web-worker self)
-      const listener = (event: unknown) => {
-        result.resolve([event] as TArgs);
-        target.removeEventListener(eventName, listener);
-      };
-      target.addEventListener(eventName, listener);
-    } else {
-      // EventEmitter style (Node.js)
-      const listener = (...args: unknown[]) => {
-        result.resolve(args as TArgs);
-        target.off(eventName, listener);
-      };
+      if (!target) {
+        return yield* result.operation;
+      }
+
+      if (isEventTarget(target)) {
+        const listener = (event: unknown) => result.resolve([event] as TArgs);
+        target.addEventListener(eventName, listener);
+        try {
+          return yield* result.operation;
+        } finally {
+          target.removeEventListener(eventName, listener);
+        }
+      }
+
+      const listener = (...args: unknown[]) => result.resolve(args as TArgs);
       target.on(eventName, listener);
-    }
-  }
-
-  return result.operation;
+      try {
+        return yield* result.operation;
+      } finally {
+        target.off(eventName, listener);
+      }
+    },
+  };
 }

@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { describe, it } from "@effectionx/vitest";
-import { type Operation, race, spawn } from "effection";
+import { type Operation, race, scoped, spawn, withResolvers } from "effection";
 import { expect } from "expect";
 
 import { type EventTargetLike, once } from "./events.ts";
@@ -94,6 +94,53 @@ describe("once", () => {
       emitter.emit("done");
 
       expect(emitter.listenerCount("done")).toBe(0);
+    });
+
+    it("removes the listener when its owning scope fails", function* () {
+      const emitter = new EventEmitter();
+      const failure = withResolvers<never>();
+      let registered = 0;
+      let caught: unknown;
+
+      try {
+        yield* scoped(function* () {
+          yield* spawn(function* () {
+            yield* once(emitter, "done");
+          });
+          yield* spawn(function* () {
+            registered = emitter.listenerCount("done");
+            failure.reject(new Error("boom"));
+          });
+          yield* failure.operation;
+        });
+      } catch (error) {
+        caught = error;
+      }
+
+      expect((caught as Error).message).toBe("boom");
+      expect(registered).toBe(1);
+      expect(emitter.listenerCount("done")).toBe(0);
+    });
+
+    it("ignores an event redelivered before its owner resumes", function* () {
+      const emitter = new EventEmitter();
+
+      const task = yield* spawn(function* () {
+        return yield* once<[string]>(emitter, "done");
+      });
+
+      yield* observe(() => {
+        let reentered = false;
+        emitter.on("done", () => {
+          if (!reentered) {
+            reentered = true;
+            emitter.emit("done", "second");
+          }
+        });
+        emitter.emit("done", "first");
+      });
+
+      expect(yield* task).toEqual(["first"]);
     });
 
     it("deregisters the losing branch of a race", function* () {

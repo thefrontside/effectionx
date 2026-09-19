@@ -20,15 +20,12 @@ import {
  */
 export interface TaskBuffer extends Operation<void> {
   /**
-   * Spawn `op` in the task buffer when there is room available. If
-   *  there is room, then this operation will complete immediately.
-   * Otherwise, it will return once there is room in the buffer and
-   * the task is successfully spawned.
-   * `spawn()` operation will not return until the task has actually
-   * been spawned.
+   * Submit `op` to the task buffer. This operation returns as soon as the
+   * request has been queued; it does not wait for `op` to be spawned.
    *
    * @param op - the operation to spawn in the buffer.
-   * @returns the spawned task.
+   * @returns an operation that resolves with the spawned {@link Task} once
+   * there is room in the buffer and `op` has been spawned.
    */
   spawn<T>(op: () => Operation<T>): Operation<Operation<Task<T>>>;
 }

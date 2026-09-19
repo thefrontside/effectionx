@@ -114,6 +114,26 @@ describe("TaskBuffer", () => {
     expect(queuedStarted).toEqual(false);
   });
 
+  it("admits a request submitted after the dispatch loop has gone idle", function* () {
+    const buffer = yield* useTaskBuffer(5);
+    const started = withResolvers<void>();
+    const secondRan = withResolvers<void>();
+
+    yield* buffer.spawn(function* () {
+      started.resolve();
+      yield* suspend();
+    });
+
+    // let the buffer go idle with capacity to spare before submitting again
+    yield* started.operation;
+
+    yield* buffer.spawn(function* () {
+      secondRan.resolve();
+    });
+
+    yield* secondRan.operation;
+  });
+
   it("propagates a task failure out of the buffer, halting its other tasks", function* () {
     let siblingCompleted = false;
     let siblingHalted = false;

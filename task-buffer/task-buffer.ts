@@ -4,7 +4,6 @@ import {
   type Operation,
   type Resolve,
   type Result,
-  type Stream,
   type Task,
   createChannel,
   resource,
@@ -66,10 +65,15 @@ export function useTaskBuffer(max: number): Operation<TaskBuffer> {
 
     let requests: SpawnRequest<unknown>[] = [];
 
+    // Subscribe before the loop starts. Re-subscribing per iteration drops any
+    // send that lands before the new subscription is established.
+    let inputs = yield* input;
+    let outputs = yield* output;
+
     yield* spawn(function* () {
       while (true) {
         if (requests.length === 0) {
-          yield* next(input);
+          yield* inputs.next();
         } else if (buffer.size < max) {
           const request = requests.pop()!;
           let task = yield* scope.spawn(request.operation);
@@ -86,16 +90,16 @@ export function useTaskBuffer(max: number): Operation<TaskBuffer> {
           });
           request.resolve(task);
         } else {
-          yield* next(output);
+          yield* outputs.next();
         }
       }
     });
 
     yield* provide({
       *[Symbol.iterator]() {
-        let outputs = yield* output;
+        let results = yield* output;
         while (buffer.size > 0 || requests.length > 0) {
-          yield* outputs.next();
+          yield* results.next();
         }
       },
       *spawn<T>(fn: () => Operation<T>) {
@@ -114,11 +118,4 @@ export function useTaskBuffer(max: number): Operation<TaskBuffer> {
 interface SpawnRequest<T> {
   operation(): Operation<T>;
   resolve: Resolve<Task<T>>;
-}
-
-function* next<T, TClose>(
-  stream: Stream<T, TClose>,
-): Operation<IteratorResult<T, TClose>> {
-  let subscription = yield* stream;
-  return yield* subscription.next();
 }

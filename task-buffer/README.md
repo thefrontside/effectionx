@@ -59,3 +59,7 @@ from tearing down the caller, handle it inside the operation passed to
 
 When the scope holding the buffer exits, its active tasks are halted and any
 requests still queued are never spawned.
+
+Abandoning the wait for admission withdraws the request. If the task holding
+`yield* admission` is halted before the buffer has room for it, the operation is
+never spawned.

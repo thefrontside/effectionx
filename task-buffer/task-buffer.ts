@@ -104,12 +104,26 @@ export function useTaskBuffer(max: number): Operation<TaskBuffer> {
       },
       *spawn<T>(fn: () => Operation<T>) {
         let { operation, resolve } = withResolvers<Task<T>>();
-        requests.unshift({
+        let request: SpawnRequest<unknown> = {
           operation: fn,
           resolve: resolve as Resolve<unknown>,
-        });
+        };
+        requests.unshift(request);
         yield* input.send();
-        return operation;
+        return {
+          *[Symbol.iterator]() {
+            try {
+              return yield* operation;
+            } finally {
+              // Abandoning the wait withdraws the request, so work nobody is
+              // waiting for is never admitted.
+              let index = requests.indexOf(request);
+              if (index !== -1) {
+                requests.splice(index, 1);
+              }
+            }
+          },
+        };
       },
     });
   });

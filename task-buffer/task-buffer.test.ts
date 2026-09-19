@@ -134,6 +134,33 @@ describe("TaskBuffer", () => {
     yield* secondRan.operation;
   });
 
+  it("withdraws a queued request when its admission is abandoned", function* () {
+    const buffer = yield* useTaskBuffer(1);
+    const blocker = withResolvers<void>();
+    const queued = withResolvers<void>();
+    let queuedStarted = false;
+
+    yield* buffer.spawn(function* () {
+      yield* blocker.operation;
+    });
+
+    const waiter = yield* spawn(function* () {
+      const admission = yield* buffer.spawn(function* () {
+        queuedStarted = true;
+      });
+      queued.resolve();
+      yield* admission;
+    });
+
+    yield* queued.operation;
+    yield* waiter.halt();
+
+    blocker.resolve();
+    yield* buffer;
+
+    expect(queuedStarted).toEqual(false);
+  });
+
   it("propagates a task failure out of the buffer, halting its other tasks", function* () {
     let siblingCompleted = false;
     let siblingHalted = false;

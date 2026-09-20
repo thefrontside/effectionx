@@ -65,6 +65,11 @@ export function useTaskBuffer(max: number): Operation<TaskBuffer> {
 
     let requests: SpawnRequest<unknown>[] = [];
 
+    // Halting an active task frees a slot, and the dispatch loop is the last
+    // child this resource tears down, so without this it would admit queued
+    // work in the window between the two.
+    let closed = false;
+
     // Subscribe before the loop starts. Re-subscribing per iteration drops any
     // send that lands before the new subscription is established.
     let inputs = yield* input;
@@ -74,7 +79,7 @@ export function useTaskBuffer(max: number): Operation<TaskBuffer> {
       while (true) {
         if (requests.length === 0) {
           yield* inputs.next();
-        } else if (buffer.size < max) {
+        } else if (!closed && buffer.size < max) {
           const request = requests.pop()!;
           let task = yield* scope.spawn(request.operation);
           buffer.add(task);
@@ -95,37 +100,41 @@ export function useTaskBuffer(max: number): Operation<TaskBuffer> {
       }
     });
 
-    yield* provide({
-      *[Symbol.iterator]() {
-        let results = yield* output;
-        while (buffer.size > 0 || requests.length > 0) {
-          yield* results.next();
-        }
-      },
-      *spawn<T>(fn: () => Operation<T>) {
-        let { operation, resolve } = withResolvers<Task<T>>();
-        let request: SpawnRequest<unknown> = {
-          operation: fn,
-          resolve: resolve as Resolve<unknown>,
-        };
-        requests.unshift(request);
-        yield* input.send();
-        return {
-          *[Symbol.iterator]() {
-            try {
-              return yield* operation;
-            } finally {
-              // Abandoning the wait withdraws the request, so work nobody is
-              // waiting for is never admitted.
-              let index = requests.indexOf(request);
-              if (index !== -1) {
-                requests.splice(index, 1);
+    try {
+      yield* provide({
+        *[Symbol.iterator]() {
+          let results = yield* output;
+          while (buffer.size > 0 || requests.length > 0) {
+            yield* results.next();
+          }
+        },
+        *spawn<T>(fn: () => Operation<T>) {
+          let { operation, resolve } = withResolvers<Task<T>>();
+          let request: SpawnRequest<unknown> = {
+            operation: fn,
+            resolve: resolve as Resolve<unknown>,
+          };
+          requests.unshift(request);
+          yield* input.send();
+          return {
+            *[Symbol.iterator]() {
+              try {
+                return yield* operation;
+              } finally {
+                // Abandoning the wait withdraws the request, so work nobody is
+                // waiting for is never admitted.
+                let index = requests.indexOf(request);
+                if (index !== -1) {
+                  requests.splice(index, 1);
+                }
               }
-            }
-          },
-        };
-      },
-    });
+            },
+          };
+        },
+      });
+    } finally {
+      closed = true;
+    }
   });
 }
 

@@ -1,9 +1,11 @@
 import FakeTimers from "@sinonjs/fake-timers";
 import {
   createScope,
+  ensure,
   run,
   sleep,
   spawn,
+  type Operation,
   suspend,
   type Task,
   until,
@@ -12,6 +14,12 @@ import {
 import { describe, it } from "@effectionx/vitest";
 import { expect } from "expect";
 import { useTaskBuffer } from "./task-buffer.ts";
+
+// Park until Effection's scheduler has nothing left to run, so an assertion
+// about work that did *not* happen is not just reading a queue too early.
+function* settled(): Operation<void> {
+  yield* until(Promise.resolve());
+}
 
 describe("TaskBuffer", () => {
   it("queues up tasks when the buffer fills up", function* () {
@@ -112,6 +120,60 @@ describe("TaskBuffer", () => {
     expect(activeHalted).toEqual(true);
     expect(activeCompleted).toEqual(false);
     expect(queuedStarted).toEqual(false);
+  });
+
+  it("never admits a queued request once the scope begins to exit", function* () {
+    const [scope, destroy] = createScope();
+    const started = [withResolvers<void>(), withResolvers<void>()];
+    const teardownStarted = [withResolvers<void>(), withResolvers<void>()];
+    const releaseTeardown = [withResolvers<void>(), withResolvers<void>()];
+    let queuedStarted = 0;
+
+    yield* scope.spawn(function* () {
+      const buffer = yield* useTaskBuffer(2);
+
+      for (const index of [0, 1]) {
+        yield* buffer.spawn(function* () {
+          yield* ensure(function* () {
+            teardownStarted[index].resolve();
+            yield* releaseTeardown[index].operation;
+          });
+          started[index].resolve();
+          yield* suspend();
+        });
+      }
+
+      // submitted without awaiting admission, so nothing withdraws them
+      for (let i = 0; i < 3; i++) {
+        yield* buffer.spawn(function* () {
+          queuedStarted++;
+        });
+      }
+
+      yield* suspend();
+    });
+
+    yield* started[0].operation;
+    yield* started[1].operation;
+
+    const destruction = yield* spawn(destroy);
+
+    // destruction halts the most recently admitted task first
+    yield* teardownStarted[1].operation;
+    yield* settled();
+    expect(queuedStarted).toEqual(0);
+
+    // releasing the first teardown frees a slot while the second one is still
+    // unwinding, which is the window the dispatch loop used to admit into
+    releaseTeardown[1].resolve();
+    yield* teardownStarted[0].operation;
+    yield* settled();
+    expect(queuedStarted).toEqual(0);
+
+    releaseTeardown[0].resolve();
+    yield* destruction;
+
+    expect(queuedStarted).toEqual(0);
   });
 
   it("admits a request submitted after the dispatch loop has gone idle", function* () {

@@ -7,6 +7,7 @@ import {
   type Operation,
   type Result,
   type Yielded,
+  Err,
   all,
   createSignal,
   ensure,
@@ -23,6 +24,7 @@ import type {
 import { Stdio } from "../api.ts";
 import { ExecError } from "./error.ts";
 import { type ProcessResultValue, useNativeProcess } from "./native.ts";
+import { CloseEvent } from "./internal.ts";
 import { unbox, useEvalScope } from "@effectionx/scope-eval";
 
 function* killTree(pid: number) {
@@ -82,26 +84,38 @@ export function* createWin32Process(
 
     yield* spawn(function* () {
       let subscription = yield* os.stdout;
-      let next = yield* subscription.next();
-      while (!next.done) {
-        yield* Stdio.operations.stdout(next.value);
-        stdout.send(next.value);
-        next = yield* subscription.next();
+      try {
+        let next = yield* subscription.next();
+        while (!next.done) {
+          yield* Stdio.operations.stdout(next.value);
+          stdout.send(next.value);
+          next = yield* subscription.next();
+        }
+      } catch (error) {
+        // deliver Stdio middleware failures through join()/expect() so a
+        // broken handler cannot leave callers waiting on processResult
+        processResult.resolve(Err(error as Error));
+      } finally {
+        stdout.close();
+        io.stdoutDone.resolve();
       }
-      stdout.close();
-      io.stdoutDone.resolve();
     });
 
     yield* spawn(function* () {
       let subscription = yield* os.stderr;
-      let next = yield* subscription.next();
-      while (!next.done) {
-        yield* Stdio.operations.stderr(next.value);
-        stderr.send(next.value);
-        next = yield* subscription.next();
+      try {
+        let next = yield* subscription.next();
+        while (!next.done) {
+          yield* Stdio.operations.stderr(next.value);
+          stderr.send(next.value);
+          next = yield* subscription.next();
+        }
+      } catch (error) {
+        processResult.resolve(Err(error as Error));
+      } finally {
+        stderr.close();
+        io.stderrDone.resolve();
       }
-      stderr.close();
-      io.stderrDone.resolve();
     });
 
     let stdin: Writable<string> = {
@@ -112,6 +126,10 @@ export function* createWin32Process(
 
     yield* spawn(function* () {
       let value = yield* os.result;
+      let closeEvent = yield* CloseEvent.get();
+      if (closeEvent) {
+        yield* closeEvent();
+      }
       // out of band with the finally block below compared to posix as
       // win32 is more sensitive to graceful shutdown timing that it is
       // worth waiting for stdout and stderr to close before resolving the process result

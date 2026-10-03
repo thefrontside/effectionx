@@ -1,3 +1,4 @@
+import { timebox } from "@effectionx/timebox";
 import {
   createSignal,
   ensure,
@@ -9,6 +10,14 @@ import {
 } from "effection";
 import type { Operation, Stream } from "effection";
 
+export interface UseWebSocketOptions {
+  /**
+   * How many milliseconds to wait for the peer's close handshake before
+   * allowing teardown to continue. Defaults to `1000`.
+   */
+  closeTimeout?: number;
+}
+
 /**
  * Handle to a
  * [`WebSocket`](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket) object
@@ -17,8 +26,10 @@ import type { Operation, Stream } from "effection";
  * itself is a subscribale stream. When the socket is closed, the stream will
  * complete with a [`CloseEvent`](https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent)
  *
- * A WebSocketResource does not have an explicit close method. Rather, the underlying
- * socket will be automatically closed when the resource passes out of scope.
+ * The underlying socket is automatically closed when the resource passes out of
+ * scope (with code `1000` and reason `"released"`). For a different close code
+ * or reason — e.g. a `1001` "going away" on server shutdown — compose an
+ * explicit {@link WebSocketResource.close} before the resource is released.
  */
 export interface WebSocketResource<T>
   extends Stream<MessageEvent<T>, CloseEvent> {
@@ -31,7 +42,24 @@ export interface WebSocketResource<T>
   readonly protocol: string;
   readonly readyState: number;
   readonly url: string;
-  send(data: WebSocketData): void;
+  send(data: WebSocketData): Operation<void>;
+  /**
+   * Close the socket with an explicit code and reason, resolving once the close
+   * handshake completes (bounded by an internal timeout so a silent peer cannot
+   * hang). Because the first close wins, calling this before the resource is
+   * released lets you choose the close code the peer observes; the automatic
+   * scope-exit close then becomes a no-op.
+   *
+   * The code is handed to the underlying socket unchanged, so which codes are
+   * legal depends on the implementation. The WHATWG API accepts only `1000` and
+   * `3000`–`4999`, throwing `InvalidAccessError` for anything else, while a
+   * `ws` socket accepts the full RFC 6455 range — `1001` ("going away")
+   * included.
+   *
+   * @param code - a close code the underlying socket accepts (default `1000`)
+   * @param reason - a close reason string (default `"released"`)
+   */
+  close(code?: number, reason?: string): Operation<void>;
 }
 
 /**
@@ -59,13 +87,16 @@ export interface WebSocketResource<T>
  *
  * @param url - The URL of the target WebSocket server to connect to. The URL must use one of the following schemes: ws, wss, http, or https, and cannot include a URL fragment. If a relative URL is provided, it is relative to the base URL of the calling script. For more detail, see https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/WebSocket#url
  *
- * @param prototol - A single string or an array of strings representing the sub-protocol(s) that the client would like to use, in order of preference. If it is omitted, an empty array is used by default, i.e. []. For more details, see
+ * @param protocolsOrOptions - A sub-protocol string, or resource options when
+ * no sub-protocol is needed
+ * @param options - Resource options when a sub-protocol is provided
  *
  * @returns an operation yielding a {@link WebSocketResource}
  */
 export function useWebSocket<T>(
   url: string,
-  protocols?: string,
+  protocolsOrOptions?: string | UseWebSocketOptions,
+  options?: UseWebSocketOptions,
 ): Operation<WebSocketResource<T>>;
 
 /**
@@ -96,10 +127,12 @@ export function useWebSocket<T>(
  *
  * ```
  * @param create - a function that will construct the underlying [`WebSocket`](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket) object that this resource wil use
+ * @param options - Resource options
  * @returns an operation yielding a {@link WebSocketResource}
  */
 export function useWebSocket<T>(
   create: () => WebSocket,
+  options?: UseWebSocketOptions,
 ): Operation<WebSocketResource<T>>;
 
 /**
@@ -107,9 +140,17 @@ export function useWebSocket<T>(
  */
 export function useWebSocket<T>(
   url: string | (() => WebSocket),
-  protocols?: string,
+  protocolsOrOptions?: string | UseWebSocketOptions,
+  additionalOptions: UseWebSocketOptions = {},
 ): Operation<WebSocketResource<T>> {
   return resource(function* (provide) {
+    let protocols =
+      typeof protocolsOrOptions === "string" ? protocolsOrOptions : undefined;
+    let options =
+      typeof protocolsOrOptions === "object"
+        ? protocolsOrOptions
+        : additionalOptions;
+    let { closeTimeout = 1000 } = options;
     let socket =
       typeof url === "string" ? new WebSocket(url, protocols) : url();
 
@@ -134,11 +175,18 @@ export function useWebSocket<T>(
       close(next.value);
     });
 
+    // The first close wins, so whoever calls this first picks the code the peer
+    // sees. On timeout we stop waiting rather than forcing a terminate.
+    function* closeSocket(code: number, reason: string): Operation<void> {
+      socket.close(code, reason);
+      yield* timebox(closeTimeout, () => closed);
+    }
+
     // Don't hoist this above the spawns — teardown would hang waiting on
     // `closed`.
     yield* ensure(function* () {
-      socket.close(1000, "released");
-      yield* closed;
+      // A no-op if the caller already closed with an explicit code via `close()`.
+      yield* closeSocket(1000, "released");
       socket.removeEventListener("message", messages.send);
       socket.removeEventListener("close", messages.close);
     });
@@ -167,7 +215,12 @@ export function useWebSocket<T>(
         get url() {
           return socket.url;
         },
-        send: (data) => socket.send(data),
+        *send(data: WebSocketData): Operation<void> {
+          socket.send(data);
+        },
+        *close(code = 1000, reason = "released"): Operation<void> {
+          yield* closeSocket(code, reason);
+        },
         [Symbol.iterator]: messages[Symbol.iterator],
       }),
     ]);

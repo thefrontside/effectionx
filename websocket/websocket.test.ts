@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { timebox } from "@effectionx/timebox";
 import { describe, it } from "@effectionx/vitest";
 import {
   type Operation,
@@ -6,6 +7,7 @@ import {
   createQueue,
   ensure,
   resource,
+  scoped,
   suspend,
   useScope,
   withResolvers,
@@ -21,7 +23,7 @@ describe("WebSocket", () => {
 
     let subscription = yield* server.socket;
 
-    client.socket.send("hello from client");
+    yield* client.socket.send("hello from client");
 
     let { value } = yield* subscription.next();
 
@@ -33,7 +35,7 @@ describe("WebSocket", () => {
 
     let subscription = yield* client.socket;
 
-    server.socket.send("hello from server");
+    yield* server.socket.send("hello from server");
 
     let { value } = yield* subscription.next();
 
@@ -63,7 +65,47 @@ describe("WebSocket", () => {
     expect(event.type).toEqual("close");
     expect(event.wasClean).toEqual(true);
   });
+
+  it("does not hang teardown when the peer never sends a close frame", function* () {
+    let socket = makeSilentSocket();
+
+    let outcome = yield* timebox(100, () =>
+      scoped(function* () {
+        yield* useWebSocket(() => socket as unknown as WebSocket, {
+          closeTimeout: 0,
+        });
+      }),
+    );
+
+    expect(outcome.timeout).toEqual(false);
+    expect(socket.closeCalls).toEqual(1);
+  });
 });
+
+/**
+ * A minimal WebSocket stand-in that is already OPEN and never emits an "open",
+ * "close", or "error" event — used to prove teardown does not hang on a silent
+ * peer.
+ */
+function makeSilentSocket() {
+  return {
+    readyState: WebSocket.OPEN,
+    binaryType: "blob" as BinaryType,
+    bufferedAmount: 0,
+    extensions: "",
+    protocol: "",
+    url: "ws://silent.test",
+    closeCalls: 0,
+    // record listeners but never fire any event
+    addEventListener() {},
+    removeEventListener() {},
+    send() {},
+    close() {
+      // deliberately never fires a "close" event
+      this.closeCalls += 1;
+    },
+  };
+}
 
 interface TestSocket {
   close(): void;

@@ -37,6 +37,9 @@ jobs:
       - name: Check tsconfig refs
         run: pnpm check:tsrefs
 
+      - name: Check cascade version bumps
+        run: pnpm versions
+
   test-posix:
     name: Test (${{ matrix.os }})
     strategy:

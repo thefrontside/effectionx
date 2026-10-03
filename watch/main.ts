@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import process from "node:process";
 import { each, exit, main, scoped, spawn } from "effection";
 import { z } from "zod";

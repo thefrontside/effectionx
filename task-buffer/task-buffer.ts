@@ -4,7 +4,6 @@ import {
   type Operation,
   type Resolve,
   type Result,
-  type Stream,
   type Task,
   createChannel,
   resource,
@@ -20,15 +19,12 @@ import {
  */
 export interface TaskBuffer extends Operation<void> {
   /**
-   * Spawn `op` in the task buffer when there is room available. If
-   *  there is room, then this operation will complete immediately.
-   * Otherwise, it will return once there is room in the buffer and
-   * the task is successfully spawned.
-   * `spawn()` operation will not return until the task has actually
-   * been spawned.
+   * Submit `op` to the task buffer. This operation returns as soon as the
+   * request has been queued; it does not wait for `op` to be spawned.
    *
    * @param op - the operation to spawn in the buffer.
-   * @returns the spawned task.
+   * @returns an operation that resolves with the spawned {@link Task} once
+   * there is room in the buffer and `op` has been spawned.
    */
   spawn<T>(op: () => Operation<T>): Operation<Operation<Task<T>>>;
 }
@@ -69,11 +65,21 @@ export function useTaskBuffer(max: number): Operation<TaskBuffer> {
 
     let requests: SpawnRequest<unknown>[] = [];
 
+    // Halting an active task frees a slot, and the dispatch loop is the last
+    // child this resource tears down, so without this it would admit queued
+    // work in the window between the two.
+    let closed = false;
+
+    // Subscribe before the loop starts. Re-subscribing per iteration drops any
+    // send that lands before the new subscription is established.
+    let inputs = yield* input;
+    let outputs = yield* output;
+
     yield* spawn(function* () {
       while (true) {
         if (requests.length === 0) {
-          yield* next(input);
-        } else if (buffer.size < max) {
+          yield* inputs.next();
+        } else if (!closed && buffer.size < max) {
           const request = requests.pop()!;
           let task = yield* scope.spawn(request.operation);
           buffer.add(task);
@@ -89,39 +95,50 @@ export function useTaskBuffer(max: number): Operation<TaskBuffer> {
           });
           request.resolve(task);
         } else {
-          yield* next(output);
+          yield* outputs.next();
         }
       }
     });
 
-    yield* provide({
-      *[Symbol.iterator]() {
-        let outputs = yield* output;
-        while (buffer.size > 0 || requests.length > 0) {
-          yield* outputs.next();
-        }
-      },
-      *spawn<T>(fn: () => Operation<T>) {
-        let { operation, resolve } = withResolvers<Task<T>>();
-        requests.unshift({
-          operation: fn,
-          resolve: resolve as Resolve<unknown>,
-        });
-        yield* input.send();
-        return operation;
-      },
-    });
+    try {
+      yield* provide({
+        *[Symbol.iterator]() {
+          let results = yield* output;
+          while (buffer.size > 0 || requests.length > 0) {
+            yield* results.next();
+          }
+        },
+        *spawn<T>(fn: () => Operation<T>) {
+          let { operation, resolve } = withResolvers<Task<T>>();
+          let request: SpawnRequest<unknown> = {
+            operation: fn,
+            resolve: resolve as Resolve<unknown>,
+          };
+          requests.unshift(request);
+          yield* input.send();
+          return {
+            *[Symbol.iterator]() {
+              try {
+                return yield* operation;
+              } finally {
+                // Abandoning the wait withdraws the request, so work nobody is
+                // waiting for is never admitted.
+                let index = requests.indexOf(request);
+                if (index !== -1) {
+                  requests.splice(index, 1);
+                }
+              }
+            },
+          };
+        },
+      });
+    } finally {
+      closed = true;
+    }
   });
 }
 
 interface SpawnRequest<T> {
   operation(): Operation<T>;
   resolve: Resolve<Task<T>>;
-}
-
-function* next<T, TClose>(
-  stream: Stream<T, TClose>,
-): Operation<IteratorResult<T, TClose>> {
-  let subscription = yield* stream;
-  return yield* subscription.next();
 }

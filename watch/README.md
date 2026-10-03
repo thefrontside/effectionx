@@ -5,7 +5,13 @@ source files change in a directory, shutdown the current invocation _gracefully_
 and restart it.
 
 ```
-deno -A jsr:@effectionx/watch npm start
+npx @effectionx/watch npm start
+```
+
+or, under Deno:
+
+```
+deno run -A npm:@effectionx/watch npm start
 ```
 
 ## Graceful Shutdown
@@ -24,13 +30,13 @@ source control (not ignored).
 
 ## Use it as an Effection library
 
-Most of the time, you will use this an executable. However, if you want to
-create your own watch from within a library, you can But if you want to write
-your own
+Most of the time, you will use this as an executable. If you want to build your
+own watch from within a library, the `/lib` export is the same machinery the
+command is built on.
 
 ```ts
 import { each, main } from "effection";
-import { watch } from "@effectionx/watch";
+import { watch } from "@effectionx/watch/lib";
 
 await main(function* () {
   const changes = watch({
